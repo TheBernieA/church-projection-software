@@ -1,0 +1,39 @@
+{
+  "name": "lampstand",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lampstand \u2014 church projection & live production software",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @lampstand/desktop dev",
+    "build": "pnpm --filter @lampstand/desktop build",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "security:check": "node scripts/security-check.mjs",
+    "build:kjv": "node scripts/build-kjv-module.mjs",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm security:check",
+    "e2e": "pnpm --filter @lampstand/desktop e2e"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-security": "4.2.1",
+    "fflate": "0.8.3",
+    "globals": "17.14.0",
+    "jsdom": "31.0.0",
+    "prettier": "3.10.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.2",
+    "vitest": "5.1.0"
+  },
+  "type": "module"
+}

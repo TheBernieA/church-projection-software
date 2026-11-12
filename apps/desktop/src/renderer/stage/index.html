@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lampstand Stage</title>
+    <link rel="stylesheet" href="./stage.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <header>
+        <div id="clock" class="big-num"></div>
+        <div id="label"></div>
+        <div id="elapsed" class="big-num"></div>
+      </header>
+      <main>
+        <section class="current">
+          <div class="tag">Now</div>
+          <div id="current" class="screen"></div>
+        </section>
+        <section class="next">
+          <div class="tag">Next</div>
+          <div id="next" class="screen"></div>
+        </section>
+      </main>
+      <div id="message" hidden></div>
+      <footer id="notes"></footer>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

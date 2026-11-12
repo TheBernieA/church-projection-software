@@ -1,0 +1,94 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #07080c;
+  color: #eceef4;
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  cursor: none;
+}
+#stage {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100%;
+  padding: 2vh 2vw;
+  box-sizing: border-box;
+  gap: 2vh;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.big-num {
+  font-size: 6vh;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+#elapsed {
+  color: #9aa1b5;
+}
+#label {
+  font-size: 3.4vh;
+  font-weight: 600;
+  color: #e8b04b;
+}
+main {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 2vw;
+  min-height: 0;
+}
+section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.tag {
+  font-size: 2.2vh;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9aa1b5;
+  margin-bottom: 1vh;
+}
+.current .tag {
+  color: #e5484d;
+}
+.screen {
+  flex: 1;
+  min-height: 0;
+  border: 2px solid #2a2f40;
+  background: #000;
+}
+.current .screen {
+  border-color: #e5484d;
+}
+#message {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  top: 40%;
+  padding: 3vh 3vw;
+  background: #e8b04b;
+  color: #171a24;
+  font-size: 7vh;
+  font-weight: 800;
+  text-align: center;
+  border-radius: 12px;
+}
+#message.flash {
+  animation: flash 1s ease-in-out 4;
+}
+@keyframes flash {
+  50% {
+    opacity: 0.25;
+  }
+}
+footer {
+  font-size: 3vh;
+  color: #c8ccd8;
+  max-height: 18vh;
+  overflow: hidden;
+  white-space: pre-line;
+}

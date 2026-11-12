@@ -1,0 +1,43 @@
+# Packaging (§19.3). Signing identities/certificates come from CI secrets, never this file.
+appId: app.lampstand.desktop
+productName: Lampstand
+directories:
+  output: release/${version}
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: ../../resources/bibles
+    to: resources/bibles
+    filter: ['*.lsbible']
+  - from: ../../resources/hymns
+    to: resources/hymns
+    filter: ['*.json']
+asar: true
+# Electron Fuses (§17.1): no RunAsNode, no NODE_OPTIONS / --inspect, asar-only with integrity checks.
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: false
+mac:
+  category: public.app-category.productivity
+  target: [dmg, zip]
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: Lampstand listens to the speaker to detect Bible references. Audio is processed on this computer and never stored or sent anywhere.
+    NSCameraUsageDescription: Lampstand can use a camera as a live background or for streaming.
+  notarize: true
+win:
+  target: [nsis]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+publish: null

@@ -1,0 +1,111 @@
+# Lampstand package formats
+
+Bibles and hymnals are installed by users as **packages** (Settings → Bibles & hymnals → Install package…).
+Every package goes through the same verified pipeline before anything touches disk.
+
+## `.lsbible` — Bible version
+
+A zip archive:
+
+```
+manifest.json        required
+books/GEN.json …     one file per book (USFM 3-letter code), only books present in the version
+headings.json        optional section headings
+footnotes.json       optional
+signature.sig        optional — Ed25519 over the exact bytes of manifest.json (catalog downloads)
+```
+
+### `manifest.json`
+
+```jsonc
+{
+  "format": "lampstand-bible",
+  "formatVersion": 1,
+  "version": {
+    "id": "kjv",                     // [a-z0-9-], unique per version
+    "name": "King James Version",
+    "abbreviation": "KJV",
+    "language": "en",                // BCP-47
+    "direction": "ltr",              // or "rtl"
+    "versification": "kjv",          // kjv | lxx | vulgate | custom
+    "license": { "kind": "public-domain", "text": "…", "url": "https://…" },
+    "copyrightLine": "…",            // optional; shown on slides when present
+    "source": "bundled",             // overwritten by the installer (bundled / imported / downloaded)
+    "checksumSha256": "",            // filled in by the installer (sha256 of the whole package)
+    "moduleVersion": "1.0.0",
+    "provenance": { "sourceUrl": "…", "retrievedAt": "…", "sha256": "…" }
+  },
+  "files": [{ "path": "books/GEN.json", "sha256": "<hex>", "size": 12345 }]
+}
+```
+
+### `books/<BOOK>.json`
+
+```json
+{ "book": "JHN", "name": "John", "chapters": [["verse 1 text", "verse 2 text"], ["…"]] }
+```
+
+`chapters[c][v]` is chapter `c+1`, verse `v+1`. Per-book files mean opening a chapter never parses the whole Bible.
+
+### Inline markup
+
+| Tag | Meaning | Rendering |
+|---|---|---|
+| `<wj>…</wj>` | Words of Jesus | red letters (theme option) |
+| `<add>…</add>` | Translator-added words | italic |
+| `<nd>…</nd>` | Divine name (LORD) | small caps |
+
+Markup is parsed by Lampstand's own parser into styled spans. It is **never** injected as HTML; anything else is shown as literal text.
+
+## `.lshymnal` — hymnal
+
+Either a plain hymnal `.json` file, or a zip:
+
+```
+manifest.json   { "format": "lampstand-hymnal-module", "formatVersion": 1,
+                  "file": { "path": "hymnal.json", "sha256": "<hex>", "size": 123 } }
+hymnal.json     the hymnal (schema below)
+```
+
+### `hymnal.json`
+
+```jsonc
+{
+  "format": "lampstand-hymnal",
+  "formatVersion": 1,
+  "id": "my-church-hymnal",          // [a-z0-9-]
+  "name": "Our Hymnal",
+  "license": "Public domain / used with permission …",
+  "hymns": [{
+    "number": "23",
+    "title": "…",
+    "authors": ["…"],
+    "year": 1779,                    // optional
+    "copyright": "…",                // optional; default "Public domain (year)"
+    "tags": ["grace"],               // optional
+    "sections": [
+      { "kind": "verse", "label": "Verse 1", "lines": ["…", "…"] },
+      { "kind": "chorus", "label": "Chorus", "lines": ["…"] }
+    ],
+    "order": ["Verse 1", "Chorus", "Verse 2", "Chorus"]   // optional; default = chorus after each verse
+  }]
+}
+```
+
+`kind` is one of `verse, chorus, pre-chorus, bridge, tag, intro, outro, ending, other`. Hymns are read-only in the
+app; operators use "Duplicate to edit". Only distribute hymnals whose words you have the right to share.
+
+## Install pipeline (both formats)
+
+1. Size limit (64 MB package) and file-type check (zip magic bytes).
+2. Optional catalog checksum (SHA-256) and, for catalog downloads, Ed25519 signature with the key compiled into the app.
+3. In-memory extraction with **zip-slip** protection (no absolute paths, `..`, backslashes, drive letters; path allow-list)
+   and **zip-bomb** limits (≤ 300 files, ≤ 8 MB per file, ≤ 64 MB total, ≤ 200:1 compression ratio).
+4. Per-file SHA-256 and size checked against the manifest (tampered packages are rejected).
+5. Every JSON validated with Zod.
+6. Written to a staging directory, then atomically renamed into `userData/bibles/<id>/` or `userData/hymnals/<id>/`.
+7. The search index is rebuilt in the SearchWorker; the UI refreshes.
+
+Bundled packages: any valid `.lsbible` in `resources/bibles/` (or hymnal `.json` in `resources/hymns/`) ships with the
+app and installs on first run — adding one is a content change, not a code change. `scripts/build-kjv-module.mjs`
+builds the bundled KJV from eBible.org's public-domain USFM and records provenance in the manifest.

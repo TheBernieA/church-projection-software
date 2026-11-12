@@ -1,0 +1,477 @@
+{
+  "top": {
+    "outputs": "Outputs",
+    "settings": "Settings",
+    "undo": "Undo",
+    "redo": "Redo",
+    "search": "Search verses, songs, hymns…",
+    "live": "Live",
+    "services": "Services",
+    "shortcuts": "Keyboard shortcuts",
+    "offAirShort": "Off AIR"
+  },
+  "service": {
+    "title": "Service plan",
+    "empty": "This service is empty. Drag songs, verses or media here from the library, or double-click them.",
+    "newHeader": "New section",
+    "remove": "Remove from service",
+    "duplicate": "Duplicate",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "rename": "Rename service",
+    "new": "New service",
+    "newFromTemplate": "New from this service",
+    "saveAsTemplate": "Save as template",
+    "open": "Open",
+    "templates": "Templates",
+    "recent": "Services",
+    "countdownTitle": "Service begins in",
+    "textSlideTitle": "Text slides",
+    "kind": {
+      "song": "Song",
+      "scripture": "Scripture",
+      "media": "Media",
+      "presentation": "Slides",
+      "announcements": "Announcements",
+      "countdown": "Countdown",
+      "header": "Section"
+    },
+    "renameHint": "Double-click to rename",
+    "moveSectionUp": "Move section up",
+    "moveSectionDown": "Move section down",
+    "duplicateSection": "Duplicate section",
+    "removeHeading": "Remove heading (keeps its items)",
+    "templateSaved": "Template saved."
+  },
+  "library": {
+    "title": "Library",
+    "tabs": {
+      "bible": "Bible",
+      "songs": "Songs",
+      "hymns": "Hymns",
+      "media": "Media",
+      "backgrounds": "Backgrounds",
+      "themes": "Themes"
+    },
+    "addToService": "Add to service",
+    "filter": "Filter…",
+    "newSong": "New song",
+    "edit": "Edit",
+    "noResults": "Nothing found.",
+    "noHymnals": "No hymnal installed. Add one in Settings → Bibles & hymnals → Install package.",
+    "close": "Close library"
+  },
+  "bible": {
+    "version": "Version",
+    "chapter": "Chapter {{n}}",
+    "ot": "Old Testament",
+    "nt": "New Testament",
+    "hint": "Click a verse to preview. Shift-click to select a range. Double-click to show it now."
+  },
+  "media": {
+    "add": "Add media",
+    "addBackground": "Add background",
+    "empty": "No media yet. Add images or videos — they are copied into your library.",
+    "imported": "Added {{count}} file(s).",
+    "rejected": "{{count}} file(s) were not added (unsupported or too large).",
+    "delete": "Delete",
+    "setBackground": "Set as background",
+    "builtIn": "Built-in",
+    "yours": "Your backgrounds",
+    "transport": "Video controls",
+    "play": "Play",
+    "pause": "Pause",
+    "restart": "Restart from the beginning",
+    "position": "Position",
+    "loop": "Loop",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "volume": "Volume"
+  },
+  "slides": {
+    "empty": "Pick an item from the service plan, or open the library from the left rail.",
+    "loading": "Loading…",
+    "addToService": "Add to service",
+    "noSlides": "This item has no slides.",
+    "title": "Slides",
+    "count_one": "{{count}} slide",
+    "count_other": "{{count}} slides"
+  },
+  "monitor": {
+    "preview": "Preview",
+    "program": "Program",
+    "goLive": "Go live",
+    "clearContent": "Clear text",
+    "clearMedia": "Clear media",
+    "clearBackground": "Clear background",
+    "clearOverlays": "Clear overlays",
+    "clearAll": "Turn off live",
+    "black": "Black screen",
+    "logo": "Logo",
+    "freeze": "Freeze",
+    "stageMessage": "Message to stage",
+    "send": "Send",
+    "clearMessage": "Clear",
+    "ticker": "Ticker",
+    "tickerPlaceholder": "e.g. Parent of child #42, please come to the nursery",
+    "show": "Show",
+    "hide": "Hide",
+    "messages": "Messages",
+    "messagesTitle": "Stage message & ticker",
+    "clear": "Clear",
+    "masks": "Screens",
+    "empty": "Nothing in preview",
+    "offAir": "Off AIR"
+  },
+  "quick": {
+    "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
+    "references": "Scripture",
+    "songs": "Songs & hymns",
+    "verses": "Verses containing",
+    "commands": "Commands",
+    "hint": "Enter to preview · ⇧Enter to show now · ⌥Enter to add to service"
+  },
+  "song": {
+    "titleNew": "New song",
+    "titleEdit": "Edit song",
+    "title": "Title",
+    "authors": "Authors (comma separated)",
+    "copyright": "Copyright",
+    "ccli": "CCLI number",
+    "lyrics": "Lyrics",
+    "lyricsHelp": "Use [Verse 1], [Chorus], [Bridge] headers. A blank line forces a new slide.",
+    "arrangement": "Arrangement",
+    "arrangementHelp": "e.g. V1 C V2 C B C. Leave empty to use sections in order.",
+    "preview": "Slides",
+    "save": "Save song",
+    "cancel": "Cancel",
+    "delete": "Delete song",
+    "duplicate": "Duplicate to edit",
+    "readOnly": "Hymnal songs are read-only. Duplicate it to make your own version."
+  },
+  "theme": {
+    "title": "Edit theme",
+    "name": "Name",
+    "font": "Font",
+    "size": "Max text size",
+    "color": "Text colour",
+    "align": "Alignment",
+    "layout": "Layout",
+    "background": "Background",
+    "transition": "Transition",
+    "duration": "Duration (ms)",
+    "shadow": "Text shadow",
+    "box": "Background box",
+    "refPosition": "Reference",
+    "save": "Save theme",
+    "duplicate": "Duplicate",
+    "useFor": "Use for",
+    "builtIn": "Built-in",
+    "verseNumbers": "Verse numbers",
+    "redLetters": "Red letters",
+    "sample": {
+      "short": "Short verse",
+      "long": "Long verse",
+      "chorus": "Chorus"
+    },
+    "kinds": {
+      "scripture": "Scripture",
+      "lyrics": "Lyrics",
+      "text": "Text"
+    },
+    "bgNone": "None",
+    "bgNoneHelp": "Keep whatever background is already live",
+    "bgCustom": "Custom",
+    "transitions": {
+      "cut": "Cut",
+      "fade": "Fade",
+      "dissolve": "Dissolve",
+      "slide": "Slide up",
+      "zoom": "Zoom",
+      "blur": "Blur"
+    }
+  },
+  "outputs": {
+    "title": "Outputs",
+    "help": "Choose what each screen shows. Assignments are remembered — a projector is re-mapped automatically when it is plugged back in.",
+    "role": {
+      "main": "Main output",
+      "stage": "Stage display",
+      "secondary": "Secondary output",
+      "none": "Not used"
+    },
+    "control": "This screen (operator)",
+    "primary": "Primary",
+    "testPattern": "Test pattern",
+    "windowMode": "Rehearsal / window mode",
+    "windowModeHelp": "Show outputs as normal windows on this screen. Use for single-laptop rehearsal or as an OBS window capture.",
+    "warnControl": "This is the screen you are working on. Showing an output here will cover the operator window.",
+    "count_one": "{{count}} output",
+    "count_other": "{{count}} outputs",
+    "windowShort": "Window mode",
+    "roleHelp": {
+      "main": "Lyrics, scripture and media for the room",
+      "stage": "Current/next slide, clock and notes for the speaker",
+      "secondary": "A copy of the output, e.g. lobby TV",
+      "none": "This screen shows nothing"
+    },
+    "none": "No output",
+    "noneHelp": "Nothing you put live will be visible. Choose a screen in Outputs, or turn on window mode.",
+    "noneToast": "Nothing is showing on any screen: no output is set. Open Outputs to pick a projector, or turn on Rehearsal / window mode."
+  },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "uiTheme": "Interface theme",
+    "dark": "Dark",
+    "light": "Light",
+    "uiScale": "Interface size",
+    "scripture": "Scripture",
+    "versesPerSlide": "Verses per slide",
+    "one": "One verse",
+    "fit": "Fit as many as possible",
+    "maxChars": "Max characters per slide",
+    "lyrics": "Lyrics",
+    "maxLines": "Max lines per slide",
+    "liveEditing": "Live editing",
+    "liveEditingHelp": "When on, clicking a slide of that kind sends it straight to the screen instead of to Preview. Many churches turn this on for lyrics.",
+    "ccli": "Church CCLI licence number",
+    "library": "Library",
+    "export": "Export library",
+    "import": "Import library",
+    "backup": "Back up now",
+    "exported": "Library exported.",
+    "importedN": "Imported {{count}} file(s).",
+    "backedUp": "Backup saved.",
+    "privacy": "Privacy",
+    "privacyText": "Lampstand works fully offline and sends no telemetry. Audio for speech detection (coming soon) is processed on this computer only.",
+    "pages": {
+      "general": "General",
+      "scripture": "Scripture",
+      "songs": "Songs",
+      "presenting": "Presenting",
+      "packages": "Bibles & hymnals",
+      "library": "Library & backups",
+      "about": "Privacy & about",
+      "guide": "Guide"
+    },
+    "pagesHelp": {
+      "general": "How Lampstand looks on this computer.",
+      "scripture": "How Bible passages are split and shown on screen.",
+      "songs": "How lyrics are split into slides, and your church licence details.",
+      "presenting": "What the screen shows when nothing is live, and how clicks behave while you run a service.",
+      "library": "Your songs, services, themes and media live in one library folder. Keep it safe and move it between computers.",
+      "about": "What Lampstand does with your data, and which version you are running."
+    },
+    "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
+    "uiScaleHelp": "Make the whole interface larger or smaller.",
+    "defaultVersion": "Default Bible version",
+    "defaultVersionHelp": "Used by the quick bar and the Bible browser.",
+    "slides": "Slides",
+    "slidesFootnote": "Text is always sized to fit the screen; these settings decide how much goes on each slide.",
+    "versesPerSlideHelp": "\"Fit\" fills each slide; \"One verse\" gives every verse its own slide.",
+    "maxCharsHelp": "Longer passages are split at sentence boundaries — never mid-word.",
+    "characters": "characters",
+    "maxLinesHelp": "Sections longer than this are split evenly across slides.",
+    "lines": "lines",
+    "licensing": "Licensing",
+    "ccliHelp": "Shown in the song credit on the first slide of songs that have a CCLI number.",
+    "liveKindHelp": {
+      "song": "Lyric slides go live when clicked.",
+      "scripture": "Verses go live when clicked.",
+      "presentation": "Text slides go live when clicked.",
+      "announcements": "Announcements go live when clicked."
+    },
+    "backups": "Backups",
+    "backupHelp": "Save a snapshot of your songs, services and themes right now.",
+    "backupAction": "Back up now",
+    "backupsFootnote": "Lampstand also backs up automatically once a day and keeps the last 14 days.",
+    "moveLibrary": "Move to another computer",
+    "exportHelp": "Everything, including media, in a single .zip file.",
+    "exportAction": "Export…",
+    "importHelp": "Merge an exported library into this one. A backup is taken first.",
+    "importAction": "Import…",
+    "privacyTitle": "Offline and private by default",
+    "version": "Version",
+    "help": "Help",
+    "offAir": {
+      "title": "Off-air screen",
+      "footnote": "Shown on the projector whenever nothing is live: before the service, between items, and after Turn off live. \"Logo\" uses the logo above. Black screen (B) still goes fully black.",
+      "show": "When nothing is live, show",
+      "showHelp": "Instead of leaving the screen empty.",
+      "black": "Black",
+      "logo": "Logo",
+      "media": "Image or video",
+      "picture": "Off-air picture"
+    },
+    "preview": "Preview",
+    "picture": {
+      "label": "Picture",
+      "help": "Any image or video from your Media library. Videos loop silently.",
+      "pick": "Choose a picture",
+      "none": "Add an image or video in the Media library first.",
+      "kind": {
+        "image": "Image",
+        "video": "Video (loops silently)"
+      }
+    },
+    "logo": {
+      "title": "Logo",
+      "footnote": "Shown when you press Logo (L), and as the off-air screen when that is set to Logo.",
+      "show": "Logo shows",
+      "showHelp": "Your church's name, or your own logo image or video.",
+      "text": "Name",
+      "media": "Image or video",
+      "name": "Church name",
+      "nameHelp": "Shown large in the middle of the screen.",
+      "picture": "Logo picture"
+    }
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "press": "Press keys…",
+    "reset": "Reset to defaults",
+    "action": {
+      "goLive": "Go live (preview → program)",
+      "next": "Next slide",
+      "previous": "Previous slide",
+      "clearContent": "Clear text",
+      "clearMedia": "Clear media",
+      "clearBackground": "Clear background",
+      "clearOverlays": "Clear overlays",
+      "clearAll": "Turn off live (clear everything)",
+      "black": "Black screen",
+      "logo": "Logo screen",
+      "freeze": "Freeze output",
+      "panic": "Panic (clear all but background)",
+      "quickBar": "Quick bar",
+      "undo": "Undo",
+      "redo": "Redo",
+      "cheatSheet": "Show shortcuts",
+      "perfHud": "Performance overlay",
+      "mediaToggle": "Play / pause the live video"
+    }
+  },
+  "notice": {
+    "quarantined": "A damaged file ({{file}}) was moved to quarantine and skipped.",
+    "newDisplay": "New display connected: {{label}}. Assign it in Outputs.",
+    "loadFailed": "Lampstand could not load your library. Try restarting the app; if it keeps happening, check the logs."
+  },
+  "perf": {
+    "fps": "Control FPS",
+    "ipc": "IPC round-trip",
+    "revision": "Live revision"
+  },
+  "modules": {
+    "install": "Install package…",
+    "help": "Add Bible versions (.lsbible) and hymnals (.lshymnal or .json) from files. Packages are checked and validated before they are installed.",
+    "installed": "Installed {{name}}.",
+    "remove": "Remove",
+    "confirmRemove": "Remove {{name}}? Service items that use it will show nothing until it is installed again.",
+    "source": {
+      "bundled": "Bundled",
+      "downloaded": "Downloaded",
+      "imported": "Installed",
+      "installed": "Installed"
+    },
+    "groups": {
+      "bible": "Bible versions",
+      "hymnal": "Hymnals"
+    },
+    "empty": {
+      "bible": "No Bible versions installed.",
+      "hymnal": "No hymnals installed yet. Install a .lshymnal or .json package to add one."
+    }
+  },
+  "inspector": {
+    "addSlide": "Add slide",
+    "name": "Name",
+    "advance": "Advance every",
+    "seconds": "seconds",
+    "advanceHelp": "While live, announcements move to the next slide automatically and loop.",
+    "slideOf": "Slide {{n}} of {{total}}",
+    "prev": "Previous slide",
+    "next": "Next slide",
+    "title": "Heading",
+    "titlePlaceholder": "Optional heading",
+    "text": "Text",
+    "textPlaceholder": "What should the screen say?",
+    "notes": "Speaker notes",
+    "notesHelp": "Shown on the stage display only.",
+    "liveHint": "This slide is live. Changes appear on screen the next time it goes live.",
+    "moveLeft": "Move earlier",
+    "moveRight": "Move later",
+    "delete": "Delete",
+    "lastSlide": "An item needs at least one slide.",
+    "noSlide": "This item has no slides yet.",
+    "countdownText": "Text above the timer",
+    "minutes": "Length (minutes)",
+    "minutesHelp": "The countdown starts when it goes live."
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "action": "That action did not work. Please try again.",
+    "save": "Could not save your changes.",
+    "saveService": "Could not save the service. Your changes are still on screen — try again.",
+    "import": "Could not import those files.",
+    "duplicate": "Could not duplicate that.",
+    "setting": "Could not save that setting.",
+    "install": "Could not install that package."
+  },
+  "guide": {
+    "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
+    "gettingStarted": "Getting started",
+    "progress": "{{done}} of {{total}} checkable steps done.",
+    "steps": {
+      "screens": {
+        "title": "Connect your screens",
+        "body": "Open Outputs and set your projector or TV to Main output. Only have a laptop? Turn on Rehearsal / window mode to see the output in a small window."
+      },
+      "packages": {
+        "title": "Add Bibles and hymnals",
+        "body": "The King James Version is included. Install other Bible versions (.lsbible) and hymnals (.lshymnal) from files you have been given."
+      },
+      "service": {
+        "title": "Build your service",
+        "body": "Open the library from the left rail. Click something to look at it; double-click it (or use its add button) to put it in the service plan. Drag items to reorder, and use Section to group them."
+      },
+      "live": {
+        "title": "Preview, then go live",
+        "body": "Click a slide to put it in Preview (green). Press {{goLive}} to send it to the screen (red). Use {{previous}} / {{next}} to step through slides."
+      },
+      "control": {
+        "title": "Stay in control",
+        "body": "{{clearContent}} clears the text but keeps the background; {{black}} blacks out the screen; {{panic}} is the panic button that clears everything except the background."
+      },
+      "backup": {
+        "title": "Keep your library safe",
+        "body": "Lampstand backs up daily on its own. Use Export to move your songs, services and media to another computer."
+      }
+    },
+    "open": {
+      "outputs": "Open Outputs",
+      "packages": "Bibles & hymnals",
+      "shortcuts": "All shortcuts",
+      "library": "Backups"
+    },
+    "quickBar": "Find anything fast",
+    "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter previews it, Shift+Enter shows it now.",
+    "keys": "Keyboard essentials",
+    "keysHelp": "Shortcuts can be changed under Keyboard shortcuts on the left rail.",
+    "colours": "What the colours mean",
+    "colour": {
+      "preview": {
+        "title": "Green",
+        "body": "Preview — ready, not on screen yet."
+      },
+      "live": {
+        "title": "Red",
+        "body": "Live — this is on the screen right now."
+      },
+      "accent": {
+        "title": "Gold",
+        "body": "Selected or editable — never affects the screen."
+      }
+    }
+  }
+}

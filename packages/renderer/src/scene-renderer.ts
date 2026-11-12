@@ -1,0 +1,312 @@
+import {
+  sceneIsVisible,
+  type ContentLayer,
+  type Scene,
+  type ScreenVisual,
+  type Standby,
+  type TransitionSpec,
+} from '@lampstand/core';
+import {
+  buildBackground,
+  buildMedia,
+  mediaKey,
+  syncMedia,
+  type MediaResolver,
+  type RenderMode,
+} from './background';
+import { buildContent, type BuiltContent } from './content';
+import { animate, el, FILL, safePlay } from './dom';
+import { buildOverlay } from './overlays';
+import { backgroundKey } from './style';
+import { transitionFrames } from './transitions';
+import { VisualSlot } from './visual-slot';
+
+export interface SceneRendererOptions extends MediaResolver {
+  mode: RenderMode;
+  /** Logical canvas; defaults to 1920×1080. */
+  canvas?: { width: number; height: number };
+  /** Whether this renderer may play media audio (exactly one should; see {@link setAudio}). */
+  audio?: boolean;
+  /** Transparent stage (alpha/key output). */
+  transparent?: boolean;
+}
+
+const STANDBY_FADE_MS = 600;
+
+const DEFAULT_TRANSITION: TransitionSpec = { kind: 'fade', durationMs: 400, easing: 'ease' };
+const BG_FADE_MS = 800;
+
+interface Slot<T> {
+  key: string;
+  node: HTMLElement;
+  extra?: T;
+}
+
+/**
+ * Renders a {@link Scene} into a host element (§7). One engine for every surface: outputs,
+ * stage display, operator monitors and thumbnails — WYSIWYG everywhere.
+ *
+ * Layers bottom→top: background, media, content, overlays, masks (§3.5).
+ */
+export class SceneRenderer {
+  readonly root: HTMLElement;
+  private readonly stage: HTMLElement;
+  private readonly bgLayer: HTMLElement;
+  private readonly mediaLayer: HTMLElement;
+  private readonly contentLayer: HTMLElement;
+  private readonly overlayLayer: HTMLElement;
+  private readonly blackMask: HTMLElement;
+  /** Logo mask (L): the church's logo card, image or video. */
+  private readonly logo: VisualSlot;
+  /** Off-air screen: shown whenever nothing is live. */
+  private readonly standby: VisualSlot;
+  private readonly doc: Document;
+  private readonly canvas: { width: number; height: number };
+  private bg: Slot<never> | null = null;
+  private media: Slot<never> | null = null;
+  private content: Slot<BuiltContent> | null = null;
+  private overlaysKey = '[]';
+  private frozen = false;
+  private resizeObserver: ResizeObserver | null = null;
+  private last: Scene | null = null;
+  private audio: boolean;
+
+  constructor(
+    private readonly host: HTMLElement,
+    private readonly opts: SceneRendererOptions,
+  ) {
+    this.doc = host.ownerDocument;
+    this.audio = opts.audio ?? false;
+    this.canvas = opts.canvas ?? { width: 1920, height: 1080 };
+    this.root = el(this.doc, 'div', 'ls-scene-root', {
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      background: opts.transparent ? 'transparent' : '#000',
+    });
+    this.stage = el(this.doc, 'div', 'ls-stage', {
+      position: 'absolute',
+      left: '0',
+      top: '0',
+      width: `${this.canvas.width}px`,
+      height: `${this.canvas.height}px`,
+      transformOrigin: '0 0',
+      overflow: 'hidden',
+    });
+    const layer = (name: string): HTMLElement =>
+      el(this.doc, 'div', `ls-layer ls-layer-${name}`, { ...FILL, pointerEvents: 'none' });
+    this.bgLayer = layer('background');
+    this.mediaLayer = layer('media');
+    this.contentLayer = layer('content');
+    this.overlayLayer = layer('overlays');
+    this.blackMask = el(this.doc, 'div', 'ls-mask-black', {
+      ...FILL,
+      background: '#000',
+      opacity: '0',
+    });
+    const url = (id: string): string => opts.mediaUrl(id);
+    this.logo = new VisualSlot(el(this.doc, 'div', 'ls-mask-logo', { ...FILL }), 'ls-logo', url);
+    this.standby = new VisualSlot(layer('standby'), 'ls-standby', url);
+    this.stage.append(
+      this.bgLayer,
+      this.mediaLayer,
+      this.contentLayer,
+      this.standby.node,
+      this.overlayLayer,
+      this.blackMask,
+      this.logo.node,
+    );
+    this.root.append(this.stage);
+    host.append(this.root);
+    this.fitToHost();
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.fitToHost());
+      this.resizeObserver.observe(host);
+    }
+  }
+
+  /** Scale the logical canvas into the host, letterboxed (§7.2). */
+  fitToHost(): void {
+    const w = this.host.clientWidth;
+    const h = this.host.clientHeight;
+    if (!w || !h) return;
+    const scale = Math.min(w / this.canvas.width, h / this.canvas.height);
+    const x = (w - this.canvas.width * scale) / 2;
+    const y = (h - this.canvas.height * scale) / 2;
+    this.stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  }
+
+  /** Hand the sound to / take it from this renderer (e.g. a projector was plugged in). */
+  setAudio(on: boolean): void {
+    if (this.audio === on) return;
+    this.audio = on;
+    if (this.media && this.last?.media)
+      syncMedia(this.media.node, this.last.media, this.opts.mode, on);
+  }
+
+  /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
+  setLogo(logo: ScreenVisual | null): void {
+    this.logo.set(logo && this.opts.mode !== 'thumbnail' ? logo : null);
+  }
+
+  /** The off-air screen shown whenever nothing is live (null/black = none, e.g. the preview monitor). */
+  setStandby(standby: Standby | null): void {
+    const visual = standby && standby.kind !== 'black' && this.opts.mode !== 'thumbnail';
+    this.standby.set(visual ? standby : null);
+    if (this.last) this.applyStandby(this.last, true);
+  }
+
+  render(scene: Scene, opts: { instant?: boolean } = {}): void {
+    this.last = scene;
+    const instant = opts.instant || this.opts.mode === 'thumbnail';
+    this.applyMasks(scene, instant);
+    if (this.frozen) return;
+    this.renderBackground(scene, instant);
+    this.renderMedia(scene, instant);
+    this.renderContent(scene.content, scene.transition, instant);
+    this.applyStandby(scene, instant);
+    this.renderOverlays(scene);
+  }
+
+  private applyStandby(scene: Scene, instant: boolean): void {
+    const on = this.standby.hasContent && !sceneIsVisible(scene);
+    this.standby.show(on, instant ? 0 : STANDBY_FADE_MS);
+  }
+
+  destroy(): void {
+    this.resizeObserver?.disconnect();
+    this.content?.extra?.dispose();
+    this.root.remove();
+  }
+
+  private applyMasks(scene: Scene, instant: boolean): void {
+    const ms = instant ? 0 : 300;
+    const black = scene.masks.black;
+    if (this.blackMask.style.opacity !== (black ? '1' : '0')) {
+      void animate(this.blackMask, [{ opacity: black ? 0 : 1 }, { opacity: black ? 1 : 0 }], {
+        duration: ms,
+        easing: 'ease',
+      });
+      this.blackMask.style.opacity = black ? '1' : '0';
+    }
+    this.logo.show(scene.masks.logo && !black, ms);
+    const freeze = scene.masks.freeze;
+    if (freeze !== this.frozen) {
+      this.frozen = freeze;
+      this.logo.setFrozen(freeze);
+      this.standby.setFrozen(freeze);
+      for (const v of this.stage.querySelectorAll('video')) {
+        if (v.closest('.ls-logo, .ls-standby')) continue; // the slots handle their own
+        if (freeze) v.pause();
+        else if (!v.closest('.ls-media')) safePlay(v); // live media resumes via syncMedia
+      }
+    }
+  }
+
+  private renderBackground(scene: Scene, instant: boolean): void {
+    const key = backgroundKey(scene.background);
+    if (this.bg?.key === key || (!this.bg && key === 'none')) return; // continuity: never restart
+    const old = this.bg;
+    if (key === 'none' || !scene.background) {
+      this.bg = null;
+    } else {
+      const node = buildBackground(this.doc, scene.background, this.opts, this.opts.mode);
+      node.style.opacity = instant ? '1' : '0';
+      this.bgLayer.append(node);
+      this.bg = { key, node };
+      if (!instant)
+        void animate(node, [{ opacity: 0 }, { opacity: 1 }], {
+          duration: BG_FADE_MS,
+          easing: 'ease',
+        });
+    }
+    if (old) this.retire(old.node, instant ? 0 : BG_FADE_MS);
+  }
+
+  private renderMedia(scene: Scene, instant: boolean): void {
+    const key = mediaKey(scene.media);
+    if ((this.media?.key ?? 'none') === key) {
+      // Same clip: apply play/pause/seek/volume in place.
+      if (this.media && scene.media)
+        syncMedia(this.media.node, scene.media, this.opts.mode, this.audio);
+      return;
+    }
+    const old = this.media;
+    this.media = null;
+    if (scene.media) {
+      const node = buildMedia(this.doc, scene.media, this.opts, this.opts.mode, this.audio);
+      this.mediaLayer.append(node);
+      this.media = { key, node };
+      if (!instant)
+        void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: 'ease' });
+    }
+    if (old) this.retire(old.node, instant ? 0 : 400);
+  }
+
+  private renderContent(
+    content: ContentLayer | null,
+    transition: TransitionSpec | undefined,
+    instant: boolean,
+  ): void {
+    const key = content ? JSON.stringify(content) : 'none';
+    if ((this.content?.key ?? 'none') === key) return;
+    const t = transition ?? content?.theme.transition ?? DEFAULT_TRANSITION;
+    const duration = instant || t.kind === 'cut' ? 0 : t.durationMs;
+    const frames = transitionFrames(t.kind);
+    const old = this.content;
+    this.content = null;
+    // Remove anything still fading from a previous rapid change so slots never pile up.
+    for (const child of [...this.contentLayer.children]) if (child !== old?.node) child.remove();
+    if (content) {
+      const built = buildContent(this.doc, content, { live: this.opts.mode !== 'thumbnail' });
+      built.root.style.opacity = '0';
+      this.contentLayer.append(built.root);
+      built.fit();
+      built.root.style.opacity = duration ? '0' : '1';
+      if (duration) void animate(built.root, frames.enter, { duration, easing: t.easing });
+      this.content = { key, node: built.root, extra: built };
+    }
+    if (old) {
+      if (duration)
+        void animate(old.node, frames.exit, { duration, easing: t.easing }).then(() =>
+          this.dispose(old),
+        );
+      else this.dispose(old);
+    }
+  }
+
+  private renderOverlays(scene: Scene): void {
+    const key = JSON.stringify(scene.overlays);
+    if (key === this.overlaysKey) return;
+    this.overlaysKey = key;
+    this.overlayLayer.replaceChildren(
+      ...scene.overlays.map((o) => buildOverlay(this.doc, o, this.opts.mode !== 'thumbnail')),
+    );
+  }
+
+  private dispose(slot: Slot<BuiltContent>): void {
+    slot.extra?.dispose();
+    slot.node.remove();
+  }
+
+  private retire(node: HTMLElement, ms: number): void {
+    if (!ms) {
+      node.remove();
+      return;
+    }
+    void animate(node, [{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: 'ease' }).then(
+      () => node.remove(),
+    );
+  }
+
+  /** Re-apply the last scene (e.g. after fonts finish loading). */
+  refresh(): void {
+    if (!this.last) return;
+    const s = this.last;
+    this.content?.extra?.dispose();
+    this.contentLayer.replaceChildren();
+    this.content = null;
+    this.render(s, { instant: true });
+  }
+}

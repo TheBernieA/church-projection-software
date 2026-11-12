@@ -1,0 +1,72 @@
+import * as RD from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { closeDialog, useStore, type DialogName } from '../lib/store';
+
+/** Dimmed, lightly blurred backdrop shared by every modal surface (dialogs, quick bar). */
+// Solid dim, no backdrop blur: blurring the animated monitors behind it cost a repaint every frame.
+export const OVERLAY_CLASS = 'fixed inset-0 z-40 bg-[rgba(5,6,10,0.66)]';
+
+/** Accessible dialog bound to the store's `dialog` slot. */
+export function Dialog({
+  name,
+  title,
+  children,
+  wide,
+  footer,
+  bare,
+}: {
+  name: Exclude<DialogName, null>;
+  title: string;
+  children: ReactNode;
+  wide?: boolean;
+  footer?: ReactNode;
+  /** Children own the whole surface (e.g. a two-pane settings window): fixed height, no padding. */
+  bare?: boolean;
+}) {
+  const open = useStore((s) => s.dialog === name);
+  return (
+    <RD.Root open={open} onOpenChange={(o) => !o && closeDialog()}>
+      <RD.Portal>
+        <RD.Overlay className={OVERLAY_CLASS} />
+        <RD.Content
+          aria-describedby={undefined}
+          className={`fixed left-1/2 top-[7vh] z-50 flex max-h-[86vh] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-panel)] bg-[var(--surface-1)] shadow-[var(--shadow-3)] ${wide ? 'w-[min(1120px,94vw)]' : 'w-[min(580px,94vw)]'} ${bare ? 'h-[min(700px,86vh)]' : ''}`}
+        >
+          {bare ? (
+            <>
+              <RD.Title className="sr-only">{title}</RD.Title>
+              <RD.Close
+                className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
+                aria-label="Close"
+              >
+                <X size={17} />
+              </RD.Close>
+              <div className="flex min-h-0 flex-1">{children}</div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between px-5 pb-2 pt-4">
+                <RD.Title className="text-[16px] font-semibold tracking-[-0.01em]">
+                  {title}
+                </RD.Title>
+                <RD.Close
+                  className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
+                  aria-label="Close"
+                >
+                  <X size={17} />
+                </RD.Close>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-2">{children}</div>
+              {footer && (
+                <div className="flex justify-end gap-2 bg-[var(--surface-0)]/40 px-5 py-3 shadow-[0_-1px_0_var(--hairline)]">
+                  {footer}
+                </div>
+              )}
+            </>
+          )}
+        </RD.Content>
+      </RD.Portal>
+    </RD.Root>
+  );
+}
