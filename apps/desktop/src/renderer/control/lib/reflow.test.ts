@@ -38,3 +38,14 @@ describe('message templates', () => {
     expect(fillMessage('Car {plate} in {lot}', { plate: 'AB12' })).toBe('Car AB12 in {lot}');
   });
 });
+
+describe('feature catalogue', () => {
+  it('has unique ids, a known category for each, and both statuses', async () => {
+    const { FEATURES, FEATURE_CATEGORIES } = await import('./features');
+    const ids = FEATURES.map((f) => f.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const cats = new Set(FEATURE_CATEGORIES.map((c) => c.id));
+    expect(FEATURES.every((f) => cats.has(f.category))).toBe(true);
+    expect(FEATURES.some((f) => f.status === 'soon')).toBe(true);
+  });
+});
