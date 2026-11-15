@@ -3,10 +3,11 @@ import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId } from '@lampstand/core';
 import { useItemSlides } from '../../lib/hooks';
-import type { TextItem } from '../../lib/objects';
+import type {} from '../../lib/objects';
 import { updateItem, useStore } from '../../lib/store';
 import { AddCard } from '../cards';
 import { SceneView } from '../SceneView';
+import { type TextItem } from '../../types';
 
 /** The item's slides as a strip of small thumbnails: pick the slide the canvas edits. */
 export function Filmstrip({ item, index }: { item: TextItem; index: number }) {

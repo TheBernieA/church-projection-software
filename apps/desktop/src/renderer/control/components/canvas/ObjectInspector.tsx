@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 import type { SlideObject } from '@lampstand/core';
 import { Button, Segmented } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
-import { patchObject, type TextItem } from '../../lib/objects';
+import { patchObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { Select } from '../Select';
+import { type TextItem } from '../../types';
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (

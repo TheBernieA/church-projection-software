@@ -25,8 +25,9 @@ import { IconButton, Kbd, Switch } from '@lampstand/ui';
 import { clearLayer, saveSettings } from '../../lib/actions';
 import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { openDialog, redo, undo, useStore, type Mode } from '../../lib/store';
+import { openDialog, redo, undo, useStore } from '../../lib/store';
 import { SoonFeature } from '../Soon';
+import { type Mode } from '../../types';
 
 function useElapsed(since: string | null): string {
   const now = useNow(1000, since !== null);

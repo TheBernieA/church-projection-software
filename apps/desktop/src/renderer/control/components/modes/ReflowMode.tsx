@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { MousePointerClick, Rows3, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { nowIso, type ServiceItem, type Song } from '@lampstand/core';
+import { nowIso, type Song } from '@lampstand/core';
 import { buildSongSlides, parseSongText, songSectionsToText } from '@lampstand/lyrics';
 import { Button } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
@@ -10,6 +10,7 @@ import { reflowToSlides, slidesToReflow } from '../../lib/reflow';
 import { groupColor } from '../../lib/slides';
 import { attempt, toast, updateItem, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
+import { type TextItem } from '../../types';
 
 interface Preview {
   key: string;
@@ -124,8 +125,6 @@ function SongReflow({ song }: { song: Song }) {
     />
   );
 }
-
-type TextItem = Extract<ServiceItem, { kind: 'presentation' | 'announcements' }>;
 
 function TextReflow({ item }: { item: TextItem }) {
   const initial = useMemo(() => slidesToReflow(item.slides), [item.slides]);

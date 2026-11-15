@@ -34,6 +34,7 @@ import { SoonFeature } from '../Soon';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { PaneHeader } from './PaneHeader';
+import { urlHost } from '../../lib/utils';
 
 function MonitorCard({
   tone,
@@ -130,14 +131,6 @@ function ClearRow({
   );
 }
 
-const hostOf = (url: string): string => {
-  try {
-    return new URL(url).host;
-  } catch {
-    return url;
-  }
-};
-
 /**
  * Right column: what the room sees (Live), the optional Preview monitor ("Preview first"),
  * video controls, then a clear button per layer and the screen masks.
@@ -166,7 +159,7 @@ export function RightColumn() {
   const mediaName = p.media
     ? media.find((m) => m.id === p.media?.mediaId)?.name
     : p.web
-      ? hostOf(p.web.url)
+      ? urlHost(p.web.url)
       : undefined;
   const onAir = sceneIsVisible(p);
   const hasPreview = !!(

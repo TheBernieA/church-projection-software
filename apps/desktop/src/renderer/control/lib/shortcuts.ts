@@ -1,48 +1,8 @@
 import { clearLayer, goLive, step, toggleMask } from './actions';
 import { cmd } from './api';
 import { openDialog, redo, undo, useStore } from './store';
-
-export type ShortcutAction =
-  | 'goLive'
-  | 'next'
-  | 'previous'
-  | 'clearContent'
-  | 'clearMedia'
-  | 'clearBackground'
-  | 'clearOverlays'
-  | 'clearAll'
-  | 'black'
-  | 'logo'
-  | 'freeze'
-  | 'panic'
-  | 'quickBar'
-  | 'undo'
-  | 'redo'
-  | 'cheatSheet'
-  | 'perfHud'
-  | 'mediaToggle';
-
-/** Defaults from §3.5 and §8.5. Fully remappable via settings.shortcuts. */
-export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
-  goLive: 'Space',
-  next: 'ArrowRight',
-  previous: 'ArrowLeft',
-  clearContent: 'F1',
-  clearMedia: 'F2',
-  clearBackground: 'F3',
-  clearOverlays: 'F4',
-  clearAll: 'F5',
-  black: 'B',
-  logo: 'L',
-  freeze: 'F',
-  panic: 'Escape',
-  quickBar: 'Mod+K',
-  undo: 'Mod+Z',
-  redo: 'Mod+Shift+Z',
-  cheatSheet: '?',
-  perfHud: 'Mod+Alt+P',
-  mediaToggle: 'P',
-};
+import { DEFAULT_SHORTCUTS } from '../constants';
+import { type ShortcutAction } from '../types';
 
 /** Secondary keys that always work (broadcast muscle memory). */
 const ALIASES: Partial<Record<string, ShortcutAction>> = {

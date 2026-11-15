@@ -1,95 +1,9 @@
 import { create } from 'zustand';
-import type {
-  BibleVersionInfo,
-  BookId,
-  LiveState,
-  MediaItem,
-  ServiceItem,
-  ServicePlan,
-  Settings,
-  Song,
-  Theme,
-} from '@lampstand/core';
-import type { DisplayInfo, Notice, ServiceSummary } from '@lampstand/ipc-contract';
+import type { BookId, ServiceItem, ServicePlan } from '@lampstand/core';
 import { api, cmd, q } from './api';
 import i18n from '../i18n';
-
-export type SettingsPageId =
-  | 'general'
-  | 'scripture'
-  | 'songs'
-  | 'presenting'
-  | 'packages'
-  | 'library'
-  | 'about'
-  | 'connections'
-  | 'features'
-  | 'guide';
-
-/** Left-sidebar library source. */
-export type LibraryTab = 'songs' | 'hymns';
-/** The workspace in the centre pane (toolbar mode tabs). */
-export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
-/** Bottom bin tabs. Audio, video input and macros are "Coming soon". */
-export type BinTab =
-  'media' | 'backgrounds' | 'props' | 'messages' | 'timers' | 'audio' | 'video-input' | 'macros';
-export type DialogName =
-  'quick' | 'outputs' | 'settings' | 'shortcuts' | 'song' | 'theme' | 'services' | 'perf' | null;
-
-export interface Toast {
-  id: number;
-  level: Notice['level'];
-  text: string;
-}
-
-/** Where the operator is: the item + slide that is live (for next/previous). */
-export interface Cursor {
-  itemId: string;
-  index: number;
-}
-
-export interface ControlState {
-  live: LiveState | null;
-  settings: Settings | null;
-  songs: Song[];
-  themes: Theme[];
-  media: MediaItem[];
-  versions: BibleVersionInfo[];
-  verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
-  chapters: Record<string, string[]>;
-  services: ServiceSummary[];
-  service: ServicePlan | null;
-  displays: DisplayInfo[];
-  /** Item shown in the slide grid: from the service, or ad-hoc from the library/quick bar. */
-  selectedItemId: string | null;
-  adhoc: ServiceItem | null;
-  previewCursor: Cursor | null;
-  /** Slide selected for editing in the inspector. */
-  editCursor: Cursor | null;
-  /** Object selected on the canvas editor (text box, shape, picture), if any. */
-  editObjectId: string | null;
-  liveCursor: Cursor | null;
-  libraryTab: LibraryTab;
-  mode: Mode;
-  binTab: BinTab;
-  binOpen: boolean;
-  /** Open page of the Settings window (remembered between openings). */
-  settingsPage: SettingsPageId;
-  dialog: DialogName;
-  editingSongId: string | null;
-  editingThemeId: string | null;
-  history: { canUndo: boolean; canRedo: boolean };
-  toasts: Toast[];
-  set: (p: Partial<ControlState>) => void;
-}
-
-/**
- * Stable empty fallbacks for selectors. A selector must never return a *new* object/array
- * (e.g. `?? []`): zustand would see a different value on every read and React would re-render
- * until it hits "Maximum update depth exceeded" (blank window). Lint enforces this.
- */
-export const EMPTY_LIST: readonly unknown[] = Object.freeze([]);
-export const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
+import { type ControlState, type DialogName, type Toast } from '../types';
+import { type EditOptions } from '../types';
 
 export const useStore = create<ControlState>((set) => ({
   live: null,
@@ -230,14 +144,6 @@ export async function refresh(
 
 // ---------- Service editing with debounced autosave (§6.2: 500 ms) ----------
 let pendingSave: ReturnType<typeof setTimeout> | null = null;
-
-export interface EditOptions {
-  /**
-   * Typing: group rapid edits into one save (and one undo step) after a short pause.
-   * Everything else (add, drop, move, delete…) is saved immediately as its own undo step.
-   */
-  typing?: boolean;
-}
 
 /**
  * Edit the current service (autosaved, undoable). Each discrete action becomes exactly one undo

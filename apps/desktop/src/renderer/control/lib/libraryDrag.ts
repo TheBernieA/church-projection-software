@@ -1,8 +1,6 @@
 import type { DragEvent } from 'react';
 import { newId, ServiceItemSchema, type ServiceItem } from '@lampstand/core';
-
-/** Private drag payload type, so only Lampstand library items can be dropped into the plan. */
-export const LIBRARY_MIME = 'application/x-lampstand-item';
+import { LIBRARY_MIME } from '../constants';
 
 /** Spread onto a library element to make it draggable into the service plan. */
 export function libraryDragSource(make: () => ServiceItem) {

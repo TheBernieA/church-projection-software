@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { newId, type Overlay, type PropPosition, type Settings } from '@lampstand/core';
+import { newId, type Overlay, type PropPosition } from '@lampstand/core';
 import { Button, IconButton, TallyTag } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import {
@@ -15,17 +15,8 @@ import { useStore } from '../../lib/store';
 import { thumbUrl } from '../../../shared/mediaUrl';
 import { AddCard, BIN_CARD } from '../cards';
 import { Select } from '../Select';
-
-type Prop = Settings['props'][number];
-
-const POSITIONS: PropPosition[] = [
-  'top-right',
-  'top-left',
-  'bottom-right',
-  'bottom-left',
-  'lower-third',
-  'full',
-];
+import { type Prop } from '../../types';
+import { PROP_POSITIONS } from '../../constants';
 
 const overlayId = (p: Prop): string => `prop-${p.id}`;
 
@@ -100,7 +91,7 @@ function PropCard({
           onChange(next);
           if (on) void showOverlay(toOverlay(next, kindOf));
         }}
-        options={POSITIONS.map((v) => ({ value: v, label: t(`props.positions.${v}`) }))}
+        options={PROP_POSITIONS.map((v) => ({ value: v, label: t(`props.positions.${v}`) }))}
       />
     </div>
   );

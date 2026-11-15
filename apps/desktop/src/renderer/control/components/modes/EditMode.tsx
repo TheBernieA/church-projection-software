@@ -2,7 +2,7 @@ import { MousePointerClick, PencilOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
-import type { TextItem } from '../../lib/objects';
+import type {} from '../../lib/objects';
 import { CanvasToolbar } from '../canvas/CanvasToolbar';
 import { Filmstrip } from '../canvas/Filmstrip';
 import { SlideCanvas } from '../canvas/SlideCanvas';
@@ -11,6 +11,7 @@ import { SlideInspector } from '../SlideInspector';
 import { SongEditorInline } from '../SongEditor';
 import { EmptyState } from '../EmptyState';
 import { WebEditor } from './WebEditor';
+import { type TextItem } from '../../types';
 
 /** Text slides: canvas for the chosen slide, tools above, slides below, properties beside. */
 function CanvasEditor({ item }: { item: TextItem }) {

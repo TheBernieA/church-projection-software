@@ -5,16 +5,11 @@ import {
   type BibleVersionInfo,
   type BookId,
   type ContentLayer,
-  type MediaItem,
-  type MediaLayer,
   type ServiceItem,
-  type Settings,
-  type Song,
   type TextBlock,
   type Theme,
   type ThemeContentKind,
   type VerseRef,
-  type WebLayer,
 } from '@lampstand/core';
 import { buildSongSlides, transposeLine } from '@lampstand/lyrics';
 import {
@@ -24,56 +19,13 @@ import {
   type VersionText,
 } from '@lampstand/scripture';
 import { chapterKey } from './store';
-
-export type SlideAction =
-  | { kind: 'content'; content: ContentLayer; background: BackgroundLayer | null }
-  | { kind: 'media'; media: MediaLayer }
-  | { kind: 'background'; background: BackgroundLayer }
-  | { kind: 'web'; web: WebLayer };
-
-export interface PresentableSlide {
-  key: string;
-  label: string;
-  /** Section group for colour-coding (Verse/Chorus…). */
-  group?: string;
-  action: SlideAction;
-  /** Countdown duration resolved at go-live time. */
-  countdownSec?: number;
-}
-
-/**
- * Slide-group colours (Verse, Chorus, Bridge…), so the operator finds their place at a glance.
- * Never red or green: those mean live and preview.
- */
-const GROUP_COLORS: [RegExp, string][] = [
-  [/^(verse|v\d|stanza)/, '#4f8ef7'],
-  [/^(chorus|refrain|c\d)/, '#c26be0'],
-  [/^(pre-?chorus|pc)/, '#e5b53a'],
-  [/^(bridge|b\d)/, '#f08a3c'],
-  [/^(tag|ending|coda|vamp)/, '#2fb8b0'],
-  [/^(intro|outro|interlude|instrumental)/, '#8a8f9c'],
-];
+import { type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
+import { GROUP_COLORS } from '../constants';
 
 export function groupColor(label?: string): string | undefined {
   if (!label) return undefined;
   const l = label.trim().toLowerCase();
   return GROUP_COLORS.find(([re]) => re.test(l))?.[1] ?? '#7c8499';
-}
-
-export interface SlideContext {
-  songs: Song[];
-  themes: Theme[];
-  media: MediaItem[];
-  settings: Settings | null;
-  versions: BibleVersionInfo[];
-  verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
-  chapters: Record<string, string[]>;
-}
-
-export interface ItemSlides {
-  slides: PresentableSlide[];
-  /** Chapters that must be loaded before slides can be built. */
-  missing: { versionId: string; book: BookId; chapter: number }[];
 }
 
 export function themeFor(ctx: SlideContext, kind: ThemeContentKind, themeId?: string): Theme {

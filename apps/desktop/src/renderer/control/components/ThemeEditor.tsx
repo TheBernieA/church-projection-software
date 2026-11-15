@@ -5,21 +5,14 @@ import { Button, Segmented } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-import { BUILT_IN_BACKGROUNDS, swatchCss } from './MediaPanel';
+import {} from './MediaPanel';
 import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
 import { ThemeEffects } from './ThemeEffects';
 import { sampleScene } from './ThemesPanel';
+import { BUILT_IN_BACKGROUNDS, FONTS } from '../constants';
+import { swatchCss } from '../lib/utils';
 
-const FONTS = [
-  'Inter',
-  'Montserrat',
-  'Lora',
-  'Source Serif 4',
-  'Playfair Display',
-  'Bebas Neue',
-  'Atkinson Hyperlegible',
-];
 const SAMPLES = {
   short: 'Jesus wept.',
   long: 'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life. For God sent not his Son into the world to condemn the world; but that the world through him might be saved.',

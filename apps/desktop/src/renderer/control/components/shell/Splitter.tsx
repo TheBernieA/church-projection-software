@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { saveSettings } from '../../lib/actions';
 import { useStore } from '../../lib/store';
+import { clamp } from '../../lib/utils';
 
 /**
  * A pane size the operator can drag, remembered in `settings.layout[key]`. Dragging only
@@ -9,11 +10,11 @@ import { useStore } from '../../lib/store';
 export function usePaneSize(key: string, fallback: number, min: number, max: number) {
   const saved = useStore((s) => s.settings?.layout[key]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const size = Math.min(max, Math.max(min, dragging ?? saved ?? fallback));
+  const size = clamp(dragging ?? saved ?? fallback, min, max);
   const commit = (v: number): void => {
     setDragging(null);
     const layout = useStore.getState().settings?.layout ?? {};
-    const value = Math.round(Math.min(max, Math.max(min, v)));
+    const value = Math.round(clamp(v, min, max));
     if (layout[key] === value) return;
     void saveSettings({ layout: { ...layout, [key]: value } });
   };

@@ -21,6 +21,8 @@ import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
 import { Group, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
+import { LIVE_KINDS } from '../../constants';
+import { clamp } from '../../lib/utils';
 
 type Update = (patch: Partial<Settings>) => void;
 interface PageProps {
@@ -116,7 +118,7 @@ export function ScripturePage({ s, update }: PageProps) {
               update({
                 scripture: {
                   ...s.scripture,
-                  maxCharsPerSlide: Math.min(1200, Math.max(60, Number(v) || 320)),
+                  maxCharsPerSlide: clamp(Number(v) || 320, 60, 1200),
                 },
               })
             }
@@ -143,9 +145,7 @@ export function SongsPage({ s, update }: PageProps) {
             max={12}
             unit={t('settings.lines')}
             value={String(s.lyrics.maxLinesPerSlide)}
-            onCommit={(v) =>
-              update({ lyrics: { maxLinesPerSlide: Math.min(12, Math.max(1, Number(v) || 4)) } })
-            }
+            onCommit={(v) => update({ lyrics: { maxLinesPerSlide: clamp(Number(v) || 4, 1, 12) } })}
           />
         </Row>
       </Group>
@@ -164,8 +164,6 @@ export function SongsPage({ s, update }: PageProps) {
     </SettingsPage>
   );
 }
-
-const LIVE_KINDS = ['song', 'scripture', 'presentation', 'announcements'] as const;
 
 type OffAirKind = Settings['offAir']['kind'];
 type LogoKind = Settings['logo']['kind'];

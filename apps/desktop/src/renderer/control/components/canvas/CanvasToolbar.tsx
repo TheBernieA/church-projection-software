@@ -11,9 +11,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Button, IconButton } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
-import { editObjects, newObject, type ObjectKind, type TextItem } from '../../lib/objects';
+import { editObjects, newObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { Select } from '../Select';
+import { type ObjectKind, type TextItem } from '../../types';
 
 const ADD: { kind: Exclude<ObjectKind, 'image'>; icon: typeof Type }[] = [
   { kind: 'text', icon: Type },

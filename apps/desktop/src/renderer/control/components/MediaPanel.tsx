@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { newId, type BackgroundRef, type MediaItem } from '@lampstand/core';
-import { gradientCss } from '@lampstand/renderer';
 import { Button } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
@@ -9,6 +8,8 @@ import { addItemToService, attempt, toast, useStore } from '../lib/store';
 import { thumbUrl } from '../../shared/mediaUrl';
 import { SoonFeature } from './Soon';
 import i18n from '../i18n';
+import { BUILT_IN_BACKGROUNDS } from '../constants';
+import { swatchCss } from '../lib/utils';
 
 async function importMedia(asBackground: boolean): Promise<void> {
   const r = await attempt(() => q('media.import', { asBackground }), 'errors.import');
@@ -90,89 +91,6 @@ export function MediaPanel() {
       </div>
     </div>
   );
-}
-
-/** Built-in generated backgrounds: resolution-independent, license-free (§12). */
-export const BUILT_IN_BACKGROUNDS: { name: string; ref: BackgroundRef }[] = [
-  {
-    name: 'Midnight',
-    ref: {
-      kind: 'gradient',
-      angle: 160,
-      stops: [
-        { color: '#1B2140', pos: 0 },
-        { color: '#0B0E1A', pos: 100 },
-      ],
-    },
-  },
-  {
-    name: 'Aurora',
-    ref: {
-      kind: 'generated',
-      preset: 'aurora',
-      colors: ['#2A1B4F', '#0E3B5C', '#5A1F3D'],
-      speed: 0.6,
-    },
-  },
-  {
-    name: 'Ember',
-    ref: {
-      kind: 'generated',
-      preset: 'glow',
-      colors: ['#5C1F0E', '#8A3B12', '#1A0B08'],
-      speed: 0.5,
-    },
-  },
-  {
-    name: 'Ocean drift',
-    ref: {
-      kind: 'generated',
-      preset: 'drift',
-      colors: ['#06283D', '#1363DF', '#0B1D33'],
-      speed: 0.5,
-    },
-  },
-  {
-    name: 'Advent',
-    ref: {
-      kind: 'gradient',
-      angle: 135,
-      stops: [
-        { color: '#2D1B4E', pos: 0 },
-        { color: '#4A2C6F', pos: 50 },
-        { color: '#120A1F', pos: 100 },
-      ],
-    },
-  },
-  {
-    name: 'Easter dawn',
-    ref: {
-      kind: 'gradient',
-      angle: 180,
-      stops: [
-        { color: '#F6C177', pos: 0 },
-        { color: '#C76B98', pos: 55 },
-        { color: '#2E2A5A', pos: 100 },
-      ],
-    },
-  },
-  {
-    name: 'Forest',
-    ref: {
-      kind: 'generated',
-      preset: 'aurora',
-      colors: ['#0F3D2E', '#1E5F3A', '#0A1F17'],
-      speed: 0.4,
-    },
-  },
-  { name: 'Black', ref: { kind: 'color', color: '#000000' } },
-];
-
-export function swatchCss(ref: BackgroundRef): string {
-  if (ref.kind === 'gradient') return gradientCss(ref);
-  if (ref.kind === 'color') return ref.color;
-  if (ref.kind === 'generated') return `linear-gradient(135deg, ${ref.colors.join(', ')})`;
-  return '#000';
 }
 
 export function BackgroundsPanel() {

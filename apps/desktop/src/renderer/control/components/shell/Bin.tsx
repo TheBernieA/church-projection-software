@@ -13,13 +13,14 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, SoonBadge } from '@lampstand/ui';
-import { useStore, type BinTab } from '../../lib/store';
+import { useStore } from '../../lib/store';
 import { BackgroundsPanel, MediaPanel } from '../MediaPanel';
 import { MessagesBin } from '../bins/MessagesBin';
 import { PropsBin } from '../bins/PropsBin';
 import { SoonPanel } from '../bins/SoonPanel';
 import { TimersBin } from '../bins/TimersBin';
 import { PaneTab } from './PaneHeader';
+import { type BinTab } from '../../types';
 
 const TABS: { tab: BinTab; icon: LucideIcon; soon?: string[] }[] = [
   { tab: 'media', icon: Images },

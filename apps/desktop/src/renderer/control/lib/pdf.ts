@@ -1,10 +1,4 @@
-/**
- * Render PDF pages to PNG images with pdf.js, in the control window (it has a canvas; main
- * doesn't). Loaded on demand so it never slows down startup. The worker is bundled with the
- * app, so the strict CSP (`'self'`) holds, and eval is turned off.
- */
-const MAX_PAGES = 200;
-
+import { MAX_PDF_PAGES } from '../constants';
 export async function renderPdfPages(
   data: Uint8Array,
   opts: { width?: number; onPage?: (n: number, total: number) => void } = {},
@@ -13,7 +7,7 @@ export async function renderPdfPages(
   const worker = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
   pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
   const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
-  const total = Math.min(doc.numPages, MAX_PAGES);
+  const total = Math.min(doc.numPages, MAX_PDF_PAGES);
   const width = opts.width ?? 1920;
   const pages: Uint8Array<ArrayBuffer>[] = [];
   try {

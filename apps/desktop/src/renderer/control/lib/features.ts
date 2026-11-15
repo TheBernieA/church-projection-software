@@ -1,34 +1,4 @@
-/**
- * Every feature Lampstand has or plans, inspired by the breadth of pro presentation software.
- * One source of truth for: "Soon" badges and disabled controls, placeholder panels for
- * unbuilt tools, and Settings → Features (the roadmap). Flip `status` to 'available' when a
- * feature ships and every surface updates.
- */
-export type FeatureStatus = 'available' | 'soon';
-
-export type FeatureCategory =
-  | 'presentations'
-  | 'library'
-  | 'bible'
-  | 'media'
-  | 'audio'
-  | 'layers'
-  | 'screens'
-  | 'stage'
-  | 'timers'
-  | 'messages'
-  | 'automation'
-  | 'capture'
-  | 'integrations';
-
-export interface Feature {
-  id: string;
-  name: string;
-  category: FeatureCategory;
-  description: string;
-  status: FeatureStatus;
-}
-
+import { type Feature, type FeatureCategory, type FeatureStatus } from '../types';
 export const FEATURE_CATEGORIES: { id: FeatureCategory; name: string }[] = [
   { id: 'presentations', name: 'Presentations & editing' },
   { id: 'library', name: 'Library & playlists' },

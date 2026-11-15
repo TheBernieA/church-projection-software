@@ -1,13 +1,9 @@
 import type { Layer, Overlay, ServiceItem, Settings } from '@lampstand/core';
 import { cmd } from './api';
 import i18n from '../i18n';
-import {
-  buildItemSlides,
-  type ItemSlides,
-  type PresentableSlide,
-  type SlideContext,
-} from './slides';
-import { attempt, loadChapter, toast, useStore, type Cursor } from './store';
+import { buildItemSlides } from './slides';
+import { attempt, loadChapter, toast, useStore } from './store';
+import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
 
 const get = useStore.getState;
 

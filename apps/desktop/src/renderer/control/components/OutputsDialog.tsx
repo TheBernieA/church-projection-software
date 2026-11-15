@@ -4,9 +4,10 @@ import { SoonList } from './Soon';
 import type { OutputRole } from '@lampstand/core';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
-import { attempt, EMPTY_LIST, refresh, useStore } from '../lib/store';
+import { attempt, refresh, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
 import { Select } from './Select';
+import { EMPTY_LIST } from '../constants';
 
 const ROLES: OutputRole[] = ['main', 'stage', 'secondary', 'none'];
 

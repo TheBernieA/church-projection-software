@@ -29,6 +29,7 @@ import {
 } from '../lib/sections';
 import { editItems, useStore } from '../lib/store';
 import { KindTile } from './kindIcons';
+import { urlHost } from '../lib/utils';
 
 /** Secondary line under each item: what it is, at a glance. */
 function useItemSubtitle(): (item: ServiceItem) => string {
@@ -60,13 +61,7 @@ function useItemSubtitle(): (item: ServiceItem) => string {
       case 'media':
         return t('service.kind.media');
       case 'web':
-        return (() => {
-          try {
-            return new URL(item.url).host;
-          } catch {
-            return t('service.kind.web');
-          }
-        })();
+        return urlHost(item.url) || t('service.kind.web');
       case 'header':
         return '';
     }

@@ -3,10 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { makeScene, type SlideObject } from '@lampstand/core';
 import { objectBoxStyle } from '@lampstand/renderer';
 import { useItemSlides } from '../../lib/hooks';
-import { CANVAS, editObjects, patchObject, snap, type TextItem } from '../../lib/objects';
+import { editObjects, patchObject, snap } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { mediaUrl } from '../../../shared/mediaUrl';
 import { SceneView } from '../SceneView';
+import { type TextItem } from '../../types';
+import { CANVAS } from '../../constants';
 
 type Handle = 'move' | 'nw' | 'ne' | 'sw' | 'se';
 interface Drag {

@@ -12,11 +12,14 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
-import { displayCombo, effectiveShortcuts, type ShortcutAction } from '../../lib/shortcuts';
-import { openDialog, useStore, type SettingsPageId } from '../../lib/store';
+import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
+import { openDialog, useStore } from '../../lib/store';
 import { Group, SettingsPage } from './parts';
+import { type ShortcutAction } from '../../types';
+import {} from '../../types';
+import { type SettingsPageId } from '../../types';
 
-export type { SettingsPageId } from '../../lib/store';
+export type { SettingsPageId } from '../../types';
 
 interface Step {
   id: string;

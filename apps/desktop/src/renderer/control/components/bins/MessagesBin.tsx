@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { newId, type Settings } from '@lampstand/core';
+import { newId } from '@lampstand/core';
 import { Button, IconButton, Segmented } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
@@ -10,8 +10,8 @@ import { useOverlayLive, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
 import { AddCard, BIN_CARD } from '../cards';
 import { SoonFeature } from '../Soon';
+import { type Message } from '../../types';
 
-type Message = Settings['messages'][number];
 type Style = Message['style'];
 
 const overlayId = (m: Message): string => `msg-${m.id}`;

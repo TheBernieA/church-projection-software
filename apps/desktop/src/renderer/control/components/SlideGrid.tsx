@@ -5,7 +5,7 @@ import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core'
 import { Button, TallyTag } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
-import { groupColor, itemTitle, type PresentableSlide } from '../lib/slides';
+import { groupColor, itemTitle } from '../lib/slides';
 import { addItemToService, updateItem, useStore } from '../lib/store';
 import { AddCard } from './cards';
 import { KindTile } from './kindIcons';
@@ -14,6 +14,7 @@ import { SceneView } from './SceneView';
 import { SongControls } from './SongControls';
 import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
+import { type PresentableSlide } from '../types';
 
 function thumbScene(slide: PresentableSlide): Scene {
   const a = slide.action;

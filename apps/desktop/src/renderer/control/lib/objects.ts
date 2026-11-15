@@ -1,11 +1,7 @@
-import { newId, type ServiceItem, type SlideObject, type TextSlide } from '@lampstand/core';
-import { updateItem, type EditOptions } from './store';
-
-export type TextItem = Extract<ServiceItem, { kind: 'presentation' | 'announcements' }>;
-export type ObjectKind = SlideObject['kind'];
-
-export const CANVAS = { width: 1920, height: 1080 };
-const GRID = 8;
+import { newId, type SlideObject, type TextSlide } from '@lampstand/core';
+import { updateItem } from './store';
+import { type EditOptions, type ObjectKind, type TextItem } from '../types';
+import { CANVAS, GRID } from '../constants';
 
 /** A new object of a kind, centred-ish on the canvas with sensible defaults. */
 export function newObject(kind: ObjectKind, mediaId?: string): SlideObject {

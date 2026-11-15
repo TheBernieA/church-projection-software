@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Segmented, SoonBadge } from '@lampstand/ui';
-import { FEATURE_CATEGORIES, FEATURES, type FeatureStatus } from '../../lib/features';
+import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { SoonList } from '../Soon';
 import { Group, SettingsPage } from './parts';
+import { type FeatureStatus } from '../../types';
 
 type Filter = 'all' | FeatureStatus;
 

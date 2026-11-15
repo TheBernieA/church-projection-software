@@ -10,8 +10,9 @@ import {
 import { Button } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
-import { attempt, EMPTY_RECORD, openDialog, useStore } from '../lib/store';
+import { attempt, openDialog, useStore } from '../lib/store';
 import { SceneView } from './SceneView';
+import { EMPTY_RECORD } from '../constants';
 
 export const sampleScene = (theme: Theme, text: string, reference?: string): Scene =>
   makeScene({

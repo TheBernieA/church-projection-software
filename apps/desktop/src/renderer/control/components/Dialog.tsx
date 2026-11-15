@@ -1,7 +1,8 @@
 import * as RD from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { closeDialog, useStore, type DialogName } from '../lib/store';
+import { closeDialog, useStore } from '../lib/store';
+import { type DialogName } from '../types';
 
 /** Dimmed, lightly blurred backdrop shared by every modal surface (dialogs, quick bar). */
 // Solid dim, no backdrop blur: blurring the animated monitors behind it cost a repaint every frame.

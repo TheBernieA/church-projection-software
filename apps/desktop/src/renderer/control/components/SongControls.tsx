@@ -1,16 +1,15 @@
 import { Languages, Minus, Music2, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ServiceItem, Song } from '@lampstand/core';
+import type { Song } from '@lampstand/core';
 import { hasChords, transposeChord } from '@lampstand/lyrics';
 import { IconButton } from '@lampstand/ui';
 import { groupColor } from '../lib/slides';
 import { refreshLiveSlide } from '../lib/actions';
 import { patchItem } from '../lib/store';
 import { Select } from './Select';
-
-type SongItem = Extract<ServiceItem, { kind: 'song' }>;
-
-const NO_TRANSLATION = '__none__';
+import { NO_TRANSLATION } from '../constants';
+import { type SongItem } from '../types';
+import { shortLabel } from '../lib/utils';
 
 /** Per-item song choices in the slide grid header: arrangement, translation. */
 export function SongControls({ item, song }: { item: SongItem; song: Song }) {
@@ -120,14 +119,4 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
       )}
     </div>
   );
-}
-
-/** "Verse 1" → "V1", "Chorus" → "C", "Pre-chorus" → "PC". */
-function shortLabel(label: string): string {
-  const num = /\d+/.exec(label)?.[0] ?? '';
-  const words = label
-    .replace(/\d+/g, '')
-    .split(/[\s-]+/)
-    .filter(Boolean);
-  return (words.map((w) => w[0]?.toUpperCase() ?? '').join('') || label.slice(0, 2)) + num;
 }

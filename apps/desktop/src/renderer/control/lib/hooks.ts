@@ -10,8 +10,9 @@ import {
   type Standby,
 } from '@lampstand/core';
 import { findItem, loadMissingChapters, saveSettings } from './actions';
-import { buildItemSlides, type ItemSlides } from './slides';
+import { buildItemSlides } from './slides';
 import { useStore } from './store';
+import { type ItemSlides } from '../types';
 
 export function useSelectedItem(): ServiceItem | null {
   const id = useStore((s) => s.selectedItemId);

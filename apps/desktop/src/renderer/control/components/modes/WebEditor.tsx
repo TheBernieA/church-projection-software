@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { makeScene, WebUrlSchema, type ServiceItem } from '@lampstand/core';
+import { makeScene, WebUrlSchema } from '@lampstand/core';
 import { updateItem } from '../../lib/store';
 import { SceneView } from '../SceneView';
-
-type WebItem = Extract<ServiceItem, { kind: 'web' }>;
+import { type WebItem } from '../../types';
 
 /**
  * Edit a web page item: its name and https address. The address is only saved once it's valid,

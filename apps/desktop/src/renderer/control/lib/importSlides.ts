@@ -1,11 +1,10 @@
-import { newId, type ServiceItem, type TextSlide } from '@lampstand/core';
+import { newId, type TextSlide } from '@lampstand/core';
 import i18n from '../i18n';
 import { q } from './api';
-import { CANVAS } from './objects';
 import { renderPdfPages } from './pdf';
 import { addItemToService, attempt, toast } from './store';
-
-type Presentation = Extract<ServiceItem, { kind: 'presentation' }>;
+import { type PresentationItem } from '../types';
+import { CANVAS } from '../constants';
 
 /**
  * "Import slides": a PowerPoint deck becomes editable text slides (titles, text, notes); a PDF
@@ -29,7 +28,7 @@ export async function importSlides(): Promise<void> {
       kind: 'presentation',
       title: r.title,
       slides,
-    } satisfies Presentation);
+    } satisfies PresentationItem);
     toast(i18n.t('import.done', { count: slides.length }));
     if (r.slidesWithPictures)
       toast(i18n.t('import.picturesSkipped', { count: r.slidesWithPictures }), 'warning');
@@ -70,6 +69,6 @@ export async function importSlides(): Promise<void> {
     kind: 'presentation',
     title: r.title,
     slides,
-  } satisfies Presentation);
+  } satisfies PresentationItem);
   toast(i18n.t('import.done', { count: slides.length }));
 }

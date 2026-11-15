@@ -2,15 +2,11 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
-import {
-  comboFromEvent,
-  DEFAULT_SHORTCUTS,
-  displayCombo,
-  effectiveShortcuts,
-  type ShortcutAction,
-} from '../lib/shortcuts';
+import { comboFromEvent, displayCombo, effectiveShortcuts } from '../lib/shortcuts';
 import { useStore } from '../lib/store';
 import { Dialog } from './Dialog';
+import { DEFAULT_SHORTCUTS } from '../constants';
+import { type ShortcutAction } from '../types';
 
 /** Cheat sheet + remapping (§14.3). Click a shortcut, press the new keys. */
 export function ShortcutsDialog() {

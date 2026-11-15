@@ -6,9 +6,8 @@ import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
 import { ObjectInspector } from './canvas/ObjectInspector';
-
-type TextItem = Extract<ServiceItem, { kind: 'presentation' | 'announcements' }>;
-type CountdownItem = Extract<ServiceItem, { kind: 'countdown' }>;
+import { type CountdownItem, type TextItem } from '../types';
+import { clamp } from '../lib/utils';
 
 /** Replace an item. `typing` groups keystrokes into one undo step; actions are one step each. */
 function replaceItem(next: ServiceItem, typing = false): void {
@@ -137,7 +136,7 @@ function TextInspector({ item }: { item: TextItem }) {
                   replaceItem(
                     {
                       ...item,
-                      loopIntervalSec: Math.min(600, Math.max(2, Number(e.target.value) || 8)),
+                      loopIntervalSec: clamp(Number(e.target.value) || 8, 2, 600),
                     },
                     true,
                   )
