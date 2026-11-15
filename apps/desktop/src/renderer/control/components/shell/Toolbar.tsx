@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   BookOpen,
+  Circle,
   Flame,
   Keyboard,
   Layers3,
@@ -21,11 +22,12 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, sceneIsVisible, secondsSince } from '@lampstand/core';
-import { ComingSoonButton, IconButton, Kbd, Switch } from '@lampstand/ui';
+import { IconButton, Kbd, Switch } from '@lampstand/ui';
 import { clearLayer } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { attempt, openDialog, redo, undo, useStore, type Mode } from '../../lib/store';
+import { SoonFeature } from '../Soon';
 
 function useElapsed(since: string | null): string {
   const [now, setNow] = useState(() => Date.now());
@@ -183,20 +185,9 @@ export function Toolbar() {
                 : t('outputs.count', { count: outputs })}
           </span>
         </button>
-        <ComingSoonButton
-          compact
-          icon={<Layers3 size={15} />}
-          title={t('soon.tooltip', { name: t('top.looks') })}
-        >
-          {t('top.looks')}
-        </ComingSoonButton>
-        <ComingSoonButton
-          compact
-          icon={<Radio size={15} />}
-          title={t('soon.tooltip', { name: t('top.capture') })}
-        >
-          {t('top.capture')}
-        </ComingSoonButton>
+        <SoonFeature id="looks" compact icon={<Layers3 size={15} />} />
+        <SoonFeature id="record" compact icon={<Circle size={15} />} />
+        <SoonFeature id="stream" compact icon={<Radio size={15} />} />
         <IconButton aria-label={t('top.shortcuts')} onClick={() => openDialog('shortcuts')}>
           <Keyboard size={16} />
         </IconButton>

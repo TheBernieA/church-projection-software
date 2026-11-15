@@ -4,12 +4,14 @@ import {
   Church,
   Film,
   Image as ImageIcon,
+  ListChecks,
   Megaphone,
   MessageSquareText,
   Play,
   Snowflake,
   Sparkle,
   Square,
+  SquareDashed,
   Type,
   Video,
 } from 'lucide-react';
@@ -26,7 +28,9 @@ import { Button, Kbd, SoonBadge, TallyLabel, ToggleChip } from '@lampstand/ui';
 import { clearLayer, goLive, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
+import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
+import { SoonFeature } from '../Soon';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { PaneHeader } from './PaneHeader';
@@ -89,14 +93,16 @@ function ClearRow({
   hint?: string;
   on?: boolean;
   onClick?: () => void;
-  soon?: boolean;
+  /** Feature id of a planned layer: shown disabled with a "Soon" badge. */
+  soon?: string;
 }) {
   const { t } = useTranslation();
+  const planned = soon ? feature(soon) : undefined;
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={soon || !on}
+      disabled={!!soon || !on}
       aria-label={
         soon
           ? `${t('monitor.clearLayer', { name: label })} (${t('soon.badge')})`
@@ -104,7 +110,7 @@ function ClearRow({
       }
       title={
         soon
-          ? t('soon.tooltip', { name: label })
+          ? `${t('soon.tooltip', { name: label })}. ${planned?.description ?? ''}`
           : `${t('monitor.clearLayer', { name: label })}${hint ? ` (${hint})` : ''}`
       }
       className={`flex h-8 min-w-0 cursor-pointer items-center gap-2 rounded-[5px] px-2 text-left text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
@@ -227,9 +233,26 @@ export function RightColumn() {
           on={has('props')}
           onClick={clear('props')}
         />
-        <ClearRow icon={<Megaphone size={14} />} label={t('monitor.layers.announcements')} soon />
-        <ClearRow icon={<AudioLines size={14} />} label={t('monitor.layers.audio')} soon />
-        <ClearRow icon={<Video size={14} />} label={t('monitor.layers.videoInput')} soon />
+        <ClearRow
+          icon={<Megaphone size={14} />}
+          label={t('monitor.layers.announcements')}
+          soon="announcements-layer"
+        />
+        <ClearRow
+          icon={<AudioLines size={14} />}
+          label={t('monitor.layers.audio')}
+          soon="audio-bin"
+        />
+        <ClearRow
+          icon={<Video size={14} />}
+          label={t('monitor.layers.videoInput')}
+          soon="video-input"
+        />
+        <ClearRow
+          icon={<ListChecks size={14} />}
+          label={t('monitor.layers.custom')}
+          soon="custom-clear-groups"
+        />
       </div>
 
       <PaneHeader title={t('monitor.masks')} />
@@ -255,6 +278,7 @@ export function RightColumn() {
           label={t('monitor.freeze')}
           hint={displayCombo(keys.freeze)}
         />
+        <SoonFeature id="masks" icon={<SquareDashed size={14} />} label={t('monitor.masksSoon')} />
       </div>
     </div>
   );

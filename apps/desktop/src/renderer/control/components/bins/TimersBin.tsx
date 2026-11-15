@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Pause, Play, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Film, Pause, Play, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
 import { Button, IconButton, Segmented } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { attempt, useStore } from '../../lib/store';
+import { SoonFeature } from '../Soon';
 
 type Kind = TimerDef['kind'];
 
@@ -226,6 +227,7 @@ export function TimersBin() {
           {t('timers.new')}
         </button>
       )}
+      <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
       <p className="ml-auto max-w-[220px] self-end text-[11px] leading-snug text-[var(--text-3)]">
         {t('timers.stageHint')}
       </p>

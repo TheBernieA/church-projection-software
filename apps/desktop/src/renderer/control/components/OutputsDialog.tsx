@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SoonList } from './Soon';
 import type { OutputRole } from '@lampstand/core';
 import { cmd } from '../lib/api';
 import { attempt, EMPTY_LIST, refresh, useStore } from '../lib/store';
@@ -101,6 +102,14 @@ export function OutputsDialog() {
           {t('outputs.testPattern')}
         </label>
       )}
+      <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
+        <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold text-[var(--text-2)]">
+          {t('outputs.more')}
+        </summary>
+        <SoonList
+          ids={['ndi', 'sdi', 'alpha-key', 'syphon', 'edge-blend', 'output-adjust', 'multiview']}
+        />
+      </details>
     </Dialog>
   );
 }

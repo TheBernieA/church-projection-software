@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Clock, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Settings } from '@lampstand/core';
 import { Button, IconButton, Segmented } from '@lampstand/ui';
@@ -7,6 +7,7 @@ import { hideOverlay, saveSettings, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { fillMessage, messageTokens } from '../../lib/messages';
 import { useStore } from '../../lib/store';
+import { SoonFeature } from '../Soon';
 
 type Message = Settings['messages'][number];
 type Style = Message['style'];
@@ -226,6 +227,7 @@ export function MessagesBin() {
           {t('messages.new')}
         </button>
       )}
+      <SoonFeature id="message-tokens" icon={<Clock size={14} />} className="self-center" />
       <div className="ml-auto flex">
         <StageMessage />
       </div>

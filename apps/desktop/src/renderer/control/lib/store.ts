@@ -22,6 +22,7 @@ export type SettingsPageId =
   | 'packages'
   | 'library'
   | 'about'
+  | 'connections'
   | 'features'
   | 'guide';
 

@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
-import { ListPlus, MousePointerClick, Pencil, Plus, Shuffle } from 'lucide-react';
+import { Keyboard, ListPlus, MousePointerClick, Pencil, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button, ComingSoonButton } from '@lampstand/ui';
+import { Button } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useItemSlides, useSelectedItem } from '../lib/hooks';
 import { groupColor, itemTitle, type PresentableSlide } from '../lib/slides';
 import { addItemToService, updateItem, useStore } from '../lib/store';
 import { KindTile } from './kind-icons';
 import { SceneView } from './SceneView';
+import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
 
 function thumbScene(slide: PresentableSlide): Scene {
@@ -83,12 +84,14 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {song && (
-            <ComingSoonButton
-              icon={<Shuffle size={14} />}
-              title={t('soon.tooltip', { name: t('slides.arrangement') })}
-            >
-              {t('slides.arrangement')}
-            </ComingSoonButton>
+            <>
+              <SoonFeature
+                id="arrangements"
+                icon={<Shuffle size={14} />}
+                label={t('slides.arrangement')}
+              />
+              <SoonFeature id="group-hotkeys" compact icon={<Keyboard size={14} />} />
+            </>
           )}
           {item && purpose === 'show' && editable(item) && song?.origin !== 'hymnal' && (
             <Button

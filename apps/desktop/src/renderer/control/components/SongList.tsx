@@ -7,6 +7,7 @@ import { Button, IconButton } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/library-drag';
 import { addItemToService, openDialog, useStore } from '../lib/store';
+import { SoonFeature } from './Soon';
 
 function haystack(s: Song): string {
   return [
@@ -82,6 +83,18 @@ export function SongList({ hymns }: { hymns: boolean }) {
           </Button>
         )}
       </div>
+      {!hymns && (
+        // Ways to bring songs in, coming soon.
+        <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+          <SoonFeature
+            id="song-import"
+            label={t('library.importFile')}
+            className="!h-6 !px-1.5 !text-[11px]"
+          />
+          <SoonFeature id="songselect" label="SongSelect" className="!h-6 !px-1.5 !text-[11px]" />
+          <SoonFeature id="multitracks" label="MultiTracks" className="!h-6 !px-1.5 !text-[11px]" />
+        </div>
+      )}
       {rows.length === 0 && (
         <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">
           {hymns && !filter ? t('library.noHymnals') : t('library.noResults')}

@@ -7,6 +7,7 @@ import { libraryDragSource } from '../lib/library-drag';
 import { cmd, q } from '../lib/api';
 import { addItemToService, attempt, toast, useStore } from '../lib/store';
 import { thumbUrl } from '../../shared/media-url';
+import { SoonFeature } from './Soon';
 import i18n from '../i18n';
 
 async function importMedia(asBackground: boolean): Promise<void> {
@@ -37,10 +38,15 @@ export function MediaPanel() {
   const addToService = addItemToService;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="px-4 pb-3 pt-3">
+      <div className="flex flex-wrap items-center gap-1.5 px-4 pb-3 pt-3">
         <Button size="sm" onClick={() => void importMedia(false)}>
           + {t('media.add')}
         </Button>
+        <span className="mx-1 h-4 w-px bg-[var(--hairline-strong)]" aria-hidden />
+        <SoonFeature id="media-playlists" label={t('media.soon.playlists')} />
+        <SoonFeature id="media-cues" label={t('media.soon.cues')} />
+        <SoonFeature id="playback-markers" label={t('media.soon.markers')} />
+        <SoonFeature id="stock-media" label={t('media.soon.stock')} />
       </div>
       {media.length === 0 && (
         <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">

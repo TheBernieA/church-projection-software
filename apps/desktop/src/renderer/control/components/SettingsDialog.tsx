@@ -6,6 +6,7 @@ import {
   MonitorPlay,
   Music,
   Package,
+  Plug,
   ShieldCheck,
   SlidersHorizontal,
   type LucideIcon,
@@ -24,7 +25,7 @@ import {
   ScripturePage,
   SongsPage,
 } from './settings/pages';
-import { FeaturesPage } from './settings/features';
+import { ConnectionsPage, FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
 
 type PageId = SettingsPageId;
@@ -36,6 +37,7 @@ const NAV: { id: PageId; icon: LucideIcon }[] = [
   { id: 'presenting', icon: MonitorPlay },
   { id: 'packages', icon: Package },
   { id: 'library', icon: Archive },
+  { id: 'connections', icon: Plug },
   { id: 'about', icon: ShieldCheck },
 ];
 
@@ -105,6 +107,7 @@ export function SettingsDialog() {
         {page === 'about' && <AboutPage />}
         {page === 'guide' && <GuidePage goTo={setPage} />}
         {page === 'features' && <FeaturesPage />}
+        {page === 'connections' && <ConnectionsPage />}
       </div>
     </Dialog>
   );

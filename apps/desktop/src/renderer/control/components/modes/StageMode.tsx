@@ -85,7 +85,7 @@ export function StageMode() {
         )}
       </div>
       <div className="flex min-h-[180px] flex-1">
-        <SoonPanel ids={['stage-layouts']} icon={<LayoutTemplate size={20} />} />
+        <SoonPanel ids={['stage-layouts', 'stage-app']} icon={<LayoutTemplate size={20} />} />
       </div>
     </div>
   );

@@ -45,7 +45,8 @@
     "moveSectionDown": "Move section down",
     "duplicateSection": "Duplicate section",
     "removeHeading": "Remove heading (keeps its items)",
-    "templateSaved": "Template saved."
+    "templateSaved": "Template saved.",
+    "syncSoon": "Planning & sync"
   },
   "library": {
     "title": "Library",
@@ -63,7 +64,8 @@
     "edit": "Edit",
     "noResults": "Nothing found.",
     "noHymnals": "No hymnal installed. Add one in Settings → Bibles & hymnals → Install package.",
-    "close": "Close library"
+    "close": "Close library",
+    "importFile": "Import file"
   },
   "bible": {
     "version": "Version",
@@ -90,7 +92,13 @@
     "loop": "Loop",
     "mute": "Mute",
     "unmute": "Unmute",
-    "volume": "Volume"
+    "volume": "Volume",
+    "soon": {
+      "playlists": "Playlists",
+      "cues": "Playback options",
+      "markers": "Markers",
+      "stock": "Stock media"
+    }
   },
   "slides": {
     "empty": "Pick a song from the library, or an item from the service plan.",
@@ -140,8 +148,10 @@
       "props": "Props",
       "announcements": "Announcements",
       "audio": "Audio",
-      "videoInput": "Video input"
-    }
+      "videoInput": "Video input",
+      "custom": "Custom group"
+    },
+    "masksSoon": "Masks"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -238,7 +248,8 @@
     },
     "none": "No output",
     "noneHelp": "Nothing you put live will be visible. Choose a screen in Outputs, or turn on window mode.",
-    "noneToast": "Nothing is showing on any screen: no output is set. Open Outputs to pick a projector, or turn on Rehearsal / window mode."
+    "noneToast": "Nothing is showing on any screen: no output is set. Open Outputs to pick a projector, or turn on Rehearsal / window mode.",
+    "more": "More output types"
   },
   "settings": {
     "title": "Settings",
@@ -275,7 +286,8 @@
       "library": "Library & backups",
       "about": "Privacy & about",
       "guide": "Guide",
-      "features": "Features"
+      "features": "Features",
+      "connections": "Connections"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -284,7 +296,8 @@
       "presenting": "What the screen shows when nothing is live, and how clicks behave while you run a service.",
       "library": "Your songs, services, themes and media live in one library folder. Keep it safe and move it between computers.",
       "about": "What Lampstand does with your data, and which version you are running.",
-      "features": "Everything Lampstand does today, and what is coming."
+      "features": "Everything Lampstand does today, and what is coming.",
+      "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "uiScaleHelp": "Make the whole interface larger or smaller.",
@@ -604,5 +617,10 @@
     "filter": "Show",
     "all": "All",
     "available": "Available"
+  },
+  "connections": {
+    "control": "Control from other devices",
+    "network": "Network",
+    "services": "Services"
   }
 }

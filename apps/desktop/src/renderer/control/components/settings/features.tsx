@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Segmented, SoonBadge } from '@lampstand/ui';
 import { FEATURE_CATEGORIES, FEATURES, type FeatureStatus } from '../../lib/features';
+import { SoonList } from '../Soon';
 import { Group, SettingsPage } from './parts';
 
 type Filter = 'all' | FeatureStatus;
@@ -72,6 +73,27 @@ export function FeaturesPage() {
           </Group>
         );
       })}
+    </SettingsPage>
+  );
+}
+
+/** Settings → Connections: remote control, other software and services (coming soon). */
+export function ConnectionsPage() {
+  const { t } = useTranslation();
+  return (
+    <SettingsPage
+      title={t('settings.pages.connections')}
+      description={t('settings.pagesHelp.connections')}
+    >
+      <Group title={t('connections.control')}>
+        <SoonList ids={['remote', 'stage-app', 'stream-deck', 'midi-dmx', 'timecode']} />
+      </Group>
+      <Group title={t('connections.network')}>
+        <SoonList ids={['network-link', 'api']} />
+      </Group>
+      <Group title={t('connections.services')}>
+        <SoonList ids={['songselect', 'multitracks', 'planning-center', 'cloud']} />
+      </Group>
     </SettingsPage>
   );
 }

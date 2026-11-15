@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { SoonList } from './Soon';
 import { newId, nowIso, SERVICE_SCHEMA_VERSION, type ServicePlan } from '@lampstand/core';
 import { Button } from '@lampstand/ui';
 import { cmd, q } from '../lib/api';
@@ -126,6 +127,12 @@ export function ServicesDialog() {
           </section>
         );
       })}
+      <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
+        <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold text-[var(--text-2)]">
+          {t('service.syncSoon')}
+        </summary>
+        <SoonList ids={['planning-center', 'calendar', 'cloud']} />
+      </details>
     </Dialog>
   );
 }

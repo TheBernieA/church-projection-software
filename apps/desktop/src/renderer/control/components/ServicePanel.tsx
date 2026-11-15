@@ -3,6 +3,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  FileUp,
   GripVertical,
   Heading,
   Plus,
@@ -14,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
 import { Button, PanelHeader } from '@lampstand/ui';
+import { SoonFeature } from './Soon';
 import { itemTitle } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
 import { isLibraryDrag, readLibraryDrop } from '../lib/library-drag';
@@ -281,7 +283,7 @@ export function ServicePanel() {
 function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-1 px-3 py-2.5 shadow-[0_-1px_0_var(--hairline)]">
+    <div className="flex flex-wrap items-center gap-1 px-3 py-2.5 shadow-[0_-1px_0_var(--hairline)]">
       <Plus size={14} className="mr-0.5 text-[var(--text-3)]" aria-hidden />
       <Button
         size="xs"
@@ -329,6 +331,12 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
       >
         {t('service.kind.countdown')}
       </Button>
+      <SoonFeature
+        id="import-slides"
+        compact
+        icon={<FileUp size={14} />}
+        className="!h-7 !px-1.5"
+      />
     </div>
   );
 }
