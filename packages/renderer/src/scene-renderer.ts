@@ -250,7 +250,9 @@ export class SceneRenderer {
     transition: TransitionSpec | undefined,
     instant: boolean,
   ): void {
-    const key = content ? JSON.stringify(content) : 'none';
+    // Stage-only fields (notes, chords, label) never change what the room sees, so they don't
+    // re-run the transition.
+    const key = content ? JSON.stringify({ ...content, notes: 0, chords: 0, label: 0 }) : 'none';
     if ((this.content?.key ?? 'none') === key) return;
     const t = transition ?? content?.theme.transition ?? DEFAULT_TRANSITION;
     const duration = instant || t.kind === 'cut' ? 0 : t.durationMs;

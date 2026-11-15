@@ -204,6 +204,22 @@ export function registerLiveCommands(
   });
 
   bus.register({
+    // Refresh the slide on screen in place (e.g. transposed chords for the stage), without
+    // counting it as a new go-live. Ignored if a different slide has gone live since.
+    type: 'live.updateContent',
+    schema: z.object({ content: ContentLayerSchema }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) =>
+        s.program.content?.key === p.content.key
+          ? { ...s, program: { ...s.program, content: p.content } }
+          : s,
+      );
+      return { result: null };
+    },
+  });
+
+  bus.register({
     type: 'live.clearLayer',
     schema: z.object({ layer: LayerSchema }),
     undoable: false,

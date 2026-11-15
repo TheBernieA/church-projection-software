@@ -116,7 +116,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Chord charts',
     'Keep chords with lyrics, transpose them, and show them to the band on the stage display.',
-    'soon',
   ),
   f(
     'import-slides',

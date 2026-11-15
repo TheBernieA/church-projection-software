@@ -216,6 +216,10 @@ test('create a song in the editor → add to service → go live → output show
 test('songs: build arrangements and a translation, then pick them per item', async () => {
   const out = await outputPage();
   await mode('Edit'); // Test Song (just added to the service) opens in the inline editor
+  // Chords go in brackets inside lines; only the stage display shows them.
+  await control
+    .getByLabel('Lyrics', { exact: true })
+    .fill('[Verse 1]\n[G]Hallelujah test line\n\n[Chorus]\n[C]Chorus test line');
   await control.getByRole('button', { name: '+ Add arrangement' }).click();
   await control.getByLabel('Arrangement name').last().fill('Short');
   await control.getByLabel('Order for Short').fill('C V1');
@@ -236,6 +240,20 @@ test('songs: build arrangements and a translation, then pick them per item', asy
     .first()
     .click(); // click goes live
   await expect(out.locator('.ls-block-secondary')).toHaveText('Coro de prueba');
+  await expect(out.locator('.ls-text').last()).not.toContainText('['); // the room never sees chords
+  const stage = app.windows().find((w) => w.url().includes('/stage/'))!;
+  await expect(stage.locator('#chords .chord-row')).toHaveText('C');
+  await expect(stage.locator('#chords .lyric-row')).toHaveText('Chorus test line');
+  // Transpose up a tone: the band's chart follows, the room's text doesn't change.
+  const up = control.getByRole('button', { name: 'Transpose up a semitone' });
+  await up.click();
+  await up.click();
+  await expect(control.getByTestId('transpose-value')).toHaveText('+2');
+  await expect(stage.locator('#chords .chord-row')).toHaveText('D');
+  await stage.screenshot({ path: 'test-results/05c-stage-chords.png' });
+  const down = control.getByRole('button', { name: 'Transpose down a semitone' });
+  await down.click();
+  await down.click();
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/05b-arrangement-translation.png' });
   // Back to the default arrangement, no translation, for the tests that follow.
@@ -552,6 +570,7 @@ test('click goes live: a video from the bin plays on every output; Turn off live
     const r = await control.evaluate(() => window.lampstand.query('audit.recent'));
     return r.ok ? r.value.filter((e: { type: string }) => e.type === 'live.media').length : 0;
   };
+  await expect(position).toBeEnabled(); // the clip's length is known, so the bar can seek
   const box = (await position.boundingBox())!;
   expect(box.width).toBeGreaterThan(120); // the bar always gets real width, even in a narrow column
   const drag = async (fromX: number, toX: number, releaseOff: boolean): Promise<void> => {

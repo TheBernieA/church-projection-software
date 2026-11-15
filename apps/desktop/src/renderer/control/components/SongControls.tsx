@@ -1,7 +1,10 @@
-import { Languages, Shuffle } from 'lucide-react';
+import { Languages, Minus, Music2, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem, Song } from '@lampstand/core';
+import { hasChords, transposeChord } from '@lampstand/lyrics';
+import { IconButton } from '@lampstand/ui';
 import { groupColor } from '../lib/slides';
+import { refreshLiveSlide } from '../lib/actions';
 import { patchItem } from '../lib/store';
 import { Select } from './Select';
 
@@ -19,6 +22,14 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
     ? arrangement.sectionOrder
     : song.sections.map((s) => s.id);
   const languages = Object.keys(song.translations ?? {});
+  const chorded = song.sections.some((s) => s.lines.some(hasChords));
+  const transpose = item.transpose ?? 0;
+  const shift = (d: number): void => {
+    // Wrap within an octave: -11..11.
+    const next = ((((transpose + d) % 12) + 18) % 12) - 6;
+    patchItem<SongItem>(item, { transpose: next || undefined });
+    void refreshLiveSlide(item.id); // the band's chart updates right away
+  };
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       {song.arrangements.length > 1 ? (
@@ -56,6 +67,33 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           );
         })}
       </ol>
+      {chorded && (
+        // Chords are for the band (stage display); transposing never changes the room's text.
+        <div
+          role="group"
+          aria-label={t('slides.transpose')}
+          className="flex items-center rounded-[var(--radius-control)] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]"
+        >
+          <IconButton size="xs" aria-label={t('slides.transposeDown')} onClick={() => shift(-1)}>
+            <Minus size={13} />
+          </IconButton>
+          <span
+            className="tnum flex min-w-12 items-center justify-center gap-1 px-1 text-[12px] font-semibold"
+            title={t('slides.transposeHint')}
+            data-testid="transpose-value"
+          >
+            <Music2 size={12} className="text-[var(--text-3)]" />
+            {song.key
+              ? transposeChord(song.key, transpose)
+              : transpose > 0
+                ? `+${transpose}`
+                : transpose}
+          </span>
+          <IconButton size="xs" aria-label={t('slides.transposeUp')} onClick={() => shift(1)}>
+            <Plus size={13} />
+          </IconButton>
+        </div>
+      )}
       {languages.length > 0 && (
         <div className="w-32">
           <Select

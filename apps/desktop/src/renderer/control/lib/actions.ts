@@ -137,6 +137,19 @@ export async function goLiveSlide(
   scheduleAnnouncements(item, index);
 }
 
+/**
+ * Re-send the live slide of an item after it changed (e.g. transposed chords), in place:
+ * no transition for the room, no reset of the elapsed timer.
+ */
+export async function refreshLiveSlide(itemId: string): Promise<void> {
+  const cur = get().liveCursor;
+  const item = findItem(itemId);
+  if (cur?.itemId !== itemId || !item) return;
+  const slide = slidesFor(item)[cur.index];
+  if (slide?.action.kind !== 'content') return;
+  await safe(cmd('live.updateContent', { content: slide.action.content }));
+}
+
 /** Space/Enter: Preview → Program ("Preview first"), or the next slide when clicks go live. */
 export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<void> {
   const s = get();

@@ -1,4 +1,5 @@
 import type { Song, SongSection } from '@lampstand/core';
+import { hasChords, stripChords } from './chords';
 
 export interface LyricSlide {
   /** Stable within a song: `${sectionId}:${chunkIndex}:${occurrence}`. */
@@ -10,6 +11,8 @@ export interface LyricSlide {
   lines: string[];
   /** Translation lines for bilingual display, if available. */
   translation?: string[];
+  /** The lines with their chords (`[G]Amazing grace`), for the stage display only. */
+  chordLines?: string[];
 }
 
 /** Split a section into slide-sized chunks. Explicit blank lines always break. */
@@ -58,15 +61,17 @@ export function buildSongSlides(
       ? splitSection(translated.find((t) => t.id === sectionId)?.lines ?? [], opts.maxLines)
       : [];
     chunks.forEach((lines, i) => {
+      // The room never sees chords; the stage gets them separately.
       const slide: LyricSlide = {
         key: `${song.id}:${sectionId}:${i}:${occ}`,
         sectionId,
         sectionLabel: section.label,
         label: chunks.length > 1 ? `${section.label} (${i + 1}/${chunks.length})` : section.label,
-        lines,
+        lines: lines.map(stripChords),
       };
+      if (lines.some(hasChords)) slide.chordLines = lines;
       const t = tChunks[i];
-      if (t) slide.translation = t;
+      if (t) slide.translation = t.map(stripChords);
       slides.push(slide);
     });
   }

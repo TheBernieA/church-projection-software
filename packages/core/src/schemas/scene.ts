@@ -40,6 +40,8 @@ export const ContentLayerSchema = z.object({
   /** Stage-only metadata. */
   label: z.string().max(80).optional(),
   notes: z.string().max(4000).optional(),
+  /** Chord chart lines (`[G]Amazing grace`), stage only; the room never sees them. */
+  chords: z.array(z.string().max(500)).max(24).optional(),
   /** Countdown target (ISO timestamp) for `kind: 'countdown'`. */
   countdownTo: z.string().max(40).optional(),
 });

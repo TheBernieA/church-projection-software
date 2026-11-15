@@ -107,7 +107,11 @@
     "order": "Section order",
     "translation": "Translation",
     "noTranslation": "No translation",
-    "list": "Slide list"
+    "list": "Slide list",
+    "transpose": "Transpose",
+    "transposeDown": "Transpose down a semitone",
+    "transposeUp": "Transpose up a semitone",
+    "transposeHint": "Key of the chords on the stage display"
   },
   "monitor": {
     "preview": "Preview",
@@ -158,7 +162,7 @@
     "copyright": "Copyright",
     "ccli": "CCLI number",
     "lyrics": "Lyrics",
-    "lyricsHelp": "Use [Verse 1], [Chorus], [Bridge] headers. A blank line forces a new slide.",
+    "lyricsHelp": "Use [Verse 1], [Chorus], [Bridge] headers. A blank line forces a new slide. Chords go in brackets inside a line, like [G]Amazing [D]grace: only the stage display shows them.",
     "arrangement": "Arrangement",
     "arrangementHelp": "e.g. V1 C V2 C B C. Leave empty to use sections in order.",
     "preview": "Slides",

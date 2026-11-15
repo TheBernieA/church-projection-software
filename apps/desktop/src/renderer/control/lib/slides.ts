@@ -15,7 +15,7 @@ import {
   type ThemeContentKind,
   type VerseRef,
 } from '@lampstand/core';
-import { buildSongSlides } from '@lampstand/lyrics';
+import { buildSongSlides, transposeLine } from '@lampstand/lyrics';
 import {
   buildScriptureSlides,
   expandPassage,
@@ -152,6 +152,8 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
             label: `${song.title} — ${ls.label}`,
           };
           if (i === 0 && credit) content.copyright = credit;
+          if (ls.chordLines)
+            content.chords = ls.chordLines.map((l) => transposeLine(l, item.transpose ?? 0));
           if (item.notes) content.notes = item.notes;
           return {
             key: ls.key,

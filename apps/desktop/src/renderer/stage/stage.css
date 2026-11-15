@@ -34,6 +34,34 @@ header {
   font-weight: 600;
   color: #e8b04b;
 }
+#chords {
+  margin-top: 1.4vh;
+  padding: 1vh 1.2vw;
+  border-radius: 1vh;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  font-size: 2.6vh;
+  line-height: 1.15;
+  overflow: hidden;
+}
+.chord-line + .chord-line {
+  margin-top: 0.6vh;
+}
+.chord-row {
+  position: relative;
+  height: 1.2em;
+  color: #f0a73a;
+  font-weight: 700;
+}
+.chord-row span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+.lyric-row {
+  white-space: pre;
+  color: #eceef4;
+}
 #timers {
   display: flex;
   gap: 1.6vw;

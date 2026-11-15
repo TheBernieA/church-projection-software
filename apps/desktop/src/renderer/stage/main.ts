@@ -7,6 +7,7 @@ import {
   type LiveState,
   type LiveTimer,
 } from '@lampstand/core';
+import { parseChordLine } from '@lampstand/lyrics';
 import { SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/media-url';
@@ -66,6 +67,7 @@ function draw(state: LiveState): void {
   drawTimers();
   $('label').textContent = state.program.content?.label ?? '';
   $('notes').textContent = state.program.content?.notes ?? '';
+  drawChords(state.program.content?.chords);
   const msg = $('message');
   if (state.stageMessage) {
     msg.hidden = false;
@@ -77,6 +79,38 @@ function draw(state: LiveState): void {
     }
     lastMessageAt = state.stageMessage.sentAt;
   } else msg.hidden = true;
+}
+
+/**
+ * Chord chart for the band: each line as a chord row over its lyric row, in a monospace font
+ * so a chord sits exactly over the syllable it's played on (positions are in `ch`).
+ */
+function drawChords(lines: string[] | undefined): void {
+  const box = $('chords');
+  box.hidden = !lines?.length;
+  box.replaceChildren(
+    ...(lines ?? []).map((line) => {
+      const { text, chords } = parseChordLine(line);
+      const row = document.createElement('div');
+      row.className = 'chord-line';
+      if (chords.length) {
+        const top = document.createElement('div');
+        top.className = 'chord-row';
+        for (const c of chords) {
+          const s = document.createElement('span');
+          s.textContent = c.chord;
+          s.style.left = `${c.pos}ch`;
+          top.append(s);
+        }
+        row.append(top);
+      }
+      const lyric = document.createElement('div');
+      lyric.className = 'lyric-row';
+      lyric.textContent = text || ' ';
+      row.append(lyric);
+      return row;
+    }),
+  );
 }
 
 api.onInfo(() => undefined);

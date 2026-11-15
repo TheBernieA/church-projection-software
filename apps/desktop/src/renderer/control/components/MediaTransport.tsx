@@ -10,25 +10,55 @@ import { mediaUrl } from '../../shared/media-url';
 
 const durations = new Map<string, number>();
 
-/** Duration of a library clip, read once from its metadata (no decoding) and cached. */
+/**
+ * Duration of a library clip: from the library record when known, else read once from the
+ * file's metadata (no decoding) and cached. A probe that errors or stalls is retried, so the
+ * progress bar never stays disabled because one metadata read went missing.
+ */
 function useMediaDuration(mediaId: string): number | undefined {
-  // Bumped when a probe finishes, to re-read the module-level cache.
+  const known = useStore((s) => s.media.find((m) => m.id === mediaId)?.durationSec);
+  // Bumped when a probe succeeds, to re-read the module-level cache.
   const [, setVersion] = useState(0);
   useEffect(() => {
-    if (durations.has(mediaId)) return;
-    const probe = document.createElement('video');
-    probe.preload = 'metadata';
-    probe.muted = true;
-    const done = (): void => {
-      if (Number.isFinite(probe.duration)) durations.set(mediaId, probe.duration);
-      probe.removeAttribute('src');
-      setVersion((v) => v + 1);
+    if (known || durations.has(mediaId)) return;
+    let cancelled = false;
+    let stop = (): void => undefined;
+    const attempt = (n: number): void => {
+      const probe = document.createElement('video');
+      probe.preload = 'metadata';
+      probe.muted = true;
+      let settled = false;
+      const end = (): void => {
+        settled = true;
+        clearTimeout(timer);
+        probe.removeAttribute('src');
+        probe.load();
+      };
+      const read = (): void => {
+        if (settled || !Number.isFinite(probe.duration) || probe.duration <= 0) return;
+        durations.set(mediaId, probe.duration);
+        end();
+        if (!cancelled) setVersion((v) => v + 1);
+      };
+      const retry = (): void => {
+        if (settled) return;
+        end();
+        if (!cancelled && n < 3) attempt(n + 1);
+      };
+      probe.addEventListener('loadedmetadata', read);
+      probe.addEventListener('durationchange', read);
+      probe.addEventListener('error', retry);
+      const timer = setTimeout(retry, 4000);
+      stop = end;
+      probe.src = mediaUrl(mediaId);
     };
-    probe.addEventListener('loadedmetadata', done, { once: true });
-    probe.src = mediaUrl(mediaId);
-    return () => probe.removeEventListener('loadedmetadata', done);
-  }, [mediaId]);
-  return durations.get(mediaId);
+    attempt(1);
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, [mediaId, known]);
+  return known ?? durations.get(mediaId);
 }
 
 /** Ticking playhead derived from the shared playback state (same maths as the outputs). */

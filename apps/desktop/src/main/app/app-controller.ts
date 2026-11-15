@@ -23,6 +23,7 @@ import {
   type Notice,
   type RepoKind,
 } from '@lampstand/ipc-contract';
+import { stripChords } from '@lampstand/lyrics';
 import { registerIpc } from '../ipc/router';
 import { createQueries } from '../ipc/queries';
 import { registerLibraryCommands } from '../commands/library-commands';
@@ -53,7 +54,10 @@ import {
 } from './services';
 
 function songDoc(s: Song): SongDoc {
-  const lines = s.sections.flatMap((x) => x.lines).filter((l) => l.trim());
+  const lines = s.sections
+    .flatMap((x) => x.lines)
+    .map(stripChords)
+    .filter((l) => l.trim());
   const hymn = s.hymnNumber?.[0]?.number ?? '';
   return {
     id: s.id,

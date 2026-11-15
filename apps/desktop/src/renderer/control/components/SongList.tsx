@@ -3,6 +3,7 @@ import { ListPlus, Plus, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
+import { stripChords } from '@lampstand/lyrics';
 import { Button, IconButton } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/library-drag';
@@ -17,7 +18,7 @@ function haystack(s: Song): string {
     s.ccliNumber ?? '',
     ...(s.hymnNumber?.map((h) => `#${h.number}`) ?? []),
     ...s.tags,
-    s.sections[0]?.lines[0] ?? '',
+    stripChords(s.sections[0]?.lines[0] ?? ''),
   ]
     .join(' ')
     .toLowerCase();
@@ -128,7 +129,7 @@ export function SongList({ hymns }: { hymns: boolean }) {
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className="truncate text-[13px] font-medium">{s.title}</span>
                     <span className="truncate text-[12px] text-[var(--text-3)]">
-                      {s.sections[0]?.lines[0] ?? ''}
+                      {stripChords(s.sections[0]?.lines[0] ?? '')}
                     </span>
                   </span>
                 </button>
