@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { listen } from './listen';
-import { Channels, QUERY_NAMES, type ControlApi, type QueryName } from '@lampstand/ipc-contract';
+// Names only (no schemas): keeps the sandboxed preload tiny.
+import { Channels, QUERY_NAMES, type QueryName } from '@lampstand/ipc-contract/channels';
+import type { ControlApi } from '@lampstand/ipc-contract';
 
 /**
  * Control-window API (§17.1): one named function per contract entry. `ipcRenderer` itself is

@@ -25,9 +25,11 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
   const chorded = song.sections.some((s) => s.lines.some(hasChords));
   const transpose = item.transpose ?? 0;
   const shift = (d: number): void => {
-    // Wrap within an octave: -11..11.
-    const next = ((((transpose + d) % 12) + 18) % 12) - 6;
-    patchItem<SongItem>(item, { transpose: next || undefined });
+    // Wrap within an octave (-6..+5), from the latest value so fast clicks all count.
+    patchItem<SongItem>(item, (current) => {
+      const next = (((((current.transpose ?? 0) + d) % 12) + 18) % 12) - 6;
+      return { transpose: next || undefined };
+    });
     void refreshLiveSlide(item.id); // the band's chart updates right away
   };
   return (

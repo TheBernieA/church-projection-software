@@ -1,4 +1,4 @@
-import type { MediaLayer } from './schemas/scene';
+import type { MediaLayer } from '../schemas/scene';
 
 /**
  * Where a live video should be right now, in seconds. Every output and the operator's transport

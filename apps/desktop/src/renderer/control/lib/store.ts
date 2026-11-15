@@ -276,9 +276,15 @@ export function updateItem<T extends ServiceItem>(
  * Change an item wherever it lives: in the service plan (saved, undoable) or, for a library
  * pick shown ad hoc, just on screen.
  */
-export function patchItem<T extends ServiceItem>(item: T, patchFields: Partial<T>): void {
-  if (get().adhoc?.id === item.id) patch({ adhoc: { ...item, ...patchFields } });
-  else updateItem<T>(item.id, (x) => ({ ...x, ...patchFields }));
+export function patchItem<T extends ServiceItem>(
+  item: T,
+  change: Partial<T> | ((current: T) => Partial<T>),
+): void {
+  // A function reads the item as it is NOW, so quick repeated clicks never lose a step.
+  const apply = (x: T): T => ({ ...x, ...(typeof change === 'function' ? change(x) : change) });
+  const adhoc = get().adhoc;
+  if (adhoc?.id === item.id) patch({ adhoc: apply(adhoc as T) });
+  else updateItem<T>(item.id, apply);
 }
 
 /** Append an item (usually from the library or quick bar) to the service and select it. */

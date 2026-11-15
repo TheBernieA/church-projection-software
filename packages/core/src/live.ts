@@ -2,12 +2,9 @@ import { z } from 'zod';
 import {
   BackgroundLayerSchema,
   ContentLayerSchema,
-  EMPTY_MASKS,
-  makeScene,
   MediaLayerSchema,
   WebLayerSchema,
   OverlaySchema,
-  overlayGroup,
   SceneSchema,
   type BackgroundLayer,
   type ContentLayer,
@@ -16,9 +13,10 @@ import {
   type Scene,
 } from './schemas/scene';
 import { TransitionSpecSchema } from './schemas/theme';
-import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './timers';
+import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
-import { mediaPositionAt, startMedia } from './mediaPlayback';
+import { mediaPositionAt, startMedia } from './utils/mediaPlayback';
+import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
 export type DetectionMode = z.infer<typeof DetectionModeSchema>;
