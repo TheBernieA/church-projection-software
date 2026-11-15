@@ -6,35 +6,16 @@ import {
   type Standby,
   type TransitionSpec,
 } from '@lampstand/core';
-import {
-  buildBackground,
-  buildMedia,
-  mediaKey,
-  syncMedia,
-  type MediaResolver,
-  type RenderMode,
-} from './background';
-import { buildContent, type BuiltContent } from './content';
-import { animate, el, FILL, safePlay } from './dom';
+import { buildBackground, buildMedia, mediaKey, syncMedia } from './background';
+import { buildContent } from './content';
+import { animate, el, safePlay } from './dom';
 import { buildOverlay } from './overlays';
 import { backgroundKey } from './style';
 import { transitionFrames } from './transitions';
 import { VisualSlot } from './visualSlot';
-
-export interface SceneRendererOptions extends MediaResolver {
-  mode: RenderMode;
-  /** Logical canvas; defaults to 1920×1080. */
-  canvas?: { width: number; height: number };
-  /** Whether this renderer may play media audio (exactly one should; see {@link setAudio}). */
-  audio?: boolean;
-  /** Transparent stage (alpha/key output). */
-  transparent?: boolean;
-}
-
-const STANDBY_FADE_MS = 600;
-
-const DEFAULT_TRANSITION: TransitionSpec = { kind: 'fade', durationMs: 400, easing: 'ease' };
-const BG_FADE_MS = 800;
+import { type SceneRendererOptions } from './types';
+import { BG_FADE_MS, DEFAULT_TRANSITION, FILL, STANDBY_FADE_MS } from './constants';
+import { type BuiltContent } from './types';
 
 interface Slot<T> {
   key: string;

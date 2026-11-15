@@ -1,5 +1,6 @@
 import { standbyKey, type ScreenVisual } from '@lampstand/core';
-import { animate, el, FILL, safePlay } from './dom';
+import { animate, el, safePlay } from './dom';
+import { FILL } from './constants';
 
 /** The text logo card: a name, centred on a soft dark gradient. */
 function styleLogoCard(node: HTMLElement, text: string): void {

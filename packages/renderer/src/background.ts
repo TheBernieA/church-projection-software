@@ -1,13 +1,8 @@
 import { mediaPositionAt, type BackgroundLayer, type MediaLayer } from '@lampstand/core';
-import { el, FILL, loop, safePlay } from './dom';
+import { el, loop, safePlay } from './dom';
 import { backgroundFilter, gradientCss } from './style';
-
-export interface MediaResolver {
-  /** URL for a library media id, e.g. `lampstand-media://<id>`. */
-  mediaUrl(mediaId: string): string;
-}
-
-export type RenderMode = 'output' | 'monitor' | 'thumbnail';
+import { FILL } from './constants';
+import { type MediaResolver, type RenderMode } from './types';
 
 /** Build a background element. Videos loop seamlessly and keep playing across slide changes. */
 export function buildBackground(

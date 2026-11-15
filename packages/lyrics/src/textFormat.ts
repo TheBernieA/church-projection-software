@@ -1,4 +1,5 @@
 import { newId, type SectionKind, type SongSection } from '@lampstand/core';
+import { type ParsedSongText } from './types';
 
 const HEADER = /^\s*\[([^\]]{1,60})\]\s*$/;
 
@@ -17,10 +18,6 @@ const KIND_PATTERNS: [RegExp, SectionKind][] = [
 export function inferSectionKind(label: string): SectionKind {
   for (const [re, kind] of KIND_PATTERNS) if (re.test(label.trim())) return kind;
   return 'other';
-}
-
-export interface ParsedSongText {
-  sections: SongSection[];
 }
 
 /**

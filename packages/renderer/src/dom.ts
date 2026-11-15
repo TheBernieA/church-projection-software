@@ -1,7 +1,5 @@
+import type { StyleInit } from './types';
 /** Tiny DOM helpers. Text is ALWAYS set via text nodes — never innerHTML (§17.1). */
-/** Plain style object (not a CSSStyleDeclaration, which is iterable and unsafe to spread). */
-export type StyleInit = Partial<Record<Extract<keyof CSSStyleDeclaration, string>, string>>;
-
 export function el<K extends keyof HTMLElementTagNameMap>(
   doc: Document,
   tag: K,
@@ -13,14 +11,6 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   if (style) Object.assign(e.style, style);
   return e;
 }
-
-export const FILL: StyleInit = {
-  position: 'absolute',
-  left: '0',
-  top: '0',
-  width: '100%',
-  height: '100%',
-};
 
 /** WAAPI animation that resolves when done. Falls back to instant where WAAPI is missing (tests). */
 export function animate(

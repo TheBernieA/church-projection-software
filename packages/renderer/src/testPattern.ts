@@ -1,4 +1,6 @@
-import { el, FILL, type StyleInit } from './dom';
+import { el } from './dom';
+import { FILL } from './constants';
+import type { StyleInit } from './types';
 
 const BARS = ['#C0C0C0', '#C0C000', '#00C0C0', '#00C000', '#C000C0', '#C00000', '#0000C0'];
 

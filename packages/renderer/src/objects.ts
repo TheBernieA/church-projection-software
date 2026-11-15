@@ -1,5 +1,6 @@
 import type { SlideObject } from '@lampstand/core';
-import { el, type StyleInit } from './dom';
+import { el } from './dom';
+import type { StyleInit } from './types';
 
 /**
  * Box style of a slide object on the 1920×1080 canvas: position, size, fill, stroke, shape.

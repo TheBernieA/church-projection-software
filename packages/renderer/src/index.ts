@@ -7,3 +7,4 @@ export * from './transitions';
 export * from './sceneRenderer';
 export * from './objects';
 export * from './testPattern';
+export * from './types';

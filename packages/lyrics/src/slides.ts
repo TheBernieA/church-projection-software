@@ -1,19 +1,6 @@
 import type { Song, SongSection } from '@lampstand/core';
 import { hasChords, stripChords } from './chords';
-
-export interface LyricSlide {
-  /** Stable within a song: `${sectionId}:${chunkIndex}:${occurrence}`. */
-  key: string;
-  sectionId: string;
-  sectionLabel: string;
-  /** e.g. "Chorus (2/2)". */
-  label: string;
-  lines: string[];
-  /** Translation lines for bilingual display, if available. */
-  translation?: string[];
-  /** The lines with their chords (`[G]Amazing grace`), for the stage display only. */
-  chordLines?: string[];
-}
+import { type LyricSlide } from './types';
 
 /** Split a section into slide-sized chunks. Explicit blank lines always break. */
 export function splitSection(lines: string[], maxLines: number): string[][] {

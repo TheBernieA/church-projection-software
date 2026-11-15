@@ -1,14 +1,6 @@
-import type { Overlay, PropPosition } from '@lampstand/core';
-import { el, FILL, loop, safePlay, type StyleInit } from './dom';
-
-const PROP_BOX: Record<PropPosition, StyleInit> = {
-  full: { ...FILL },
-  'top-left': { left: '56px', top: '48px', width: '22%', height: '22%' },
-  'top-right': { right: '56px', top: '48px', width: '22%', height: '22%' },
-  'bottom-left': { left: '56px', bottom: '48px', width: '22%', height: '22%' },
-  'bottom-right': { right: '56px', bottom: '48px', width: '22%', height: '22%' },
-  'lower-third': { left: '20%', right: '20%', bottom: '56px', height: '24%' },
-};
+import type { Overlay } from '@lampstand/core';
+import { el, loop, safePlay } from './dom';
+import { PROP_BOX } from './constants';
 
 /** A prop: a library image/video (contained in its box) or text, in a preset position. */
 function buildProp(

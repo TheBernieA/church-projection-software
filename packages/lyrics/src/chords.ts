@@ -1,21 +1,19 @@
+import { FLATS, SHARPS } from './constants';
+
+/** A note name: letter plus optional sharp/flat (regex source). */
+const NOTE = '[A-G](?:#|b)?';
+import { type ChordMark } from './types';
 /**
  * Chord charts, ChordPro style: chords sit in brackets inside a lyric line, right before the
  * syllable they're played on — `[G]Amazing [D]grace`. A line that is ONLY a bracket
  * (`[Verse 1]`) stays a section header, so plain lyric files are untouched.
  */
 
-const NOTE = '[A-G](?:#|b)?';
 /** A chord symbol: root, optional quality/extensions, optional slash bass (e.g. `F#m7/C#`). */
 export const CHORD_RE = new RegExp(
   `^${NOTE}(?:maj|min|dim|aug|sus|add|m|M|°|ø|\\+)?\\d*(?:(?:sus|add|maj|b|#)\\d+)*(?:/${NOTE})?$`,
 );
 const INLINE = /\[([^\]\s]{1,16})\]/g;
-
-export interface ChordMark {
-  /** Character position in the chord-free text where the chord is played. */
-  pos: number;
-  chord: string;
-}
 
 /** Split a line into its lyric text and the chords placed over it. */
 export function parseChordLine(line: string): { text: string; chords: ChordMark[] } {
@@ -40,9 +38,6 @@ export function stripChords(line: string): string {
 }
 
 export const hasChords = (line: string): boolean => parseChordLine(line).chords.length > 0;
-
-const SHARPS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const FLATS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
 function transposeNote(note: string, semitones: number, flats: boolean): string {
   const i = SHARPS.indexOf(note) >= 0 ? SHARPS.indexOf(note) : FLATS.indexOf(note);

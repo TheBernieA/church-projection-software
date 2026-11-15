@@ -3,10 +3,10 @@ import { buildObjectsLayer } from './objects';
 import { el } from './dom';
 import { FitCache, fitFontSize } from './fit';
 import { applyTextStyle, safeAreaPx } from './style';
+import { type BuiltContent } from './types';
+import { RED_LETTER } from './constants';
 
 const fitCache = new FitCache();
-
-const RED_LETTER = '#E8574F';
 
 function appendSpans(doc: Document, parent: HTMLElement, spans: Span[], theme: Theme): void {
   for (const span of spans) {
@@ -40,13 +40,6 @@ function appendSpans(doc: Document, parent: HTMLElement, spans: Span[], theme: T
 export function formatCountdown(targetIso: string, now: number): string {
   // Round up so "00:00" only shows once the target has actually passed.
   return formatClock(Math.ceil(Math.max(0, Date.parse(targetIso) - now) / 1000));
-}
-
-export interface BuiltContent {
-  root: HTMLElement;
-  /** Must be called once the root is attached to the stage, before it becomes visible. */
-  fit(): void;
-  dispose(): void;
 }
 
 /** Build the DOM for one content slide using its theme. */
