@@ -351,7 +351,7 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
   await control.keyboard.press('Escape');
   // Output role dropdown inside a dialog.
   await control.getByTitle('Outputs').first().click();
-  const role = control.getByRole('combobox').first();
+  const role = control.getByRole('dialog').getByRole('combobox').first();
   await role.click();
   await expect(control.getByRole('option', { name: /Stage display/ })).toBeVisible();
   await control.waitForTimeout(300);

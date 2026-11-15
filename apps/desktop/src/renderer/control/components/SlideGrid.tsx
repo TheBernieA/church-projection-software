@@ -47,7 +47,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const adhoc = useStore((s) => s.adhoc);
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
-  const live = useStore((s) => s.live);
+  const liveKey = useStore((s) => s.live?.program.content?.key);
   const previewCursor = useStore((s) => s.previewCursor);
   const liveCursor = useStore((s) => s.liveCursor);
   const editCursor = useStore((s) => s.editCursor);
@@ -153,7 +153,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
               const isLive =
                 liveCursor?.itemId === item.id &&
                 liveCursor.index === i &&
-                (slide.action.kind !== 'content' || live?.program.content?.key === slide.key);
+                (slide.action.kind !== 'content' || liveKey === slide.key);
               const isPreview =
                 !isLive && previewCursor?.itemId === item.id && previewCursor.index === i;
               const isEditing =

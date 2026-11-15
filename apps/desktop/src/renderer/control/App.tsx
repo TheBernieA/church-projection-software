@@ -1,22 +1,25 @@
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { lazyNamed, preloadLazyViews } from './lib/lazy';
 import { installShortcuts } from './lib/shortcuts';
 import { useStore } from './lib/store';
 import { CenterPane } from './components/modes/CenterPane';
-import { OutputsDialog } from './components/OutputsDialog';
-import { PerfHud } from './components/PerfHud';
 import { QuickBar } from './components/QuickBar';
-import { ServicesDialog } from './components/ServicesDialog';
-import { SettingsDialog } from './components/SettingsDialog';
-import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { Bin } from './components/shell/Bin';
 import { LeftSidebar } from './components/shell/LeftSidebar';
 import { RightColumn } from './components/shell/RightColumn';
 import { Splitter, usePaneSize } from './components/shell/Splitter';
 import { Toolbar } from './components/shell/Toolbar';
-import { SongEditor } from './components/SongEditor';
-import { ThemeEditor } from './components/ThemeEditor';
 import { Toasts } from './components/Toasts';
+
+// Opened on demand: loaded the first time they're needed, not at startup.
+const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
+const PerfHud = lazyNamed(() => import('./components/PerfHud'), 'PerfHud');
+const ServicesDialog = lazyNamed(() => import('./components/ServicesDialog'), 'ServicesDialog');
+const SettingsDialog = lazyNamed(() => import('./components/SettingsDialog'), 'SettingsDialog');
+const ShortcutsDialog = lazyNamed(() => import('./components/ShortcutsDialog'), 'ShortcutsDialog');
+const SongEditor = lazyNamed(() => import('./components/SongEditor'), 'SongEditor');
+const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEditor');
 
 /**
  * Control window, "Show workspace" layout:
@@ -30,10 +33,12 @@ export function App() {
   const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
   const uiScale = useStore((s) => s.settings?.uiScale ?? 1);
   const binOpen = useStore((s) => s.binOpen);
+  const dialog = useStore((s) => s.dialog);
   const left = usePaneSize('leftWidth', 290, 220, 460);
   const right = usePaneSize('rightWidth', 340, 280, 560);
   const bin = usePaneSize('binHeight', 236, 150, 520);
   useEffect(() => installShortcuts(), []);
+  useEffect(() => preloadLazyViews(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;
     document.documentElement.style.zoom = String(uiScale);
@@ -68,13 +73,15 @@ export function App() {
         </aside>
       </div>
       <QuickBar />
-      <SongEditor />
-      <ThemeEditor />
-      <OutputsDialog />
-      <SettingsDialog />
-      <ShortcutsDialog />
-      <ServicesDialog />
-      <PerfHud />
+      <Suspense fallback={null}>
+        {dialog === 'song' && <SongEditor />}
+        {dialog === 'theme' && <ThemeEditor />}
+        {dialog === 'outputs' && <OutputsDialog />}
+        {dialog === 'settings' && <SettingsDialog />}
+        {dialog === 'shortcuts' && <ShortcutsDialog />}
+        {dialog === 'services' && <ServicesDialog />}
+        {dialog === 'perf' && <PerfHud />}
+      </Suspense>
       <Toasts />
     </div>
   );

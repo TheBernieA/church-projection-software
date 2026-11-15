@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import type { Scene, Standby } from '@lampstand/core';
 import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
 import { mediaUrl } from '../../shared/mediaUrl';
@@ -6,9 +6,10 @@ import { useLogo } from '../lib/hooks';
 
 /**
  * React wrapper around the shared output renderer — the operator sees exactly what the
- * projector shows (WYSIWYG, §3.2). Thumbnails render lazily when scrolled into view.
+ * projector shows (WYSIWYG, §3.2). Thumbnails render lazily when scrolled into view, and a
+ * memo keeps an unchanged scene from re-rendering when its parent does.
  */
-export function SceneView({
+export const SceneView = memo(function SceneView({
   scene,
   mode = 'monitor',
   className = '',
@@ -69,4 +70,4 @@ export function SceneView({
       className={`relative aspect-video w-full overflow-hidden ${transparent ? '' : 'bg-black'} ${className}`}
     />
   );
-}
+});

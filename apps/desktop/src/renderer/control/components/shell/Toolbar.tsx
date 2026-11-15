@@ -77,20 +77,26 @@ function ModeTabs() {
 export function Toolbar() {
   const { t } = useTranslation();
   const service = useStore((s) => s.service);
-  const live = useStore((s) => s.live);
+  // Primitives only: live state is rebroadcast on every timer tick, and the toolbar shouldn't
+  // re-render unless what it shows actually changes.
+  const onAir = useStore((s) => !!s.live && sceneHasContent(s.live.program));
+  const programSince = useStore((s) => s.live?.programSince ?? null);
+  const mask = useStore((s) =>
+    s.live?.program.masks.black ? 'black' : s.live?.program.masks.logo ? 'logo' : null,
+  );
+  const masked = mask !== null;
+  const showing = useStore(
+    (s) => !!s.live && (sceneIsVisible(s.live.program) || s.live.program.overlays.length > 0),
+  );
+  const visible = showing || masked;
   const history = useStore((s) => s.history);
   const clickGoesLive = useStore((s) => s.settings?.clickGoesLive ?? true);
   const outputs = useStore((s) => s.displays.filter((d) => d.role !== 'none').length);
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
   const keys = effectiveShortcuts();
   const noOutput = !windowMode && outputs === 0;
-  const onAir = !!live && sceneHasContent(live.program);
-  const elapsed = useElapsed(onAir ? live.programSince : null);
-  const masks = live?.program.masks;
-  const masked = !!masks && (masks.black || masks.logo);
+  const elapsed = useElapsed(onAir ? programSince : null);
   const hot = onAir && !masked;
-  const visible =
-    !!live && (sceneIsVisible(live.program) || masked || live.program.overlays.length > 0);
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--hairline)] bg-[var(--surface-1)] px-2.5">
@@ -218,7 +224,7 @@ export function Toolbar() {
           {hot
             ? t('top.live').toUpperCase()
             : masked
-              ? masks.black
+              ? mask === 'black'
                 ? t('monitor.black')
                 : t('monitor.logo')
               : t('top.offAirShort')}
