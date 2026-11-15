@@ -14,6 +14,12 @@ import { cmd } from '../lib/api';
 import { attempt, closeDialog, toast, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
 
+interface ArrangementDraft {
+  id: string;
+  name: string;
+  order: string;
+}
+
 /** Fast plain-text song editor with live slide preview (§9.1). */
 export function SongEditor() {
   const open = useStore((s) => s.dialog === 'song');
@@ -50,15 +56,23 @@ function SongEditorBody({
   const [text, setText] = useState(
     isNew ? '[Verse 1]\n\n[Chorus]\n' : songSectionsToText(base.sections),
   );
-  const [order, setOrder] = useState(() => {
-    const arr = base.arrangements.find((a) => a.id === base.defaultArrangementId);
-    return arr ? arrangementLabel(arr.sectionOrder, base.sections) : '';
-  });
+  // Arrangements are edited as typed orders ("V1 C V2 C B C"); an empty order = all sections.
+  const [arrangements, setArrangements] = useState<ArrangementDraft[]>(() =>
+    base.arrangements.map((a) => ({
+      id: a.id,
+      name: a.name,
+      order: arrangementLabel(a.sectionOrder, base.sections),
+    })),
+  );
+  const [defaultId, setDefaultId] = useState(base.defaultArrangementId);
+  const firstLang = Object.keys(base.translations ?? {})[0] ?? '';
+  const [transLang, setTransLang] = useState(firstLang);
+  const [transText, setTransText] = useState(() =>
+    firstLang ? songSectionsToText(base.translations?.[firstLang] ?? []) : '',
+  );
 
   const draft: Song = useMemo(() => {
     const { sections } = parseSongText(text, base.sections);
-    const arrangementId = base.defaultArrangementId;
-    const sectionOrder = order.trim() ? parseArrangementOrder(order, sections) : [];
     const song: Song = {
       ...base,
       title: title.trim() || 'Untitled song',
@@ -67,16 +81,28 @@ function SongEditorBody({
         .map((a) => a.trim())
         .filter(Boolean),
       sections,
-      arrangements: base.arrangements.map((a) =>
-        a.id === arrangementId ? { ...a, sectionOrder } : a,
-      ),
+      arrangements: arrangements.map((a) => ({
+        id: a.id,
+        name: a.name.trim() || 'Arrangement',
+        sectionOrder: a.order.trim() ? parseArrangementOrder(a.order, sections) : [],
+      })),
+      defaultArrangementId: arrangements.some((a) => a.id === defaultId)
+        ? defaultId
+        : (arrangements[0]?.id ?? base.defaultArrangementId),
     };
     if (copyright.trim()) song.copyright = copyright.trim();
     else delete song.copyright;
     if (ccli.trim()) song.ccliNumber = ccli.trim();
     else delete song.ccliNumber;
+    // The translation's sections take the main sections' ids (matched by label), so each
+    // translated chunk lands under the right slide.
+    if (transLang.trim() && transText.trim())
+      song.translations = { [transLang.trim()]: parseSongText(transText, sections).sections };
+    else delete song.translations;
     return song;
-  }, [base, text, order, title, authors, copyright, ccli]);
+  }, [base, text, arrangements, defaultId, title, authors, copyright, ccli, transLang, transText]);
+  const editArrangement = (id: string, p: Partial<ArrangementDraft>): void =>
+    setArrangements((xs) => xs.map((a) => (a.id === id ? { ...a, ...p } : a)));
 
   const slides = useMemo(() => buildSongSlides(draft, { maxLines }), [draft, maxLines]);
   const readOnly = base.origin === 'hymnal';
@@ -195,19 +221,97 @@ function SongEditorBody({
             />
             <p className="mt-1 text-[11px] text-[var(--text-3)]">{t('song.lyricsHelp')}</p>
           </div>
-          <div>
-            <label className="label" htmlFor="s-arr">
-              {t('song.arrangement')}
-            </label>
-            <input
-              id="s-arr"
-              className="field"
-              value={order}
-              onChange={(e) => setOrder(e.target.value)}
-              placeholder="V1 C V2 C B C"
-            />
+          <section aria-label={t('song.arrangements')}>
+            <span className="label">{t('song.arrangements')}</span>
+            <ul className="space-y-1.5">
+              {arrangements.map((a) => (
+                <li key={a.id} className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="default-arrangement"
+                    aria-label={t('song.defaultArrangement', { name: a.name })}
+                    title={t('song.defaultArrangementHint')}
+                    checked={defaultId === a.id}
+                    onChange={() => setDefaultId(a.id)}
+                  />
+                  <input
+                    className="field !h-8 !w-36"
+                    aria-label={t('song.arrangementName')}
+                    value={a.name}
+                    maxLength={60}
+                    onChange={(e) => editArrangement(a.id, { name: e.target.value })}
+                  />
+                  <input
+                    className="field !h-8 min-w-0 flex-1"
+                    aria-label={t('song.arrangementOrder', { name: a.name })}
+                    value={a.order}
+                    onChange={(e) => editArrangement(a.id, { order: e.target.value })}
+                    placeholder="V1 C V2 C B C"
+                  />
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    type="button"
+                    disabled={arrangements.length <= 1}
+                    aria-label={t('song.removeArrangement', { name: a.name })}
+                    onClick={() => setArrangements((xs) => xs.filter((x) => x.id !== a.id))}
+                  >
+                    ✕
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <Button
+              size="xs"
+              variant="ghost"
+              type="button"
+              className="mt-1.5"
+              disabled={arrangements.length >= 20}
+              onClick={() =>
+                setArrangements((xs) => [
+                  ...xs,
+                  {
+                    id: newId(),
+                    name: t('song.newArrangementName', { n: xs.length + 1 }),
+                    order: '',
+                  },
+                ])
+              }
+            >
+              + {t('song.addArrangement')}
+            </Button>
             <p className="mt-1 text-[11px] text-[var(--text-3)]">{t('song.arrangementHelp')}</p>
-          </div>
+          </section>
+          <section aria-label={t('song.translationSection')}>
+            <div className="flex items-end gap-2">
+              <div className="w-28">
+                <label className="label" htmlFor="s-tlang">
+                  {t('song.translationLang')}
+                </label>
+                <input
+                  id="s-tlang"
+                  className="field !h-8"
+                  value={transLang}
+                  maxLength={35}
+                  placeholder="es"
+                  onChange={(e) => setTransLang(e.target.value)}
+                />
+              </div>
+              <p className="pb-1.5 text-[11px] text-[var(--text-3)]">{t('song.translationHelp')}</p>
+            </div>
+            <label className="label mt-2" htmlFor="s-trans">
+              {t('song.translation')}
+            </label>
+            <textarea
+              id="s-trans"
+              className="field"
+              rows={6}
+              value={transText}
+              onChange={(e) => setTransText(e.target.value)}
+              placeholder={'[Verse 1]\n…'}
+              spellCheck
+            />
+          </section>
         </div>
         <div className="min-h-0">
           <span className="label">

@@ -213,6 +213,39 @@ test('create a song in the editor → add to service → go live → output show
   });
 });
 
+test('songs: build arrangements and a translation, then pick them per item', async () => {
+  const out = await outputPage();
+  await mode('Edit'); // Test Song (just added to the service) opens in the inline editor
+  await control.getByRole('button', { name: '+ Add arrangement' }).click();
+  await control.getByLabel('Arrangement name').last().fill('Short');
+  await control.getByLabel('Order for Short').fill('C V1');
+  await control.getByLabel('Language', { exact: true }).fill('es');
+  await control
+    .getByLabel('Translated words')
+    .fill('[Verse 1]\nLinea de prueba\n\n[Chorus]\nCoro de prueba');
+  await control.getByRole('button', { name: 'Save song' }).click();
+  await mode('Show');
+  const slides = control.getByRole('list', { name: 'Slide list' });
+  await control.getByRole('combobox', { name: 'Arrangement' }).click();
+  await control.getByRole('option', { name: 'Short' }).click();
+  await expect(slides.locator('li').first()).toContainText('Chorus'); // the order changed
+  await control.getByRole('combobox', { name: 'Translation' }).click();
+  await control.getByRole('option', { name: 'ES' }).click();
+  await slides
+    .getByRole('button', { name: /^Chorus/ })
+    .first()
+    .click(); // click goes live
+  await expect(out.locator('.ls-block-secondary')).toHaveText('Coro de prueba');
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/05b-arrangement-translation.png' });
+  // Back to the default arrangement, no translation, for the tests that follow.
+  await control.getByRole('combobox', { name: 'Translation' }).click();
+  await control.getByRole('option', { name: 'No translation' }).click();
+  await control.getByRole('combobox', { name: 'Arrangement' }).click();
+  await control.getByRole('option').first().click();
+  await expect(slides.locator('li').first()).toContainText('Verse 1');
+});
+
 test('settings: category pages, installed Bible packages', async () => {
   await control.getByTitle('Settings').click();
   const nav = control.getByRole('navigation', { name: 'Settings' });

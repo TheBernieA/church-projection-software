@@ -80,6 +80,31 @@ describe('SceneRenderer', () => {
   });
 });
 
+describe('bilingual lyrics', () => {
+  it('draws a secondary (translation) block smaller and in italics under the lyric', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const s = scene('Amazing grace');
+    r.render(
+      {
+        ...s,
+        content: {
+          ...s.content!,
+          blocks: [
+            { spans: [{ text: 'Amazing grace' }] },
+            { spans: [{ text: 'Sublime gracia' }], role: 'secondary' },
+          ],
+        },
+      },
+      { instant: true },
+    );
+    const second = host.querySelector('.ls-block-secondary') as HTMLElement;
+    expect(second.textContent).toBe('Sublime gracia');
+    expect(second.style.fontStyle).toBe('italic');
+    expect(second.style.fontSize).toBe('0.72em');
+  });
+});
+
 describe('props', () => {
   it('draws a library picture in its position and keeps it when other overlays change', () => {
     const host = document.createElement('div');

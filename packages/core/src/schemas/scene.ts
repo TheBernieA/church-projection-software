@@ -23,6 +23,8 @@ export const TextBlockSchema = z.object({
   lang: z.string().max(35).optional(),
   /** Optional label shown above the block (e.g. version abbreviation in multi-version). */
   label: z.string().max(40).optional(),
+  /** `secondary`: a quieter line under the main text (e.g. a song's translation). */
+  role: z.enum(['secondary']).optional(),
 });
 export type TextBlock = z.infer<typeof TextBlockSchema>;
 

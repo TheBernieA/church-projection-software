@@ -103,7 +103,11 @@
     "count_other": "{{count}} slides",
     "arrangement": "Arrangement",
     "size": "Slide size",
-    "quickEditHint": "Right-click to edit this slide"
+    "quickEditHint": "Right-click to edit this slide",
+    "order": "Section order",
+    "translation": "Translation",
+    "noTranslation": "No translation",
+    "list": "Slide list"
   },
   "monitor": {
     "preview": "Preview",
@@ -163,7 +167,19 @@
     "delete": "Delete song",
     "duplicate": "Duplicate to edit",
     "readOnly": "Hymnal songs are read-only. Duplicate it to make your own version.",
-    "saved": "Saved {{title}}"
+    "saved": "Saved {{title}}",
+    "arrangements": "Arrangements",
+    "defaultArrangement": "Make {{name}} the default",
+    "defaultArrangementHint": "The default arrangement is used unless an item picks another",
+    "arrangementName": "Arrangement name",
+    "arrangementOrder": "Order for {{name}}",
+    "removeArrangement": "Remove {{name}}",
+    "newArrangementName": "Arrangement {{n}}",
+    "addArrangement": "Add arrangement",
+    "translation": "Translated words",
+    "translationLang": "Language",
+    "translationHelp": "Same [Section] headings as the lyrics. Pick the translation for an item in the slide grid.",
+    "translationSection": "Translation"
   },
   "theme": {
     "title": "Edit theme",

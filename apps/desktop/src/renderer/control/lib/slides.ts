@@ -125,6 +125,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
       const background = themeBackground(theme, item.background);
       const lyricSlides = buildSongSlides(song, {
         arrangementId: item.arrangementId,
+        translationLang: item.translationLang,
         maxLines: ctx.settings?.lyrics.maxLinesPerSlide ?? 4,
       });
       const credit = [
@@ -141,7 +142,8 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         missing: [],
         slides: lyricSlides.map((ls, i) => {
           const blocks: TextBlock[] = [textBlock(ls.lines.join('\n'))];
-          if (ls.translation) blocks.push(textBlock(ls.translation.join('\n')));
+          if (ls.translation)
+            blocks.push({ ...textBlock(ls.translation.join('\n')), role: 'secondary' });
           const content: ContentLayer = {
             key: ls.key,
             kind: 'lyrics',

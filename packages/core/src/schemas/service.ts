@@ -19,6 +19,10 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     kind: z.literal('song'),
     songId: IdSchema,
     arrangementId: IdSchema.optional(),
+    /** Show this translation (a key of `song.translations`) under the lyrics. */
+    translationLang: z.string().max(35).optional(),
+    /** Transpose chords on the stage display by this many semitones. */
+    transpose: z.number().int().min(-11).max(11).optional(),
     themeId: IdSchema.optional(),
     background: BackgroundRefSchema.optional(),
   }),

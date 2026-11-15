@@ -96,7 +96,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Arrangements',
     'Reorder or repeat verse and chorus groups to build different song arrangements.',
-    'soon',
   ),
   f(
     'objects',
@@ -475,7 +474,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Bilingual lyrics',
     'Show a song in two languages at once, line by line.',
-    'soon',
   ),
   f(
     'web-content',

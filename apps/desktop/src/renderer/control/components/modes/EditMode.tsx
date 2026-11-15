@@ -1,7 +1,6 @@
 import {
   Globe,
   Guitar,
-  Languages,
   MousePointerClick,
   PencilOff,
   Shapes,
@@ -22,7 +21,6 @@ function SoonTools({ song }: { song: boolean }) {
       {song ? (
         <>
           <SoonFeature id="chords" icon={<Guitar size={14} />} />
-          <SoonFeature id="bilingual" icon={<Languages size={14} />} />
         </>
       ) : (
         <>

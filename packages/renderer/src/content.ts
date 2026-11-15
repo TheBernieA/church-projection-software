@@ -114,6 +114,12 @@ export function buildContent(
       if (b.dir) block.dir = b.dir;
       if (b.lang) block.lang = b.lang;
       if (i > 0) block.style.marginTop = '0.6em';
+      if (b.role === 'secondary') {
+        // A translation sits under the main lyric: smaller, italic, a little softer.
+        block.classList.add('ls-block-secondary');
+        Object.assign(block.style, { fontSize: '0.72em', fontStyle: 'italic', opacity: '0.85' });
+        if (i > 0) block.style.marginTop = '0.35em';
+      }
       if (b.label) {
         const lab = el(doc, 'div', 'ls-block-label', {
           fontSize: '0.45em',

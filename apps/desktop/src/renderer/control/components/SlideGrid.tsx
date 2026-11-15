@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Keyboard, ListPlus, MousePointerClick, Pencil, Plus, Shuffle } from 'lucide-react';
+import { Keyboard, ListPlus, MousePointerClick, Pencil, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
 import { Button, TallyTag } from '@lampstand/ui';
@@ -11,6 +11,7 @@ import { AddCard } from './cards';
 import { KindTile } from './kind-icons';
 import { EmptyState } from './EmptyState';
 import { SceneView } from './SceneView';
+import { SongControls } from './SongControls';
 import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
 
@@ -85,13 +86,9 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
           </span>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          {song && (
+          {song && item?.kind === 'song' && (
             <>
-              <SoonFeature
-                id="arrangements"
-                icon={<Shuffle size={14} />}
-                label={t('slides.arrangement')}
-              />
+              <SongControls item={item} song={song} />
               <SoonFeature id="group-hotkeys" compact icon={<Keyboard size={14} />} />
             </>
           )}
@@ -145,6 +142,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
           <p className="p-6 text-center text-[var(--text-3)]">{t('slides.noSlides')}</p>
         )}
         <ol
+          aria-label={t('slides.list')}
           className="grid gap-3"
           style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${thumb.size}px, 1fr))` }}
         >
