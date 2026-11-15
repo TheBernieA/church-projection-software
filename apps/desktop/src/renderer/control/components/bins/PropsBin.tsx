@@ -1,11 +1,19 @@
 import { useState } from 'react';
-import { Plus, Trash2, Type } from 'lucide-react';
+import { Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Overlay, type PropPosition, type Settings } from '@lampstand/core';
-import { Button, IconButton } from '@lampstand/ui';
-import { hideOverlay, saveSettings, showOverlay } from '../../lib/actions';
+import { Button, IconButton, TallyTag } from '@lampstand/ui';
+import { hideOverlay, showOverlay } from '../../lib/actions';
+import {
+  isPicture,
+  useMediaKindOf,
+  useOverlayLive,
+  usePictures,
+  useSettingsList,
+} from '../../lib/hooks';
 import { useStore } from '../../lib/store';
 import { thumbUrl } from '../../../shared/media-url';
+import { AddCard, BIN_CARD } from '../cards';
 import { Select } from '../Select';
 
 type Prop = Settings['props'][number];
@@ -25,117 +33,82 @@ const overlayId = (p: Prop): string => `prop-${p.id}`;
 function toOverlay(p: Prop, kindOf: (id: string) => string | undefined): Overlay {
   const kind = p.mediaId ? kindOf(p.mediaId) : undefined;
   const o: Overlay = { id: overlayId(p), kind: 'prop', text: p.text ?? '', position: p.position };
-  if (p.mediaId && (kind === 'image' || kind === 'video')) {
+  if (p.mediaId && isPicture(kind)) {
     o.mediaId = p.mediaId;
     o.mediaKind = kind;
   }
   return o;
 }
 
-/** Props: logos, images, videos or text overlaid on everything; click to show or hide. */
-export function PropsBin() {
+/** One prop: click the picture to show or hide it; change its position live. */
+function PropCard({
+  prop,
+  onChange,
+  onDelete,
+}: {
+  prop: Prop;
+  onChange: (next: Prop) => void;
+  onDelete: () => void;
+}) {
   const { t } = useTranslation();
-  const props = useStore((s) => s.settings?.props);
-  const media = useStore((s) => s.media);
-  const overlays = useStore((s) => s.live?.program.overlays);
-  const [adding, setAdding] = useState(false);
-  const pictures = media.filter((m) => m.kind === 'image' || m.kind === 'video');
-  const kindOf = (id: string): string | undefined => media.find((m) => m.id === id)?.kind;
-  const list = props ?? [];
-  const save = (next: Prop[]): void => void saveSettings({ props: next });
-  const isLive = (p: Prop): boolean => !!overlays?.some((o) => o.id === overlayId(p));
-  const toggle = (p: Prop): void =>
-    void (isLive(p) ? hideOverlay(overlayId(p)) : showOverlay(toOverlay(p, kindOf)));
-
+  const kindOf = useMediaKindOf();
+  const on = useOverlayLive(overlayId(prop));
+  const m = useStore((s) =>
+    prop.mediaId ? s.media.find((x) => x.id === prop.mediaId) : undefined,
+  );
   return (
-    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
-      {list.map((p) => {
-        const on = isLive(p);
-        const m = p.mediaId ? media.find((x) => x.id === p.mediaId) : undefined;
-        return (
-          <div key={p.id} className="group flex w-[168px] shrink-0 flex-col gap-1.5">
-            <button
-              type="button"
-              aria-pressed={on}
-              aria-label={p.name}
-              onClick={() => toggle(p)}
-              style={on ? { boxShadow: 'var(--tally-program-glow)' } : undefined}
-              className="relative flex aspect-video w-full cursor-pointer items-center justify-center overflow-hidden rounded-[5px] bg-[repeating-conic-gradient(#2a2a2d_0%_25%,#202022_0%_50%)] bg-[length:16px_16px] shadow-[var(--shadow-1)]"
-            >
-              {m?.hasThumbnail ? (
-                <img src={thumbUrl(m.id)} alt="" className="max-h-full max-w-full object-contain" />
-              ) : (
-                <span className="px-2 text-center text-[13px] font-bold text-white">
-                  {p.text || m?.name || p.name}
-                </span>
-              )}
-              {on && (
-                <span className="absolute right-1.5 top-1.5 rounded-[4px] bg-[var(--tally-program)] px-1 text-[9px] font-bold text-white">
-                  LIVE
-                </span>
-              )}
-            </button>
-            <div className="flex items-center gap-1">
-              <span className="min-w-0 flex-1 truncate text-[12px] font-medium">{p.name}</span>
-              <IconButton
-                size="xs"
-                aria-label={t('props.delete', { name: p.name })}
-                className="opacity-0 group-hover:opacity-100"
-                onClick={() => {
-                  if (on) void hideOverlay(overlayId(p));
-                  save(list.filter((x) => x.id !== p.id));
-                }}
-              >
-                <Trash2 size={13} />
-              </IconButton>
-            </div>
-            <Select<PropPosition>
-              size="sm"
-              aria-label={t('props.position')}
-              value={p.position}
-              onChange={(position) => {
-                const next = { ...p, position };
-                save(list.map((x) => (x.id === p.id ? next : x)));
-                if (on) void showOverlay(toOverlay(next, kindOf));
-              }}
-              options={POSITIONS.map((v) => ({ value: v, label: t(`props.positions.${v}`) }))}
-            />
-          </div>
-        );
-      })}
-      {adding ? (
-        <NewProp
-          pictures={pictures}
-          onCancel={() => setAdding(false)}
-          onCreate={(p) => {
-            save([...list, p]);
-            setAdding(false);
+    <div className="group flex w-[168px] shrink-0 flex-col gap-1.5">
+      <button
+        type="button"
+        aria-pressed={on}
+        aria-label={prop.name}
+        onClick={() =>
+          void (on ? hideOverlay(overlayId(prop)) : showOverlay(toOverlay(prop, kindOf)))
+        }
+        style={on ? { boxShadow: 'var(--tally-program-glow)' } : undefined}
+        className="relative flex aspect-video w-full cursor-pointer items-center justify-center overflow-hidden rounded-[5px] bg-[repeating-conic-gradient(#2a2a2d_0%_25%,#202022_0%_50%)] bg-[length:16px_16px] shadow-[var(--shadow-1)]"
+      >
+        {m?.hasThumbnail ? (
+          <img src={thumbUrl(m.id)} alt="" className="max-h-full max-w-full object-contain" />
+        ) : (
+          <span className="px-2 text-center text-[13px] font-bold text-white">
+            {prop.text || m?.name || prop.name}
+          </span>
+        )}
+        {on && <TallyTag tone="program">LIVE</TallyTag>}
+      </button>
+      <div className="flex items-center gap-1">
+        <span className="min-w-0 flex-1 truncate text-[12px] font-medium">{prop.name}</span>
+        <IconButton
+          size="xs"
+          aria-label={t('props.delete', { name: prop.name })}
+          className="opacity-0 group-hover:opacity-100"
+          onClick={() => {
+            void hideOverlay(overlayId(prop));
+            onDelete();
           }}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="flex aspect-video w-[168px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 self-start rounded-[5px] border-2 border-dashed border-[var(--hairline-strong)] text-[12px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
         >
-          <Plus size={18} />
-          {t('props.new')}
-        </button>
-      )}
+          <Trash2 size={13} />
+        </IconButton>
+      </div>
+      <Select<PropPosition>
+        size="sm"
+        aria-label={t('props.position')}
+        value={prop.position}
+        onChange={(position) => {
+          const next = { ...prop, position };
+          onChange(next);
+          if (on) void showOverlay(toOverlay(next, kindOf));
+        }}
+        options={POSITIONS.map((v) => ({ value: v, label: t(`props.positions.${v}`) }))}
+      />
     </div>
   );
 }
 
-function NewProp({
-  pictures,
-  onCreate,
-  onCancel,
-}: {
-  pictures: { id: string; name: string }[];
-  onCreate: (p: Prop) => void;
-  onCancel: () => void;
-}) {
+function NewProp({ onCreate, onCancel }: { onCreate: (p: Prop) => void; onCancel: () => void }) {
   const { t } = useTranslation();
+  const pictures = usePictures();
   const TEXT = '__text__';
   const [source, setSource] = useState<string>(pictures[0]?.id ?? TEXT);
   const [text, setText] = useState('');
@@ -144,7 +117,7 @@ function NewProp({
   const ready = source === TEXT ? !!text.trim() : !!picture;
   return (
     <form
-      className="flex w-[260px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      className={`${BIN_CARD} w-[260px]`}
       aria-label={t('props.new')}
       onSubmit={(e) => {
         e.preventDefault();
@@ -197,5 +170,39 @@ function NewProp({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Props: logos, images, videos or text overlaid on everything; click to show or hide. */
+export function PropsBin() {
+  const { t } = useTranslation();
+  const [props, save] = useSettingsList('props');
+  const [adding, setAdding] = useState(false);
+  return (
+    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
+      {props.map((p) => (
+        <PropCard
+          key={p.id}
+          prop={p}
+          onChange={(next) => save(props.map((x) => (x.id === p.id ? next : x)))}
+          onDelete={() => save(props.filter((x) => x.id !== p.id))}
+        />
+      ))}
+      {adding ? (
+        <NewProp
+          onCancel={() => setAdding(false)}
+          onCreate={(p) => {
+            save([...props, p]);
+            setAdding(false);
+          }}
+        />
+      ) : (
+        <AddCard
+          label={t('props.new')}
+          onClick={() => setAdding(true)}
+          className="aspect-video w-[168px]"
+        />
+      )}
+    </div>
   );
 }

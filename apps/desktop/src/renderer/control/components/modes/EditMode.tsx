@@ -8,13 +8,12 @@ import {
   Wand2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useSelectedItem } from '../../lib/hooks';
-import { useStore } from '../../lib/store';
+import { useInService, useSelectedItem } from '../../lib/hooks';
 import { SlideGrid } from '../SlideGrid';
 import { SlideInspector } from '../SlideInspector';
 import { SongEditorInline } from '../SongEditor';
 import { SoonFeature } from '../Soon';
-import { EmptyState } from './EmptyState';
+import { EmptyState } from '../EmptyState';
 
 /** Editing tools that are on the way, shown where they will live. */
 function SoonTools({ song }: { song: boolean }) {
@@ -40,7 +39,7 @@ function SoonTools({ song }: { song: boolean }) {
 export function EditMode() {
   const { t } = useTranslation();
   const item = useSelectedItem();
-  const inService = useStore((s) => !!item && !!s.service?.items.some((x) => x.id === item.id));
+  const inService = useInService(item);
   if (!item)
     return <EmptyState icon={<MousePointerClick size={28} />} title={t('modes.pickItem')} />;
   if (item.kind === 'song')

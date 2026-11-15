@@ -49,39 +49,17 @@ export function App() {
         >
           <LeftSidebar />
         </aside>
-        <Splitter
-          axis="x"
-          size={left.size}
-          label={t('layout.resizeLeft')}
-          onPreview={left.preview}
-          onCommit={left.commit}
-        />
+        <Splitter axis="x" pane={left} label={t('layout.resizeLeft')} />
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--surface-1)]">
             <CenterPane />
           </main>
-          {binOpen && (
-            <Splitter
-              axis="y"
-              size={bin.size}
-              invert
-              label={t('layout.resizeBin')}
-              onPreview={bin.preview}
-              onCommit={bin.commit}
-            />
-          )}
+          {binOpen && <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />}
           <div className="bg-[var(--surface-1)]">
             <Bin height={bin.size} />
           </div>
         </div>
-        <Splitter
-          axis="x"
-          size={right.size}
-          invert
-          label={t('layout.resizeRight')}
-          onPreview={right.preview}
-          onCommit={right.commit}
-        />
+        <Splitter axis="x" pane={right} invert label={t('layout.resizeRight')} />
         <aside
           className="flex shrink-0 flex-col overflow-hidden bg-[var(--surface-1)]"
           style={{ width: right.size }}

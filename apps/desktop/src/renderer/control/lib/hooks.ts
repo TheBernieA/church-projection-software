@@ -1,13 +1,15 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   defaultSettings,
   resolveLogo,
   resolveStandby,
+  type MediaItem,
   type ScreenVisual,
   type ServiceItem,
+  type Settings,
   type Standby,
 } from '@lampstand/core';
-import { findItem, loadMissingChapters } from './actions';
+import { findItem, loadMissingChapters, saveSettings } from './actions';
 import { buildItemSlides, type ItemSlides } from './slides';
 import { useStore } from './store';
 
@@ -45,8 +47,8 @@ export function useItemSlides(item: ServiceItem | null): ItemSlides & { loading:
 
 const DEFAULTS = defaultSettings();
 
-/** Media kinds by id, for resolving logo/off-air picks the same way main does. */
-function useMediaKindOf(): (id: string) => string | undefined {
+/** Media kinds by id, for resolving logo/off-air/prop picks the same way main does. */
+export function useMediaKindOf(): (id: string) => string | undefined {
   const media = useStore((s) => s.media);
   return useMemo(() => {
     const kinds = new Map(media.map((m) => [m.id, m.kind]));
@@ -77,4 +79,44 @@ export function useHasMainOutput(): boolean {
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
   const main = useStore((s) => s.displays.some((d) => d.role === 'main'));
   return windowMode || main;
+}
+
+/** The current time, re-read every `ms` while `active` (clocks, timers, playheads). */
+export function useNow(ms: number, active = true): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms, active]);
+  return now;
+}
+
+/** Is this item part of the open service plan (as opposed to an ad-hoc library pick)? */
+export function useInService(item: ServiceItem | null): boolean {
+  return useStore((s) => !!item && !!s.service?.items.some((x) => x.id === item.id));
+}
+
+export const isPicture = (kind: string | undefined): kind is 'image' | 'video' =>
+  kind === 'image' || kind === 'video';
+
+/** Library images and videos: what the logo, off-air screen and props can show. */
+export function usePictures(): MediaItem[] {
+  const media = useStore((s) => s.media);
+  return useMemo(() => media.filter((m) => isPicture(m.kind)), [media]);
+}
+
+/** Is the overlay (message, prop) with this id on screen? */
+export function useOverlayLive(id: string): boolean {
+  return useStore((s) => !!s.live?.program.overlays.some((o) => o.id === id));
+}
+
+type ListKey = 'props' | 'messages' | 'timers';
+
+/** A list kept in settings (props, message templates, timers) and a way to save it. */
+export function useSettingsList<K extends ListKey>(
+  key: K,
+): [Settings[K], (next: Settings[K]) => void] {
+  const list = useStore((s) => s.settings?.[key] ?? DEFAULTS[key]);
+  return [list, (next) => void saveSettings({ [key]: next })];
 }

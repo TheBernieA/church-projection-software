@@ -2,12 +2,14 @@ import { useMemo } from 'react';
 import { Keyboard, ListPlus, MousePointerClick, Pencil, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button } from '@lampstand/ui';
+import { Button, TallyTag } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
-import { useItemSlides, useSelectedItem } from '../lib/hooks';
+import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { groupColor, itemTitle, type PresentableSlide } from '../lib/slides';
 import { addItemToService, updateItem, useStore } from '../lib/store';
+import { AddCard } from './cards';
 import { KindTile } from './kind-icons';
+import { EmptyState } from './EmptyState';
 import { SceneView } from './SceneView';
 import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
@@ -46,7 +48,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const previewCursor = useStore((s) => s.previewCursor);
   const liveCursor = useStore((s) => s.liveCursor);
   const editCursor = useStore((s) => s.editCursor);
-  const inService = useStore((s) => !!item && !!s.service?.items.some((x) => x.id === item.id));
+  const inService = useInService(item);
   const thumb = usePaneSize('thumbWidth', 200, 130, 360);
 
   const isAdhoc = !!item && adhoc?.id === item.id;
@@ -131,10 +133,10 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
       {/* Padding leaves room for tally rings and the focus outline. */}
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {!item && (
-          <div className="flex h-full min-h-40 flex-col items-center justify-center gap-3 text-center text-[var(--text-3)]">
-            <MousePointerClick size={28} strokeWidth={1.5} />
-            <p className="max-w-72 text-[13px]">{t('slides.empty')}</p>
-          </div>
+          <EmptyState
+            icon={<MousePointerClick size={28} strokeWidth={1.5} />}
+            title={t('slides.empty')}
+          />
         )}
         {item && loading && (
           <p className="p-6 text-center text-[var(--text-3)]">{t('slides.loading')}</p>
@@ -195,15 +197,9 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
                       <span className="tnum absolute left-1.5 top-1.5 rounded-[3px] bg-black/55 px-1 text-[10px] font-semibold text-white/85">
                         {i + 1}
                       </span>
-                      {isLive && (
-                        <span className="absolute right-1.5 top-1.5 rounded-[3px] bg-[var(--tally-program)] px-1.5 text-[10px] font-bold tracking-wide text-white">
-                          LIVE
-                        </span>
-                      )}
+                      {isLive && <TallyTag tone="program">LIVE</TallyTag>}
                       {isPreview && (
-                        <span className="absolute right-1.5 top-1.5 rounded-[3px] bg-[var(--tally-preview)] px-1.5 text-[10px] font-bold tracking-wide text-white">
-                          {t('monitor.preview').toUpperCase()}
-                        </span>
+                        <TallyTag tone="preview">{t('monitor.preview').toUpperCase()}</TallyTag>
                       )}
                     </div>
                     {/* Group strip: the colour IS the group, so you can find the chorus by eye. */}
@@ -223,14 +219,12 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
             })}
           {editableText && (
             <li>
-              <button
-                type="button"
+              <AddCard
+                label={t('inspector.addSlide')}
                 onClick={addSlide}
-                className="flex aspect-[16/10.4] w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-[4px] border-2 border-dashed border-[var(--hairline-strong)] text-[13px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
-              >
-                <Plus size={22} strokeWidth={1.75} />
-                {t('inspector.addSlide')}
-              </button>
+                className="aspect-[16/10.4] w-full rounded-[4px] text-[13px]"
+                icon={<Plus size={22} strokeWidth={1.75} />}
+              />
             </li>
           )}
         </ol>

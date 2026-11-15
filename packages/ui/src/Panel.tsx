@@ -90,3 +90,24 @@ export function ToggleChip({
     </button>
   );
 }
+
+/** Small corner tag on a thumbnail: LIVE (red) or PREVIEW (green). */
+export function TallyTag({
+  tone,
+  children,
+  className = '',
+}: {
+  tone: 'program' | 'preview';
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`absolute right-1.5 top-1.5 rounded-[3px] px-1.5 text-[10px] font-bold tracking-wide text-white ${
+        tone === 'program' ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'
+      } ${className}`}
+    >
+      {children}
+    </span>
+  );
+}

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SoonList } from './Soon';
 import type { OutputRole } from '@lampstand/core';
+import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
 import { attempt, EMPTY_LIST, refresh, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -81,7 +82,7 @@ export function OutputsDialog() {
           type="checkbox"
           className="mt-1"
           checked={windowMode}
-          onChange={(e) => void cmd('settings.update', { patch: { windowMode: e.target.checked } })}
+          onChange={(e) => void saveSettings({ windowMode: e.target.checked })}
         />
         <span>
           <span className="font-medium">{t('outputs.windowMode')}</span>

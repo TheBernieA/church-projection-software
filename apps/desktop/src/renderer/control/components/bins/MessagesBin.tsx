@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Clock, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Settings } from '@lampstand/core';
 import { Button, IconButton, Segmented } from '@lampstand/ui';
-import { hideOverlay, saveSettings, showOverlay } from '../../lib/actions';
+import { hideOverlay, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { fillMessage, messageTokens } from '../../lib/messages';
-import { useStore } from '../../lib/store';
+import { useOverlayLive, useSettingsList } from '../../lib/hooks';
+import { attempt, useStore } from '../../lib/store';
+import { AddCard, BIN_CARD } from '../cards';
 import { SoonFeature } from '../Soon';
 
 type Message = Settings['messages'][number];
@@ -15,8 +17,9 @@ type Style = Message['style'];
 const overlayId = (m: Message): string => `msg-${m.id}`;
 
 /** One audience message: fill in its fields, then show it as a lower third or ticker. */
-function MessageCard({ m, live, onDelete }: { m: Message; live: boolean; onDelete: () => void }) {
+function MessageCard({ m, onDelete }: { m: Message; onDelete: () => void }) {
   const { t } = useTranslation();
+  const live = useOverlayLive(overlayId(m));
   const tokens = messageTokens(m.template);
   const [values, setValues] = useState<Record<string, string>>({});
   const text = fillMessage(m.template, values);
@@ -31,7 +34,7 @@ function MessageCard({ m, live, onDelete }: { m: Message; live: boolean; onDelet
           : showOverlay({ id: overlayId(m), kind: m.style, text }));
       }}
       style={live ? { boxShadow: 'var(--tally-program-glow)' } : undefined}
-      className="group flex w-[250px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      className={`${BIN_CARD} group w-[250px]`}
     >
       <div className="flex items-center gap-1.5">
         <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{m.name}</span>
@@ -86,7 +89,7 @@ function NewMessage({
   return (
     <form
       aria-label={t('messages.new')}
-      className="flex w-[280px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      className={`${BIN_CARD} w-[280px]`}
       onSubmit={(e) => {
         e.preventDefault();
         if (!template.trim()) return;
@@ -146,7 +149,7 @@ function StageMessage() {
       className="flex w-[280px] shrink-0 flex-col gap-2 border-l border-[var(--hairline)] pl-3"
       onSubmit={(e) => {
         e.preventDefault();
-        void cmd('stage.message', { text: msg, flash: true });
+        void attempt(() => cmd('stage.message', { text: msg, flash: true }), 'errors.action');
       }}
     >
       <label
@@ -175,7 +178,9 @@ function StageMessage() {
             size="xs"
             variant="ghost"
             type="button"
-            onClick={() => void cmd('stage.message', { text: '', flash: false })}
+            onClick={() =>
+              void attempt(() => cmd('stage.message', { text: '', flash: false }), 'errors.action')
+            }
           >
             {t('monitor.clearMessage')}
           </Button>
@@ -188,44 +193,34 @@ function StageMessage() {
 /** Messages bin: audience messages with fill-in fields, plus the stage message. */
 export function MessagesBin() {
   const { t } = useTranslation();
-  const messages = useStore((s) => s.settings?.messages);
-  const overlays = useStore((s) => s.live?.program.overlays);
+  const [messages, save] = useSettingsList('messages');
   const [adding, setAdding] = useState(false);
-  const list = messages ?? [];
-  const save = (next: Message[]): void => void saveSettings({ messages: next });
   return (
     <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
-      {list.map((m) => {
-        const live = !!overlays?.some((o) => o.id === overlayId(m));
-        return (
-          <MessageCard
-            key={m.id}
-            m={m}
-            live={live}
-            onDelete={() => {
-              if (live) void hideOverlay(overlayId(m));
-              save(list.filter((x) => x.id !== m.id));
-            }}
-          />
-        );
-      })}
+      {messages.map((m) => (
+        <MessageCard
+          key={m.id}
+          m={m}
+          onDelete={() => {
+            void hideOverlay(overlayId(m));
+            save(messages.filter((x) => x.id !== m.id));
+          }}
+        />
+      ))}
       {adding ? (
         <NewMessage
           onCancel={() => setAdding(false)}
           onCreate={(m) => {
-            save([...list, m]);
+            save([...messages, m]);
             setAdding(false);
           }}
         />
       ) : (
-        <button
-          type="button"
+        <AddCard
+          label={t('messages.new')}
           onClick={() => setAdding(true)}
-          className="flex h-[120px] w-[160px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-[12px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
-        >
-          <Plus size={18} />
-          {t('messages.new')}
-        </button>
+          className="h-[120px] w-[160px]"
+        />
       )}
       <SoonFeature id="message-tokens" icon={<Clock size={14} />} className="self-center" />
       <div className="ml-auto flex">

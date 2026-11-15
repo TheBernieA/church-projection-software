@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { formatClock, mediaPositionAt, type MediaLayer } from '@lampstand/core';
 import { IconButton } from '@lampstand/ui';
 import { cmd } from '../lib/api';
+import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
 import { mediaUrl } from '../../shared/media-url';
 
@@ -32,12 +33,7 @@ function useMediaDuration(mediaId: string): number | undefined {
 
 /** Ticking playhead derived from the shared playback state (same maths as the outputs). */
 function usePlayhead(media: MediaLayer, duration: number | undefined): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!media.playing) return;
-    const t = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(t);
-  }, [media.playing]);
+  const now = useNow(250, media.playing);
   // A tick older than the latest restart/seek counts as zero elapsed, so the new position
   // shows at once rather than waiting for the next tick.
   return mediaPositionAt(media, now, duration);

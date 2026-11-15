@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
-import { cmd } from '../lib/api';
+import { saveSettings } from '../lib/actions';
 import {
   comboFromEvent,
   DEFAULT_SHORTCUTS,
@@ -25,7 +25,7 @@ export function ShortcutsDialog() {
     if (['Shift', 'Meta', 'Control', 'Alt'].includes(e.key)) return;
     const combo = comboFromEvent(e.nativeEvent);
     const current = useStore.getState().settings?.shortcuts ?? {};
-    void cmd('settings.update', { patch: { shortcuts: { ...current, [action]: combo } } });
+    void saveSettings({ shortcuts: { ...current, [action]: combo } });
     setRecording(null);
   };
 
@@ -34,10 +34,7 @@ export function ShortcutsDialog() {
       name="shortcuts"
       title={t('shortcuts.title')}
       footer={
-        <Button
-          variant="ghost"
-          onClick={() => void cmd('settings.update', { patch: { shortcuts: {} } })}
-        >
+        <Button variant="ghost" onClick={() => void saveSettings({ shortcuts: {} })}>
           {t('shortcuts.reset')}
         </Button>
       }

@@ -577,5 +577,3 @@ export function feature(id: string): Feature {
   if (!x) throw new Error(`Unknown feature: ${id}`);
   return x;
 }
-
-export const isSoon = (id: string): boolean => feature(id).status === 'soon';

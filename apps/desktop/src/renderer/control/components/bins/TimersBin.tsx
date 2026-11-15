@@ -1,25 +1,15 @@
-import { useEffect, useState } from 'react';
-import { Film, Pause, Play, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { Film, Pause, Play, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
 import { Button, IconButton, Segmented } from '@lampstand/ui';
-import { saveSettings } from '../../lib/actions';
 import { cmd } from '../../lib/api';
+import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
+import { AddCard, BIN_CARD } from '../cards';
 import { SoonFeature } from '../Soon';
 
 type Kind = TimerDef['kind'];
-
-/** Re-render twice a second while any timer runs. */
-function useTick(active: boolean): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    const t = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(t);
-  }, [active]);
-  return now;
-}
 
 /** What a saved timer reads before it starts. */
 function idleValue(def: TimerDef, now: number): number {
@@ -31,23 +21,23 @@ function TimerCard({
   def,
   run,
   now,
+  send,
   onDelete,
 }: {
   def: TimerDef;
   run: LiveTimer | undefined;
   now: number;
+  send: (type: string, payload: unknown) => void;
   onDelete: () => void;
 }) {
   const { t } = useTranslation();
   const secs = run ? timerSeconds(run, now) : idleValue(def, now);
   const over = secs < 0;
-  const send = (type: string, payload: unknown): void =>
-    void attempt(() => cmd(type, payload), 'errors.action');
   return (
     <div
       role="group"
       aria-label={def.name}
-      className="group flex w-[190px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      className={`${BIN_CARD} group w-[190px]`}
       style={run?.running ? { boxShadow: '0 0 0 1px var(--accent-line)' } : undefined}
     >
       <div className="flex items-center gap-1.5">
@@ -122,7 +112,7 @@ function NewTimer({
   return (
     <form
       aria-label={t('timers.new')}
-      className="flex w-[280px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      className={`${BIN_CARD} w-[280px]`}
       onSubmit={(e) => {
         e.preventDefault();
         if (!ready) return;
@@ -189,23 +179,28 @@ function NewTimer({
 /** Timers bin: countdowns, count-to-time and elapsed timers; running ones show on stage. */
 export function TimersBin() {
   const { t } = useTranslation();
-  const defs = useStore((s) => s.settings?.timers);
+  const [timers, save] = useSettingsList('timers');
   const runs = useStore((s) => s.live?.timers);
   const [adding, setAdding] = useState(false);
-  const list = defs ?? [];
-  const now = useTick(!!runs?.some((r) => r.running) || list.some((d) => d.kind === 'to-time'));
-  const save = (next: TimerDef[]): void => void saveSettings({ timers: next });
+  // Tick while anything is counting: a running timer, or a count-to-time (it always moves).
+  const now = useNow(
+    500,
+    !!runs?.some((r) => r.running) || timers.some((d) => d.kind === 'to-time'),
+  );
+  const send = (type: string, payload: unknown): void =>
+    void attempt(() => cmd(type, payload), 'errors.action');
   return (
     <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
-      {list.map((d) => (
+      {timers.map((d) => (
         <TimerCard
           key={d.id}
           def={d}
           run={runs?.find((r) => r.id === d.id)}
           now={now}
+          send={send}
           onDelete={() => {
-            void cmd('timer.reset', { id: d.id });
-            save(list.filter((x) => x.id !== d.id));
+            send('timer.reset', { id: d.id });
+            save(timers.filter((x) => x.id !== d.id));
           }}
         />
       ))}
@@ -213,19 +208,16 @@ export function TimersBin() {
         <NewTimer
           onCancel={() => setAdding(false)}
           onCreate={(d) => {
-            save([...list, d]);
+            save([...timers, d]);
             setAdding(false);
           }}
         />
       ) : (
-        <button
-          type="button"
+        <AddCard
+          label={t('timers.new')}
           onClick={() => setAdding(true)}
-          className="flex h-[112px] w-[150px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-[12px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
-        >
-          <Plus size={18} />
-          {t('timers.new')}
-        </button>
+          className="h-[112px] w-[150px]"
+        />
       )}
       <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
       <p className="ml-auto max-w-[220px] self-end text-[11px] leading-snug text-[var(--text-3)]">

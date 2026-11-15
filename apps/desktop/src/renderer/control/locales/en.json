@@ -10,9 +10,7 @@
     "shortcuts": "Keyboard shortcuts",
     "offAirShort": "Off AIR",
     "previewFirst": "Preview first",
-    "previewFirstHelp": "Off: clicking a slide puts it on screen straight away. On: clicks load Preview, and Go live (Space) sends it.",
-    "looks": "Looks",
-    "capture": "Record & stream"
+    "previewFirstHelp": "Off: clicking a slide puts it on screen straight away. On: clicks load Preview, and Go live (Space) sends it."
   },
   "service": {
     "title": "Service plan",
@@ -51,12 +49,8 @@
   "library": {
     "title": "Library",
     "tabs": {
-      "bible": "Bible",
       "songs": "Songs",
-      "hymns": "Hymns",
-      "media": "Media",
-      "backgrounds": "Backgrounds",
-      "themes": "Themes"
+      "hymns": "Hymns"
     },
     "addToService": "Add to service",
     "filter": "Filter…",
@@ -64,7 +58,6 @@
     "edit": "Edit",
     "noResults": "Nothing found.",
     "noHymnals": "No hymnal installed. Add one in Settings → Bibles & hymnals → Install package.",
-    "close": "Close library",
     "importFile": "Import file"
   },
   "bible": {
@@ -116,10 +109,6 @@
     "preview": "Preview",
     "program": "Program",
     "goLive": "Go live",
-    "clearContent": "Clear text",
-    "clearMedia": "Clear media",
-    "clearBackground": "Clear background",
-    "clearOverlays": "Clear overlays",
     "clearAll": "Turn off live",
     "black": "Black screen",
     "logo": "Logo",
@@ -127,12 +116,8 @@
     "stageMessage": "Message to stage",
     "send": "Send",
     "clearMessage": "Clear",
-    "ticker": "Ticker",
-    "tickerPlaceholder": "e.g. Parent of child #42, please come to the nursery",
     "show": "Show",
     "hide": "Hide",
-    "messages": "Messages",
-    "messagesTitle": "Stage message & ticker",
     "clear": "Clear",
     "masks": "Screens",
     "empty": "Nothing in preview",

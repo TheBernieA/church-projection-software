@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   BookOpen,
   Circle,
@@ -23,18 +22,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, sceneIsVisible, secondsSince } from '@lampstand/core';
 import { IconButton, Kbd, Switch } from '@lampstand/ui';
-import { clearLayer } from '../../lib/actions';
-import { cmd } from '../../lib/api';
+import { clearLayer, saveSettings } from '../../lib/actions';
+import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { attempt, openDialog, redo, undo, useStore, type Mode } from '../../lib/store';
+import { openDialog, redo, undo, useStore, type Mode } from '../../lib/store';
 import { SoonFeature } from '../Soon';
 
 function useElapsed(since: string | null): string {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  const now = useNow(1000, since !== null);
   return since ? formatClock(secondsSince(since, now), { hours: 'always' }) : '00:00:00';
 }
 
@@ -138,12 +133,7 @@ export function Toolbar() {
         <Switch
           label={t('top.previewFirst')}
           checked={!clickGoesLive}
-          onChange={(on) =>
-            void attempt(
-              () => cmd('settings.update', { patch: { clickGoesLive: !on } }),
-              'errors.setting',
-            )
-          }
+          onChange={(on) => void saveSettings({ clickGoesLive: !on })}
         />
         <span className="whitespace-nowrap">{t('top.previewFirst')}</span>
       </label>

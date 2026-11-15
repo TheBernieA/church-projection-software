@@ -36,13 +36,7 @@ export function LeftSidebar() {
         </div>
       </section>
       <div className="border-t border-[var(--hairline)]">
-        <Splitter
-          axis="y"
-          size={lib.size}
-          label={t('layout.resizeLibrary')}
-          onPreview={lib.preview}
-          onCommit={lib.commit}
-        />
+        <Splitter axis="y" pane={lib} label={t('layout.resizeLibrary')} />
       </div>
       <div className="flex min-h-0 flex-1 flex-col">
         <ServicePanel />

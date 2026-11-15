@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
 import { LayoutTemplate } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, makeScene, timerSeconds } from '@lampstand/core';
 import { SceneView } from '../SceneView';
 import { SoonPanel } from '../bins/SoonPanel';
+import { useNow } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
 
 const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
@@ -15,11 +15,7 @@ const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-d
 export function StageMode() {
   const { t } = useTranslation();
   const live = useStore((s) => s.live);
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 500);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow(500);
   if (!live) return null;
   const p = live.program;
   return (

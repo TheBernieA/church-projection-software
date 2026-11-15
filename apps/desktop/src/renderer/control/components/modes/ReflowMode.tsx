@@ -5,11 +5,11 @@ import { nowIso, type ServiceItem, type Song } from '@lampstand/core';
 import { buildSongSlides, parseSongText, songSectionsToText } from '@lampstand/lyrics';
 import { Button } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
-import { useSelectedItem } from '../../lib/hooks';
+import { useInService, useSelectedItem } from '../../lib/hooks';
 import { reflowToSlides, slidesToReflow } from '../../lib/reflow';
 import { groupColor } from '../../lib/slides';
 import { attempt, toast, updateItem, useStore } from '../../lib/store';
-import { EmptyState } from './EmptyState';
+import { EmptyState } from '../EmptyState';
 
 interface Preview {
   key: string;
@@ -28,7 +28,7 @@ function ReflowEditor({
   title: string;
   initial: string;
   preview: (text: string) => Preview[];
-  onSave: (text: string) => Promise<void>;
+  onSave: (text: string) => void | Promise<void>;
   readOnly?: boolean;
 }) {
   const { t } = useTranslation();
@@ -144,10 +144,9 @@ function TextReflow({ item }: { item: TextItem }) {
       title={item.title}
       initial={initial}
       preview={preview}
-      onSave={async (text) => {
-        updateItem<TextItem>(item.id, (x) => ({ ...x, slides: reflowToSlides(text, x.slides) }));
-        return Promise.resolve();
-      }}
+      onSave={(text) =>
+        updateItem<TextItem>(item.id, (x) => ({ ...x, slides: reflowToSlides(text, x.slides) }))
+      }
     />
   );
 }
@@ -157,7 +156,7 @@ export function ReflowMode() {
   const { t } = useTranslation();
   const item = useSelectedItem();
   const songs = useStore((s) => s.songs);
-  const inService = useStore((s) => !!item && !!s.service?.items.some((x) => x.id === item.id));
+  const inService = useInService(item);
   if (!item)
     return <EmptyState icon={<MousePointerClick size={28} />} title={t('modes.pickItem')} />;
   if (item.kind === 'song') {

@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { cmd } from '../../lib/api';
-import { attempt, useStore } from '../../lib/store';
+import { saveSettings } from '../../lib/actions';
+import { useStore } from '../../lib/store';
 
 /**
  * A pane size the operator can drag, remembered in `settings.layout[key]`. Dragging only
@@ -15,10 +15,7 @@ export function usePaneSize(key: string, fallback: number, min: number, max: num
     const layout = useStore.getState().settings?.layout ?? {};
     const value = Math.round(Math.min(max, Math.max(min, v)));
     if (layout[key] === value) return;
-    void attempt(
-      () => cmd('settings.update', { patch: { layout: { ...layout, [key]: value } } }),
-      'errors.setting',
-    );
+    void saveSettings({ layout: { ...layout, [key]: value } });
   };
   return { size, preview: setDragging, commit };
 }
@@ -27,21 +24,20 @@ export function usePaneSize(key: string, fallback: number, min: number, max: num
  * Drag handle between two panes. `axis` is the direction the size grows in; `invert` for panes
  * that grow when dragged left/up (right column, bin).
  */
+export type PaneSize = ReturnType<typeof usePaneSize>;
+
 export function Splitter({
   axis,
-  size,
+  pane,
   invert = false,
   label,
-  onPreview,
-  onCommit,
 }: {
   axis: 'x' | 'y';
-  size: number;
+  pane: PaneSize;
   invert?: boolean;
   label: string;
-  onPreview: (v: number) => void;
-  onCommit: (v: number) => void;
 }) {
+  const { size, preview: onPreview, commit: onCommit } = pane;
   const start = useRef<{ pos: number; size: number } | null>(null);
   const valueAt = (e: ReactPointerEvent): number => {
     const s = start.current;

@@ -181,17 +181,16 @@ export function showOverlay(overlay: Overlay): Promise<void> {
   return safe(cmd('live.setOverlays', { overlays: [...others, overlay].slice(-10) }));
 }
 
-export function hideOverlay(id: string): Promise<void> {
-  const overlays = (get().live?.program.overlays ?? []).filter((o) => o.id !== id);
-  return safe(cmd('live.setOverlays', { overlays }));
+/** Take an overlay off screen (nothing to do if it isn't showing). */
+export async function hideOverlay(id: string): Promise<void> {
+  const current = get().live?.program.overlays ?? [];
+  if (!current.some((o) => o.id === id)) return;
+  await safe(cmd('live.setOverlays', { overlays: current.filter((o) => o.id !== id) }));
 }
 
-export const isOverlayLive = (id: string): boolean =>
-  !!get().live?.program.overlays.some((o) => o.id === id);
-
 /** Save part of the settings (validated against the full schema in main). */
-export function saveSettings(patch: Partial<Settings>): Promise<void> {
-  return safe(cmd('settings.update', { patch }));
+export async function saveSettings(patch: Partial<Settings>): Promise<void> {
+  await attempt(() => cmd('settings.update', { patch }), 'errors.setting');
 }
 
 // ---------- Announcements loop (auto-advance while live) ----------

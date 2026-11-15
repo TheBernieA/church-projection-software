@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Settings } from '@lampstand/core';
-import { cmd } from '../lib/api';
-import { attempt, useStore } from '../lib/store';
+import { saveSettings } from '../lib/actions';
+import { useStore } from '../lib/store';
 import { Dialog } from './Dialog';
 import {
   AboutPage,
@@ -54,9 +54,7 @@ export function SettingsDialog() {
   const page = useStore((x) => x.settingsPage);
   const setPage = (settingsPage: PageId): void => useStore.setState({ settingsPage });
   if (!s) return null;
-  const update = (patch: Partial<Settings>): void => {
-    void attempt(() => cmd('settings.update', { patch }), 'errors.setting');
-  };
+  const update = (patch: Partial<Settings>): void => void saveSettings(patch);
 
   return (
     <Dialog name="settings" title={t('settings.title')} wide bare>

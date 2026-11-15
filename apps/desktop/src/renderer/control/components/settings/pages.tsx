@@ -14,7 +14,7 @@ import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } fro
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
 import { Button, Segmented, Switch } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
-import { useStandby } from '../../lib/hooks';
+import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
 import { CommitSlider, DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
@@ -169,12 +169,6 @@ const LIVE_KINDS = ['song', 'scripture', 'presentation', 'announcements'] as con
 
 type OffAirKind = Settings['offAir']['kind'];
 type LogoKind = Settings['logo']['kind'];
-
-/** Library images and videos: what the logo and off-air screen can show. */
-function usePictures() {
-  const library = useStore((st) => st.media);
-  return library.filter((m) => m.kind === 'image' || m.kind === 'video');
-}
 
 /** "Picture" row: pick an image or video from the library (shared by Logo and Off-air). */
 function PictureRow({

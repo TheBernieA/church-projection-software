@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } 
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem, type TextSlide } from '@lampstand/core';
 import { Button, IconButton } from '@lampstand/ui';
-import { useSelectedItem } from '../lib/hooks';
+import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
 
@@ -42,7 +42,7 @@ function Field({
  */
 export function SlideInspector() {
   const item = useSelectedItem();
-  const inService = useStore((s) => !!item && !!s.service?.items.some((i) => i.id === item.id));
+  const inService = useInService(item);
   if (!item || !inService) return null;
   if (item.kind === 'countdown')
     return (

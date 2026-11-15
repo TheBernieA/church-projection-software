@@ -8,6 +8,7 @@ import {
   type Theme,
 } from '@lampstand/core';
 import { Button } from '@lampstand/ui';
+import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
 import { attempt, EMPTY_RECORD, openDialog, useStore } from '../lib/store';
 import { SceneView } from './SceneView';
@@ -98,11 +99,7 @@ export function ThemesPanel() {
                 key={k}
                 type="button"
                 aria-pressed={isDefault(th.id, k)}
-                onClick={() =>
-                  void cmd('settings.update', {
-                    patch: { defaultThemes: { ...defaults, [k]: th.id } },
-                  })
-                }
+                onClick={() => void saveSettings({ defaultThemes: { ...defaults, [k]: th.id } })}
                 className={`rounded-[5px] px-2 py-0.5 font-medium transition-colors ${isDefault(th.id, k) ? 'bg-[var(--accent)] text-[var(--accent-ink)]' : 'bg-[var(--surface-3)] text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
               >
                 {t(`theme.kinds.${k}`)}
