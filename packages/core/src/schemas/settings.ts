@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { TimerDefSchema } from '../timers';
+import { PropPositionSchema } from './scene';
 
 export const OutputRoleSchema = z.enum(['main', 'stage', 'secondary', 'none']);
 export type OutputRole = z.infer<typeof OutputRoleSchema>;
@@ -38,7 +40,58 @@ export const SettingsSchema = z
     lyrics: z
       .object({ maxLinesPerSlide: z.number().int().min(1).max(12).default(4) })
       .default({ maxLinesPerSlide: 4 }),
-    /** Item kinds that go straight to program on click (§3.4 "Live editing"). */
+    /**
+     * Clicking a slide sends it straight to the screen (the default). Off = "Preview first":
+     * clicks load Preview and Go live (Space) sends it.
+     */
+    clickGoesLive: z.boolean().default(true),
+    /** Audience message templates; {tokens} are filled in when shown. */
+    messages: z
+      .array(
+        z.object({
+          id: z.string().min(1).max(64),
+          name: z.string().min(1).max(60),
+          template: z.string().min(1).max(300),
+          style: z.enum(['ticker', 'lower-third']).default('lower-third'),
+        }),
+      )
+      .max(100)
+      .default([
+        {
+          id: 'msg-nursery',
+          name: 'Nursery',
+          template: 'Parent of {number}, please come to the nursery',
+          style: 'lower-third',
+        },
+        {
+          id: 'msg-car',
+          name: 'Car',
+          template: 'Owner of the car {plate}, please see an usher',
+          style: 'ticker',
+        },
+      ]),
+    /** Props: library images/videos or text overlaid on top of everything. */
+    props: z
+      .array(
+        z.object({
+          id: z.string().min(1).max(64),
+          name: z.string().min(1).max(60),
+          mediaId: z.string().max(64).optional(),
+          text: z.string().max(200).optional(),
+          position: PropPositionSchema.default('top-right'),
+        }),
+      )
+      .max(100)
+      .default([]),
+    /** Saved timers (Timers bin). */
+    timers: z
+      .array(TimerDefSchema)
+      .max(50)
+      .default([
+        { id: 'timer-preservice', name: 'Pre-service', kind: 'countdown', durationSec: 300 },
+        { id: 'timer-sermon', name: 'Sermon', kind: 'elapsed' },
+      ]),
+    /** Item kinds that go straight to program on click when "Preview first" is on (§3.4). */
     liveEditingKinds: z.array(z.string().max(32)).default([]),
     shortcuts: z.record(z.string().max(60), z.string().max(60)).default({}),
     ccliLicenseNumber: z.string().max(20).optional(),

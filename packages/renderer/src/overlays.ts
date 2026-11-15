@@ -1,8 +1,70 @@
-import type { Overlay } from '@lampstand/core';
-import { el, loop } from './dom';
+import type { Overlay, PropPosition } from '@lampstand/core';
+import { el, FILL, loop, safePlay, type StyleInit } from './dom';
 
-/** Overlay layer: tickers (nursery calls), lower thirds (speaker name), logo bug. */
-export function buildOverlay(doc: Document, o: Overlay, animated: boolean): HTMLElement {
+const PROP_BOX: Record<PropPosition, StyleInit> = {
+  full: { ...FILL },
+  'top-left': { left: '56px', top: '48px', width: '22%', height: '22%' },
+  'top-right': { right: '56px', top: '48px', width: '22%', height: '22%' },
+  'bottom-left': { left: '56px', bottom: '48px', width: '22%', height: '22%' },
+  'bottom-right': { right: '56px', bottom: '48px', width: '22%', height: '22%' },
+  'lower-third': { left: '20%', right: '20%', bottom: '56px', height: '24%' },
+};
+
+/** A prop: a library image/video (contained in its box) or text, in a preset position. */
+function buildProp(
+  doc: Document,
+  o: Overlay,
+  mediaUrl: (id: string) => string,
+  animated: boolean,
+): HTMLElement {
+  const pos = o.position ?? 'top-right';
+  const box = el(doc, 'div', `ls-prop ls-prop-${pos}`, {
+    position: 'absolute',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: pos.endsWith('right')
+      ? 'flex-end'
+      : pos.endsWith('left')
+        ? 'flex-start'
+        : 'center',
+    ...PROP_BOX[pos],
+  });
+  if (o.mediaId && o.mediaKind === 'video') {
+    const v = el(doc, 'video', '', { width: '100%', height: '100%', objectFit: 'contain' });
+    v.src = mediaUrl(o.mediaId);
+    v.loop = true;
+    v.muted = true;
+    v.playsInline = true;
+    box.append(v);
+    if (animated) safePlay(v);
+  } else if (o.mediaId) {
+    const img = el(doc, 'img', '', { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' });
+    img.src = mediaUrl(o.mediaId);
+    img.alt = '';
+    box.append(img);
+  } else {
+    const t = el(doc, 'div', '', {
+      fontFamily: '"Inter", sans-serif',
+      fontWeight: '700',
+      fontSize: pos === 'full' ? '120px' : '44px',
+      color: '#fff',
+      textShadow: '0 2px 12px rgba(0,0,0,0.6)',
+      textAlign: 'center',
+    });
+    t.textContent = o.text;
+    box.append(t);
+  }
+  return box;
+}
+
+/** Overlay layer: tickers (nursery calls), lower thirds (speaker name), logo bug, props. */
+export function buildOverlay(
+  doc: Document,
+  o: Overlay,
+  animated: boolean,
+  mediaUrl: (id: string) => string = (id) => id,
+): HTMLElement {
+  if (o.kind === 'prop') return buildProp(doc, o, mediaUrl, animated);
   if (o.kind === 'ticker') {
     const bar = el(doc, 'div', 'ls-ticker', {
       position: 'absolute',

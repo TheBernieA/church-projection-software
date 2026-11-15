@@ -15,7 +15,12 @@ import {
   resolveStandby,
   defaultSettings,
   stripBibleMarkup,
+  formatTimer,
+  makeScene,
+  secondsUntilTime,
+  timerSeconds,
   type ContentLayer,
+  type LiveTimer,
 } from './index';
 
 const theme = STARTER_THEMES[0]!;
@@ -412,5 +417,79 @@ describe('logo and off-air screen', () => {
     });
     for (const mediaId of ['gone', 'song', undefined])
       expect(resolveStandby({ kind: 'media', mediaId }, logo, kindOf).kind).toBe('logo');
+  });
+});
+
+describe('timers', () => {
+  const run = (over: Partial<LiveTimer>): LiveTimer => ({
+    id: 't',
+    name: 'T',
+    kind: 'countdown',
+    durationSec: 300,
+    running: false,
+    startedAt: null,
+    accumulatedSec: 0,
+    ...over,
+  });
+  it('countdowns count down and overrun into negatives', () => {
+    const start = Date.parse('2026-01-01T10:00:00Z');
+    const t = run({ running: true, startedAt: new Date(start).toISOString() });
+    expect(timerSeconds(t, start + 60_000)).toBe(240);
+    expect(formatTimer(timerSeconds(t, start + 60_000))).toBe('04:00');
+    expect(formatTimer(timerSeconds(t, start + 312_000))).toBe('-00:12');
+  });
+  it('elapsed timers keep their time across stop/start', () => {
+    const start = Date.parse('2026-01-01T10:00:00Z');
+    const t = run({
+      kind: 'elapsed',
+      accumulatedSec: 90,
+      running: true,
+      startedAt: new Date(start).toISOString(),
+    });
+    expect(formatTimer(timerSeconds(t, start + 30_500), 'elapsed')).toBe('02:00');
+    expect(timerSeconds({ ...t, running: false, startedAt: null }, start + 999_000)).toBe(90);
+  });
+  it('to-time counts down to a time of day', () => {
+    const now = new Date(2026, 0, 1, 10, 55, 0).getTime();
+    expect(secondsUntilTime('11:00', now)).toBe(300);
+    expect(secondsUntilTime('10:50', now)).toBe(-300); // just passed: overrun
+    expect(secondsUntilTime('08:00', new Date(2026, 0, 1, 20, 0).getTime())).toBe(12 * 3600); // tomorrow
+  });
+  it('start / stop / reset commands drive live timers', async () => {
+    const store = new LiveStateStore();
+    const bus = new CommandBus();
+    registerLiveCommands(bus, store);
+    const def = { id: 'sermon', name: 'Sermon', kind: 'elapsed' as const };
+    await bus.dispatch({ type: 'timer.start', payload: { timer: def }, source: 'ui' });
+    expect(store.get().timers).toHaveLength(1);
+    expect(store.get().timers[0]?.running).toBe(true);
+    await bus.dispatch({ type: 'timer.stop', payload: { id: 'sermon' }, source: 'ui' });
+    expect(store.get().timers[0]?.running).toBe(false);
+    await bus.dispatch({ type: 'timer.start', payload: { timer: def }, source: 'ui' });
+    expect(store.get().timers).toHaveLength(1); // restarted, not duplicated
+    await bus.dispatch({ type: 'timer.reset', payload: { id: 'sermon' }, source: 'ui' });
+    expect(store.get().timers).toHaveLength(0);
+  });
+});
+
+describe('messages and props clear separately', () => {
+  it('clearLayer messages keeps props, and vice versa', () => {
+    const scene = makeScene({
+      overlays: [
+        { id: 'm', kind: 'lower-third', text: 'Parent of 12' },
+        { id: 't', kind: 'ticker', text: 'Car' },
+        {
+          id: 'p',
+          kind: 'prop',
+          text: '',
+          mediaId: 'logo',
+          mediaKind: 'image',
+          position: 'top-right',
+        },
+        { id: 'b', kind: 'logo-bug', text: 'L' },
+      ],
+    });
+    expect(clearLayer(scene, 'messages').overlays.map((o) => o.id)).toEqual(['p', 'b']);
+    expect(clearLayer(scene, 'props').overlays.map((o) => o.id)).toEqual(['m', 't']);
   });
 });

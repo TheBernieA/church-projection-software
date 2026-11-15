@@ -6,6 +6,7 @@ import {
   makeScene,
   MediaLayerSchema,
   OverlaySchema,
+  overlayGroup,
   SceneSchema,
   type BackgroundLayer,
   type ContentLayer,
@@ -13,6 +14,7 @@ import {
   type Scene,
 } from './schemas/scene';
 import { TransitionSpecSchema } from './schemas/theme';
+import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './timers';
 import type { CommandBus } from './commands';
 import { mediaPositionAt, startMedia } from './media-playback';
 
@@ -42,6 +44,8 @@ export const LiveStateSchema = z.object({
     .nullable(),
   detection: z.object({ mode: DetectionModeSchema }),
   stream: z.object({ status: z.enum(['idle', 'live', 'error']) }),
+  /** Timers that have been started (shown in the Timers bin and on the stage display). */
+  timers: z.array(LiveTimerSchema).max(20).default([]),
 });
 export type LiveState = z.infer<typeof LiveStateSchema>;
 
@@ -56,6 +60,7 @@ export function initialLiveState(): LiveState {
     stageMessage: null,
     detection: { mode: 'off' },
     stream: { status: 'idle' },
+    timers: [],
   };
 }
 
@@ -94,7 +99,16 @@ export class LiveStateStore {
   }
 }
 
-export const LayerSchema = z.enum(['content', 'media', 'background', 'overlays', 'all', 'panic']);
+export const LayerSchema = z.enum([
+  'content',
+  'media',
+  'background',
+  'overlays',
+  'messages',
+  'props',
+  'all',
+  'panic',
+]);
 export type Layer = z.infer<typeof LayerSchema>;
 
 export function clearLayer(scene: Scene, layer: Layer): Scene {
@@ -107,6 +121,9 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
       return { ...scene, background: null };
     case 'overlays':
       return { ...scene, overlays: [] };
+    case 'messages':
+    case 'props':
+      return { ...scene, overlays: scene.overlays.filter((o) => overlayGroup(o) !== layer) };
     case 'all':
       return makeScene();
     case 'panic':
@@ -314,6 +331,65 @@ export function registerLiveCommands(
         ...s,
         stageMessage: p.text.trim() ? { text: p.text, flash: p.flash, sentAt: now() } : null,
       }));
+      return { result: null };
+    },
+  });
+
+  // Timers (Timers bin): start/stop/reset by id; the definition travels with the start so the
+  // stage display can show names and kinds without reading settings.
+  bus.register({
+    type: 'timer.start',
+    schema: z.object({ timer: TimerDefSchema }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => {
+        const at = now();
+        const existing = s.timers.find((t) => t.id === p.timer.id);
+        const started: LiveTimer = existing
+          ? { ...existing, ...p.timer, running: true, startedAt: at }
+          : { ...p.timer, running: true, startedAt: at, accumulatedSec: 0 };
+        return {
+          ...s,
+          timers: existing
+            ? s.timers.map((t) => (t.id === started.id ? started : t))
+            : [...s.timers, started].slice(-20),
+        };
+      });
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'timer.stop',
+    schema: z.object({ id: z.string().max(64) }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({
+        ...s,
+        timers: s.timers.map((t) =>
+          t.id === p.id && t.running
+            ? {
+                ...t,
+                running: false,
+                startedAt: null,
+                accumulatedSec:
+                  t.accumulatedSec +
+                  (t.startedAt ? (Date.parse(now()) - Date.parse(t.startedAt)) / 1000 : 0),
+              }
+            : t,
+        ),
+      }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    // Reset puts a timer back to its start and takes it off the stage display.
+    type: 'timer.reset',
+    schema: z.object({ id: z.string().max(64) }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, timers: s.timers.filter((t) => t.id !== p.id) }));
       return { result: null };
     },
   });

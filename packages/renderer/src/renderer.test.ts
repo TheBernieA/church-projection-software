@@ -80,6 +80,33 @@ describe('SceneRenderer', () => {
   });
 });
 
+describe('props', () => {
+  it('draws a library picture in its position and keeps it when other overlays change', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => `media://${id}` });
+    const prop = {
+      id: 'p1',
+      kind: 'prop' as const,
+      text: '',
+      mediaId: 'logo',
+      mediaKind: 'image' as const,
+      position: 'top-right' as const,
+    };
+    r.render({ ...EMPTY_SCENE, overlays: [prop] }, { instant: true });
+    const img = host.querySelector('.ls-prop-top-right img');
+    expect(img?.getAttribute('src')).toBe('media://logo');
+    r.render(
+      { ...EMPTY_SCENE, overlays: [prop, { id: 'm', kind: 'lower-third', text: 'Parent of 12' }] },
+      { instant: true },
+    );
+    expect(host.querySelector('.ls-prop-top-right img')).toBe(img); // not rebuilt
+    expect(host.querySelector('.ls-lower-third')?.textContent).toBe('Parent of 12');
+    r.render({ ...EMPTY_SCENE, overlays: [prop] }, { instant: true });
+    expect(host.querySelector('.ls-lower-third')).toBeNull();
+    expect(host.querySelector('.ls-prop-top-right img')).toBe(img);
+  });
+});
+
 describe('video sound', () => {
   const video: Scene = {
     ...EMPTY_SCENE,

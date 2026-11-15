@@ -34,6 +34,35 @@ header {
   font-weight: 600;
   color: #e8b04b;
 }
+#timers {
+  display: flex;
+  gap: 1.6vw;
+}
+.timer {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.8vw;
+  padding: 0.6vh 1vw;
+  border-radius: 1vh;
+  background: rgba(255, 255, 255, 0.06);
+}
+.timer-name {
+  font-size: 2.2vh;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9aa1b5;
+}
+.timer-value {
+  font-size: 4.4vh;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.timer.over .timer-value {
+  color: #ef4a50;
+}
+.timer.paused {
+  opacity: 0.6;
+}
 main {
   display: grid;
   grid-template-columns: 3fr 2fr;

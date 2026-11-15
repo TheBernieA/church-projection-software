@@ -1,49 +1,53 @@
 /*
- * Lampstand design tokens — "Broadcast Pro" (§15.2, refined).
- * Depth comes from layered graphite surfaces + soft shadows, not borders.
- * Tally red/green are reserved for live/preview state ONLY. Gold is interaction.
+ * Lampstand design tokens: "Show workspace" (pro-AV console feel).
+ * Depth comes from layered neutral graphite panes, not borders.
+ * Tally red/green are reserved for live/preview state ONLY. Amber is interaction;
+ * indigo marks "Coming soon".
  */
 :root,
 [data-theme='dark'] {
-  --surface-0: #0c0e13; /* app canvas */
-  --surface-1: #13161d; /* panels */
-  --surface-2: #1a1e27; /* raised: cards, inputs */
-  --surface-3: #232835; /* hover / pressed */
-  --surface-4: #2c3242;
-  --hairline: rgba(255, 255, 255, 0.06);
-  --hairline-strong: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.08);
-  --text-1: #eef0f5;
-  --text-2: #a3a9ba;
-  --text-3: #6c7387;
-  --accent: #e8b04b;
-  --accent-ink: #1b1608;
-  --accent-soft: rgba(232, 176, 75, 0.12);
-  --accent-line: rgba(232, 176, 75, 0.45);
+  /* Neutral graphite workspace: a pro-AV console feel, colour reserved for content and state. */
+  --surface-0: #141414; /* app canvas, gutters between panes */
+  --surface-1: #1d1d1f; /* panes */
+  --surface-2: #262628; /* raised: cards, inputs, toolbar groups */
+  --surface-3: #303033; /* hover / pressed */
+  --surface-4: #3a3a3e;
+  --hairline: rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --border: rgba(255, 255, 255, 0.09);
+  --text-1: #f0f0f2;
+  --text-2: #a8a8b0;
+  --text-3: #6f6f78;
+  --accent: #f0a73a;
+  --accent-ink: #1c1306;
+  --accent-soft: rgba(240, 167, 58, 0.13);
+  --accent-line: rgba(240, 167, 58, 0.5);
   --switch-off: rgba(255, 255, 255, 0.16);
   --tally-program: #ef4a50;
   --tally-program-soft: rgba(239, 74, 80, 0.14);
-  --tally-program-glow: 0 0 0 1px rgba(239, 74, 80, 0.9), 0 0 24px rgba(239, 74, 80, 0.35);
+  --tally-program-glow: 0 0 0 2px rgba(239, 74, 80, 0.95), 0 0 18px rgba(239, 74, 80, 0.3);
   --tally-preview: #34b27a;
   --tally-preview-soft: rgba(52, 178, 122, 0.14);
   --warning: #f5a524;
   --danger-soft: rgba(239, 74, 80, 0.12);
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--hairline);
-  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--hairline);
-  --shadow-3: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--hairline-strong);
+  --soon: #8b8bf5; /* "Coming soon" badges */
+  --soon-soft: rgba(139, 139, 245, 0.14);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--hairline);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--hairline);
+  --shadow-3: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--hairline-strong);
   --focus-ring: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--accent);
-  --radius-control: 8px;
-  --radius-card: 10px;
-  --radius-panel: 14px;
+  --radius-control: 6px;
+  --radius-card: 6px;
+  --radius-panel: 8px;
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --surface-0: #e9ebf0;
-  --surface-1: #f6f7f9;
+  --surface-0: #e4e4e7;
+  --surface-1: #f4f4f5;
   --surface-2: #ffffff;
-  --surface-3: #eceef3;
-  --surface-4: #dfe2ea;
+  --surface-3: #ebebed;
+  --surface-4: #dcdce0;
   --hairline: rgba(15, 20, 35, 0.07);
   --hairline-strong: rgba(15, 20, 35, 0.12);
   --border: rgba(15, 20, 35, 0.1);
@@ -62,6 +66,8 @@
   --tally-preview-soft: rgba(31, 138, 89, 0.1);
   --warning: #b97200;
   --danger-soft: rgba(217, 52, 58, 0.08);
+  --soon: #5b5bd6;
+  --soon-soft: rgba(91, 91, 214, 0.1);
   --shadow-1: 0 1px 2px rgba(15, 20, 35, 0.08), 0 0 0 1px var(--hairline);
   --shadow-2: 0 8px 24px rgba(15, 20, 35, 0.12), 0 0 0 1px var(--hairline);
   --shadow-3: 0 24px 64px rgba(15, 20, 35, 0.2), 0 0 0 1px var(--hairline-strong);

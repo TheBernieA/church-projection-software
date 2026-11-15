@@ -66,6 +66,7 @@ export class SceneRenderer {
   private media: Slot<never> | null = null;
   private content: Slot<BuiltContent> | null = null;
   private overlaysKey = '[]';
+  private overlayNodes = new Map<string, Slot<never>>();
   private frozen = false;
   private resizeObserver: ResizeObserver | null = null;
   private last: Scene | null = null;
@@ -276,13 +277,36 @@ export class SceneRenderer {
     }
   }
 
+  /**
+   * Overlays are reconciled by id: unchanged ones keep their node, so a looping prop video or
+   * a scrolling ticker doesn't restart when another overlay comes or goes.
+   */
   private renderOverlays(scene: Scene): void {
     const key = JSON.stringify(scene.overlays);
     if (key === this.overlaysKey) return;
     this.overlaysKey = key;
-    this.overlayLayer.replaceChildren(
-      ...scene.overlays.map((o) => buildOverlay(this.doc, o, this.opts.mode !== 'thumbnail')),
-    );
+    const next = new Map<string, Slot<never>>();
+    for (const o of scene.overlays) {
+      const k = JSON.stringify(o);
+      const kept = this.overlayNodes.get(o.id);
+      next.set(
+        o.id,
+        kept?.key === k
+          ? kept
+          : {
+              key: k,
+              node: buildOverlay(this.doc, o, this.opts.mode !== 'thumbnail', (id) =>
+                this.opts.mediaUrl(id),
+              ),
+            },
+      );
+    }
+    // Detaching a <video> pauses it, so unchanged nodes stay put: only drop stale ones and
+    // append new ones.
+    for (const [id, slot] of this.overlayNodes) if (next.get(id) !== slot) slot.node.remove();
+    for (const slot of next.values())
+      if (slot.node.parentNode !== this.overlayLayer) this.overlayLayer.append(slot.node);
+    this.overlayNodes = next;
   }
 
   private dispose(slot: Slot<BuiltContent>): void {

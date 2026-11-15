@@ -66,13 +66,37 @@ export const MediaLayerSchema = z.object({
 });
 export type MediaLayer = z.infer<typeof MediaLayerSchema>;
 
+/** Where a prop sits on screen. */
+export const PropPositionSchema = z.enum([
+  'full',
+  'top-left',
+  'top-right',
+  'bottom-left',
+  'bottom-right',
+  'lower-third',
+]);
+export type PropPosition = z.infer<typeof PropPositionSchema>;
+
+/**
+ * Things drawn over everything else. Messages (ticker, lower third) and props (logo bug, prop:
+ * a library image/video or text in a preset position) clear as separate groups.
+ */
 export const OverlaySchema = z.object({
   id: IdSchema,
-  kind: z.enum(['ticker', 'lower-third', 'logo-bug']),
+  kind: z.enum(['ticker', 'lower-third', 'logo-bug', 'prop']),
   text: z.string().max(500),
   subtext: z.string().max(200).optional(),
+  /** Prop picture from the media library (kind: 'prop'). */
+  mediaId: IdSchema.optional(),
+  mediaKind: z.enum(['image', 'video']).optional(),
+  position: PropPositionSchema.optional(),
 });
 export type Overlay = z.infer<typeof OverlaySchema>;
+
+/** Which clear group an overlay belongs to. */
+export function overlayGroup(o: Overlay): 'messages' | 'props' {
+  return o.kind === 'ticker' || o.kind === 'lower-third' ? 'messages' : 'props';
+}
 
 export const MasksSchema = z.object({ black: z.boolean(), logo: z.boolean(), freeze: z.boolean() });
 export type Masks = z.infer<typeof MasksSchema>;

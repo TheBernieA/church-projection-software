@@ -3,3 +3,4 @@ export * from './Kbd';
 export * from './Segmented';
 export * from './Panel';
 export * from './Switch';
+export * from './Soon';
