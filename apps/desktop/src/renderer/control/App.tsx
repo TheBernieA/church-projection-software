@@ -1,32 +1,38 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { installShortcuts } from './lib/shortcuts';
 import { useStore } from './lib/store';
-import { LibraryPanel } from './components/LibraryPanel';
-import { MessagesDialog } from './components/MessagesDialog';
-import { Monitors } from './components/Monitors';
+import { CenterPane } from './components/modes/CenterPane';
 import { OutputsDialog } from './components/OutputsDialog';
 import { PerfHud } from './components/PerfHud';
 import { QuickBar } from './components/QuickBar';
-import { Rail } from './components/Rail';
-import { ServicePanel } from './components/ServicePanel';
 import { ServicesDialog } from './components/ServicesDialog';
 import { SettingsDialog } from './components/SettingsDialog';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
-import { SlideGrid } from './components/SlideGrid';
+import { Bin } from './components/shell/Bin';
+import { LeftSidebar } from './components/shell/LeftSidebar';
+import { RightColumn } from './components/shell/RightColumn';
+import { Splitter, usePaneSize } from './components/shell/Splitter';
+import { Toolbar } from './components/shell/Toolbar';
 import { SongEditor } from './components/SongEditor';
-import { SlideInspector } from './components/SlideInspector';
 import { ThemeEditor } from './components/ThemeEditor';
 import { Toasts } from './components/Toasts';
-import { TopBar } from './components/TopBar';
 
 /**
- * Control window — "Broadcast Pro" layout (§15.3, refined):
- * icon rail · optional library drawer · service plan · [monitors + transport / slides].
+ * Control window, "Show workspace" layout:
+ *   toolbar
+ *   library + service plan │ workspace (Show/Edit/Reflow/Bible/Themes/Stage) │ live output,
+ *                          │ bin (media, props, messages, timers…)          │ clear stack, masks
+ * Pane sizes are draggable and remembered.
  */
 export function App() {
+  const { t } = useTranslation();
   const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
   const uiScale = useStore((s) => s.settings?.uiScale ?? 1);
-  const libraryOpen = useStore((s) => s.libraryTab !== null);
+  const binOpen = useStore((s) => s.binOpen);
+  const left = usePaneSize('leftWidth', 290, 220, 460);
+  const right = usePaneSize('rightWidth', 340, 280, 560);
+  const bin = usePaneSize('binHeight', 236, 150, 520);
   useEffect(() => installShortcuts(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;
@@ -34,29 +40,54 @@ export function App() {
   }, [uiTheme, uiScale]);
 
   return (
-    <div className="flex h-full bg-[var(--surface-0)]">
-      <Rail />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
-        <div className="flex min-h-0 flex-1 gap-2 pb-2 pr-2">
-          {libraryOpen && (
-            <aside className="panel flex w-[320px] shrink-0 flex-col overflow-hidden">
-              <LibraryPanel />
-            </aside>
-          )}
-          <aside className="panel flex w-[280px] shrink-0 flex-col overflow-hidden">
-            <ServicePanel />
-          </aside>
-          <main className="flex min-w-0 flex-1 flex-col gap-2">
-            <section className="panel shrink-0">
-              <Monitors />
-            </section>
-            <section className="panel flex min-h-0 flex-1 overflow-hidden">
-              <SlideGrid />
-              <SlideInspector />
-            </section>
+    <div className="flex h-full flex-col bg-[var(--surface-0)]">
+      <Toolbar />
+      <div className="flex min-h-0 flex-1">
+        <aside
+          className="flex shrink-0 flex-col overflow-hidden bg-[var(--surface-1)]"
+          style={{ width: left.size }}
+        >
+          <LeftSidebar />
+        </aside>
+        <Splitter
+          axis="x"
+          size={left.size}
+          label={t('layout.resizeLeft')}
+          onPreview={left.preview}
+          onCommit={left.commit}
+        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--surface-1)]">
+            <CenterPane />
           </main>
+          {binOpen && (
+            <Splitter
+              axis="y"
+              size={bin.size}
+              invert
+              label={t('layout.resizeBin')}
+              onPreview={bin.preview}
+              onCommit={bin.commit}
+            />
+          )}
+          <div className="bg-[var(--surface-1)]">
+            <Bin height={bin.size} />
+          </div>
         </div>
+        <Splitter
+          axis="x"
+          size={right.size}
+          invert
+          label={t('layout.resizeRight')}
+          onPreview={right.preview}
+          onCommit={right.commit}
+        />
+        <aside
+          className="flex shrink-0 flex-col overflow-hidden bg-[var(--surface-1)]"
+          style={{ width: right.size }}
+        >
+          <RightColumn />
+        </aside>
       </div>
       <QuickBar />
       <SongEditor />
@@ -65,7 +96,6 @@ export function App() {
       <SettingsDialog />
       <ShortcutsDialog />
       <ServicesDialog />
-      <MessagesDialog />
       <PerfHud />
       <Toasts />
     </div>

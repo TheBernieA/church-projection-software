@@ -51,7 +51,7 @@ export function ThemesPanel() {
     (defaults[k] ?? DEFAULT_THEME_IDS[k]) === id;
 
   return (
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
+    <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3 overflow-y-auto px-4 pb-4">
       {themes.map((th) => (
         <div
           key={th.id}

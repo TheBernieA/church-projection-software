@@ -39,6 +39,25 @@ export interface PresentableSlide {
   countdownSec?: number;
 }
 
+/**
+ * Slide-group colours (Verse, Chorus, Bridge…), so the operator finds their place at a glance.
+ * Never red or green: those mean live and preview.
+ */
+const GROUP_COLORS: [RegExp, string][] = [
+  [/^(verse|v\d|stanza)/, '#4f8ef7'],
+  [/^(chorus|refrain|c\d)/, '#c26be0'],
+  [/^(pre-?chorus|pc)/, '#e5b53a'],
+  [/^(bridge|b\d)/, '#f08a3c'],
+  [/^(tag|ending|coda|vamp)/, '#2fb8b0'],
+  [/^(intro|outro|interlude|instrumental)/, '#8a8f9c'],
+];
+
+export function groupColor(label?: string): string | undefined {
+  if (!label) return undefined;
+  const l = label.trim().toLowerCase();
+  return GROUP_COLORS.find(([re]) => re.test(l))?.[1] ?? '#7c8499';
+}
+
 export interface SlideContext {
   songs: Song[];
   themes: Theme[];

@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import {
   Archive,
   BookOpen,
+  Map as MapIcon,
   Compass,
   MonitorPlay,
   Music,
@@ -24,6 +24,7 @@ import {
   ScripturePage,
   SongsPage,
 } from './settings/pages';
+import { FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
 
 type PageId = SettingsPageId;
@@ -39,13 +40,17 @@ const NAV: { id: PageId; icon: LucideIcon }[] = [
 ];
 
 /** Help section, shown below a divider. */
-const HELP_NAV: { id: PageId; icon: LucideIcon }[] = [{ id: 'guide', icon: Compass }];
+const HELP_NAV: { id: PageId; icon: LucideIcon }[] = [
+  { id: 'guide', icon: Compass },
+  { id: 'features', icon: MapIcon },
+];
 
 /** Two-pane settings window: categories on the left, one focused page on the right. */
 export function SettingsDialog() {
   const { t } = useTranslation();
   const s = useStore((x) => x.settings);
-  const [page, setPage] = useState<PageId>('general');
+  const page = useStore((x) => x.settingsPage);
+  const setPage = (settingsPage: PageId): void => useStore.setState({ settingsPage });
   if (!s) return null;
   const update = (patch: Partial<Settings>): void => {
     void attempt(() => cmd('settings.update', { patch }), 'errors.setting');
@@ -99,6 +104,7 @@ export function SettingsDialog() {
         {page === 'library' && <LibraryPage />}
         {page === 'about' && <AboutPage />}
         {page === 'guide' && <GuidePage goTo={setPage} />}
+        {page === 'features' && <FeaturesPage />}
       </div>
     </Dialog>
   );

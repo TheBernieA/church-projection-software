@@ -22,7 +22,18 @@ export function SongEditor() {
   return open ? <SongEditorBody key={editingId ?? 'new'} editingId={editingId} /> : null;
 }
 
-function SongEditorBody({ editingId }: { editingId: string | null }) {
+/** The same editor, in place (Edit workspace) instead of a dialog. */
+export function SongEditorInline({ songId }: { songId: string }) {
+  return <SongEditorBody key={songId} editingId={songId} inline />;
+}
+
+function SongEditorBody({
+  editingId,
+  inline = false,
+}: {
+  editingId: string | null;
+  inline?: boolean;
+}) {
   const { t } = useTranslation();
   const maxLines = useStore((s) => s.settings?.lyrics.maxLinesPerSlide ?? 4);
   const [base] = useState<Song>(() => {
@@ -71,8 +82,10 @@ function SongEditorBody({ editingId }: { editingId: string | null }) {
   const readOnly = base.origin === 'hymnal';
 
   const save = async (): Promise<void> => {
-    if ((await attempt(() => cmd('song.save', { entity: draft }), 'errors.save')) !== undefined)
-      closeDialog();
+    if ((await attempt(() => cmd('song.save', { entity: draft }), 'errors.save')) === undefined)
+      return;
+    if (inline) toast(t('song.saved', { title: draft.title }));
+    else closeDialog();
   };
   const duplicate = async (): Promise<void> => {
     const now = nowIso();
@@ -90,37 +103,32 @@ function SongEditorBody({ editingId }: { editingId: string | null }) {
   const remove = async (): Promise<void> => {
     if (!editingId) return;
     await cmd('song.delete', { id: base.id });
-    closeDialog();
+    if (inline) useStore.setState({ mode: 'show' });
+    else closeDialog();
     toast(
       `${base.title} deleted. Undo with ${window.lampstand.platform === 'darwin' ? '⌘Z' : 'Ctrl+Z'}.`,
     );
   };
 
-  return (
-    <Dialog
-      name="song"
-      wide
-      title={editingId ? t('song.titleEdit') : t('song.titleNew')}
-      footer={
-        readOnly ? (
-          <Button variant="primary" onClick={() => void duplicate()}>
-            {t('song.duplicate')}
-          </Button>
-        ) : (
-          <>
-            {editingId && (
-              <Button variant="danger" className="mr-auto" onClick={() => void remove()}>
-                {t('song.delete')}
-              </Button>
-            )}
-            <Button onClick={() => closeDialog()}>{t('song.cancel')}</Button>
-            <Button variant="primary" onClick={() => void save()}>
-              {t('song.save')}
-            </Button>
-          </>
-        )
-      }
-    >
+  const actions = readOnly ? (
+    <Button variant="primary" onClick={() => void duplicate()}>
+      {t('song.duplicate')}
+    </Button>
+  ) : (
+    <>
+      {editingId && (
+        <Button variant="danger" className="mr-auto" onClick={() => void remove()}>
+          {t('song.delete')}
+        </Button>
+      )}
+      {!inline && <Button onClick={() => closeDialog()}>{t('song.cancel')}</Button>}
+      <Button variant="primary" onClick={() => void save()}>
+        {t('song.save')}
+      </Button>
+    </>
+  );
+  const body = (
+    <>
       {readOnly && (
         <p className="mb-3 rounded bg-[var(--accent-soft)] p-2 text-[12px]">{t('song.readOnly')}</p>
       )}
@@ -136,7 +144,7 @@ function SongEditorBody({ editingId }: { editingId: string | null }) {
                 className="field"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                autoFocus
+                autoFocus={!inline}
               />
             </div>
             <div>
@@ -222,6 +230,26 @@ function SongEditorBody({ editingId }: { editingId: string | null }) {
           </ol>
         </div>
       </fieldset>
+    </>
+  );
+  if (inline)
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
+          <h2 className="min-w-0 flex-1 truncate text-[14px] font-semibold">{draft.title}</h2>
+          {actions}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">{body}</div>
+      </div>
+    );
+  return (
+    <Dialog
+      name="song"
+      wide
+      title={editingId ? t('song.titleEdit') : t('song.titleNew')}
+      footer={actions}
+    >
+      {body}
     </Dialog>
   );
 }

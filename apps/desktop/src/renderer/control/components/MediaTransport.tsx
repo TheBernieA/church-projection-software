@@ -95,75 +95,84 @@ export function MediaTransport({ media }: { media: MediaLayer }) {
   const shown = scrub.draft ?? playhead;
   const ended = !media.loop && duration !== undefined && playhead >= duration - 0.05;
 
+  const playPause = (
+    <IconButton
+      size="sm"
+      variant="subtle"
+      aria-label={media.playing && !ended ? t('media.pause') : t('media.play')}
+      onClick={() => send({ action: ended ? 'restart' : 'toggle' })}
+    >
+      {media.playing && !ended ? (
+        <Pause size={15} fill="currentColor" />
+      ) : (
+        <Play size={15} fill="currentColor" />
+      )}
+    </IconButton>
+  );
+  // Two rows so the progress bar always gets the full width, even in a narrow column.
   return (
     <div
-      className="mt-2 flex items-center gap-1.5 rounded-[10px] bg-[var(--surface-0)] px-2 py-1.5 shadow-[inset_0_0_0_1px_var(--hairline)]"
+      className="flex flex-col gap-1 rounded-[8px] bg-[var(--surface-0)] px-2 py-1.5 shadow-[inset_0_0_0_1px_var(--hairline)]"
       role="group"
       aria-label={t('media.transport')}
     >
-      <IconButton
-        size="sm"
-        variant="subtle"
-        aria-label={media.playing && !ended ? t('media.pause') : t('media.play')}
-        onClick={() => send({ action: ended ? 'restart' : 'toggle' })}
-      >
-        {media.playing && !ended ? (
-          <Pause size={15} fill="currentColor" />
-        ) : (
-          <Play size={15} fill="currentColor" />
-        )}
-      </IconButton>
-      <IconButton
-        size="sm"
-        aria-label={t('media.restart')}
-        onClick={() => send({ action: 'restart' })}
-      >
-        <RotateCcw size={15} />
-      </IconButton>
-      <span className="tnum w-11 text-right text-[12px] text-[var(--text-2)]">
-        {formatClock(shown)}
-      </span>
-      <input
-        type="range"
-        aria-label={t('media.position')}
-        min={0}
-        max={duration ?? 0}
-        step={0.1}
-        disabled={!duration}
-        value={Math.min(shown, duration ?? 0)}
-        {...scrub.props}
-        className="h-1.5 min-w-0 flex-1 accent-[var(--tally-program)]"
-      />
-      <span className="tnum w-11 text-[12px] text-[var(--text-3)]">
-        {duration ? formatClock(duration) : '--:--'}
-      </span>
-      <IconButton
-        size="sm"
-        aria-label={t('media.loop')}
-        aria-pressed={media.loop}
-        active={media.loop}
-        onClick={() => send({ action: 'set', loop: !media.loop })}
-      >
-        <Repeat size={15} />
-      </IconButton>
-      <IconButton
-        size="sm"
-        aria-label={media.muted ? t('media.unmute') : t('media.mute')}
-        aria-pressed={media.muted}
-        onClick={() => send({ action: 'set', muted: !media.muted })}
-      >
-        {media.muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-      </IconButton>
-      <input
-        type="range"
-        aria-label={t('media.volume')}
-        min={0}
-        max={1}
-        step={0.05}
-        value={volume.draft ?? media.volume}
-        {...volume.props}
-        className="h-1.5 w-16 accent-[var(--accent)]"
-      />
+      <div className="flex items-center gap-2">
+        <span className="tnum w-10 text-right text-[11px] text-[var(--text-2)]">
+          {formatClock(shown)}
+        </span>
+        <input
+          type="range"
+          aria-label={t('media.position')}
+          min={0}
+          max={duration ?? 0}
+          step={0.1}
+          disabled={!duration}
+          value={Math.min(shown, duration ?? 0)}
+          {...scrub.props}
+          className="h-1.5 min-w-0 flex-1 accent-[var(--tally-program)]"
+        />
+        <span className="tnum w-10 text-[11px] text-[var(--text-3)]">
+          {duration ? formatClock(duration) : '--:--'}
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        {playPause}
+        <IconButton
+          size="sm"
+          aria-label={t('media.restart')}
+          onClick={() => send({ action: 'restart' })}
+        >
+          <RotateCcw size={15} />
+        </IconButton>
+        <IconButton
+          size="sm"
+          aria-label={t('media.loop')}
+          aria-pressed={media.loop}
+          active={media.loop}
+          onClick={() => send({ action: 'set', loop: !media.loop })}
+        >
+          <Repeat size={15} />
+        </IconButton>
+        <IconButton
+          size="sm"
+          className="ml-auto"
+          aria-label={media.muted ? t('media.unmute') : t('media.mute')}
+          aria-pressed={media.muted}
+          onClick={() => send({ action: 'set', muted: !media.muted })}
+        >
+          {media.muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+        </IconButton>
+        <input
+          type="range"
+          aria-label={t('media.volume')}
+          min={0}
+          max={1}
+          step={0.05}
+          value={volume.draft ?? media.volume}
+          {...volume.props}
+          className="h-1.5 w-20 accent-[var(--accent)]"
+        />
+      </div>
       {name && <span className="sr-only">{name}</span>}
     </div>
   );

@@ -8,7 +8,11 @@
     "live": "Live",
     "services": "Services",
     "shortcuts": "Keyboard shortcuts",
-    "offAirShort": "Off AIR"
+    "offAirShort": "Off AIR",
+    "previewFirst": "Preview first",
+    "previewFirstHelp": "Off: clicking a slide puts it on screen straight away. On: clicks load Preview, and Go live (Space) sends it.",
+    "looks": "Looks",
+    "capture": "Record & stream"
   },
   "service": {
     "title": "Service plan",
@@ -89,13 +93,16 @@
     "volume": "Volume"
   },
   "slides": {
-    "empty": "Pick an item from the service plan, or open the library from the left rail.",
+    "empty": "Pick a song from the library, or an item from the service plan.",
     "loading": "Loading…",
     "addToService": "Add to service",
     "noSlides": "This item has no slides.",
     "title": "Slides",
     "count_one": "{{count}} slide",
-    "count_other": "{{count}} slides"
+    "count_other": "{{count}} slides",
+    "arrangement": "Arrangement",
+    "size": "Slide size",
+    "quickEditHint": "Right-click to edit this slide"
   },
   "monitor": {
     "preview": "Preview",
@@ -121,7 +128,20 @@
     "clear": "Clear",
     "masks": "Screens",
     "empty": "Nothing in preview",
-    "offAir": "Off AIR"
+    "offAir": "Off AIR",
+    "live": "Live",
+    "output": "Output",
+    "clearLayer": "Clear {{name}}",
+    "layers": {
+      "slide": "Slide",
+      "media": "Media",
+      "background": "Background",
+      "messages": "Messages",
+      "props": "Props",
+      "announcements": "Announcements",
+      "audio": "Audio",
+      "videoInput": "Video input"
+    }
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -147,7 +167,8 @@
     "cancel": "Cancel",
     "delete": "Delete song",
     "duplicate": "Duplicate to edit",
-    "readOnly": "Hymnal songs are read-only. Duplicate it to make your own version."
+    "readOnly": "Hymnal songs are read-only. Duplicate it to make your own version.",
+    "saved": "Saved {{title}}"
   },
   "theme": {
     "title": "Edit theme",
@@ -253,7 +274,8 @@
       "packages": "Bibles & hymnals",
       "library": "Library & backups",
       "about": "Privacy & about",
-      "guide": "Guide"
+      "guide": "Guide",
+      "features": "Features"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -261,7 +283,8 @@
       "songs": "How lyrics are split into slides, and your church licence details.",
       "presenting": "What the screen shows when nothing is live, and how clicks behave while you run a service.",
       "library": "Your songs, services, themes and media live in one library folder. Keep it safe and move it between computers.",
-      "about": "What Lampstand does with your data, and which version you are running."
+      "about": "What Lampstand does with your data, and which version you are running.",
+      "features": "Everything Lampstand does today, and what is coming."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "uiScaleHelp": "Make the whole interface larger or smaller.",
@@ -433,11 +456,11 @@
       },
       "service": {
         "title": "Build your service",
-        "body": "Open the library from the left rail. Click something to look at it; double-click it (or use its add button) to put it in the service plan. Drag items to reorder, and use Section to group them."
+        "body": "Pick songs from the Library on the left, verses in the Bible workspace, and media from the bin at the bottom. Double-click (or drag) to put them in the service plan. Drag items to reorder, and use Section to group them."
       },
       "live": {
-        "title": "Preview, then go live",
-        "body": "Click a slide to put it in Preview (green). Press {{goLive}} to send it to the screen (red). Use {{previous}} / {{next}} to step through slides."
+        "title": "Click to go live",
+        "body": "Click a slide and it's on the screen (red). Use {{previous}} / {{next}} to step through slides. Prefer a safety step? Turn on Preview first in the toolbar: clicks go to Preview (green) and {{goLive}} sends them."
       },
       "control": {
         "title": "Stay in control",
@@ -455,9 +478,9 @@
       "library": "Backups"
     },
     "quickBar": "Find anything fast",
-    "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter previews it, Shift+Enter shows it now.",
+    "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter shows it (or previews it with Preview first on); Shift+Enter always shows it now.",
     "keys": "Keyboard essentials",
-    "keysHelp": "Shortcuts can be changed under Keyboard shortcuts on the left rail.",
+    "keysHelp": "Shortcuts can be changed under Keyboard shortcuts in the toolbar.",
     "colours": "What the colours mean",
     "colour": {
       "preview": {
@@ -473,5 +496,113 @@
         "body": "Selected or editable — never affects the screen."
       }
     }
+  },
+  "modes": {
+    "label": "Workspace",
+    "show": "Show",
+    "edit": "Edit",
+    "reflow": "Reflow",
+    "bible": "Bible",
+    "themes": "Themes",
+    "stage": "Stage",
+    "pickItem": "Pick something from the library or the service plan",
+    "addToEdit": "Add this to the service plan to edit it",
+    "nothingToEdit": "This item has no text to edit",
+    "scriptureEditHint": "To change the passage, pick verses in the Bible workspace."
+  },
+  "soon": {
+    "badge": "Soon",
+    "tooltip": "{{name}}: coming soon",
+    "roadmap": "See everything that's coming"
+  },
+  "layout": {
+    "resizeLibrary": "Resize library",
+    "resizeLeft": "Resize sidebar",
+    "resizeBin": "Resize bin",
+    "resizeRight": "Resize output column"
+  },
+  "bin": {
+    "label": "Bin",
+    "collapse": "Collapse bin",
+    "expand": "Expand bin",
+    "tabs": {
+      "media": "Media",
+      "backgrounds": "Backgrounds",
+      "props": "Props",
+      "messages": "Messages",
+      "timers": "Timers",
+      "audio": "Audio",
+      "video-input": "Video input",
+      "macros": "Macros"
+    }
+  },
+  "props": {
+    "delete": "Delete {{name}}",
+    "position": "Position",
+    "new": "New prop",
+    "source": "Picture",
+    "text": "Text",
+    "textLabel": "Text to show",
+    "name": "Name",
+    "create": "Create",
+    "positions": {
+      "top-right": "Top right",
+      "top-left": "Top left",
+      "bottom-right": "Bottom right",
+      "bottom-left": "Bottom left",
+      "lower-third": "Lower third",
+      "full": "Full screen"
+    }
+  },
+  "messages": {
+    "delete": "Delete {{name}}",
+    "new": "New message",
+    "name": "Name",
+    "template": "Message",
+    "templatePlaceholder": "Parent of {number}, please come to the nursery",
+    "styleLabel": "Style",
+    "create": "Create",
+    "stagePlaceholder": "Wrap up, 5 minutes",
+    "style": {
+      "lower-third": "Lower third",
+      "ticker": "Ticker"
+    }
+  },
+  "timers": {
+    "delete": "Delete {{name}}",
+    "stop": "Stop",
+    "start": "Start",
+    "resume": "Resume",
+    "reset": "Reset",
+    "new": "New timer",
+    "name": "Name",
+    "kindLabel": "Type",
+    "minutes": "minutes",
+    "target": "Count down to",
+    "create": "Create",
+    "stageHint": "Started timers show on the stage display, and turn red when a countdown runs over.",
+    "kind": {
+      "countdown": "Countdown",
+      "to-time": "Count to time",
+      "elapsed": "Elapsed"
+    }
+  },
+  "reflow": {
+    "revert": "Revert",
+    "label": "All slide text",
+    "help": "Blank lines split slides. A line like [Verse 1] or [Welcome] starts a new group or slide title.",
+    "unavailable": "Reflow works with songs and text slides",
+    "unavailableHelp": "Pick a song, or a text slides or announcements item in the service plan.",
+    "save": "Save"
+  },
+  "stage": {
+    "now": "Now",
+    "next": "Next"
+  },
+  "features": {
+    "intro": "{{available}} features ready to use today, {{soon}} more on the way.",
+    "filter": "Show",
+    "all": "All",
+    "available": "Available"
   }
 }

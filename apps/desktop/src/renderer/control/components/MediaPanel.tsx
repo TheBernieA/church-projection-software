@@ -37,7 +37,7 @@ export function MediaPanel() {
   const addToService = addItemToService;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="px-4 pb-3">
+      <div className="px-4 pb-3 pt-3">
         <Button size="sm" onClick={() => void importMedia(false)}>
           + {t('media.add')}
         </Button>
@@ -47,7 +47,7 @@ export function MediaPanel() {
           {t('media.empty')}
         </p>
       )}
-      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto px-4 pb-4">
+      <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 overflow-y-auto px-4 pb-4">
         {media.map((m) => {
           const item = {
             id: `adhoc-${m.id}`,
@@ -175,9 +175,9 @@ export function BackgroundsPanel() {
   const setBg = (ref: BackgroundRef): void =>
     void cmd('live.setBackground', { background: { ref } });
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+    <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
       <h3 className="section-label pb-2">{t('media.builtIn')}</h3>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {BUILT_IN_BACKGROUNDS.map((b) => (
           <button
             key={b.name}
@@ -200,7 +200,7 @@ export function BackgroundsPanel() {
           + {t('media.addBackground')}
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {media.map((m) => (
           <button
             key={m.id}

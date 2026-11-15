@@ -1,4 +1,4 @@
-import type { Layer, ServiceItem } from '@lampstand/core';
+import type { Layer, Overlay, ServiceItem, Settings } from '@lampstand/core';
 import { cmd } from './api';
 import i18n from '../i18n';
 import {
@@ -137,9 +137,16 @@ export async function goLiveSlide(
   scheduleAnnouncements(item, index);
 }
 
-/** Space/Enter: Preview → Program. Falls back to the selected item's first slide. */
+/** Space/Enter: Preview → Program ("Preview first"), or the next slide when clicks go live. */
 export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<void> {
   const s = get();
+  if (s.settings?.clickGoesLive !== false) {
+    // No Preview stage: Space walks forward through the live item, or starts the selected one.
+    const selected = findItem(s.selectedItemId);
+    if (s.liveCursor && selected && s.liveCursor.itemId === selected.id) return step(1);
+    if (selected) return goLiveSlide(selected, 0, source);
+    return;
+  }
   const pc = s.previewCursor;
   const item = findItem(pc?.itemId ?? null);
   if (pc && item) return goLiveSlide(item, pc.index, source);
@@ -168,6 +175,25 @@ export const clearLayer = (layer: Layer): Promise<void> => {
 export const toggleMask = (mask: 'black' | 'logo' | 'freeze'): Promise<void> =>
   safe(cmd('live.setMask', { mask }, 'shortcut'));
 
+/** Put an overlay (message, prop) on screen, replacing any with the same id. */
+export function showOverlay(overlay: Overlay): Promise<void> {
+  const others = (get().live?.program.overlays ?? []).filter((o) => o.id !== overlay.id);
+  return safe(cmd('live.setOverlays', { overlays: [...others, overlay].slice(-10) }));
+}
+
+export function hideOverlay(id: string): Promise<void> {
+  const overlays = (get().live?.program.overlays ?? []).filter((o) => o.id !== id);
+  return safe(cmd('live.setOverlays', { overlays }));
+}
+
+export const isOverlayLive = (id: string): boolean =>
+  !!get().live?.program.overlays.some((o) => o.id === id);
+
+/** Save part of the settings (validated against the full schema in main). */
+export function saveSettings(patch: Partial<Settings>): Promise<void> {
+  return safe(cmd('settings.update', { patch }));
+}
+
 // ---------- Announcements loop (auto-advance while live) ----------
 let loopTimer: ReturnType<typeof setTimeout> | null = null;
 function stopAnnouncements(): void {
@@ -194,13 +220,30 @@ export async function ensureItemReady(item: ServiceItem): Promise<PresentableSli
   return [];
 }
 
+/**
+ * Click-goes-live (the default): a click sends straight to the screen. With "Preview first"
+ * on, clicks load Preview and Go live sends it (except item kinds set to live editing).
+ */
+export function clickGoesLive(kind?: ServiceItem['kind']): boolean {
+  const s = get().settings;
+  if (!s || s.clickGoesLive) return true;
+  return !!kind && s.liveEditingKinds.includes(kind);
+}
+
+/** A slide was clicked: show it, or load Preview, following {@link clickGoesLive}. */
+export function triggerSlide(item: ServiceItem, index: number): Promise<void> {
+  useStore.setState({ editCursor: { itemId: item.id, index } });
+  return clickGoesLive(item.kind) ? goLiveSlide(item, index) : previewSlide(item, index);
+}
+
 /** Show an ad-hoc item (from library or quick bar) in the slide grid, then preview or show it. */
 export async function openAdhoc(
   item: ServiceItem,
-  mode: 'select' | 'preview' | 'live' = 'preview',
+  requested: 'select' | 'preview' | 'live' = 'preview',
 ): Promise<void> {
   useStore.setState({ adhoc: item, selectedItemId: item.id });
-  if (mode === 'select') return;
+  if (requested === 'select') return;
+  const mode = requested === 'preview' && clickGoesLive(item.kind) ? 'live' : requested;
   const slides = await ensureItemReady(item);
   if (!slides.length) return;
   if (mode === 'live') await goLiveSlide(item, 0);

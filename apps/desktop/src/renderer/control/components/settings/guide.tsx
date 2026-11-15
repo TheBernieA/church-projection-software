@@ -13,11 +13,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
 import { displayCombo, effectiveShortcuts, type ShortcutAction } from '../../lib/shortcuts';
-import { openDialog, useStore } from '../../lib/store';
+import { openDialog, useStore, type SettingsPageId } from '../../lib/store';
 import { Group, SettingsPage } from './parts';
 
-export type SettingsPageId =
-  'general' | 'scripture' | 'songs' | 'presenting' | 'packages' | 'library' | 'about' | 'guide';
+export type { SettingsPageId } from '../../lib/store';
 
 interface Step {
   id: string;

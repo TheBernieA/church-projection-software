@@ -1,0 +1,234 @@
+import { useEffect, useState } from 'react';
+import { Pause, Play, Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
+import { Button, IconButton, Segmented } from '@lampstand/ui';
+import { saveSettings } from '../../lib/actions';
+import { cmd } from '../../lib/api';
+import { attempt, useStore } from '../../lib/store';
+
+type Kind = TimerDef['kind'];
+
+/** Re-render twice a second while any timer runs. */
+function useTick(active: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setNow(Date.now()), 500);
+    return () => clearInterval(t);
+  }, [active]);
+  return now;
+}
+
+/** What a saved timer reads before it starts. */
+function idleValue(def: TimerDef, now: number): number {
+  const idle: LiveTimer = { ...def, running: false, startedAt: null, accumulatedSec: 0 };
+  return timerSeconds(idle, now);
+}
+
+function TimerCard({
+  def,
+  run,
+  now,
+  onDelete,
+}: {
+  def: TimerDef;
+  run: LiveTimer | undefined;
+  now: number;
+  onDelete: () => void;
+}) {
+  const { t } = useTranslation();
+  const secs = run ? timerSeconds(run, now) : idleValue(def, now);
+  const over = secs < 0;
+  const send = (type: string, payload: unknown): void =>
+    void attempt(() => cmd(type, payload), 'errors.action');
+  return (
+    <div
+      role="group"
+      aria-label={def.name}
+      className="group flex w-[190px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      style={run?.running ? { boxShadow: '0 0 0 1px var(--accent-line)' } : undefined}
+    >
+      <div className="flex items-center gap-1.5">
+        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{def.name}</span>
+        <span className="text-[10px] text-[var(--text-3)]">{t(`timers.kind.${def.kind}`)}</span>
+        <IconButton
+          size="xs"
+          aria-label={t('timers.delete', { name: def.name })}
+          className="opacity-0 group-hover:opacity-100"
+          onClick={onDelete}
+        >
+          <Trash2 size={13} />
+        </IconButton>
+      </div>
+      <div
+        className={`tnum text-[26px] font-bold leading-none ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+        data-testid={`timer-${def.id}`}
+      >
+        {formatTimer(secs, def.kind)}
+      </div>
+      <div className="flex gap-1">
+        {run?.running ? (
+          <Button
+            size="xs"
+            variant="secondary"
+            icon={<Pause size={12} />}
+            onClick={() => send('timer.stop', { id: def.id })}
+          >
+            {t('timers.stop')}
+          </Button>
+        ) : (
+          <Button
+            size="xs"
+            variant="primary"
+            icon={<Play size={12} />}
+            onClick={() => send('timer.start', { timer: def })}
+          >
+            {run ? t('timers.resume') : t('timers.start')}
+          </Button>
+        )}
+        <Button
+          size="xs"
+          variant="ghost"
+          icon={<RotateCcw size={12} />}
+          disabled={!run}
+          onClick={() => send('timer.reset', { id: def.id })}
+        >
+          {t('timers.reset')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function NewTimer({
+  onCreate,
+  onCancel,
+}: {
+  onCreate: (d: TimerDef) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [name, setName] = useState('');
+  const [kind, setKind] = useState<Kind>('countdown');
+  const [minutes, setMinutes] = useState('5');
+  const [time, setTime] = useState('10:00');
+  const mins = Number(minutes);
+  const ready =
+    kind === 'elapsed' ||
+    (kind === 'countdown' && mins > 0 && mins <= 1440) ||
+    (kind === 'to-time' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time));
+  return (
+    <form
+      aria-label={t('timers.new')}
+      className="flex w-[280px] shrink-0 flex-col gap-2 rounded-[6px] bg-[var(--surface-2)] p-2.5 shadow-[var(--shadow-1)]"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!ready) return;
+        const def: TimerDef = { id: newId(), name: name.trim() || t(`timers.kind.${kind}`), kind };
+        if (kind === 'countdown') def.durationSec = Math.round(mins * 60);
+        if (kind === 'to-time') def.targetTime = time;
+        onCreate(def);
+      }}
+    >
+      <input
+        className="field !h-8"
+        aria-label={t('timers.name')}
+        placeholder={t('timers.name')}
+        value={name}
+        maxLength={60}
+        onChange={(e) => setName(e.target.value)}
+        autoFocus
+      />
+      <Segmented<Kind>
+        label={t('timers.kindLabel')}
+        value={kind}
+        onChange={setKind}
+        options={[
+          { value: 'countdown', label: t('timers.kind.countdown') },
+          { value: 'to-time', label: t('timers.kind.to-time') },
+          { value: 'elapsed', label: t('timers.kind.elapsed') },
+        ]}
+      />
+      {kind === 'countdown' && (
+        <label className="flex items-center gap-2 text-[12px] text-[var(--text-2)]">
+          <input
+            className="field !h-8 !w-20"
+            type="number"
+            min={1}
+            max={1440}
+            aria-label={t('timers.minutes')}
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+          />
+          {t('timers.minutes')}
+        </label>
+      )}
+      {kind === 'to-time' && (
+        <input
+          className="field !h-8"
+          type="time"
+          aria-label={t('timers.target')}
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+        />
+      )}
+      <div className="flex justify-end gap-1.5">
+        <Button size="xs" variant="ghost" type="button" onClick={onCancel}>
+          {t('song.cancel')}
+        </Button>
+        <Button size="xs" variant="primary" type="submit" disabled={!ready}>
+          {t('timers.create')}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Timers bin: countdowns, count-to-time and elapsed timers; running ones show on stage. */
+export function TimersBin() {
+  const { t } = useTranslation();
+  const defs = useStore((s) => s.settings?.timers);
+  const runs = useStore((s) => s.live?.timers);
+  const [adding, setAdding] = useState(false);
+  const list = defs ?? [];
+  const now = useTick(!!runs?.some((r) => r.running) || list.some((d) => d.kind === 'to-time'));
+  const save = (next: TimerDef[]): void => void saveSettings({ timers: next });
+  return (
+    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
+      {list.map((d) => (
+        <TimerCard
+          key={d.id}
+          def={d}
+          run={runs?.find((r) => r.id === d.id)}
+          now={now}
+          onDelete={() => {
+            void cmd('timer.reset', { id: d.id });
+            save(list.filter((x) => x.id !== d.id));
+          }}
+        />
+      ))}
+      {adding ? (
+        <NewTimer
+          onCancel={() => setAdding(false)}
+          onCreate={(d) => {
+            save([...list, d]);
+            setAdding(false);
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="flex h-[112px] w-[150px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-[12px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)]"
+        >
+          <Plus size={18} />
+          {t('timers.new')}
+        </button>
+      )}
+      <p className="ml-auto max-w-[220px] self-end text-[11px] leading-snug text-[var(--text-3)]">
+        {t('timers.stageHint')}
+      </p>
+    </div>
+  );
+}

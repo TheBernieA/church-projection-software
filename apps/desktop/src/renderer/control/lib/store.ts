@@ -14,18 +14,26 @@ import type { DisplayInfo, Notice, ServiceSummary } from '@lampstand/ipc-contrac
 import { api, cmd, q } from './api';
 import i18n from '../i18n';
 
-export type LibraryTab = 'bible' | 'songs' | 'hymns' | 'media' | 'backgrounds' | 'themes';
+export type SettingsPageId =
+  | 'general'
+  | 'scripture'
+  | 'songs'
+  | 'presenting'
+  | 'packages'
+  | 'library'
+  | 'about'
+  | 'features'
+  | 'guide';
+
+/** Left-sidebar library source. */
+export type LibraryTab = 'songs' | 'hymns';
+/** The workspace in the centre pane (toolbar mode tabs). */
+export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
+/** Bottom bin tabs. Audio, video input and macros are "Coming soon". */
+export type BinTab =
+  'media' | 'backgrounds' | 'props' | 'messages' | 'timers' | 'audio' | 'video-input' | 'macros';
 export type DialogName =
-  | 'quick'
-  | 'outputs'
-  | 'settings'
-  | 'shortcuts'
-  | 'song'
-  | 'theme'
-  | 'services'
-  | 'messages'
-  | 'perf'
-  | null;
+  'quick' | 'outputs' | 'settings' | 'shortcuts' | 'song' | 'theme' | 'services' | 'perf' | null;
 
 export interface Toast {
   id: number;
@@ -58,8 +66,12 @@ export interface ControlState {
   /** Slide selected for editing in the inspector. */
   editCursor: Cursor | null;
   liveCursor: Cursor | null;
-  /** Open library drawer, or null when collapsed. */
-  libraryTab: LibraryTab | null;
+  libraryTab: LibraryTab;
+  mode: Mode;
+  binTab: BinTab;
+  binOpen: boolean;
+  /** Open page of the Settings window (remembered between openings). */
+  settingsPage: SettingsPageId;
   dialog: DialogName;
   editingSongId: string | null;
   editingThemeId: string | null;
@@ -93,7 +105,11 @@ export const useStore = create<ControlState>((set) => ({
   previewCursor: null,
   editCursor: null,
   liveCursor: null,
-  libraryTab: 'bible',
+  libraryTab: 'songs',
+  mode: 'show',
+  binTab: 'media',
+  binOpen: true,
+  settingsPage: 'general',
   dialog: null,
   editingSongId: null,
   editingThemeId: null,

@@ -117,6 +117,24 @@ test.afterAll(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
+/** Switch the centre workspace (toolbar mode tabs). */
+const mode = async (name: 'Show' | 'Edit' | 'Reflow' | 'Bible' | 'Themes' | 'Stage') => {
+  const tab = control.getByRole('navigation', { name: 'Workspace' }).getByRole('button', { name });
+  if ((await tab.getAttribute('aria-pressed')) !== 'true') await tab.click();
+};
+/** Open a bin tab (Media, Props, Messages, Timers…). */
+const binTab = async (name: string) => {
+  const tab = control
+    .getByRole('region', { name: 'Bin' })
+    .getByRole('button', { name, exact: true });
+  if ((await tab.getAttribute('aria-pressed')) !== 'true') await tab.click();
+};
+/** "Preview first": clicks load Preview and Space sends it, instead of clicks going live. */
+const previewFirst = async (on: boolean) => {
+  const sw = control.getByRole('switch', { name: 'Preview first' });
+  if ((await sw.getAttribute('aria-checked')) !== String(on)) await sw.click();
+};
+
 const outputPage = async (): Promise<Page> => {
   for (let i = 0; i < 50; i++) {
     const p = app.windows().find((w) => w.url().includes('/output/') && !w.isClosed());
@@ -144,6 +162,7 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
     window.lampstand.command({ type: 'settings.update', payload: { patch: { windowMode: true } } }),
   );
   const out = await outputPage();
+  await previewFirst(true);
   await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
   await control.keyboard.type('jn 3 16');
   await expect(control.getByRole('option').first()).toContainText('John 3:16');
@@ -162,15 +181,14 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
   await out.screenshot({ path: 'test-results/03-output.png' });
   await control.waitForTimeout(600);
   await control.screenshot({ path: 'test-results/04-live.png' });
-  await control.getByRole('button', { name: 'Bible', exact: true }).click(); // collapse the drawer
-  await control.getByText('John 3:16–17').first().click();
-  await control.waitForTimeout(800);
-  await control.screenshot({ path: 'test-results/04b-drawer-closed.png' });
-  await control.getByRole('button', { name: 'Bible', exact: true }).click();
+  await previewFirst(false);
 });
 
 test('create a song in the editor → add to service → go live → output shows the lyric', async () => {
-  await control.getByRole('button', { name: 'Songs', exact: true }).click();
+  await control
+    .getByRole('region', { name: 'Library' })
+    .getByRole('button', { name: 'Songs', exact: true })
+    .click();
   await control.getByRole('button', { name: 'New song' }).click();
   await control.getByLabel('Title').fill('Test Song');
   await control
@@ -234,8 +252,7 @@ test('settings: category pages, installed Bible packages', async () => {
 
 test('styled dropdowns open, pick, and work with the keyboard', async () => {
   // Bible version dropdown (library drawer).
-  const bible = control.getByRole('button', { name: 'Bible', exact: true });
-  if ((await bible.getAttribute('aria-pressed')) !== 'true') await bible.click();
+  await mode('Bible');
   await control.getByRole('combobox', { name: 'Version' }).click();
   await expect(control.getByRole('option', { name: /KJV/ })).toBeVisible();
   await control.waitForTimeout(300);
@@ -251,24 +268,30 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
   await control.keyboard.press('Escape');
   await control.keyboard.press('Escape');
   // Theme editor: font + background dropdowns with previews.
-  await control.getByRole('button', { name: 'Themes', exact: true }).click();
-  await control.getByRole('button', { name: 'Duplicate' }).first().click();
-  await control.getByRole('combobox').nth(1).click();
+  await mode('Themes');
+  await control
+    .getByRole('region', { name: 'Themes' })
+    .getByRole('button', { name: 'Duplicate' })
+    .first()
+    .click();
+  const editor = control.getByRole('dialog');
+  await editor.getByRole('combobox').nth(1).click();
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/09-dropdown-background.png' });
   await control.keyboard.press('ArrowDown');
   await control.keyboard.press('Enter');
-  await control.getByRole('combobox').first().click();
+  await editor.getByRole('combobox').first().click();
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/10-dropdown-font.png' });
   await control.keyboard.press('Escape');
   await control.keyboard.press('Escape');
-  await control.getByRole('button', { name: 'Bible', exact: true }).click();
+  await mode('Show');
 });
 
 test('text slides: inspector edits the selected slide, add-slide card appends', async () => {
   await control.getByRole('button', { name: 'Slides', exact: true }).click(); // "+ Slides" in the service plan
   await control.getByText('Text slides').last().click();
+  await mode('Edit'); // the slide inspector lives in the Edit workspace
   await expect(control.getByText('Slide 1 of 1')).toBeVisible();
   await control.getByRole('button', { name: 'Add slide' }).click();
   await expect(control.getByText('Slide 2 of 2')).toBeVisible();
@@ -277,6 +300,7 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await expect(control.getByRole('button', { name: /Welcome/ }).first()).toBeVisible();
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/11-inspector.png' });
+  await mode('Show');
 });
 
 test('hovering service plan rows never shifts the layout', async () => {
@@ -335,9 +359,9 @@ test('drag from the library into the service plan (songs and verses)', async () 
   const titles = () =>
     plan.locator('ol > li').evaluateAll((els) => els.map((e) => e.textContent.trim()));
   // Song: drop onto "Psalm 23:1–6" → inserted just before it.
-  const songs = control.getByRole('button', { name: 'Songs', exact: true });
-  if ((await songs.getAttribute('aria-pressed')) !== 'true') await songs.click();
-  await control
+  const library = control.getByRole('region', { name: 'Library' });
+  await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  await library
     .getByRole('button', { name: /Test Song/ })
     .first()
     .dragTo(plan.getByText('Psalm 23:1–6'));
@@ -346,8 +370,11 @@ test('drag from the library into the service plan (songs and verses)', async () 
   const psalm = afterSong.findIndex((x) => x.startsWith('Psalm 23:1–6'));
   expect(afterSong[psalm - 1]).toMatch(/^Test Song/);
   // Verse: Bible → Genesis 1, drag verse 1 to the end of the plan.
-  await control.getByRole('button', { name: 'Bible', exact: true }).click();
-  await control.getByRole('button', { name: 'Genesis' }).click();
+  await mode('Bible');
+  await control
+    .getByRole('region', { name: 'Bible' })
+    .getByRole('button', { name: 'Genesis', exact: true })
+    .click();
   const before = (await titles()).length;
   await control
     .getByRole('button', { name: /In the beginning God created/ })
@@ -379,11 +406,12 @@ test('undo / redo: buttons and ⌘Z revert and re-apply service edits', async ()
   await expect.poll(rows).toBe(before); // leaves the plan as it was for later tests
 });
 
-test('media: click previews it, Space shows it full-screen without leftover text', async () => {
-  const mediaTab = control.getByRole('button', { name: 'Media', exact: true });
-  if ((await mediaTab.getAttribute('aria-pressed')) !== 'true') await mediaTab.click();
+test('Preview first: click previews media, Space shows it full-screen without leftover text', async () => {
+  await previewFirst(true);
+  await mode('Show');
+  await binTab('Media');
   await control
-    .locator('aside')
+    .getByRole('region', { name: 'Bin' })
     .getByText('Seed image')
     .locator('..')
     .locator('..')
@@ -401,19 +429,18 @@ test('media: click previews it, Space shows it full-screen without leftover text
   await expect(out.locator('.ls-layer-content .ls-text')).toHaveCount(0, { timeout: 3000 }); // old verse cleared
 
   // Reverse: with the media live, preview a verse (single click) and take it live with Space.
-  const bible = control.getByRole('button', { name: 'Bible', exact: true });
-  if ((await bible.getAttribute('aria-pressed')) !== 'true') await bible.click();
-  const back = control
-    .getByRole('button', { name: /^Genesis$/ })
-    .or(control.getByRole('button', { name: 'Genesis' }));
-  if (await back.count()) await back.first().click();
-  await control.getByRole('button', { name: /In the beginning God created/ }).click();
+  await mode('Bible');
+  const bibleRegion = control.getByRole('region', { name: 'Bible' });
+  await bibleRegion.getByRole('button', { name: 'Genesis', exact: true }).click();
+  await bibleRegion.getByRole('button', { name: /In the beginning God created/ }).click();
   await expect(previewMonitor.locator('.ls-text')).toContainText('In the beginning');
   await expect(out.locator('.ls-layer-media img')).toHaveCount(1); // still the media on screen
   await control.locator('body').click({ position: { x: 5, y: 5 } });
   await control.keyboard.press('Space');
   await expect(out.locator('.ls-text').last()).toContainText('In the beginning');
   await expect(out.locator('.ls-layer-media img')).toHaveCount(0, { timeout: 3000 }); // verse replaced the media
+  await previewFirst(false);
+  await mode('Show');
 });
 
 test('media protocol serves byte ranges, so long videos can seek', async () => {
@@ -432,19 +459,17 @@ test('media protocol serves byte ranges, so long videos can seek', async () => {
   expect(r.range).toMatch(/^bytes 100-199\/\d+$/);
 });
 
-test('video transport controls every output; Turn off live clears the screen', async () => {
-  const mediaTab = control.getByRole('button', { name: 'Media', exact: true });
-  if ((await mediaTab.getAttribute('aria-pressed')) !== 'true') await mediaTab.click();
+test('click goes live: a video from the bin plays on every output; Turn off live clears it', async () => {
+  await binTab('Media');
+  // Clicks go live by default: one click puts the clip on screen, no Preview step.
   await control
-    .locator('aside')
+    .getByRole('region', { name: 'Bin' })
     .getByText('Seed clip')
     .locator('..')
     .locator('..')
     .locator('button')
     .first()
     .click();
-  await control.locator('body').click({ position: { x: 5, y: 5 } });
-  await control.keyboard.press('Space'); // preview → live
   let out = await outputPage();
   let outVideo = out.locator('.ls-layer-media video');
   await expect(outVideo).toHaveCount(1);
@@ -453,7 +478,7 @@ test('video transport controls every output; Turn off live clears the screen', a
   const position = transport.getByRole('slider', { name: 'Position' });
   // Sound comes from exactly one place: the Output window here, so the Program monitor is
   // silent; with no output at all, the monitor plays it instead of nobody.
-  const monitorVideo = control.locator('figure').filter({ hasText: 'Program' }).locator('video');
+  const monitorVideo = control.locator('figure').filter({ hasText: 'Live' }).locator('video');
   await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.muted)).toBe(false);
   await expect.poll(() => monitorVideo.evaluate((v: HTMLVideoElement) => v.muted)).toBe(true);
   const setWindowMode = (on: boolean) =>
@@ -495,6 +520,7 @@ test('video transport controls every output; Turn off live clears the screen', a
     return r.ok ? r.value.filter((e: { type: string }) => e.type === 'live.media').length : 0;
   };
   const box = (await position.boundingBox())!;
+  expect(box.width).toBeGreaterThan(120); // the bar always gets real width, even in a narrow column
   const drag = async (fromX: number, toX: number, releaseOff: boolean): Promise<void> => {
     await control.mouse.move(box.x + fromX, box.y + box.height / 2);
     await control.mouse.down();
@@ -587,6 +613,82 @@ test('video transport controls every output; Turn off live clears the screen', a
     .getByRole('button', { name: 'General' })
     .click();
   await control.keyboard.press('Escape');
+});
+
+test('new tools: reflow, props, messages with fields, timers on stage, coming soon', async () => {
+  const out = await outputPage();
+  const bin = control.getByRole('region', { name: 'Bin' });
+
+  // Reflow: the whole text-slides item as one text block; blank lines split slides.
+  await mode('Show');
+  await control
+    .getByRole('region', { name: 'Service plan' })
+    .getByText('Text slides')
+    .last()
+    .click();
+  await mode('Reflow');
+  const text = control.getByLabel('All slide text');
+  await expect(text).toHaveValue(/\[Welcome\]\nCoffee is served after the service/);
+  await text.fill('[Welcome]\nCoffee is served after the service\n\nSee you next week');
+  await control.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(control.getByText('2 slides')).toBeVisible();
+  await control.screenshot({ path: 'test-results/18-reflow.png' });
+  await mode('Show');
+
+  // Props: make one from a library picture, show it, clear it from the clear stack.
+  await binTab('Props');
+  await bin.getByRole('button', { name: 'New prop' }).click();
+  await bin.getByRole('combobox', { name: 'Picture' }).click();
+  await control.getByRole('option', { name: /Seed image/ }).click();
+  await bin.getByRole('button', { name: 'Create' }).click();
+  await bin.getByRole('button', { name: 'Seed image', exact: true }).click();
+  await expect(out.locator('.ls-prop-top-right img')).toHaveCount(1);
+  await control.screenshot({ path: 'test-results/19-props.png' });
+  await control.getByRole('button', { name: 'Clear Props' }).click();
+  await expect(out.locator('.ls-prop')).toHaveCount(0);
+
+  // Messages: fill the {number} field, show it as a lower third, clear the Messages layer.
+  await binTab('Messages');
+  const nursery = bin.getByRole('form', { name: 'Nursery' });
+  await expect(nursery.getByRole('button', { name: 'Show' })).toBeDisabled(); // field still empty
+  await nursery.getByLabel('number').fill('12');
+  await nursery.getByRole('button', { name: 'Show' }).click();
+  await expect(out.locator('.ls-lower-third')).toHaveText(
+    'Parent of 12, please come to the nursery',
+  );
+  await control.screenshot({ path: 'test-results/20-messages.png' });
+  await control.getByRole('button', { name: 'Clear Messages' }).click();
+  await expect(out.locator('.ls-lower-third')).toHaveCount(0);
+
+  // Timers: start the pre-service countdown; it runs on the stage display; reset takes it off.
+  await binTab('Timers');
+  const pre = bin.getByRole('group', { name: 'Pre-service' });
+  await pre.getByRole('button', { name: 'Start' }).click();
+  const stage = app.windows().find((w) => w.url().includes('/stage/'))!;
+  await expect(stage.locator('.timer')).toContainText('Pre-service');
+  await expect(stage.locator('.timer-value')).toHaveText(/^0[45]:\d\d$/);
+  await control.screenshot({ path: 'test-results/21-timers.png' });
+  await pre.getByRole('button', { name: 'Reset' }).click();
+  await expect(stage.locator('.timer')).toHaveCount(0);
+
+  // Coming soon: unbuilt tools say so, and Settings → Features lists the roadmap.
+  await bin.getByRole('button', { name: /^Audio/ }).click();
+  await expect(bin.getByTestId('soon-panel')).toContainText('Audio bin & playlists');
+  await bin.getByRole('button', { name: "See everything that's coming" }).click();
+  await expect(control.getByRole('heading', { name: 'Features' })).toBeVisible();
+  await expect(control.locator('[data-feature="ndi"]')).toHaveAttribute('data-status', 'soon');
+  await expect(control.locator('[data-feature="props"]')).toHaveAttribute(
+    'data-status',
+    'available',
+  );
+  await control.waitForTimeout(200);
+  await control.screenshot({ path: 'test-results/22-features.png' });
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'General' })
+    .click();
+  await control.keyboard.press('Escape');
+  await binTab('Media');
 });
 
 test('smoothness: slider drag commits once; output transitions do not accumulate', async () => {
