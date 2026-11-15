@@ -7,10 +7,8 @@ import {
   type WebPreferences,
 } from 'electron';
 import { join } from 'node:path';
-import type { Logger } from '../app/logger';
 import { devCsp } from './csp';
-
-export type WindowKind = 'control' | 'output' | 'stage';
+import { type Logger } from '../types';
 
 /** Hardened webPreferences applied to EVERY window (§17.1). */
 export function secureWebPreferences(

@@ -4,9 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { PROD_CSP } from './csp';
 import { fileResponse } from './fileResponse';
 import { resolveInside } from './safePath';
-
-export const APP_SCHEME = 'app';
-export const MEDIA_SCHEME = 'lampstand-media';
+import { APP_SCHEME, MEDIA_SCHEME, MIME_TYPES } from '../constants';
 
 /** Must run before `app.ready`. */
 export function registerSchemes(): void {
@@ -18,18 +16,6 @@ export function registerSchemes(): void {
     },
   ]);
 }
-
-const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
-  '.svg': 'image/svg+xml',
-  '.png': 'image/png',
-};
 
 /**
  * `app://bundle/<path>` serves the built renderer from inside the asar with the strict CSP
@@ -43,7 +29,7 @@ export function handleAppProtocol(rendererRoot: string): void {
     if (!file) return new Response('Not found', { status: 404 });
     const res = await net.fetch(pathToFileURL(file).toString());
     const headers = new Headers(res.headers);
-    headers.set('Content-Type', MIME[extname(file)] ?? 'application/octet-stream');
+    headers.set('Content-Type', MIME_TYPES[extname(file)] ?? 'application/octet-stream');
     headers.set('Content-Security-Policy', PROD_CSP);
     headers.set('X-Content-Type-Options', 'nosniff');
     return new Response(res.body, { status: res.status, headers });

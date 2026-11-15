@@ -1,18 +1,6 @@
 import { app } from 'electron';
 import { join } from 'node:path';
-
-export interface AppPaths {
-  userData: string;
-  settingsFile: string;
-  bibles: string;
-  hymnals: string;
-  models: string;
-  cache: string;
-  logs: string;
-  backups: string;
-  library: string;
-  resources: string;
-}
+import { type AppPaths } from '../types';
 
 /** Directory layout from §6.1. */
 export function resolvePaths(libraryOverride?: string): AppPaths {

@@ -1,8 +1,8 @@
 import { utilityProcess, type UtilityProcess } from 'electron';
 import type { SearchHit } from '@lampstand/ipc-contract';
-import type { Logger } from '../app/logger';
 import workerPath from '../../workers/search/index.ts?modulePath';
 import type { FromWorker, SongDoc, ToWorker } from '../../workers/search/protocol';
+import { type Logger } from '../types';
 
 /** Supervises the SearchWorker utility process; restarts it if it dies (§3.2). */
 export class SearchService {

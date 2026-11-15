@@ -1,29 +1,13 @@
 import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { z } from 'zod';
-import {
-  migrate,
-  type EntityMeta,
-  type ID,
-  type Migration,
-  type Unsubscribe,
-} from '@lampstand/core';
-import type { Logger } from '../app/logger';
+import { migrate, type EntityMeta, type ID, type Unsubscribe } from '@lampstand/core';
 import { cleanupTempFiles, listDir, quarantine, readJson, writeJsonAtomic } from './atomic';
-import type { ListQuery, RepoChange, Repository } from './repository';
-
-export interface JsonFileRepositoryOptions<T> {
-  dir: string;
-  /** e.g. ".song.json" */
-  suffix: string;
-  schema: z.ZodType<T>;
-  schemaVersion: number;
-  migrations?: Record<number, Migration>;
-  /** Root used for the quarantine folder. */
-  quarantineRoot: string;
-  log: Logger;
-  onQuarantine?: (fileName: string) => void;
-}
+import {
+  type JsonFileRepositoryOptions,
+  type ListQuery,
+  type RepoChange,
+  type Repository,
+} from '../types';
 
 const SAFE_ID = /^[A-Za-z0-9-]{1,64}$/;
 

@@ -3,15 +3,12 @@ import { basename, extname } from 'node:path';
 import { app, dialog, type BrowserWindow } from 'electron';
 import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
 import type { ModuleSummary, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
-import type { Services } from '../app/services';
 import type { SearchService } from '../search/searchService';
 import type { WindowManager } from '../windows/windowManager';
 import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
 import { parsePptx } from '../library/pptx';
-
-/** Slide decks bigger than this are refused before reading (PDFs are rendered in memory). */
-const MAX_DECK_BYTES = 200 * 1024 * 1024;
-import type { QueryHandlers } from './router';
+import { type QueryHandlers, type Services } from '../types';
+import { MAX_DECK_BYTES } from '../constants';
 
 interface QueryDeps {
   installModules: (files: string[]) => Promise<QueryResults['modules.install']>;

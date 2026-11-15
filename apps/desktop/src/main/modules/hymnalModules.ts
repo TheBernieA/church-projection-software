@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { AppError, HymnalFileSchema, type HymnalFile } from '@lampstand/core';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
 import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
-import { MODULE_LIMITS, safeUnzip, ZipError } from './zip';
+import { safeUnzip, ZipError } from './zip';
+import { MODULE_LIMITS } from '../constants';
 
 /** `manifest.json` inside a `.lshymnal` zip. See docs/module-format.md. */
 const HymnalManifestSchema = z.object({
@@ -16,13 +17,6 @@ const HymnalManifestSchema = z.object({
     size: z.number().int().nonnegative(),
   }),
 });
-
-export interface InstalledHymnal {
-  id: string;
-  name: string;
-  count: number;
-  source: 'bundled' | 'installed';
-}
 
 /**
  * Install a hymnal package (§9.2): a `.lshymnal` zip (manifest + hymnal.json, checksummed) or a

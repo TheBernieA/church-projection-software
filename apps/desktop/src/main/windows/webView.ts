@@ -1,9 +1,7 @@
 import { session, WebContentsView, type BrowserWindow, type WebPreferences } from 'electron';
-import type { Logger } from '../app/logger';
 import { isSafeExternalUrl } from '../security/hardening';
-
-/** In-memory session (no `persist:`): pages never share cookies or storage with the app. */
-export const WEB_PARTITION = 'lampstand-web';
+import { type Logger, type WebTarget } from '../types';
+import { WEB_PARTITION } from '../constants';
 
 /**
  * How a web page is allowed to run: sandboxed, isolated, no preload (so no access to the app or
@@ -38,12 +36,6 @@ function hardenSession(): void {
   ses.setDevicePermissionHandler(() => false);
   ses.on('will-download', (e) => e.preventDefault());
   sessionHardened = true;
-}
-
-export interface WebTarget {
-  win: BrowserWindow;
-  /** Only the main output plays the page's sound (no doubled audio). */
-  audio: boolean;
 }
 
 interface Shown {

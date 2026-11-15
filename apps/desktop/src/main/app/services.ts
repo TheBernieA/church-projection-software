@@ -1,8 +1,6 @@
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  CommandBus,
-  LiveStateStore,
   MEDIA_SCHEMA_VERSION,
   MediaItemSchema,
   SERVICE_SCHEMA_VERSION,
@@ -17,32 +15,13 @@ import {
   type Theme,
 } from '@lampstand/core';
 import { hymnToSong } from '@lampstand/lyrics';
-import type { Logger } from './logger';
-import type { AppPaths } from './paths';
 import { JsonFileRepository } from '../storage/jsonFileRepository';
-import { SettingsStore } from '../storage/settingsStore';
 import { BibleStore, installBibleModule } from '../modules/bibleModules';
-import { MediaLibrary } from '../library/mediaLibrary';
-import { readHymnals, type InstalledHymnal } from '../modules/hymnalModules';
+import { readHymnals } from '../modules/hymnalModules';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
 import { sha256 } from '../modules/packageIo';
-
-/** Everything the app needs, constructed once and injected (no service globals — §19.1). */
-export interface Services {
-  paths: AppPaths;
-  log: Logger;
-  settings: SettingsStore;
-  bus: CommandBus;
-  live: LiveStateStore;
-  songs: JsonFileRepository<Song>;
-  services: JsonFileRepository<ServicePlan>;
-  themes: JsonFileRepository<Theme>;
-  media: JsonFileRepository<MediaItem>;
-  mediaLibrary: MediaLibrary;
-  bibles: BibleStore;
-  hymnSongs: Song[];
-  hymnals: InstalledHymnal[];
-}
+import { type AppPaths, type InstalledHymnal, type Logger } from '../types';
+import { errorMessage } from '../utils';
 
 export async function ensureLibrary(library: string): Promise<void> {
   for (const d of [
@@ -128,7 +107,7 @@ export async function installBundledBibles(
     } catch (e) {
       log.error('bundled bible install failed', {
         file: f,
-        err: e instanceof Error ? e.message : 'unknown',
+        err: errorMessage(e),
       });
     }
   }

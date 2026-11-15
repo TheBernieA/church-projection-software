@@ -42,16 +42,12 @@ import { SettingsStore } from '../storage/settingsStore';
 import { WindowManager } from '../windows/windowManager';
 import { upsertAssignment } from '../windows/displays';
 import type { SongDoc } from '../../workers/search/protocol';
-import { createLogger, type Logger } from './logger';
+import { createLogger } from './logger';
 import { resolvePaths } from './paths';
 import { sampleService } from './sampleService';
-import {
-  createRepos,
-  ensureLibrary,
-  installBundledBibles,
-  loadHymnals,
-  type Services,
-} from './services';
+import { createRepos, ensureLibrary, installBundledBibles, loadHymnals } from './services';
+import { type Logger, type Services } from '../types';
+import { errorMessage } from '../utils';
 
 function songDoc(s: Song): SongDoc {
   const lines = s.sections
@@ -240,7 +236,7 @@ export class AppController {
     this.windows.createControlWindow();
     this.windows.start();
     void dailyBackup(paths.library, paths.backups).catch((e: unknown) =>
-      log.warn('backup failed', { err: String(e) }),
+      log.warn('backup failed', { err: errorMessage(e) }),
     );
     this.started = true;
     log.info('started', { version: app.getVersion() });

@@ -1,6 +1,7 @@
 import { AppError, SettingsSchema, defaultSettings, type Settings } from '@lampstand/core';
-import type { Logger } from '../app/logger';
 import { quarantine, readJson, writeJsonAtomic } from './atomic';
+import type { Logger } from '../types';
+import { errorMessage } from '../utils';
 
 /** settings.json: validated with defaults; unknown keys preserved (§6.4). Never holds secrets. */
 export class SettingsStore {
@@ -56,7 +57,7 @@ export class SettingsStore {
     if (this.saveTimer) clearTimeout(this.saveTimer);
     this.saveTimer = null;
     await writeJsonAtomic(this.file, this.value).catch((e: unknown) =>
-      this.log.error('settings save failed', { err: String(e) }),
+      this.log.error('settings save failed', { err: errorMessage(e) }),
     );
   }
 }

@@ -2,30 +2,8 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname } from 'node:path';
 import { Readable } from 'node:stream';
-
-const MEDIA_MIME: Record<string, string> = {
-  '.mp4': 'video/mp4',
-  '.m4v': 'video/mp4',
-  '.mov': 'video/quicktime',
-  '.webm': 'video/webm',
-  '.mkv': 'video/x-matroska',
-  '.ogv': 'video/ogg',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.mp3': 'audio/mpeg',
-  '.m4a': 'audio/mp4',
-  '.aac': 'audio/aac',
-  '.wav': 'audio/wav',
-  '.ogg': 'audio/ogg',
-  '.flac': 'audio/flac',
-};
-
-export type ByteRange = { start: number; end: number } | 'invalid' | null;
+import { type ByteRange } from '../types';
+import { MIME_TYPES } from '../constants';
 
 /**
  * Parse an HTTP `Range` header against a file size. Returns null for "whole file", 'invalid'
@@ -66,7 +44,7 @@ export async function fileResponse(file: string, rangeHeader: string | null): Pr
     return new Response('Not found', { status: 404 });
   }
   const headers = new Headers({
-    'Content-Type': MEDIA_MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
+    'Content-Type': MIME_TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
     'Accept-Ranges': 'bytes',
     'X-Content-Type-Options': 'nosniff',
   });

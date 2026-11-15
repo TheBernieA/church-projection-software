@@ -7,7 +7,8 @@ import { createEmptySong } from '@lampstand/lyrics';
 import { nullLogger } from '../app/logger';
 import { cleanupTempFiles, writeJsonAtomic } from './atomic';
 import { JsonFileRepository } from './jsonFileRepository';
-import { MemoryRepository, type Repository } from './repository';
+import { MemoryRepository } from './repository';
+import { type Repository } from '../types';
 
 let dir: string;
 beforeEach(async () => {

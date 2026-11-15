@@ -3,12 +3,11 @@ import { copyFile, mkdir, mkdtemp, open, rm, stat, writeFile } from 'node:fs/pro
 import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import { MEDIA_SCHEMA_VERSION, newId, nowIso, type MediaItem } from '@lampstand/core';
-import type { Logger } from '../app/logger';
 import type { JsonFileRepository } from '../storage/jsonFileRepository';
 import { sniffMedia } from './sniff';
-
-const MAX_IMAGE = 200 * 1024 * 1024;
-const MAX_VIDEO = 16 * 1024 * 1024 * 1024;
+import type { Logger } from '../types';
+import { MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from '../constants';
+import { errorMessage } from '../utils';
 
 /** Imports user media into the library (copy, never reference in place) with thumbnails (§12). */
 export class MediaLibrary {
@@ -36,7 +35,7 @@ export class MediaLibrary {
         else rejected++;
       } catch (e) {
         rejected++;
-        this.log.warn('media import failed', { err: e instanceof Error ? e.message : 'unknown' });
+        this.log.warn('media import failed', { err: errorMessage(e) });
       }
     }
     return { imported, rejected };
@@ -75,7 +74,7 @@ export class MediaLibrary {
     }
     const sniffed = sniffMedia(head);
     if (!sniffed) return null;
-    if (st.size > (sniffed.kind === 'image' ? MAX_IMAGE : MAX_VIDEO)) return null;
+    if (st.size > (sniffed.kind === 'image' ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return null;
     const id = newId();
     const fileName = `${id}.${sniffed.ext}`;
     await copyFile(path, join(this.dir, fileName));

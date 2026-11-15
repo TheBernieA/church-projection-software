@@ -12,15 +12,9 @@ import {
 } from '@lampstand/core';
 import { listDir, readJson, writeFileAtomic, writeJsonAtomic } from '../storage/atomic';
 import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
-import { MODULE_LIMITS, safeUnzip, ZipError } from './zip';
-
-export interface InstallOptions {
-  /** userData/bibles */
-  root: string;
-  source: BibleVersionInfo['source'];
-  /** Expected module checksum from a signed catalog (downloads). */
-  expectedSha256?: string;
-}
+import { safeUnzip, ZipError } from './zip';
+import { type InstallOptions } from '../types';
+import { MODULE_LIMITS } from '../constants';
 
 /**
  * Install pipeline (§8.3): size/zip limits → checksum → zip-slip-safe extract in memory →

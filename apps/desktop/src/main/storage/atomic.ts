@@ -2,6 +2,7 @@ import { mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
 import type { z } from 'zod';
+import { type ReadResult } from '../types';
 
 /**
  * Atomic write (§6.2): write `file.tmp`, fsync, rename over the original. A crash never leaves
@@ -23,11 +24,6 @@ export async function writeFileAtomic(file: string, data: string | Uint8Array): 
 export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {
   await writeFileAtomic(file, JSON.stringify(value, null, 2));
 }
-
-export type ReadResult<T> =
-  | { status: 'ok'; value: T; raw: unknown }
-  | { status: 'missing' }
-  | { status: 'invalid'; reason: string };
 
 /** Read + Zod-validate a JSON file. Never throws for bad content. */
 export async function readJson<T>(

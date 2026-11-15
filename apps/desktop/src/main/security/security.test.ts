@@ -4,11 +4,13 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { scrub } from '../app/logger';
 import { sniffMedia } from '../library/sniff';
-import { resolveRoles, upsertAssignment, type DisplayLike } from '../windows/displays';
+import { resolveRoles, upsertAssignment } from '../windows/displays';
 import { PROD_CSP } from './csp';
 import { fileResponse, parseRange } from './fileResponse';
-import { WEB_PARTITION, webViewPreferences } from '../windows/webView';
+import { webViewPreferences } from '../windows/webView';
 import { resolveInside } from './safePath';
+import { type DisplayLike } from '../types';
+import { WEB_PARTITION } from '../constants';
 
 let dir: string;
 beforeEach(async () => {

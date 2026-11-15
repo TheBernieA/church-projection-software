@@ -1,12 +1,5 @@
 import type { DisplayAssignment, OutputRole } from '@lampstand/core';
-
-export interface DisplayLike {
-  id: number;
-  label: string;
-  bounds: { x: number; y: number; width: number; height: number };
-  size: { width: number; height: number };
-  scaleFactor: number;
-}
+import { type DisplayLike } from '../types';
 
 /** Fingerprint = name + resolution + position (§7.3). Survives reconnects; ids may not. */
 export function fingerprint(d: DisplayLike): string {

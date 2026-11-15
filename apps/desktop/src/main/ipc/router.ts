@@ -6,16 +6,10 @@ import {
   CommandEnvelopeSchema,
   QUERY_NAMES,
   QuerySchemas,
-  type QueryName,
-  type QueryResults,
 } from '@lampstand/ipc-contract';
-import type { Logger } from '../app/logger';
-import type { WindowKind } from '../security/hardening';
-import { APP_SCHEME } from '../security/protocols';
-
-export type QueryHandlers = {
-  [K in QueryName]: (args: never) => Promise<QueryResults[K]> | QueryResults[K];
-};
+import { type Logger, type QueryHandlers, type WindowKind } from '../types';
+import { APP_SCHEME } from '../constants';
+import { errorMessage } from '../utils';
 
 /** Commands that any control-window source may issue are everything registered on the bus. */
 interface RouterDeps {
@@ -74,7 +68,7 @@ export function registerIpc(d: RouterDeps): void {
         const handler = d.queries[name] as (a: unknown) => Promise<unknown>;
         return { ok: true, value: await handler(parsed.data) };
       } catch (err) {
-        d.log.warn('query failed', { name, err: err instanceof Error ? err.message : 'unknown' });
+        d.log.warn('query failed', { name, err: errorMessage(err) });
         return { ok: false, error: toErrorShape(err) };
       }
     });

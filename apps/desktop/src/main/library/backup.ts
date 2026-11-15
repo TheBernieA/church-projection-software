@@ -4,9 +4,7 @@ import { join, relative, sep } from 'node:path';
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import { listDir, writeFileAtomic } from '../storage/atomic';
 import { safeUnzip } from '../modules/zip';
-
-const DATA_DIRS = ['songs', 'services', 'themes', join('media', '.meta')];
-const KEEP_BACKUPS = 14;
+import { BACKUP_DATA_DIRS, KEEP_BACKUPS } from '../constants';
 
 async function walk(dir: string): Promise<string[]> {
   const out: string[] = [];
@@ -28,7 +26,7 @@ export async function zipLibrary(
   includeMedia: boolean,
 ): Promise<void> {
   const files: string[] = [];
-  for (const d of DATA_DIRS) files.push(...(await walk(join(library, d))));
+  for (const d of BACKUP_DATA_DIRS) files.push(...(await walk(join(library, d))));
   files.push(join(library, 'library.manifest.json'));
   if (includeMedia) {
     for (const f of await walk(join(library, 'media')))

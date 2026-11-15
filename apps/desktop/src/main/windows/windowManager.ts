@@ -1,29 +1,11 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
-import type { LiveState, OutputRole, ScreenVisual, Settings, Standby } from '@lampstand/core';
+import type { LiveState, OutputRole } from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
-import type { Logger } from '../app/logger';
 import { rendererUrl } from '../security/protocols';
-import { secureWebPreferences, type WindowKind } from '../security/hardening';
+import { secureWebPreferences } from '../security/hardening';
 import { fingerprint, resolveRoles } from './displays';
 import { WebViews } from './webView';
-
-interface OutputWindow {
-  outputId: string;
-  role: Exclude<OutputRole, 'none'>;
-  displayId: number | null; // null = window mode
-  win: BrowserWindow;
-  ready: boolean;
-}
-
-export interface WindowManagerDeps {
-  log: Logger;
-  getSettings: () => Settings;
-  getLiveState: () => LiveState;
-  logo: () => ScreenVisual;
-  standby: () => Standby;
-  onDisplaysChanged: () => void;
-  onNewDisplay: (label: string) => void;
-}
+import { type Logger, type OutputWindow, type WindowKind, type WindowManagerDeps } from '../types';
 
 /** Creates/positions windows on displays, handles hot-plug and output crash recovery (§7.3). */
 export class WindowManager {

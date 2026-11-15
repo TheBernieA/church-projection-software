@@ -8,7 +8,7 @@ import {
   ThemeSchema,
   type EntityMeta,
 } from '@lampstand/core';
-import type { Repository } from '../storage/repository';
+import { type Repository } from '../types';
 
 interface EntityCommandsOptions<T extends EntityMeta> {
   bus: CommandBus;

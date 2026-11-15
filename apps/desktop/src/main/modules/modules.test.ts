@@ -6,7 +6,8 @@ import { strToU8, zipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { BibleStore, installBibleModule } from './bibleModules';
 import { installHymnalModule, readHymnals } from './hymnalModules';
-import { isSafeEntryName, MODULE_LIMITS, safeUnzip, ZipError } from './zip';
+import { isSafeEntryName, safeUnzip, ZipError } from './zip';
+import { MODULE_LIMITS } from '../constants';
 
 let dir: string;
 beforeEach(async () => {

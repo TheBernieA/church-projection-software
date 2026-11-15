@@ -1,31 +1,6 @@
-import { safeUnzip, type ZipLimits } from '../modules/zip';
-
-/** One slide read out of a PowerPoint file: its title, body text and speaker notes. */
-export interface ImportedSlide {
-  title: string;
-  body: string;
-  notes: string;
-}
-
-export interface ImportedDeck {
-  slides: ImportedSlide[];
-  /** Slides that had pictures, which text import can't bring across. */
-  slidesWithPictures: number;
-}
-
-/** Only the XML parts are unpacked; pictures and media inside the deck are skipped. */
-const PPTX_LIMITS: ZipLimits = {
-  maxFiles: 3000,
-  maxTotalBytes: 128 * 1024 * 1024,
-  maxFileBytes: 16 * 1024 * 1024,
-  maxRatio: 200,
-  include: (name) =>
-    name === 'ppt/presentation.xml' ||
-    name === 'ppt/_rels/presentation.xml.rels' ||
-    /^ppt\/(slides|notesSlides)\/(_rels\/)?[\w.-]+\.xml(\.rels)?$/.test(name),
-};
-
-const MAX_SLIDES = 500;
+import { safeUnzip } from '../modules/zip';
+import { type ImportedDeck } from '../types';
+import { MAX_IMPORT_SLIDES, PPTX_LIMITS } from '../constants';
 
 const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
@@ -55,7 +30,7 @@ function shapeText(shape: string): string {
   }
   return paragraphs
     .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n{3 }/g, '\n\n')
     .trim();
 }
 
@@ -113,7 +88,7 @@ export function parsePptx(data: Uint8Array): ImportedDeck {
   const order = [...presentation.matchAll(/<p:sldId\b[^>]*>/g)]
     .map((m) => rels.get(attr(m[0], 'r:id') ?? '')?.target)
     .filter((t): t is string => !!t)
-    .slice(0, MAX_SLIDES);
+    .slice(0, MAX_IMPORT_SLIDES);
 
   let slidesWithPictures = 0;
   const slides = order.map((path) => {

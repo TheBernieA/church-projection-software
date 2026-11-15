@@ -1,29 +1,5 @@
 import { unzipSync } from 'fflate';
-
-export interface ZipLimits {
-  maxFiles: number;
-  maxTotalBytes: number;
-  maxFileBytes: number;
-  /** Max uncompressed/compressed ratio per entry (zip-bomb guard). */
-  maxRatio: number;
-  /** Allowed entry path pattern. */
-  allowedPath?: RegExp;
-  /**
-   * Only inflate entries this accepts; others are skipped (not counted, not unpacked). Used to
-   * read just the XML out of a slide deck full of pictures.
-   */
-  include?: (name: string) => boolean;
-}
-
-export const MODULE_LIMITS: ZipLimits = {
-  maxFiles: 300,
-  maxTotalBytes: 64 * 1024 * 1024,
-  maxFileBytes: 8 * 1024 * 1024,
-  maxRatio: 200,
-  // Linear: segments are separated by a literal '/'; names are capped at 260 chars first.
-  // eslint-disable-next-line security/detect-unsafe-regex
-  allowedPath: /^[A-Za-z0-9_\-.]+(\/[A-Za-z0-9_\-.]+)*$/,
-};
+import { type ZipLimits } from '../types';
 
 export class ZipError extends Error {
   constructor(
