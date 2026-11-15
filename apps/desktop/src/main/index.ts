@@ -1,5 +1,5 @@
 import { app, BrowserWindow } from 'electron';
-import { AppController } from './app/app-controller';
+import { AppController } from './app/appController';
 import { registerSchemes } from './security/protocols';
 
 // Test/portable override: isolated profile directory (used by the E2E suite).

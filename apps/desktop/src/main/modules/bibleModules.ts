@@ -11,7 +11,7 @@ import {
   type BookId,
 } from '@lampstand/core';
 import { listDir, readJson, writeFileAtomic, writeJsonAtomic } from '../storage/atomic';
-import { installIntoPlace, parseJsonBytes, sha256 } from './package-io';
+import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
 import { MODULE_LIMITS, safeUnzip, ZipError } from './zip';
 
 export interface InstallOptions {

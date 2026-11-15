@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { AppError, HymnalFileSchema, type HymnalFile } from '@lampstand/core';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
-import { installIntoPlace, parseJsonBytes, sha256 } from './package-io';
+import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
 import { MODULE_LIMITS, safeUnzip, ZipError } from './zip';
 
 /** `manifest.json` inside a `.lshymnal` zip. See docs/module-format.md. */

@@ -6,9 +6,9 @@ import { scrub } from '../app/logger';
 import { sniffMedia } from '../library/sniff';
 import { resolveRoles, upsertAssignment, type DisplayLike } from '../windows/displays';
 import { PROD_CSP } from './csp';
-import { fileResponse, parseRange } from './file-response';
-import { WEB_PARTITION, webViewPreferences } from '../windows/web-view';
-import { resolveInside } from './safe-path';
+import { fileResponse, parseRange } from './fileResponse';
+import { WEB_PARTITION, webViewPreferences } from '../windows/webView';
+import { resolveInside } from './safePath';
 
 let dir: string;
 beforeEach(async () => {

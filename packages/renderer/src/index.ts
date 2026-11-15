@@ -4,6 +4,6 @@ export * from './content';
 export * from './background';
 export * from './overlays';
 export * from './transitions';
-export * from './scene-renderer';
+export * from './sceneRenderer';
 export * from './objects';
-export * from './test-pattern';
+export * from './testPattern';

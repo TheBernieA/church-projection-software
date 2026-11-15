@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds resources/bibles/kjv.lsbible from the public-domain KJV USFM published by eBible.org.
-// Usage: node scripts/build-kjv-module.mjs [--refresh]   (--refresh re-downloads the source zip)
+// Usage: node scripts/buildKjvModule.mjs [--refresh]   (--refresh re-downloads the source zip)
 // See docs/module-format.md for the output format.
 
 import { createHash } from 'node:crypto';
@@ -100,7 +100,7 @@ const LICENSE_TEXT =
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 function fail(msg) {
-  console.error(`build-kjv-module: FAILED — ${msg}`);
+  console.error(`buildKjvModule: FAILED — ${msg}`);
   process.exit(1);
 }
 function assert(cond, msg) {

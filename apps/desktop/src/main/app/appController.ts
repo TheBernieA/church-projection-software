@@ -26,25 +26,25 @@ import {
 import { stripChords } from '@lampstand/lyrics';
 import { registerIpc } from '../ipc/router';
 import { createQueries } from '../ipc/queries';
-import { registerLibraryCommands } from '../commands/library-commands';
+import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
-import { MediaLibrary } from '../library/media-library';
-import { BibleStore, installBibleModule } from '../modules/bible-modules';
-import { installHymnalModule, removeInstalled } from '../modules/hymnal-modules';
-import { SearchService } from '../search/search-service';
+import { MediaLibrary } from '../library/mediaLibrary';
+import { BibleStore, installBibleModule } from '../modules/bibleModules';
+import { installHymnalModule, removeInstalled } from '../modules/hymnalModules';
+import { SearchService } from '../search/searchService';
 import { handleAppProtocol, handleMediaProtocol, rendererRootDir } from '../security/protocols';
 import {
   installDevCsp,
   installGlobalGuards,
   installPermissionHandlers,
 } from '../security/hardening';
-import { SettingsStore } from '../storage/settings-store';
-import { WindowManager } from '../windows/window-manager';
+import { SettingsStore } from '../storage/settingsStore';
+import { WindowManager } from '../windows/windowManager';
 import { upsertAssignment } from '../windows/displays';
 import type { SongDoc } from '../../workers/search/protocol';
 import { createLogger, type Logger } from './logger';
 import { resolvePaths } from './paths';
-import { sampleService } from './sample-service';
+import { sampleService } from './sampleService';
 import {
   createRepos,
   ensureLibrary,

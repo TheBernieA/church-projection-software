@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { listDir } from '../storage/atomic';
-import { installIntoPlace, parseJsonBytes, sha256 } from './package-io';
+import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
 
 let dir: string;
 beforeEach(async () => {
@@ -13,7 +13,7 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
 
-describe('package-io', () => {
+describe('packageIo', () => {
   it('hashes and parses defensively', () => {
     expect(sha256(new TextEncoder().encode('abc'))).toBe(
       'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',

@@ -19,7 +19,7 @@ import { attempt, toast, useStore } from '../../lib/store';
 import { CommitSlider, DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { IconTile } from '../kind-icons';
+import { IconTile } from '../kindIcons';
 import { Group, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
 
 type Update = (patch: Partial<Settings>) => void;

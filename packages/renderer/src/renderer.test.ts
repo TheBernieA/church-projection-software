@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { EMPTY_MASKS, EMPTY_SCENE, STARTER_THEMES, type Scene } from '@lampstand/core';
 import { FitCache, fitFontSize } from './fit';
-import { SceneRenderer } from './scene-renderer';
+import { SceneRenderer } from './sceneRenderer';
 import { backgroundFilter, backgroundKey } from './style';
 import { formatCountdown } from './content';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEmptySong } from './hymnal';
 import { buildSongSlides } from './slides';
-import { parseSongText } from './text-format';
+import { parseSongText } from './textFormat';
 import { CHORD_RE, parseChordLine, stripChords, transposeChord, transposeLine } from './chords';
 
 describe('chords', () => {

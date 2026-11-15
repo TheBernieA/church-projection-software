@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import { MEDIA_SCHEMA_VERSION, newId, nowIso, type MediaItem } from '@lampstand/core';
 import type { Logger } from '../app/logger';
-import type { JsonFileRepository } from '../storage/json-file-repository';
+import type { JsonFileRepository } from '../storage/jsonFileRepository';
 import { sniffMedia } from './sniff';
 
 const MAX_IMAGE = 200 * 1024 * 1024;

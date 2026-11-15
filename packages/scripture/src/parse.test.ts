@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseReference } from './parse';
-import { compact } from './test-helpers';
+import { compact } from './testHelpers';
 
 /** [input, expected top candidate in compact form]. */
 type Fixture = readonly [string, string];

@@ -10,8 +10,8 @@ import {
 import { parseChordLine } from '@lampstand/lyrics';
 import { SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
-import { mediaUrl } from '../shared/media-url';
-import '../shared/output-api.d';
+import { mediaUrl } from '../shared/mediaUrl';
+import '../shared/outputApi.d';
 
 /** Stage display (§14.1): current + next slide, clock, elapsed timer, notes, booth message. */
 const api = window.lampstandOutput;

@@ -5,7 +5,7 @@ import { objectBoxStyle } from '@lampstand/renderer';
 import { useItemSlides } from '../../lib/hooks';
 import { CANVAS, editObjects, patchObject, snap, type TextItem } from '../../lib/objects';
 import { useStore } from '../../lib/store';
-import { mediaUrl } from '../../../shared/media-url';
+import { mediaUrl } from '../../../shared/mediaUrl';
 import { SceneView } from '../SceneView';
 
 type Handle = 'move' | 'nw' | 'ne' | 'sw' | 'se';

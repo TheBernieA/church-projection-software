@@ -1,8 +1,8 @@
 import type { LiveState } from '@lampstand/core';
 import { buildTestPattern, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
-import { mediaUrl } from '../shared/media-url';
-import '../shared/output-api.d';
+import { mediaUrl } from '../shared/mediaUrl';
+import '../shared/outputApi.d';
 
 /**
  * Projector output. Deliberately dumb and resilient (§3.2): it only renders snapshots. If IPC

@@ -5,7 +5,7 @@ export * from './commands';
 export * from './markup';
 export * from './time';
 export * from './timers';
-export * from './media-playback';
+export * from './mediaPlayback';
 export * from './live';
 export * from './themes';
 export * from './hymnal';

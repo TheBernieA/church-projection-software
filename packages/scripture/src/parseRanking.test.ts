@@ -1,7 +1,7 @@
 import { WHOLE_CHAPTER } from '@lampstand/core';
 import { describe, expect, it } from 'vitest';
 import { parseReference } from './parse';
-import { compact } from './test-helpers';
+import { compact } from './testHelpers';
 
 const CTX = { book: 'JHN', chapter: 3 } as const;
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findReferencesInText } from './find';
-import { compact } from './test-helpers';
+import { compact } from './testHelpers';
 
 function refs(text: string, opts?: Parameters<typeof findReferencesInText>[1]): string[] {
   return findReferencesInText(text, opts).map((r) => compact(r.passages));

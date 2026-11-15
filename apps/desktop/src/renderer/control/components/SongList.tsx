@@ -6,7 +6,7 @@ import { newId, type Song } from '@lampstand/core';
 import { stripChords } from '@lampstand/lyrics';
 import { Button, IconButton } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
-import { libraryDragSource } from '../lib/library-drag';
+import { libraryDragSource } from '../lib/libraryDrag';
 import { addItemToService, openDialog, useStore } from '../lib/store';
 import { SoonFeature } from './Soon';
 

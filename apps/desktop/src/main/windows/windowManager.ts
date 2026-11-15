@@ -5,7 +5,7 @@ import type { Logger } from '../app/logger';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences, type WindowKind } from '../security/hardening';
 import { fingerprint, resolveRoles } from './displays';
-import { WebViews } from './web-view';
+import { WebViews } from './webView';
 
 interface OutputWindow {
   outputId: string;

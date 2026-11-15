@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CommandBus, type ServicePlan } from '@lampstand/core';
 import { MemoryRepository } from '../storage/repository';
-import { registerLibraryCommands } from './library-commands';
+import { registerLibraryCommands } from './libraryCommands';
 
 const plan = (name: string): ServicePlan => ({
   id: 'svc-1',

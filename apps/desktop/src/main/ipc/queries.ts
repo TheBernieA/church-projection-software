@@ -4,8 +4,8 @@ import { app, dialog, type BrowserWindow } from 'electron';
 import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
 import type { ModuleSummary, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { Services } from '../app/services';
-import type { SearchService } from '../search/search-service';
-import type { WindowManager } from '../windows/window-manager';
+import type { SearchService } from '../search/searchService';
+import type { WindowManager } from '../windows/windowManager';
 import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
 import { parsePptx } from '../library/pptx';
 

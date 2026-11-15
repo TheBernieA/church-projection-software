@@ -107,5 +107,5 @@ app; operators use "Duplicate to edit". Only distribute hymnals whose words you 
 7. The search index is rebuilt in the SearchWorker; the UI refreshes.
 
 Bundled packages: any valid `.lsbible` in `resources/bibles/` (or hymnal `.json` in `resources/hymns/`) ships with the
-app and installs on first run — adding one is a content change, not a code change. `scripts/build-kjv-module.mjs`
+app and installs on first run — adding one is a content change, not a code change. `scripts/buildKjvModule.mjs`
 builds the bundled KJV from eBible.org's public-domain USFM and records provenance in the manifest.

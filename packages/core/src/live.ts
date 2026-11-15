@@ -18,7 +18,7 @@ import {
 import { TransitionSpecSchema } from './schemas/theme';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './timers';
 import type { CommandBus } from './commands';
-import { mediaPositionAt, startMedia } from './media-playback';
+import { mediaPositionAt, startMedia } from './mediaPlayback';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
 export type DetectionMode = z.infer<typeof DetectionModeSchema>;

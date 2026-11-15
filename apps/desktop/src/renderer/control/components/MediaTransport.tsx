@@ -6,7 +6,7 @@ import { IconButton } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
-import { mediaUrl } from '../../shared/media-url';
+import { mediaUrl } from '../../shared/mediaUrl';
 
 const durations = new Map<string, number>();
 

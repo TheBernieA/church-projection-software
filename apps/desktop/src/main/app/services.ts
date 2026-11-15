@@ -19,13 +19,13 @@ import {
 import { hymnToSong } from '@lampstand/lyrics';
 import type { Logger } from './logger';
 import type { AppPaths } from './paths';
-import { JsonFileRepository } from '../storage/json-file-repository';
-import { SettingsStore } from '../storage/settings-store';
-import { BibleStore, installBibleModule } from '../modules/bible-modules';
-import { MediaLibrary } from '../library/media-library';
-import { readHymnals, type InstalledHymnal } from '../modules/hymnal-modules';
+import { JsonFileRepository } from '../storage/jsonFileRepository';
+import { SettingsStore } from '../storage/settingsStore';
+import { BibleStore, installBibleModule } from '../modules/bibleModules';
+import { MediaLibrary } from '../library/mediaLibrary';
+import { readHymnals, type InstalledHymnal } from '../modules/hymnalModules';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
-import { sha256 } from '../modules/package-io';
+import { sha256 } from '../modules/packageIo';
 
 /** Everything the app needs, constructed once and injected (no service globals — §19.1). */
 export interface Services {

@@ -2,8 +2,8 @@ import { net, protocol } from 'electron';
 import { extname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PROD_CSP } from './csp';
-import { fileResponse } from './file-response';
-import { resolveInside } from './safe-path';
+import { fileResponse } from './fileResponse';
+import { resolveInside } from './safePath';
 
 export const APP_SCHEME = 'app';
 export const MEDIA_SCHEME = 'lampstand-media';

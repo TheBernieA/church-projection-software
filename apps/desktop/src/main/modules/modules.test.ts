@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BibleStore, installBibleModule } from './bible-modules';
-import { installHymnalModule, readHymnals } from './hymnal-modules';
+import { BibleStore, installBibleModule } from './bibleModules';
+import { installHymnalModule, readHymnals } from './hymnalModules';
 import { isSafeEntryName, MODULE_LIMITS, safeUnzip, ZipError } from './zip';
 
 let dir: string;

@@ -19,7 +19,7 @@ import { animate, el, FILL, safePlay } from './dom';
 import { buildOverlay } from './overlays';
 import { backgroundKey } from './style';
 import { transitionFrames } from './transitions';
-import { VisualSlot } from './visual-slot';
+import { VisualSlot } from './visualSlot';
 
 export interface SceneRendererOptions extends MediaResolver {
   mode: RenderMode;

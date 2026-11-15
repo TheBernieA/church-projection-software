@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Diagnostic soak (on demand): SOAK_RUNS=20 pnpm e2e -- startup-soak
+// Diagnostic soak (on demand): SOAK_RUNS=20 pnpm e2e -- startupSoak
 // Launches with a fresh profile N times; on failure dumps main-process output.
 test('startup soak', async () => {
   test.skip(!process.env.SOAK_RUNS, 'set SOAK_RUNS to run');

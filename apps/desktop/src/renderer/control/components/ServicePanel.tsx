@@ -16,10 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
 import { Button, PanelHeader } from '@lampstand/ui';
-import { importSlides } from '../lib/import-slides';
+import { importSlides } from '../lib/importSlides';
 import { itemTitle } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
-import { isLibraryDrag, readLibraryDrop } from '../lib/library-drag';
+import { isLibraryDrag, readLibraryDrop } from '../lib/libraryDrag';
 import {
   moveSectionBy,
   moveSectionTo,
@@ -28,7 +28,7 @@ import {
   sectionDropBoundary,
 } from '../lib/sections';
 import { editItems, useStore } from '../lib/store';
-import { KindTile } from './kind-icons';
+import { KindTile } from './kindIcons';
 
 /** Secondary line under each item: what it is, at a glance. */
 function useItemSubtitle(): (item: ServiceItem) => string {

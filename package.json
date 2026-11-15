@@ -16,8 +16,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "security:check": "node scripts/security-check.mjs",
-    "build:kjv": "node scripts/build-kjv-module.mjs",
+    "security:check": "node scripts/securityCheck.mjs",
+    "build:kjv": "node scripts/buildKjvModule.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm security:check",
     "e2e": "pnpm --filter @lampstand/desktop e2e"
   },

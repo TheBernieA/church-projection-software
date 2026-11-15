@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { newId, parseBibleMarkup, type BookId, type ServiceItem } from '@lampstand/core';
 import { BOOKS, bookName } from '@lampstand/scripture';
 import { openAdhoc } from '../lib/actions';
-import { libraryDragSource } from '../lib/library-drag';
+import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
 

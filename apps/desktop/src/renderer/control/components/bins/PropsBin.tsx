@@ -12,7 +12,7 @@ import {
   useSettingsList,
 } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
-import { thumbUrl } from '../../../shared/media-url';
+import { thumbUrl } from '../../../shared/mediaUrl';
 import { AddCard, BIN_CARD } from '../cards';
 import { Select } from '../Select';
 

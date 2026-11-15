@@ -8,7 +8,7 @@ import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { groupColor, itemTitle, type PresentableSlide } from '../lib/slides';
 import { addItemToService, updateItem, useStore } from '../lib/store';
 import { AddCard } from './cards';
-import { KindTile } from './kind-icons';
+import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
 import { SceneView } from './SceneView';
 import { SongControls } from './SongControls';

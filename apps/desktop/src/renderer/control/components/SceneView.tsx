@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Scene, Standby } from '@lampstand/core';
 import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
-import { mediaUrl } from '../../shared/media-url';
+import { mediaUrl } from '../../shared/mediaUrl';
 import { useLogo } from '../lib/hooks';
 
 /**

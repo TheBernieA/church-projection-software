@@ -6,7 +6,7 @@ import { SongSchema, type Song } from '@lampstand/core';
 import { createEmptySong } from '@lampstand/lyrics';
 import { nullLogger } from '../app/logger';
 import { cleanupTempFiles, writeJsonAtomic } from './atomic';
-import { JsonFileRepository } from './json-file-repository';
+import { JsonFileRepository } from './jsonFileRepository';
 import { MemoryRepository, type Repository } from './repository';
 
 let dir: string;
@@ -89,7 +89,7 @@ describe('atomic writes', () => {
 
 describe('SettingsStore.update', () => {
   it('changes only the keys in the patch (regression: Zod partial() reset defaults)', async () => {
-    const { SettingsStore } = await import('./settings-store');
+    const { SettingsStore } = await import('./settingsStore');
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
     store.update({ windowMode: true, liveEditingKinds: ['song'], shortcuts: { goLive: 'Enter' } });
@@ -102,7 +102,7 @@ describe('SettingsStore.update', () => {
     await store.flush();
   });
   it('rejects invalid values and keeps the previous settings', async () => {
-    const { SettingsStore } = await import('./settings-store');
+    const { SettingsStore } = await import('./settingsStore');
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
     expect(() => store.update({ uiScale: 9 })).toThrow();

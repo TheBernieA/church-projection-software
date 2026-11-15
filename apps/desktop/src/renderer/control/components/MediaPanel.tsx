@@ -3,10 +3,10 @@ import { newId, type BackgroundRef, type MediaItem } from '@lampstand/core';
 import { gradientCss } from '@lampstand/renderer';
 import { Button } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
-import { libraryDragSource } from '../lib/library-drag';
+import { libraryDragSource } from '../lib/libraryDrag';
 import { cmd, q } from '../lib/api';
 import { addItemToService, attempt, toast, useStore } from '../lib/store';
-import { thumbUrl } from '../../shared/media-url';
+import { thumbUrl } from '../../shared/mediaUrl';
 import { SoonFeature } from './Soon';
 import i18n from '../i18n';
 
