@@ -528,8 +528,9 @@ test('click goes live: a video from the bin plays on every output; Turn off live
     if (releaseOff) await control.mouse.move(box.x + toX, box.y - 120, { steps: 5 });
     await control.mouse.up();
   };
+  await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
   let before = await mediaCommands();
-  await drag(4, box.width * 0.8, true);
+  await drag(4, box.width * 0.9, true);
   // Exactly one seek per drag: a second, stale commit would snap the video straight back.
   await expect.poll(mediaCommands).toBe(before + 1);
   await control.waitForTimeout(600);

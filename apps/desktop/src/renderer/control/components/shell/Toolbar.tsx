@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, sceneIsVisible, secondsSince } from '@lampstand/core';
-import { Button, ComingSoonButton, IconButton, Kbd, Switch } from '@lampstand/ui';
+import { ComingSoonButton, IconButton, Kbd, Switch } from '@lampstand/ui';
 import { clearLayer } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
@@ -143,7 +143,7 @@ export function Toolbar() {
             )
           }
         />
-        <span className="whitespace-nowrap max-[1600px]:sr-only">{t('top.previewFirst')}</span>
+        <span className="whitespace-nowrap">{t('top.previewFirst')}</span>
       </label>
 
       <div className="flex items-center">
@@ -207,19 +207,15 @@ export function Toolbar() {
 
       {/* Turn off live: one obvious control, right beside the indicator it switches off. */}
       {visible && (
-        <Button
-          size="sm"
+        <IconButton
+          size="md"
           variant="subtle"
           className="shrink-0 !text-[var(--tally-program)] hover:!bg-[var(--danger-soft)]"
-          icon={<Power size={15} />}
+          aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
           onClick={() => void clearLayer('all')}
-          title={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
         >
-          <span className="whitespace-nowrap">{t('monitor.clearAll')}</span>
-          <span className="max-[1600px]:hidden">
-            <Kbd>{displayCombo(keys.clearAll)}</Kbd>
-          </span>
-        </Button>
+          <Power size={17} />
+        </IconButton>
       )}
 
       {/* LIVE indicator: the one place red appears in the chrome. */}
