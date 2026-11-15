@@ -15,6 +15,7 @@ export function SceneView({
   label,
   standby = null,
   audio = false,
+  transparent = false,
 }: {
   scene: Scene;
   mode?: RenderMode;
@@ -24,6 +25,8 @@ export function SceneView({
   standby?: Standby | null;
   /** Play live video sound here (the Program monitor, only when no projector output exists). */
   audio?: boolean;
+  /** No black backdrop: for layering (the canvas editor draws slide text over its objects). */
+  transparent?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<SceneRenderer | null>(null);
@@ -42,14 +45,14 @@ export function SceneView({
 
   useEffect(() => {
     if (!visible || !host.current) return;
-    const r = new SceneRenderer(host.current, { mode, mediaUrl });
+    const r = new SceneRenderer(host.current, { mode, mediaUrl, transparent });
     renderer.current = r;
     void document.fonts.ready.then(() => r.refresh());
     return () => {
       r.destroy();
       renderer.current = null;
     };
-  }, [visible, mode]);
+  }, [visible, mode, transparent]);
 
   useEffect(() => {
     renderer.current?.setLogo(logo);
@@ -63,7 +66,7 @@ export function SceneView({
       ref={host}
       role="img"
       aria-label={label}
-      className={`relative aspect-video w-full overflow-hidden bg-black ${className}`}
+      className={`relative aspect-video w-full overflow-hidden ${transparent ? '' : 'bg-black'} ${className}`}
     />
   );
 }

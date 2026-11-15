@@ -102,7 +102,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Custom objects & shapes',
     'Place shapes, text boxes, media and live video anywhere on a slide.',
-    'soon',
   ),
   f(
     'effects',

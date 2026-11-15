@@ -80,6 +80,49 @@ describe('SceneRenderer', () => {
   });
 });
 
+describe('slide objects', () => {
+  it('draws text boxes, shapes and pictures at their canvas positions, under the slide text', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => `media://${id}` });
+    const s = scene('Title');
+    r.render(
+      {
+        ...s,
+        content: {
+          ...s.content!,
+          objects: [
+            { id: 'r', kind: 'rect', x: 100, y: 200, w: 300, h: 150, fill: '#ff0000', radius: 12 },
+            {
+              id: 't',
+              kind: 'text',
+              x: 0,
+              y: 0,
+              w: 500,
+              h: 100,
+              text: 'Hello',
+              fontSize: 40,
+              color: '#fff',
+              align: 'center',
+            },
+            { id: 'i', kind: 'image', x: 10, y: 10, w: 50, h: 50, mediaId: 'pic', fit: 'cover' },
+          ],
+        },
+      },
+      { instant: true },
+    );
+    const rect = host.querySelector('.ls-object-rect') as HTMLElement;
+    expect([rect.style.left, rect.style.top, rect.style.width]).toEqual([
+      '100px',
+      '200px',
+      '300px',
+    ]);
+    expect(rect.style.borderRadius).toBe('12px');
+    expect(host.querySelector('.ls-object-text')?.textContent).toBe('Hello');
+    expect(host.querySelector('.ls-object-image img')?.getAttribute('src')).toBe('media://pic');
+    expect((host.querySelector('.ls-text') as HTMLElement).style.zIndex).toBe('1');
+  });
+});
+
 describe('text and background effects', () => {
   it('glow adds a soft halo to the text shadow', () => {
     const host = document.createElement('div');

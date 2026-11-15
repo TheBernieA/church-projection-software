@@ -66,6 +66,8 @@ export interface ControlState {
   previewCursor: Cursor | null;
   /** Slide selected for editing in the inspector. */
   editCursor: Cursor | null;
+  /** Object selected on the canvas editor (text box, shape, picture), if any. */
+  editObjectId: string | null;
   liveCursor: Cursor | null;
   libraryTab: LibraryTab;
   mode: Mode;
@@ -105,6 +107,7 @@ export const useStore = create<ControlState>((set) => ({
   adhoc: null,
   previewCursor: null,
   editCursor: null,
+  editObjectId: null,
   liveCursor: null,
   libraryTab: 'songs',
   mode: 'show',

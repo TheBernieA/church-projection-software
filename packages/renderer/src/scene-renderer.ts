@@ -262,7 +262,10 @@ export class SceneRenderer {
     // Remove anything still fading from a previous rapid change so slots never pile up.
     for (const child of [...this.contentLayer.children]) if (child !== old?.node) child.remove();
     if (content) {
-      const built = buildContent(this.doc, content, { live: this.opts.mode !== 'thumbnail' });
+      const built = buildContent(this.doc, content, {
+        live: this.opts.mode !== 'thumbnail',
+        mediaUrl: (id) => this.opts.mediaUrl(id),
+      });
       built.root.style.opacity = '0';
       this.contentLayer.append(built.root);
       built.fit();

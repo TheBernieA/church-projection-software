@@ -1,6 +1,11 @@
-import { Globe, MousePointerClick, PencilOff, Shapes } from 'lucide-react';
+import { Globe, MousePointerClick, PencilOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
+import { useStore } from '../../lib/store';
+import type { TextItem } from '../../lib/objects';
+import { CanvasToolbar } from '../canvas/CanvasToolbar';
+import { Filmstrip } from '../canvas/Filmstrip';
+import { SlideCanvas } from '../canvas/SlideCanvas';
 import { SlideGrid } from '../SlideGrid';
 import { SlideInspector } from '../SlideInspector';
 import { SongEditorInline } from '../SongEditor';
@@ -11,8 +16,28 @@ import { EmptyState } from '../EmptyState';
 function SoonTools() {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-[var(--hairline)] px-3 py-1.5">
-      <SoonFeature id="objects" icon={<Shapes size={14} />} />
       <SoonFeature id="web-content" icon={<Globe size={14} />} />
+    </div>
+  );
+}
+
+/** Text slides: canvas for the chosen slide, tools above, slides below, properties beside. */
+function CanvasEditor({ item }: { item: TextItem }) {
+  const cursor = useStore((s) => s.editCursor);
+  const index = cursor?.itemId === item.id ? Math.min(cursor.index, item.slides.length - 1) : 0;
+  return (
+    <div className="flex min-h-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <CanvasToolbar item={item} index={index} />
+        <SoonTools />
+        <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-4">
+          <div className="w-full max-w-[1100px]">
+            <SlideCanvas item={item} index={index} />
+          </div>
+        </div>
+        <Filmstrip item={item} index={index} />
+      </div>
+      <SlideInspector />
     </div>
   );
 }
@@ -28,15 +53,14 @@ export function EditMode() {
   if (item.kind === 'presentation' || item.kind === 'announcements' || item.kind === 'countdown') {
     if (!inService)
       return <EmptyState icon={<PencilOff size={28} />} title={t('modes.addToEdit')} />;
-    return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <SoonTools />
+    if (item.kind === 'countdown')
+      return (
         <div className="flex min-h-0 flex-1">
           <SlideGrid purpose="edit" />
           <SlideInspector />
         </div>
-      </div>
-    );
+      );
+    return <CanvasEditor item={item} />;
   }
   return (
     <EmptyState

@@ -288,6 +288,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
             label: ts.title ?? `${item.title} ${i + 1}`,
           };
           if (ts.notes) content.notes = ts.notes;
+          if (ts.objects?.length) content.objects = ts.objects;
           return {
             key: content.key,
             label: ts.title || `Slide ${i + 1}`,

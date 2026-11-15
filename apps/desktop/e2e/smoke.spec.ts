@@ -393,6 +393,44 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await mode('Show');
 });
 
+test('canvas editor: add a rectangle, drag it, and it shows on the output where you put it', async () => {
+  const out = await outputPage();
+  await control
+    .getByRole('region', { name: 'Service plan' })
+    .getByText('Text slides')
+    .last()
+    .click();
+  await mode('Edit');
+  const canvas = control.getByTestId('slide-canvas');
+  await expect(canvas).toBeVisible();
+  await control
+    .getByRole('toolbar', { name: 'Canvas tools' })
+    .getByRole('button', { name: 'Rectangle' })
+    .click();
+  const rect = canvas.getByRole('button', { name: 'Rectangle on the slide' });
+  await expect(rect).toBeVisible();
+  const box = (await rect.boundingBox())!;
+  await control.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await control.mouse.down();
+  await control.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 40, { steps: 6 });
+  await control.mouse.up();
+  const x = Number(await control.getByLabel('X', { exact: true }).inputValue());
+  expect(x).toBeGreaterThan(660); // moved right of where it was added
+  expect(x % 8).toBe(0); // snapped to the grid
+  await control.waitForTimeout(200);
+  await control.screenshot({ path: 'test-results/11b-canvas.png' });
+  await mode('Show');
+  // The slide being edited (with the rectangle) goes live; the output draws it at the same spot.
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: /Welcome/ })
+    .click();
+  await expect(out.locator('.ls-object-rect')).toHaveCount(1);
+  await expect
+    .poll(() => out.locator('.ls-object-rect').evaluate((e) => (e as HTMLElement).style.left))
+    .toBe(`${x}px`);
+});
+
 test('hovering service plan rows never shifts the layout', async () => {
   const plan = control.getByRole('region', { name: 'Service plan' });
   const boxes = () =>
@@ -455,10 +493,13 @@ test('drag from the library into the service plan (songs and verses)', async () 
     .getByRole('button', { name: /Test Song/ })
     .first()
     .dragTo(plan.getByText('Psalm 23:1–6'));
-  await control.waitForTimeout(250);
-  const afterSong = await titles();
-  const psalm = afterSong.findIndex((x) => x.startsWith('Psalm 23:1–6'));
-  expect(afterSong[psalm - 1]).toMatch(/^Test Song/);
+  // Inserted just before the item it was dropped on (wait for the save to land).
+  await expect
+    .poll(async () => {
+      const t = await titles();
+      return t[t.findIndex((x) => x.startsWith('Psalm 23:1–6')) - 1] ?? '';
+    })
+    .toMatch(/^Test Song/);
   // Verse: Bible → Genesis 1, drag verse 1 to the end of the plan.
   await mode('Bible');
   await control
@@ -469,9 +510,8 @@ test('drag from the library into the service plan (songs and verses)', async () 
   await control
     .getByRole('button', { name: /In the beginning God created/ })
     .dragTo(plan.locator('ol'), { targetPosition: { x: 40, y: 5 } });
-  await control.waitForTimeout(250);
+  await expect.poll(async () => (await titles()).length).toBe(before + 1);
   const afterVerse = await titles();
-  expect(afterVerse.length).toBe(before + 1);
   expect(afterVerse.some((x) => x.startsWith('Genesis 1:1'))).toBe(true);
   await control.screenshot({ path: 'test-results/14-library-drag.png' });
 });

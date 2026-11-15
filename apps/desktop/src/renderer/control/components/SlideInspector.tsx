@@ -5,6 +5,7 @@ import { Button, IconButton } from '@lampstand/ui';
 import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
+import { ObjectInspector } from './canvas/ObjectInspector';
 
 type TextItem = Extract<ServiceItem, { kind: 'presentation' | 'announcements' }>;
 type CountdownItem = Extract<ServiceItem, { kind: 'countdown' }>;
@@ -53,10 +54,24 @@ export function SlideInspector() {
   if (item.kind === 'presentation' || item.kind === 'announcements')
     return (
       <Shell>
-        <TextInspector item={item} />
+        <TextOrObjectInspector item={item} />
       </Shell>
     );
   return null;
+}
+
+/** The selected canvas object's properties, or else the slide's own fields. */
+function TextOrObjectInspector({ item }: { item: TextItem }) {
+  const editCursor = useStore((s) => s.editCursor);
+  const objectId = useStore((s) => s.editObjectId);
+  const index =
+    editCursor?.itemId === item.id ? Math.min(editCursor.index, item.slides.length - 1) : 0;
+  const object = item.slides[index]?.objects?.find((o) => o.id === objectId);
+  return object ? (
+    <ObjectInspector item={item} index={index} object={object} />
+  ) : (
+    <TextInspector item={item} />
+  );
 }
 
 function Shell({ children }: { children: React.ReactNode }) {

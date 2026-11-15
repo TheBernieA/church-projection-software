@@ -1,4 +1,5 @@
 import { formatClock, type ContentLayer, type Span, type Theme } from '@lampstand/core';
+import { buildObjectsLayer } from './objects';
 import { el } from './dom';
 import { FitCache, fitFontSize } from './fit';
 import { applyTextStyle, safeAreaPx } from './style';
@@ -52,7 +53,7 @@ export interface BuiltContent {
 export function buildContent(
   doc: Document,
   content: ContentLayer,
-  opts: { live: boolean } = { live: true },
+  opts: { live: boolean; mediaUrl?: (id: string) => string } = { live: true },
 ): BuiltContent {
   const theme = content.theme;
   const pad = safeAreaPx(theme);
@@ -142,6 +143,14 @@ export function buildContent(
     applyTextStyle(refEl, theme.reference);
     refEl.textContent = refText;
   }
+  // Text (and reference) sit above any freely placed objects.
+  textEl.style.position = 'relative';
+  textEl.style.zIndex = '1';
+  if (refEl) Object.assign(refEl.style, { position: 'relative', zIndex: '1' });
+  if (content.objects?.length)
+    root.append(
+      buildObjectsLayer(doc, content.objects, theme.canvas, opts.mediaUrl ?? ((id) => id)),
+    );
   if (refEl && theme.referencePosition === 'top') root.append(refEl, textEl);
   else if (refEl) root.append(textEl, refEl);
   else root.append(textEl);

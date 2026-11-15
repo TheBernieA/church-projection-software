@@ -5,7 +5,7 @@ import {
   ThemeSchema,
   TransitionSpecSchema,
 } from './theme';
-import { IdSchema } from './common';
+import { ColorSchema, IdSchema } from './common';
 
 /**
  * Rich text spans. Bible markup (`<wj>`, `<add>`, `<nd>`) is parsed into spans by our own
@@ -28,6 +28,58 @@ export const TextBlockSchema = z.object({
 });
 export type TextBlock = z.infer<typeof TextBlockSchema>;
 
+const StrokeSchema = z.object({ width: z.number().min(0).max(100), color: ColorSchema });
+
+/** Position and size on the 1920×1080 canvas, plus opacity. Shared by every slide object. */
+const objectBox = {
+  id: IdSchema,
+  x: z.number().min(-4000).max(6000),
+  y: z.number().min(-4000).max(6000),
+  w: z.number().min(1).max(6000),
+  h: z.number().min(1).max(6000),
+  opacity: z.number().min(0).max(1).optional(),
+};
+
+/**
+ * Something placed freely on a text slide (canvas editor): a text box, a shape, a line or a
+ * library picture. Drawn in array order, under the slide's title and body text.
+ */
+export const SlideObjectSchema = z.discriminatedUnion('kind', [
+  z.object({
+    ...objectBox,
+    kind: z.literal('text'),
+    text: z.string().max(2000),
+    fontFamily: z.string().max(200).optional(),
+    fontSize: z.number().min(8).max(400),
+    color: ColorSchema,
+    align: z.enum(['left', 'center', 'right']),
+    bold: z.boolean().optional(),
+    italic: z.boolean().optional(),
+  }),
+  z.object({
+    ...objectBox,
+    kind: z.literal('rect'),
+    fill: ColorSchema.optional(),
+    stroke: StrokeSchema.optional(),
+    radius: z.number().min(0).max(3000).optional(),
+  }),
+  z.object({
+    ...objectBox,
+    kind: z.literal('ellipse'),
+    fill: ColorSchema.optional(),
+    stroke: StrokeSchema.optional(),
+  }),
+  /** A horizontal line `w` long; its thickness is the stroke width. */
+  z.object({ ...objectBox, kind: z.literal('line'), stroke: StrokeSchema }),
+  z.object({
+    ...objectBox,
+    kind: z.literal('image'),
+    mediaId: IdSchema,
+    fit: z.enum(['contain', 'cover']).default('contain'),
+  }),
+]);
+export type SlideObject = z.infer<typeof SlideObjectSchema>;
+
 /** Content layer: one projected slide (scripture, lyrics, text). */
 export const ContentLayerSchema = z.object({
   /** Stable key for the slide — used for transitions and "is this live?" checks. */
@@ -40,6 +92,8 @@ export const ContentLayerSchema = z.object({
   /** Stage-only metadata. */
   label: z.string().max(80).optional(),
   notes: z.string().max(4000).optional(),
+  /** Freely placed text boxes, shapes, lines and pictures (text slides). */
+  objects: z.array(SlideObjectSchema).max(30).optional(),
   /** Chord chart lines (`[G]Amazing grace`), stage only; the room never sees them. */
   chords: z.array(z.string().max(500)).max(24).optional(),
   /** Countdown target (ISO timestamp) for `kind: 'countdown'`. */

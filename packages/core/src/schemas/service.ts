@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
+import { SlideObjectSchema } from './scene';
 import { BackgroundRefSchema } from './theme';
 
 const TextSlideSchema = z.object({
@@ -8,6 +9,8 @@ const TextSlideSchema = z.object({
   title: z.string().max(200).optional(),
   body: z.string().max(4000),
   notes: z.string().max(4000).optional(),
+  /** Canvas editor: text boxes, shapes, lines and pictures placed on the slide. */
+  objects: z.array(SlideObjectSchema).max(30).optional(),
 });
 export type TextSlide = z.infer<typeof TextSlideSchema>;
 
