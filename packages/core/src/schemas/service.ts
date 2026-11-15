@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
-import { SlideObjectSchema } from './scene';
+import { SlideObjectSchema, WebUrlSchema } from './scene';
 import { BackgroundRefSchema } from './theme';
 
 const TextSlideSchema = z.object({
@@ -71,6 +71,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     themeId: IdSchema.optional(),
   }),
   z.object({ ...base, kind: z.literal('header'), label: z.string().max(200) }),
+  /** A web page (giving page, live feed…), shown in an isolated web view. */
+  z.object({ ...base, kind: z.literal('web'), title: z.string().max(200), url: WebUrlSchema }),
 ]);
 export type ServiceItem = z.infer<typeof ServiceItemSchema>;
 export type ServiceItemKind = ServiceItem['kind'];

@@ -5,6 +5,7 @@ import type { Logger } from '../app/logger';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences, type WindowKind } from '../security/hardening';
 import { fingerprint, resolveRoles } from './displays';
+import { WebViews } from './web-view';
 
 interface OutputWindow {
   outputId: string;
@@ -32,8 +33,11 @@ export class WindowManager {
   private blockerId: number | null = null;
   private quitting = false;
   private knownDisplayIds = new Set<number>();
+  private readonly webViews: WebViews;
 
-  constructor(private readonly d: WindowManagerDeps) {}
+  constructor(private readonly d: WindowManagerDeps) {
+    this.webViews = new WebViews(d.log.child('web'));
+  }
 
   /** Which window type a WebContents belongs to — used by the IPC router's permission check. */
   kindOf(wc: WebContents): WindowKind | null {
@@ -249,6 +253,7 @@ export class WindowManager {
       o.ready = true;
       wc.send(Channels.evOutputInfo, this.outputInfo(o));
       wc.send(Channels.evLive, this.d.getLiveState());
+      this.syncWeb(this.d.getLiveState()); // a page already on screen covers new outputs too
     }
   }
 
@@ -278,6 +283,22 @@ export class WindowManager {
     for (const o of this.outputs.values())
       if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, state);
     this.control?.webContents.send(Channels.evLive, state);
+    this.syncWeb(state);
+  }
+
+  /** A live web page goes over the audience outputs (never the stage); masks take it down. */
+  private syncWeb(state: LiveState): void {
+    const p = state.program;
+    const url = p.web && !p.masks.black && !p.masks.logo ? p.web.url : null;
+    const targets = [...this.outputs.values()]
+      .filter((o) => o.role !== 'stage')
+      .map((o) => ({ win: o.win, audio: o.role === 'main' }));
+    this.webViews.sync(targets, url);
+  }
+
+  /** How many output windows are showing a web page right now. */
+  webViewCount(): number {
+    return this.webViews.count();
   }
 
   sendToControl(channel: string, payload?: unknown): void {

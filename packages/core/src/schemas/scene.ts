@@ -160,10 +160,32 @@ export const MasksSchema = z.object({ black: z.boolean(), logo: z.boolean(), fre
 export type Masks = z.infer<typeof MasksSchema>;
 
 /** A full description of what an output shows. Pure data — rendered by @lampstand/renderer. */
+/** Only secure web addresses, without credentials, may be shown. */
+export const WebUrlSchema = z
+  .string()
+  .max(2000)
+  .refine((u) => {
+    try {
+      const url = new URL(u);
+      return url.protocol === 'https:' && !url.username && !url.password;
+    } catch {
+      return false;
+    }
+  }, 'Use a secure https:// web address');
+
+/**
+ * A live web page. Outputs show it in an isolated web view owned by the main process; the
+ * scene only carries which page, never the page itself.
+ */
+export const WebLayerSchema = z.object({ key: z.string().max(200), url: WebUrlSchema });
+export type WebLayer = z.infer<typeof WebLayerSchema>;
+
 export const SceneSchema = z.object({
   background: BackgroundLayerSchema.nullable(),
   media: MediaLayerSchema.nullable(),
   content: ContentLayerSchema.nullable(),
+  /** A web page on screen (replaces text and media while it shows). */
+  web: WebLayerSchema.nullable().optional(),
   overlays: z.array(OverlaySchema).max(10),
   masks: MasksSchema,
   /** Transition to use when this scene's content changes. */
@@ -187,7 +209,7 @@ export function makeScene(layers: Partial<Scene> = {}): Scene {
 
 /** Text or media on screen — what the operator thinks of as "live". */
 export function sceneHasContent(scene: Scene): boolean {
-  return !!(scene.content || scene.media);
+  return !!(scene.content || scene.media || scene.web);
 }
 
 /** Anything at all on screen, including a background. */

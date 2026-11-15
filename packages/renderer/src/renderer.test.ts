@@ -80,6 +80,24 @@ describe('SceneRenderer', () => {
   });
 });
 
+describe('web pages', () => {
+  const web = { ...EMPTY_SCENE, web: { key: 'w', url: 'https://example.com/give' } };
+  it('monitors show a card naming the page', () => {
+    const host = document.createElement('div');
+    new SceneRenderer(host, { mode: 'monitor', mediaUrl: (id) => id }).render(web, {
+      instant: true,
+    });
+    expect(host.querySelector('.ls-web-url')?.textContent).toBe('example.com/give');
+  });
+  it('outputs draw nothing (the isolated web view covers them)', () => {
+    const host = document.createElement('div');
+    new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id }).render(web, {
+      instant: true,
+    });
+    expect(host.querySelector('.ls-web')).toBeNull();
+  });
+});
+
 describe('slide objects', () => {
   it('draws text boxes, shapes and pictures at their canvas positions, under the slide text', () => {
     const host = document.createElement('div');

@@ -130,6 +130,14 @@ function ClearRow({
   );
 }
 
+const hostOf = (url: string): string => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+};
+
 /**
  * Right column: what the room sees (Live), the optional Preview monitor ("Preview first"),
  * video controls, then a clear button per layer and the screen masks.
@@ -149,14 +157,24 @@ export function RightColumn() {
       background: live.preview.background ?? live.program.background,
       content: live.preview.content,
       media: live.preview.media ?? null,
+      web: live.preview.web ?? null,
     });
   }, [live]);
 
   if (!live || !previewScene) return null;
   const p = live.program;
-  const mediaName = p.media ? media.find((m) => m.id === p.media?.mediaId)?.name : undefined;
+  const mediaName = p.media
+    ? media.find((m) => m.id === p.media?.mediaId)?.name
+    : p.web
+      ? hostOf(p.web.url)
+      : undefined;
   const onAir = sceneIsVisible(p);
-  const hasPreview = !!(live.preview.content || live.preview.background || live.preview.media);
+  const hasPreview = !!(
+    live.preview.content ||
+    live.preview.background ||
+    live.preview.media ||
+    live.preview.web
+  );
   const has = (g: 'messages' | 'props'): boolean => p.overlays.some((o) => overlayGroup(o) === g);
   const clear = (layer: Layer) => () => void clearLayer(layer);
 

@@ -493,3 +493,48 @@ describe('messages and props clear separately', () => {
     expect(clearLayer(scene, 'props').overlays.map((o) => o.id)).toEqual(['m', 't']);
   });
 });
+
+describe('web pages', () => {
+  it('a web page replaces the slide, a slide replaces the page, and clearing removes it', async () => {
+    const store = new LiveStateStore();
+    const bus = new CommandBus();
+    registerLiveCommands(bus, store);
+    const web = { key: 'w1', url: 'https://example.com/give' };
+    await bus.dispatch({
+      type: 'live.goLive',
+      payload: { content: content('verse') },
+      source: 'ui',
+    });
+    await bus.dispatch({ type: 'live.goLive', payload: { web, content: null }, source: 'ui' });
+    expect(store.get().program.web).toEqual(web);
+    expect(store.get().program.content).toBeNull();
+    await bus.dispatch({
+      type: 'live.goLive',
+      payload: { content: content('next') },
+      source: 'ui',
+    });
+    expect(store.get().program.web).toBeNull();
+    await bus.dispatch({ type: 'live.goLive', payload: { web }, source: 'ui' });
+    await bus.dispatch({ type: 'live.clearLayer', payload: { layer: 'content' }, source: 'ui' });
+    expect(store.get().program.web).toBeNull();
+  });
+
+  it('only secure https addresses are accepted', async () => {
+    const store = new LiveStateStore();
+    const bus = new CommandBus();
+    registerLiveCommands(bus, store);
+    for (const url of [
+      'http://example.com',
+      'file:///etc/passwd',
+      'javascript:alert(1)',
+      'https://u:p@x.com',
+    ]) {
+      const r = await bus.dispatch({
+        type: 'live.goLive',
+        payload: { web: { key: 'w', url } },
+        source: 'ui',
+      });
+      expect(r.ok).toBe(false);
+    }
+  });
+});

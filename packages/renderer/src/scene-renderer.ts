@@ -54,6 +54,7 @@ export class SceneRenderer {
   private readonly bgLayer: HTMLElement;
   private readonly mediaLayer: HTMLElement;
   private readonly contentLayer: HTMLElement;
+  private readonly webLayer: HTMLElement;
   private readonly overlayLayer: HTMLElement;
   private readonly blackMask: HTMLElement;
   /** Logo mask (L): the church's logo card, image or video. */
@@ -65,6 +66,7 @@ export class SceneRenderer {
   private bg: Slot<never> | null = null;
   private media: Slot<never> | null = null;
   private content: Slot<BuiltContent> | null = null;
+  private webKey = '';
   private overlaysKey = '[]';
   private overlayNodes = new Map<string, Slot<never>>();
   private frozen = false;
@@ -100,6 +102,7 @@ export class SceneRenderer {
     this.bgLayer = layer('background');
     this.mediaLayer = layer('media');
     this.contentLayer = layer('content');
+    this.webLayer = layer('web');
     this.overlayLayer = layer('overlays');
     this.blackMask = el(this.doc, 'div', 'ls-mask-black', {
       ...FILL,
@@ -113,6 +116,7 @@ export class SceneRenderer {
       this.bgLayer,
       this.mediaLayer,
       this.contentLayer,
+      this.webLayer,
       this.standby.node,
       this.overlayLayer,
       this.blackMask,
@@ -166,8 +170,56 @@ export class SceneRenderer {
     this.renderBackground(scene, instant);
     this.renderMedia(scene, instant);
     this.renderContent(scene.content, scene.transition, instant);
+    this.renderWeb(scene);
     this.applyStandby(scene, instant);
     this.renderOverlays(scene);
+  }
+
+  /**
+   * A live web page. Outputs draw nothing here: the main process lays an isolated web view over
+   * the window. Monitors and thumbnails show a card naming the page instead.
+   */
+  private renderWeb(scene: Scene): void {
+    const key = this.opts.mode === 'output' ? '' : (scene.web?.url ?? '');
+    if (key === this.webKey) return;
+    this.webKey = key;
+    this.webLayer.replaceChildren();
+    if (!key) return;
+    const card = el(this.doc, 'div', 'ls-web', {
+      ...FILL,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '28px',
+      background: 'radial-gradient(ellipse at 50% 40%, #16343a 0%, #0b1416 75%)',
+      color: '#e6f3f1',
+      fontFamily: '"Inter", sans-serif',
+    });
+    const globe = el(this.doc, 'div', '', {
+      width: '180px',
+      height: '180px',
+      borderRadius: '50%',
+      border: '10px solid rgba(79,179,168,0.85)',
+      boxSizing: 'border-box',
+      background:
+        'linear-gradient(transparent 46%, rgba(79,179,168,0.85) 46% 54%, transparent 54%), linear-gradient(90deg, transparent 46%, rgba(79,179,168,0.85) 46% 54%, transparent 54%)',
+    });
+    const label = el(this.doc, 'div', 'ls-web-url', {
+      fontSize: '56px',
+      fontWeight: '600',
+      maxWidth: '80%',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+    });
+    try {
+      label.textContent = new URL(key).host + new URL(key).pathname.replace(/\/$/, '');
+    } catch {
+      label.textContent = key;
+    }
+    card.append(globe, label);
+    this.webLayer.append(card);
   }
 
   private applyStandby(scene: Scene, instant: boolean): void {

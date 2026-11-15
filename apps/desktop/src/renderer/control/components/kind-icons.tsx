@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Film,
+  Globe,
   Heading,
   Megaphone,
   Music,
@@ -18,6 +19,7 @@ export const KIND_ICON: Record<ServiceItem['kind'], LucideIcon> = {
   announcements: Megaphone,
   countdown: Timer,
   header: Heading,
+  web: Globe,
 };
 
 /** Neutral tints per kind — never red/green (reserved for tally). */
@@ -29,6 +31,7 @@ export const KIND_TINT: Record<ServiceItem['kind'], string> = {
   announcements: '#e88a4b',
   countdown: '#5b8def',
   header: '#9aa3b8',
+  web: '#4fb3a8',
 };
 
 /** A rounded square with a tinted icon. `color` is a hex tint; omit it for the accent gold. */

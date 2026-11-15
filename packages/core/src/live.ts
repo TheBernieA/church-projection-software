@@ -5,12 +5,14 @@ import {
   EMPTY_MASKS,
   makeScene,
   MediaLayerSchema,
+  WebLayerSchema,
   OverlaySchema,
   overlayGroup,
   SceneSchema,
   type BackgroundLayer,
   type ContentLayer,
   type MediaLayer,
+  type WebLayer,
   type Scene,
 } from './schemas/scene';
 import { TransitionSpecSchema } from './schemas/theme';
@@ -28,6 +30,8 @@ export const PreviewSchema = z.object({
   media: MediaLayerSchema.nullable().optional(),
   /** Slide shown after this one — fed to the stage display when this goes live. */
   next: ContentLayerSchema.nullable().optional(),
+  /** A web page waiting in preview. */
+  web: WebLayerSchema.nullable().optional(),
 });
 export type Preview = z.infer<typeof PreviewSchema>;
 
@@ -114,7 +118,8 @@ export type Layer = z.infer<typeof LayerSchema>;
 export function clearLayer(scene: Scene, layer: Layer): Scene {
   switch (layer) {
     case 'content':
-      return { ...scene, content: null };
+      // The web page counts as "the slide" too.
+      return { ...scene, content: null, web: null };
     case 'media':
       return { ...scene, media: null };
     case 'background':
@@ -128,7 +133,14 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
       return makeScene();
     case 'panic':
       // Clear everything except the background so the room never goes to a jarring black.
-      return { ...scene, media: null, content: null, overlays: [], masks: EMPTY_MASKS };
+      return {
+        ...scene,
+        media: null,
+        content: null,
+        web: null,
+        overlays: [],
+        masks: EMPTY_MASKS,
+      };
   }
 }
 
@@ -139,6 +151,8 @@ const GoLiveSchema = z.object({
   background: BackgroundLayerSchema.nullable().optional(),
   /** Full-screen media item. If omitted with no content either, the preview's media goes live. */
   media: MediaLayerSchema.nullable().optional(),
+  /** A web page; like media, it replaces the slide text while it shows. */
+  web: WebLayerSchema.nullable().optional(),
   next: ContentLayerSchema.nullable().optional(),
   transition: TransitionSpecSchema.optional(),
 });
@@ -161,6 +175,7 @@ export function registerLiveCommands(
           background: p.background,
           media: p.media ?? null,
           next: p.next ?? null,
+          web: p.web ?? null,
         },
       }));
       return { result: null };
@@ -173,7 +188,9 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => {
-        const explicit = p.content !== undefined || p.media !== undefined;
+        const explicit = p.content !== undefined || p.media !== undefined || p.web !== undefined;
+        const web: WebLayer | null =
+          p.web !== undefined ? p.web : explicit ? null : (s.preview.web ?? null);
         const content: ContentLayer | null =
           p.content !== undefined ? p.content : explicit ? null : s.preview.content;
         const picked: MediaLayer | null =
@@ -191,6 +208,7 @@ export function registerLiveCommands(
           ...s.program,
           content,
           media,
+          web,
           background,
           // Going live with new content lifts black/logo masks — the operator intends to show it.
           masks: { ...s.program.masks, black: false, logo: false },

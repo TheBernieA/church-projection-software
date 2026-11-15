@@ -36,7 +36,8 @@
       "presentation": "Slides",
       "announcements": "Announcements",
       "countdown": "Countdown",
-      "header": "Section"
+      "header": "Section",
+      "web": "Web page"
     },
     "renameHint": "Double-click to rename",
     "moveSectionUp": "Move section up",
@@ -44,7 +45,8 @@
     "duplicateSection": "Duplicate section",
     "removeHeading": "Remove heading (keeps its items)",
     "templateSaved": "Template saved.",
-    "syncSoon": "Planning & sync"
+    "syncSoon": "Planning & sync",
+    "webTitle": "Web page"
   },
   "library": {
     "title": "Library",
@@ -163,7 +165,6 @@
     "ccli": "CCLI number",
     "lyrics": "Lyrics",
     "lyricsHelp": "Use [Verse 1], [Chorus], [Bridge] headers. A blank line forces a new slide. Chords go in brackets inside a line, like [G]Amazing [D]grace: only the stage display shows them.",
-    "arrangement": "Arrangement",
     "arrangementHelp": "e.g. V1 C V2 C B C. Leave empty to use sections in order.",
     "preview": "Slides",
     "save": "Save song",
@@ -703,5 +704,12 @@
     "picturesSkipped_other": "{{count}} slides had pictures that weren't imported (text only). For an exact copy, import a PDF.",
     "pdfStarted": "Importing the PDF, one picture per page…",
     "page": "Page {{n}}"
+  },
+  "web": {
+    "title": "Web page",
+    "name": "Name",
+    "address": "Web address",
+    "help": "Shown full screen in a separate, locked-down window on the projector. It can't see or change anything in Lampstand.",
+    "invalid": "Use a full secure address, starting with https://"
   }
 }

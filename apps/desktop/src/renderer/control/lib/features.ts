@@ -476,7 +476,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Web pages on slides',
     'Show a live web page, like a giving page or a feed, on a slide.',
-    'soon',
   ),
   f(
     'song-import',

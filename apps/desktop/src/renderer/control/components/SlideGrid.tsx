@@ -19,6 +19,7 @@ function thumbScene(slide: PresentableSlide): Scene {
   const a = slide.action;
   if (a.kind === 'content') return makeScene({ background: a.background, content: a.content });
   if (a.kind === 'media') return makeScene({ media: a.media });
+  if (a.kind === 'web') return makeScene({ web: a.web });
   return makeScene({ background: a.background });
 }
 

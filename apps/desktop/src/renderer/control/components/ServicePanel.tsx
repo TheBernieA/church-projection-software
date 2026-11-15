@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Copy,
   FileUp,
+  Globe,
   GripVertical,
   Heading,
   Plus,
@@ -58,6 +59,14 @@ function useItemSubtitle(): (item: ServiceItem) => string {
           : `${Math.round(item.target.durationSec / 60)} min`;
       case 'media':
         return t('service.kind.media');
+      case 'web':
+        return (() => {
+          try {
+            return new URL(item.url).host;
+          } catch {
+            return t('service.kind.web');
+          }
+        })();
       case 'header':
         return '';
     }
@@ -330,6 +339,21 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
         }
       >
         {t('service.kind.countdown')}
+      </Button>
+      <Button
+        size="xs"
+        variant="ghost"
+        icon={<Globe size={14} />}
+        onClick={() => {
+          const id = newId();
+          update((xs) => [
+            ...xs,
+            { id, kind: 'web', title: t('service.webTitle'), url: 'https://example.com' },
+          ]);
+          useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
+        }}
+      >
+        {t('service.kind.web')}
       </Button>
       <Button
         size="xs"

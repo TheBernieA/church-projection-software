@@ -461,10 +461,7 @@ test('import slides: PowerPoint becomes text slides, a PDF becomes one picture p
   const plan = control.getByRole('region', { name: 'Service plan' });
   const pick = (file: string) =>
     app.evaluate(({ dialog }, f) => {
-      dialog.showOpenDialog = (async () => ({
-        canceled: false,
-        filePaths: [f],
-      })) as typeof dialog.showOpenDialog;
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [f] });
     }, file);
   const pptx = join(dir, 'Deck.pptx');
   writeFileSync(pptx, deckPptx());
@@ -483,6 +480,37 @@ test('import slides: PowerPoint becomes text slides, a PDF becomes one picture p
   await expect(plan.getByText('Handout', { exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(list.locator('.ls-object-image img')).toHaveCount(2); // one picture per page
   await control.screenshot({ path: 'test-results/11c-import.png' });
+});
+
+test('web page: shown over the output in an isolated view; Black screen takes it down', async () => {
+  const plan = control.getByRole('region', { name: 'Service plan' });
+  const views = () =>
+    app.evaluate(({ BrowserWindow }) => {
+      const out = BrowserWindow.getAllWindows().find((w) =>
+        w.webContents.getURL().includes('/output/'),
+      );
+      return out?.contentView.children.length ?? -1;
+    });
+  await outputPage();
+  const before = await views();
+  await plan.getByRole('button', { name: 'Web page', exact: true }).click(); // opens its editor
+  const address = control.getByLabel('Web address');
+  await address.fill('http://insecure.example');
+  await expect(control.getByText('Use a full secure address')).toBeVisible(); // not saved
+  await address.fill('https://example.com/');
+  await mode('Show');
+  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await expect.poll(views).toBe(before + 1);
+  await expect(
+    control.locator('figure').filter({ hasText: 'Live' }).locator('.ls-web-url'),
+  ).toHaveText('example.com');
+  await control.locator('body').click({ position: { x: 5, y: 5 } });
+  await control.keyboard.press('b'); // Black screen covers everything, the web page included
+  await expect.poll(views).toBe(before);
+  await control.keyboard.press('b');
+  await expect.poll(views).toBe(before + 1);
+  await control.getByRole('button', { name: /Turn off live/ }).click();
+  await expect.poll(views).toBe(before);
 });
 
 test('hovering service plan rows never shifts the layout', async () => {

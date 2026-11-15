@@ -93,6 +93,7 @@ export async function previewSlide(item: ServiceItem, index: number): Promise<vo
           slide.action.kind === 'media'
             ? { ...slide.action.media, playing: false, position: 0 }
             : null,
+        web: slide.action.kind === 'web' ? slide.action.web : null,
         next: null,
       }),
     );
@@ -127,6 +128,9 @@ export async function goLiveSlide(
   } else if (a.kind === 'media') {
     // Full-screen media replaces the slide on screen (the text is cleared; background stays).
     await safe(cmd('live.goLive', { media: a.media, content: null, next: null }, source));
+  } else if (a.kind === 'web') {
+    // A web page replaces the slide too; outputs show it in an isolated web view.
+    await safe(cmd('live.goLive', { web: a.web, content: null, next: null }, source));
   } else {
     await safe(cmd('live.setBackground', { background: a.background }, source));
   }

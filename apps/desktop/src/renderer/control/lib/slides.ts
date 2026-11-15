@@ -14,6 +14,7 @@ import {
   type Theme,
   type ThemeContentKind,
   type VerseRef,
+  type WebLayer,
 } from '@lampstand/core';
 import { buildSongSlides, transposeLine } from '@lampstand/lyrics';
 import {
@@ -27,7 +28,8 @@ import { chapterKey } from './store';
 export type SlideAction =
   | { kind: 'content'; content: ContentLayer; background: BackgroundLayer | null }
   | { kind: 'media'; media: MediaLayer }
-  | { kind: 'background'; background: BackgroundLayer };
+  | { kind: 'background'; background: BackgroundLayer }
+  | { kind: 'web'; web: WebLayer };
 
 export interface PresentableSlide {
   key: string;
@@ -107,6 +109,7 @@ export function itemTitle(item: ServiceItem, ctx: Pick<SlideContext, 'songs' | '
     case 'presentation':
     case 'announcements':
     case 'countdown':
+    case 'web':
       return item.title;
     case 'header':
       return item.label;
@@ -117,6 +120,17 @@ export function itemTitle(item: ServiceItem, ctx: Pick<SlideContext, 'songs' | '
 export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlides {
   const none: ItemSlides = { slides: [], missing: [] };
   switch (item.kind) {
+    case 'web':
+      return {
+        missing: [],
+        slides: [
+          {
+            key: `${item.id}:web`,
+            label: item.title,
+            action: { kind: 'web', web: { key: item.id, url: item.url } },
+          },
+        ],
+      };
     case 'header':
       return none;
     case 'song': {
