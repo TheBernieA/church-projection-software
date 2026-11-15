@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
 import { Button, PanelHeader } from '@lampstand/ui';
-import { SoonFeature } from './Soon';
+import { importSlides } from '../lib/import-slides';
 import { itemTitle } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
 import { isLibraryDrag, readLibraryDrop } from '../lib/library-drag';
@@ -331,12 +331,15 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
       >
         {t('service.kind.countdown')}
       </Button>
-      <SoonFeature
-        id="import-slides"
-        compact
+      <Button
+        size="xs"
+        variant="ghost"
         icon={<FileUp size={14} />}
-        className="!h-7 !px-1.5"
-      />
+        title={t('import.hint')}
+        onClick={() => void importSlides()}
+      >
+        {t('import.button')}
+      </Button>
     </div>
   );
 }

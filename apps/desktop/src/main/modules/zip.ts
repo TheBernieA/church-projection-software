@@ -8,6 +8,11 @@ export interface ZipLimits {
   maxRatio: number;
   /** Allowed entry path pattern. */
   allowedPath?: RegExp;
+  /**
+   * Only inflate entries this accepts; others are skipped (not counted, not unpacked). Used to
+   * read just the XML out of a slide deck full of pictures.
+   */
+  include?: (name: string) => boolean;
 }
 
 export const MODULE_LIMITS: ZipLimits = {
@@ -52,6 +57,7 @@ export function safeUnzip(data: Uint8Array, limits: ZipLimits): Map<string, Uint
       filter: (f) => {
         if (state.failure) return false;
         if (f.name.endsWith('/')) return false; // directories
+        if (limits.include && !limits.include(f.name)) return false;
         if (!isSafeEntryName(f.name)) state.failure = new ZipError('zip-slip');
         else if (limits.allowedPath && !limits.allowedPath.test(f.name))
           state.failure = new ZipError('zip-path');

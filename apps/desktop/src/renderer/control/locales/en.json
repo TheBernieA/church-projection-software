@@ -692,5 +692,16 @@
       "line": "Line",
       "image": "Picture"
     }
+  },
+  "import": {
+    "button": "Import",
+    "hint": "Import a PowerPoint (.pptx) or PDF. From Keynote, export to PDF or PowerPoint first.",
+    "empty": "Nothing to import in that file.",
+    "done_one": "Imported {{count}} slide.",
+    "done_other": "Imported {{count}} slides.",
+    "picturesSkipped_one": "{{count}} slide had pictures that weren't imported (text only). For an exact copy, import a PDF.",
+    "picturesSkipped_other": "{{count}} slides had pictures that weren't imported (text only). For an exact copy, import a PDF.",
+    "pdfStarted": "Importing the PDF, one picture per page…",
+    "page": "Page {{n}}"
   }
 }

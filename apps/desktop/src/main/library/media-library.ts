@@ -1,5 +1,6 @@
 import { nativeImage } from 'electron';
-import { copyFile, mkdir, open, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, open, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import { MEDIA_SCHEMA_VERSION, newId, nowIso, type MediaItem } from '@lampstand/core';
 import type { Logger } from '../app/logger';
@@ -39,6 +40,27 @@ export class MediaLibrary {
       }
     }
     return { imported, rejected };
+  }
+
+  /**
+   * Store generated image bytes (e.g. a rendered PDF page) as a library picture, through the
+   * same checks as a file import (type sniffing, size limits, thumbnail).
+   */
+  async importBytes(name: string, data: Uint8Array): Promise<MediaItem | null> {
+    const safe =
+      name
+        .replace(/[^\w .()-]+/g, '')
+        .slice(0, 120)
+        .trim() || 'Image';
+    const dir = await mkdtemp(join(tmpdir(), 'lampstand-import-'));
+    const path = join(dir, `${safe}.png`);
+    try {
+      await mkdir(this.thumbsDir(), { recursive: true });
+      await writeFile(path, data);
+      return await this.importOne(path, false);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   }
 
   private async importOne(path: string, asBackground: boolean): Promise<MediaItem | null> {

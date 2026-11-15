@@ -1,10 +1,16 @@
+import { readFile, stat } from 'node:fs/promises';
+import { basename, extname } from 'node:path';
 import { app, dialog, type BrowserWindow } from 'electron';
-import { STARTER_THEMES, type AuditEntry } from '@lampstand/core';
+import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
 import type { ModuleSummary, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { Services } from '../app/services';
 import type { SearchService } from '../search/search-service';
 import type { WindowManager } from '../windows/window-manager';
 import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
+import { parsePptx } from '../library/pptx';
+
+/** Slide decks bigger than this are refused before reading (PDFs are rendered in memory). */
+const MAX_DECK_BYTES = 200 * 1024 * 1024;
 import type { QueryHandlers } from './router';
 
 interface QueryDeps {
@@ -35,6 +41,27 @@ export function createQueries({
   };
 
   return {
+    'slides.import': async () => {
+      const [file] = await openDialog({
+        title: 'Import slides',
+        properties: ['openFile'],
+        filters: [{ name: 'PowerPoint or PDF', extensions: ['pptx', 'pdf'] }],
+      });
+      if (!file) return { kind: 'none' as const };
+      const st = await stat(file);
+      if (st.size > MAX_DECK_BYTES)
+        throw new AppError('import-too-large', 'That file is too large to import.');
+      const data = new Uint8Array(await readFile(file));
+      const title = basename(file, extname(file)).slice(0, 200) || 'Imported slides';
+      if (extname(file).toLowerCase() === '.pdf') return { kind: 'pdf' as const, title, data };
+      try {
+        return { kind: 'pptx' as const, title, ...parsePptx(data) };
+      } catch {
+        throw new AppError('import-failed', 'That file could not be read as a PowerPoint deck.');
+      }
+    },
+    'media.importBytes': (a: QueryArgs<'media.importBytes'>) =>
+      s.mediaLibrary.importBytes(a.name, a.data),
     'app.info': () => ({
       version: app.getVersion(),
       platform: process.platform,

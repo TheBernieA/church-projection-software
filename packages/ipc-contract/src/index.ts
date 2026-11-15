@@ -127,6 +127,12 @@ export const QuerySchemas = {
   'audit.recent': z.undefined(),
   'modules.list': z.undefined(),
   'modules.install': z.undefined(),
+  'slides.import': z.undefined(),
+  /** Store generated image bytes (e.g. rendered PDF pages) as a library picture. */
+  'media.importBytes': z.object({
+    name: z.string().min(1).max(200),
+    data: z.instanceof(Uint8Array).refine((d) => d.byteLength <= 30 * 1024 * 1024, 'too large'),
+  }),
 } as const;
 
 export type QueryName = keyof typeof QuerySchemas;
@@ -153,7 +159,20 @@ export interface QueryResults {
   'audit.recent': { at: string; type: string; source: string; ok: boolean }[];
   'modules.list': ModuleSummary[];
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
+  'slides.import': ImportedSlides;
+  'media.importBytes': MediaItem | null;
 }
+
+/** What "Import slides" read: PowerPoint text, or a PDF to render page by page. */
+export type ImportedSlides =
+  | { kind: 'none' }
+  | {
+      kind: 'pptx';
+      title: string;
+      slides: { title: string; body: string; notes: string }[];
+      slidesWithPictures: number;
+    }
+  | { kind: 'pdf'; title: string; data: Uint8Array };
 
 export type QueryArgs<K extends QueryName> = z.input<(typeof QuerySchemas)[K]>;
 

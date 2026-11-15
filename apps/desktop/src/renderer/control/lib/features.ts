@@ -118,9 +118,8 @@ export const FEATURES: Feature[] = [
   f(
     'import-slides',
     'presentations',
-    'PowerPoint, Keynote & PDF import',
-    'Bring existing slide decks in as presentations.',
-    'soon',
+    'PowerPoint & PDF import',
+    'Bring PowerPoint decks in as editable text slides, or PDFs as one picture per page. From Keynote, export to PDF or PowerPoint first.',
   ),
 
   // Library & playlists

@@ -8,6 +8,7 @@ import {
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { strToU8, zipSync } from 'fflate';
 
 /**
  * Core Sunday flow (§19.2): quick bar → preview → go live → verify the output window DOM,
@@ -429,6 +430,59 @@ test('canvas editor: add a rectangle, drag it, and it shows on the output where 
   await expect
     .poll(() => out.locator('.ls-object-rect').evaluate((e) => (e as HTMLElement).style.left))
     .toBe(`${x}px`);
+});
+
+/** A small PowerPoint deck: two slides with titles, text and a note. */
+function deckPptx(): Uint8Array {
+  const sp = (text: string, ph?: string): string =>
+    `<p:sp><p:nvSpPr><p:nvPr>${ph ? `<p:ph type="${ph}"/>` : ''}</p:nvPr></p:nvSpPr><p:txBody><a:p><a:r><a:t>${text}</a:t></a:r></a:p></p:txBody></p:sp>`;
+  return zipSync({
+    '[Content_Types].xml': strToU8('<Types/>'),
+    'ppt/presentation.xml': strToU8(
+      '<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId1"/><p:sldId id="257" r:id="rId2"/></p:sldIdLst></p:presentation>',
+    ),
+    'ppt/_rels/presentation.xml.rels': strToU8(
+      '<Relationships><Relationship Id="rId1" Type="x/slide" Target="slides/slide1.xml"/><Relationship Id="rId2" Type="x/slide" Target="slides/slide2.xml"/></Relationships>',
+    ),
+    'ppt/slides/slide1.xml': strToU8(
+      `<p:sld>${sp('Deck welcome', 'title')}${sp('Glad you are here')}</p:sld>`,
+    ),
+    'ppt/slides/slide2.xml': strToU8(
+      `<p:sld>${sp('Deck news', 'title')}${sp('Picnic on Saturday')}</p:sld>`,
+    ),
+  });
+}
+
+/** A two-page PDF (pdf.js rebuilds the cross-reference table it leaves out). */
+const HANDOUT_PDF =
+  '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R 4 0 R]/Count 2>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\n4 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n';
+
+test('import slides: PowerPoint becomes text slides, a PDF becomes one picture per page', async () => {
+  const plan = control.getByRole('region', { name: 'Service plan' });
+  const pick = (file: string) =>
+    app.evaluate(({ dialog }, f) => {
+      dialog.showOpenDialog = (async () => ({
+        canceled: false,
+        filePaths: [f],
+      })) as typeof dialog.showOpenDialog;
+    }, file);
+  const pptx = join(dir, 'Deck.pptx');
+  writeFileSync(pptx, deckPptx());
+  await pick(pptx);
+  await plan.getByRole('button', { name: 'Import', exact: true }).click();
+  await expect(plan.getByText('Deck', { exact: true })).toBeVisible();
+  await mode('Show');
+  const list = control.getByRole('list', { name: 'Slide list' });
+  await expect(list.getByRole('button', { name: /Deck welcome/ })).toBeVisible();
+  await expect(list.getByRole('button', { name: /Deck news/ })).toBeVisible();
+
+  const pdf = join(dir, 'Handout.pdf');
+  writeFileSync(pdf, HANDOUT_PDF);
+  await pick(pdf);
+  await plan.getByRole('button', { name: 'Import', exact: true }).click();
+  await expect(plan.getByText('Handout', { exact: true })).toBeVisible({ timeout: 20_000 });
+  await expect(list.locator('.ls-object-image img')).toHaveCount(2); // one picture per page
+  await control.screenshot({ path: 'test-results/11c-import.png' });
 });
 
 test('hovering service plan rows never shifts the layout', async () => {
