@@ -1,4 +1,10 @@
-import type { BackgroundLayer, BackgroundRef, TextStyle, Theme } from '@lampstand/core';
+import type {
+  BackgroundAdjust,
+  BackgroundLayer,
+  BackgroundRef,
+  TextStyle,
+  Theme,
+} from '@lampstand/core';
 
 /** Apply a TextStyle to an element. Values come from Zod-validated themes. */
 export function applyTextStyle(el: HTMLElement, s: TextStyle, fontSize = s.fontSize): void {
@@ -12,9 +18,14 @@ export function applyTextStyle(el: HTMLElement, s: TextStyle, fontSize = s.fontS
   st.textAlign = s.align;
   st.fontStyle = s.italic ? 'italic' : 'normal';
   st.textTransform = s.textTransform ?? 'none';
-  st.textShadow = s.shadow
-    ? `${s.shadow.x}px ${s.shadow.y}px ${s.shadow.blur}px ${s.shadow.color}`
-    : 'none';
+  const shadows = [
+    s.shadow ? `${s.shadow.x}px ${s.shadow.y}px ${s.shadow.blur}px ${s.shadow.color}` : '',
+    // Glow: two stacked blurs read as a soft halo rather than a smudge.
+    s.glow && s.glow.blur > 0
+      ? `0 0 ${s.glow.blur}px ${s.glow.color}, 0 0 ${s.glow.blur / 2}px ${s.glow.color}`
+      : '',
+  ].filter(Boolean);
+  st.textShadow = shadows.length ? shadows.join(', ') : 'none';
   if (s.outline && s.outline.width > 0) {
     st.setProperty('-webkit-text-stroke', `${s.outline.width}px ${s.outline.color}`);
     st.setProperty('paint-order', 'stroke fill');
@@ -38,7 +49,19 @@ export function gradientCss(ref: Extract<BackgroundRef, { kind: 'gradient' }>): 
 /** Stable identity of a background — same key means "keep playing, don't restart" (§12). */
 export function backgroundKey(bg: BackgroundLayer | null): string {
   if (!bg || bg.ref.kind === 'none') return 'none';
-  return JSON.stringify(bg.ref);
+  return JSON.stringify(bg.adjust ? [bg.ref, bg.adjust] : bg.ref);
+}
+
+/** CSS filter for a background's adjustments (blur, brightness, contrast, saturation). */
+export function backgroundFilter(a: BackgroundAdjust | undefined): string {
+  if (!a) return '';
+  const parts = [
+    a.blur ? `blur(${a.blur}px)` : '',
+    a.brightness !== undefined && a.brightness !== 1 ? `brightness(${a.brightness})` : '',
+    a.contrast !== undefined && a.contrast !== 1 ? `contrast(${a.contrast})` : '',
+    a.saturate !== undefined && a.saturate !== 1 ? `saturate(${a.saturate})` : '',
+  ];
+  return parts.filter(Boolean).join(' ');
 }
 
 export function safeAreaPx(theme: Theme): {

@@ -14,6 +14,8 @@ export const TextStyleSchema = z.object({
     .object({ x: z.number(), y: z.number(), blur: z.number().min(0), color: ColorSchema })
     .optional(),
   outline: z.object({ width: z.number().min(0).max(20), color: ColorSchema }).optional(),
+  /** Soft halo around the letters. */
+  glow: z.object({ blur: z.number().min(0).max(80), color: ColorSchema }).optional(),
   backgroundBox: z
     .object({ color: ColorSchema, padding: z.number().min(0), radius: z.number().min(0) })
     .optional(),
@@ -50,7 +52,14 @@ export type BackgroundRef = z.infer<typeof BackgroundRefSchema>;
 export const BackgroundAdjustSchema = z.object({
   dim: z.number().min(0).max(1).optional(),
   blur: z.number().min(0).max(40).optional(),
+  /** 1 = unchanged. */
+  brightness: z.number().min(0).max(2).optional(),
+  contrast: z.number().min(0).max(2).optional(),
+  saturate: z.number().min(0).max(2).optional(),
+  /** A colour wash over the background (e.g. brand colour at 30%). */
+  tint: z.object({ color: ColorSchema, opacity: z.number().min(0).max(1) }).optional(),
 });
+export type BackgroundAdjust = z.infer<typeof BackgroundAdjustSchema>;
 
 export const TransitionSpecSchema = z.object({
   kind: z.enum(['cut', 'fade', 'dissolve', 'slide', 'zoom', 'blur']),

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EMPTY_MASKS, EMPTY_SCENE, STARTER_THEMES, type Scene } from '@lampstand/core';
 import { FitCache, fitFontSize } from './fit';
 import { SceneRenderer } from './scene-renderer';
-import { backgroundKey } from './style';
+import { backgroundFilter, backgroundKey } from './style';
 import { formatCountdown } from './content';
 
 const theme = {
@@ -77,6 +77,44 @@ describe('SceneRenderer', () => {
     const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
     r.render({ ...scene('x'), masks: { ...EMPTY_MASKS, black: true } }, { instant: true });
     expect((host.querySelector('.ls-mask-black') as HTMLElement).style.opacity).toBe('1');
+  });
+});
+
+describe('text and background effects', () => {
+  it('glow adds a soft halo to the text shadow', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const s = scene('Glow');
+    const theme = {
+      ...s.content!.theme,
+      text: { ...s.content!.theme.text, glow: { blur: 24, color: '#ff0000' } },
+    };
+    r.render({ ...s, content: { ...s.content!, theme } }, { instant: true });
+    expect((host.querySelector('.ls-text') as HTMLElement).style.textShadow).toContain('24px');
+  });
+
+  it('background adjustments become a filter chain and a tint wash', () => {
+    expect(backgroundFilter({ blur: 4, brightness: 0.8, contrast: 1, saturate: 1.5 })).toBe(
+      'blur(4px) brightness(0.8) saturate(1.5)',
+    );
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    r.render(
+      {
+        ...scene('x'),
+        background: {
+          ref: { kind: 'color', color: '#123456' },
+          adjust: { tint: { color: '#0000ff', opacity: 0.4 } },
+        },
+      },
+      { instant: true },
+    );
+    expect((host.querySelector('.ls-bg-tint') as HTMLElement).style.opacity).toBe('0.4');
+  });
+
+  it('changing only the adjustments rebuilds the background', () => {
+    const ref = { kind: 'color' as const, color: '#123456' };
+    expect(backgroundKey({ ref })).not.toBe(backgroundKey({ ref, adjust: { dim: 0.5 } }));
   });
 });
 

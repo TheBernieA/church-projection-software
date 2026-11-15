@@ -8,6 +8,7 @@ import { Dialog } from './Dialog';
 import { BUILT_IN_BACKGROUNDS, swatchCss } from './MediaPanel';
 import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
+import { ThemeEffects } from './ThemeEffects';
 import { sampleScene } from './ThemesPanel';
 
 const FONTS = [
@@ -228,20 +229,6 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
             <label className="flex items-center gap-1.5">
               <input
                 type="checkbox"
-                checked={!!draft.text.shadow}
-                onChange={(e) =>
-                  setText({
-                    shadow: e.target.checked
-                      ? { x: 0, y: 4, blur: 18, color: 'rgba(0,0,0,0.55)' }
-                      : undefined,
-                  })
-                }
-              />
-              {t('theme.shadow')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
                 checked={!!draft.text.backgroundBox}
                 onChange={(e) =>
                   setText({
@@ -270,6 +257,11 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
               {t('theme.redLetters')}
             </label>
           </div>
+          <ThemeEffects
+            draft={draft}
+            setText={setText}
+            setAdjust={(p) => set({ backgroundAdjust: { ...draft.backgroundAdjust, ...p } })}
+          />
           <div>
             <span className="label">{t('theme.refPosition')}</span>
             <Segmented

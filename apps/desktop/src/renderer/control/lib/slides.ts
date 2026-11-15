@@ -89,7 +89,8 @@ function themeBackground(theme: Theme, override?: BackgroundLayer['ref']): Backg
   const ref = override ?? theme.background;
   if (ref.kind === 'none') return null;
   const bg: BackgroundLayer = { ref };
-  if (!override && theme.backgroundAdjust) bg.adjust = theme.backgroundAdjust;
+  // The theme's dim/blur/colour adjustments apply to an item's own background too.
+  if (theme.backgroundAdjust) bg.adjust = theme.backgroundAdjust;
   return bg;
 }
 

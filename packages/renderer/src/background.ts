@@ -1,6 +1,6 @@
 import { mediaPositionAt, type BackgroundLayer, type MediaLayer } from '@lampstand/core';
 import { el, FILL, loop, safePlay } from './dom';
-import { gradientCss } from './style';
+import { backgroundFilter, gradientCss } from './style';
 
 export interface MediaResolver {
   /** URL for a library media id, e.g. `lampstand-media://<id>`. */
@@ -62,9 +62,18 @@ export function buildBackground(
       break;
   }
   if (inner) {
-    if (bg.adjust?.blur) inner.style.filter = `blur(${bg.adjust.blur}px)`;
+    const filter = backgroundFilter(bg.adjust);
+    if (filter) inner.style.filter = filter;
     wrap.append(inner);
   }
+  if (bg.adjust?.tint && bg.adjust.tint.opacity > 0)
+    wrap.append(
+      el(doc, 'div', 'ls-bg-tint', {
+        ...FILL,
+        background: bg.adjust.tint.color,
+        opacity: String(bg.adjust.tint.opacity),
+      }),
+    );
   if (bg.adjust?.dim)
     wrap.append(el(doc, 'div', '', { ...FILL, background: `rgba(0,0,0,${bg.adjust.dim})` }));
   return wrap;

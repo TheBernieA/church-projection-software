@@ -1,4 +1,4 @@
-import { Globe, MousePointerClick, PencilOff, Shapes, Wand2 } from 'lucide-react';
+import { Globe, MousePointerClick, PencilOff, Shapes } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { SlideGrid } from '../SlideGrid';
@@ -12,7 +12,6 @@ function SoonTools() {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-[var(--hairline)] px-3 py-1.5">
       <SoonFeature id="objects" icon={<Shapes size={14} />} />
-      <SoonFeature id="effects" icon={<Wand2 size={14} />} />
       <SoonFeature id="web-content" icon={<Globe size={14} />} />
     </div>
   );

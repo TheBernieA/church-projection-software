@@ -109,7 +109,6 @@ export const FEATURES: Feature[] = [
     'presentations',
     'Text & background effects',
     'Blur, glow, colour filters and fills on text and backgrounds.',
-    'soon',
   ),
   f(
     'chords',

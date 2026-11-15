@@ -19,6 +19,7 @@ export const sampleScene = (theme: Theme, text: string, reference?: string): Sce
     background: {
       ref:
         theme.background.kind === 'none' ? { kind: 'color', color: '#333845' } : theme.background,
+      ...(theme.backgroundAdjust ? { adjust: theme.backgroundAdjust } : {}),
     },
     content: {
       key: `sample-${theme.id}-${text.length}`,

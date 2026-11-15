@@ -264,6 +264,45 @@ test('songs: build arrangements and a translation, then pick them per item', asy
   await expect(slides.locator('li').first()).toContainText('Verse 1');
 });
 
+test('theme effects: a glow set in the theme editor reaches the output', async () => {
+  const out = await outputPage();
+  await mode('Themes');
+  await control
+    .getByRole('region', { name: 'Themes' })
+    .getByRole('button', { name: 'Duplicate' })
+    .first()
+    .click();
+  const editor = control.getByRole('dialog');
+  await editor.getByLabel('Name', { exact: true }).fill('Glow test');
+  await editor.getByRole('checkbox', { name: 'Glow' }).check();
+  await editor.getByLabel('Brightness').fill('0.8');
+  await control.waitForTimeout(200);
+  await control.screenshot({ path: 'test-results/05d-theme-effects.png' });
+  await editor.getByRole('button', { name: 'Save theme' }).click();
+  // Make it the lyrics theme, then show a song slide.
+  await control
+    .getByRole('region', { name: 'Themes' })
+    .locator('div.overflow-hidden')
+    .filter({ hasText: 'Glow test' })
+    .getByRole('button', { name: 'Lyrics' })
+    .click();
+  await mode('Show');
+  await control
+    .getByRole('region', { name: 'Service plan' })
+    .getByText('Test Song')
+    .first()
+    .click();
+  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await expect
+    .poll(() =>
+      out
+        .locator('.ls-text')
+        .last()
+        .evaluate((e) => (e as HTMLElement).style.textShadow),
+    )
+    .toContain('24px');
+});
+
 test('settings: category pages, installed Bible packages', async () => {
   await control.getByTitle('Settings').click();
   const nav = control.getByRole('navigation', { name: 'Settings' });

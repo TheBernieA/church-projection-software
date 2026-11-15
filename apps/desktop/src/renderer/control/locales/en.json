@@ -225,6 +225,30 @@
       "slide": "Slide up",
       "zoom": "Zoom",
       "blur": "Blur"
+    },
+    "effects": {
+      "title": "Effects",
+      "text": "Text effects",
+      "background": "Background",
+      "shadowColour": "Shadow colour",
+      "softness": "Softness",
+      "outline": "Outline",
+      "outlineColour": "Outline colour",
+      "width": "Width",
+      "glow": "Glow",
+      "glowColour": "Glow colour",
+      "size": "Size",
+      "uppercase": "All capitals",
+      "lineHeight": "Line height",
+      "letterSpacing": "Letter spacing",
+      "dim": "Dim",
+      "blur": "Blur",
+      "brightness": "Brightness",
+      "contrast": "Contrast",
+      "saturation": "Saturation",
+      "tint": "Colour tint",
+      "tintColour": "Tint colour",
+      "strength": "Strength"
     }
   },
   "outputs": {
