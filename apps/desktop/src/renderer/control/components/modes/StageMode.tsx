@@ -25,8 +25,8 @@ export function StageMode() {
         data-testid="stage-mirror"
       >
         <div className="flex items-center justify-between gap-4">
-          <span className="tnum text-[28px] font-bold">{clock.format(now)}</span>
-          <span className="truncate text-[16px] font-semibold text-[var(--accent)]">
+          <span className="tnum text-ui-28 font-bold">{clock.format(now)}</span>
+          <span className="truncate text-ui-16 font-semibold text-[var(--accent)]">
             {p.content?.label ?? ''}
           </span>
           <div className="flex gap-2">
@@ -37,11 +37,11 @@ export function StageMode() {
                   key={tm.id}
                   className="flex items-baseline gap-1.5 rounded-[6px] bg-white/5 px-2 py-1"
                 >
-                  <span className="text-[10px] uppercase tracking-wider text-[#9aa1b5]">
+                  <span className="text-ui-10 uppercase tracking-wider text-[#9aa1b5]">
                     {tm.name}
                   </span>
                   <span
-                    className={`tnum text-[18px] font-bold ${secs < 0 ? 'text-[var(--tally-program)]' : ''}`}
+                    className={`tnum text-ui-18 font-bold ${secs < 0 ? 'text-[var(--tally-program)]' : ''}`}
                   >
                     {formatTimer(secs, tm.kind)}
                   </span>
@@ -52,7 +52,7 @@ export function StageMode() {
         </div>
         <div className="grid grid-cols-[3fr_2fr] gap-4">
           <div>
-            <p className="mb-1 text-[11px] uppercase tracking-[0.12em] text-[#e5484d]">
+            <p className="mb-1 text-ui-11 uppercase tracking-[0.12em] text-[#e5484d]">
               {t('stage.now')}
             </p>
             <div className="overflow-hidden rounded-[4px]">
@@ -63,7 +63,7 @@ export function StageMode() {
             </div>
           </div>
           <div>
-            <p className="mb-1 text-[11px] uppercase tracking-[0.12em] text-[#9aa1b5]">
+            <p className="mb-1 text-ui-11 uppercase tracking-[0.12em] text-[#9aa1b5]">
               {t('stage.next')}
             </p>
             <div className="overflow-hidden rounded-[4px]">
@@ -75,7 +75,7 @@ export function StageMode() {
           </div>
         </div>
         {live.stageMessage && (
-          <p className="rounded-[6px] bg-[var(--accent)] px-3 py-2 text-center text-[16px] font-bold text-[var(--accent-ink)]">
+          <p className="rounded-[6px] bg-[var(--accent)] px-3 py-2 text-center text-ui-16 font-bold text-[var(--accent-ink)]">
             {live.stageMessage.text}
           </p>
         )}

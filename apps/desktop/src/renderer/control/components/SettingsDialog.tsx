@@ -62,7 +62,7 @@ export function SettingsDialog() {
         aria-label={t('settings.title')}
         className="flex w-[220px] shrink-0 flex-col gap-0.5 bg-[var(--surface-0)]/45 p-3 shadow-[1px_0_0_var(--hairline)]"
       >
-        <p aria-hidden className="px-2.5 pb-3 pt-2 text-[16px] font-semibold tracking-[-0.01em]">
+        <p aria-hidden className="px-2.5 pb-3 pt-2 text-ui-16 font-semibold tracking-[-0.01em]">
           {t('settings.title')}
         </p>
         {[...NAV, null, ...HELP_NAV].map((entry) => {
@@ -83,7 +83,7 @@ export function SettingsDialog() {
               type="button"
               onClick={() => setPage(id)}
               aria-current={on ? 'page' : undefined}
-              className={`flex h-9 cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 text-left text-[13px] ${
+              className={`flex h-9 cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 text-left text-ui-13 ${
                 on
                   ? 'bg-[var(--accent-soft)] font-medium text-[var(--text-1)]'
                   : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]'

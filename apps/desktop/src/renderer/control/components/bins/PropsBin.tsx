@@ -62,14 +62,14 @@ function PropCard({
         {m?.hasThumbnail ? (
           <img src={thumbUrl(m.id)} alt="" className="max-h-full max-w-full object-contain" />
         ) : (
-          <span className="px-2 text-center text-[13px] font-bold text-white">
+          <span className="px-2 text-center text-ui-13 font-bold text-white">
             {prop.text || m?.name || prop.name}
           </span>
         )}
         {on && <TallyTag tone="program">LIVE</TallyTag>}
       </button>
       <div className="flex items-center gap-1">
-        <span className="min-w-0 flex-1 truncate text-[12px] font-medium">{prop.name}</span>
+        <span className="min-w-0 flex-1 truncate text-ui-12 font-medium">{prop.name}</span>
         <IconButton
           size="xs"
           aria-label={t('props.delete', { name: prop.name })}

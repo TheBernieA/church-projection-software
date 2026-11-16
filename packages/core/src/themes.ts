@@ -1,4 +1,4 @@
-import type { TextStyle, Theme } from './schemas/theme';
+import type { TextFormat, TextStyle, Theme } from './schemas/theme';
 import { builtInBackground as bg } from './backgrounds';
 
 const T0 = '2026-01-01T00:00:00.000Z';
@@ -324,4 +324,33 @@ export function findTheme(themes: Theme[], id: string | undefined, fallbackId: s
     themes.find((x) => x.id === id) ?? themes.find((x) => x.id === fallbackId) ?? STARTER_THEMES[0];
   if (!t) throw new Error('No themes available');
   return t;
+}
+
+/** The item's Text-bar formatting layered over its theme (unset fields keep the theme's). */
+export function withTextFormat(theme: Theme, f?: TextFormat): Theme {
+  if (!f || Object.keys(f).length === 0) return theme;
+  const text = { ...theme.text };
+  if (f.fontFamily) text.fontFamily = f.fontFamily;
+  if (f.color) text.color = f.color;
+  if (f.align) text.align = f.align;
+  if (f.bold !== undefined) text.fontWeight = f.bold ? 700 : 400;
+  if (f.italic !== undefined) text.italic = f.italic;
+  const next: Theme = { ...theme, text };
+  if (f.fontSize) {
+    text.fontSize = f.fontSize;
+    // Auto-fit treats the size as a ceiling, so long slides still shrink to fit.
+    next.autoFit = {
+      ...theme.autoFit,
+      maxSize: f.fontSize,
+      minSize: Math.min(theme.autoFit.minSize, f.fontSize),
+    };
+  }
+  // The reference line follows the font and colour, so a slide stays consistent.
+  if (f.fontFamily || f.color)
+    next.reference = {
+      ...theme.reference,
+      ...(f.fontFamily ? { fontFamily: f.fontFamily } : {}),
+      ...(f.color ? { color: f.color } : {}),
+    };
+  return next;
 }

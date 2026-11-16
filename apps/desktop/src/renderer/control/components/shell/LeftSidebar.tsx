@@ -19,7 +19,7 @@ function OutlineHeading({
 }) {
   return (
     <div className="flex h-7 items-center justify-between pl-3 pr-1.5 pt-1">
-      <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+      <h2 className="text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
         {title}
       </h2>
       {onAdd && (
@@ -54,7 +54,7 @@ function OutlineRow({
       type="button"
       aria-pressed={selected}
       onClick={onClick}
-      className={`mx-1.5 flex h-[26px] w-[calc(100%-12px)] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-[13px] transition-colors ${
+      className={`mx-1.5 flex h-[26px] w-[calc(100%-12px)] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-ui-13 transition-colors ${
         selected
           ? 'bg-[var(--select)] text-white [&_svg]:text-white'
           : 'text-[var(--text-1)] hover:bg-[var(--surface-2)]'
@@ -111,7 +111,7 @@ export function LeftSidebar() {
           }
         />
         {playlists.length === 0 && (
-          <p className="px-4 py-1 text-[12px] text-[var(--text-3)]">{t('sidebar.noPlaylists')}</p>
+          <p className="px-4 py-1 text-ui-12 text-[var(--text-3)]">{t('sidebar.noPlaylists')}</p>
         )}
         {playlists.map((p) => (
           <OutlineRow

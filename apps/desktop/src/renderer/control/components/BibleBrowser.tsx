@@ -67,7 +67,7 @@ export function BibleBrowser() {
         {book ? (
           <button
             type="button"
-            className="flex min-w-0 flex-1 items-center gap-1 text-left text-[15px] font-semibold hover:text-[var(--accent)]"
+            className="flex min-w-0 flex-1 items-center gap-1 text-left text-ui-15 font-semibold hover:text-[var(--accent)]"
             onClick={() => setBook(null)}
           >
             <ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />
@@ -118,7 +118,7 @@ export function BibleBrowser() {
                         setChapter(1);
                         setFilter('');
                       }}
-                      className="truncate rounded-[7px] px-2 py-1.5 text-left text-[13px] text-[var(--text-1)] transition-colors hover:bg-[var(--surface-3)]"
+                      className="truncate rounded-[7px] px-2 py-1.5 text-left text-ui-13 text-[var(--text-1)] transition-colors hover:bg-[var(--surface-3)]"
                     >
                       {b.name}
                     </button>
@@ -139,13 +139,13 @@ export function BibleBrowser() {
                   type="button"
                   onClick={() => setChapter(c)}
                   aria-current={c === chapter}
-                  className={`tnum h-8 rounded-[7px] text-[12px] font-medium transition-colors ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
+                  className={`tnum h-8 rounded-[7px] text-ui-12 font-medium transition-colors ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
                 >
                   {c}
                 </button>
               ))}
             </div>
-            <p className="pb-2 pt-2 text-[12px] leading-snug text-[var(--text-3)]">
+            <p className="pb-2 pt-2 text-ui-12 leading-snug text-[var(--text-3)]">
               {t('bible.hint')}
             </p>
           </div>
@@ -171,9 +171,9 @@ export function BibleBrowser() {
                         versionIds: [versionId],
                       };
                     })}
-                    className={`flex w-full gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-[13px] leading-relaxed transition-colors ${isSel ? 'bg-[var(--accent-soft)] shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[var(--surface-2)]'}`}
+                    className={`flex w-full gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-ui-13 leading-relaxed transition-colors ${isSel ? 'bg-[var(--accent-soft)] shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[var(--surface-2)]'}`}
                   >
-                    <span className="tnum w-5 shrink-0 pt-px text-right text-[11px] font-semibold text-[var(--accent)]">
+                    <span className="tnum w-5 shrink-0 pt-px text-right text-ui-11 font-semibold text-[var(--accent)]">
                       {v}
                     </span>
                     <span className="text-[var(--text-1)]">

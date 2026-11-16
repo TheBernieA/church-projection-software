@@ -43,12 +43,12 @@ export function OutputsDialog() {
               key={d.id}
               className="flex items-center gap-3 rounded-[var(--radius-control)] bg-[var(--surface-2)] p-3"
             >
-              <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-0)] text-[10px] text-[var(--text-3)]">
+              <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-0)] text-ui-10 text-[var(--text-3)]">
                 {d.width}×{d.height}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{d.label}</div>
-                <div className="text-[11px] text-[var(--text-3)]">
+                <div className="text-ui-11 text-[var(--text-3)]">
                   {[d.isControl && t('outputs.control'), d.isPrimary && t('outputs.primary')]
                     .filter(Boolean)
                     .join(' · ')}
@@ -67,7 +67,7 @@ export function OutputsDialog() {
                 />
               </div>
               <Checkbox
-                className="text-[12px]"
+                className="text-ui-12"
                 label={t('outputs.testPattern')}
                 disabled={d.role === 'none' || windowMode}
                 checked={testOn}
@@ -86,14 +86,14 @@ export function OutputsDialog() {
       />
       {windowMode && (
         <Checkbox
-          className="mt-2 pl-6 text-[12px]"
+          className="mt-2 pl-6 text-ui-12"
           label={t('outputs.testPattern')}
           checked={patterns.includes('window-main')}
           onChange={(on) => void cmd('live.testPattern', { outputId: 'window-main', on })}
         />
       )}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold text-[var(--text-2)]">
+        <summary className="cursor-pointer px-4 py-2.5 text-ui-12 font-semibold text-[var(--text-2)]">
           {t('outputs.more')}
         </summary>
         <SoonList

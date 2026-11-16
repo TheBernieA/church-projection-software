@@ -47,7 +47,7 @@ function TimerCard({
         onDelete={onDelete}
       />
       <div
-        className={`tnum text-[26px] font-bold leading-none ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+        className={`tnum text-ui-26 font-bold leading-none ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
         data-testid={`timer-${def.id}`}
       >
         {formatTimer(secs, def.kind)}
@@ -136,7 +136,7 @@ function NewTimer({
         ]}
       />
       {kind === 'countdown' && (
-        <label className="flex items-center gap-2 text-[12px] text-[var(--text-2)]">
+        <label className="flex items-center gap-2 text-ui-12 text-[var(--text-2)]">
           <input
             className="field !h-8 !w-20"
             type="number"
@@ -207,7 +207,7 @@ export function TimersBin() {
         />
       )}
       <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
-      <p className="ml-auto max-w-[220px] self-end text-[11px] leading-snug text-[var(--text-3)]">
+      <p className="ml-auto max-w-[220px] self-end text-ui-11 leading-snug text-[var(--text-3)]">
         {t('timers.stageHint')}
       </p>
     </BinRow>

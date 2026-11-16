@@ -44,11 +44,11 @@ export function SoonList({ ids }: { ids: string[] }) {
         <li key={f.id} className="flex items-start gap-3 px-4 py-3" data-feature={f.id}>
           <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--soon)]" />
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-[13px] font-medium text-[var(--text-2)]">
+            <p className="flex items-center gap-2 text-ui-13 font-medium text-[var(--text-2)]">
               {f.name}
               <SoonBadge label={t('soon.badge')} />
             </p>
-            <p className="mt-0.5 text-[12px] leading-snug text-[var(--text-3)]">{f.description}</p>
+            <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">{f.description}</p>
           </div>
         </li>
       ))}

@@ -127,7 +127,7 @@ export function SlideCard({
         </div>
         {/* Label bar in the group's colour (the colour IS the group): number, then name. */}
         <div
-          className="flex h-6 items-center gap-1.5 px-2 text-[12px] font-semibold"
+          className="flex h-6 items-center gap-1.5 px-2 text-ui-12 font-semibold"
           style={
             color
               ? { background: color, color: '#fff' }
@@ -165,18 +165,18 @@ export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardPr
           className="w-1 shrink-0 rounded-l-[6px]"
           style={{ background: color ?? 'var(--surface-4)' }}
         />
-        <span className="tnum w-6 shrink-0 self-center text-right text-[12px] font-semibold text-[var(--text-3)]">
+        <span className="tnum w-6 shrink-0 self-center text-right text-ui-12 font-semibold text-[var(--text-3)]">
           {index + 1}
         </span>
         <span className="min-w-0 flex-1 py-2">
           <span
-            className="block text-[10px] font-semibold uppercase tracking-[0.08em]"
+            className="block text-ui-10 font-semibold uppercase tracking-[0.08em]"
             style={{ color: color ?? 'var(--text-3)' }}
           >
             {slide.label}
           </span>
           {text && (
-            <span className="mt-0.5 line-clamp-3 block whitespace-pre-line text-[15px] leading-snug text-[var(--text-1)]">
+            <span className="mt-0.5 line-clamp-3 block whitespace-pre-line text-ui-15 leading-snug text-[var(--text-1)]">
               {text}
             </span>
           )}

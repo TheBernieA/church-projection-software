@@ -49,7 +49,7 @@ export function MediaPanel() {
         <SoonFeature id="playback-markers" label={t('media.soon.markers')} />
       </div>
       {media.length === 0 && (
-        <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">
+        <p className="px-5 py-3 text-ui-13 leading-relaxed text-[var(--text-3)]">
           {t('media.empty')}
         </p>
       )}
@@ -75,7 +75,7 @@ export function MediaPanel() {
               </Tile>
               <button
                 type="button"
-                className={`absolute bottom-0 right-0 bg-[var(--surface-1)] pl-1.5 text-[12px] text-[var(--text-3)] hover:text-[var(--tally-program)] ${REVEAL}`}
+                className={`absolute bottom-0 right-0 bg-[var(--surface-1)] pl-1.5 text-ui-12 text-[var(--text-3)] hover:text-[var(--tally-program)] ${REVEAL}`}
                 onClick={() => void cmd('media.delete', { id: m.id })}
               >
                 {t('media.delete')}

@@ -72,7 +72,7 @@ function MonitorCard({
         <TallyLabel tone={tone} active={active}>
           {label}
         </TallyLabel>
-        {caption && <span className="truncate text-[11px] text-[var(--text-3)]">{caption}</span>}
+        {caption && <span className="truncate text-ui-11 text-[var(--text-3)]">{caption}</span>}
       </figcaption>
       <div className={`overflow-hidden rounded-[4px] ${ring}`}>
         <SceneView scene={scene} label={label} standby={standby} audio={audio} />
@@ -112,7 +112,7 @@ function PlannedLayers() {
           sideOffset={6}
           className="z-[60] min-w-[230px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
         >
-          <DropdownMenu.Label className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          <DropdownMenu.Label className="px-2.5 pb-1 pt-1.5 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
             {t('monitor.moreLayers')}
           </DropdownMenu.Label>
           {PLANNED_LAYERS.map((l) => {
@@ -122,7 +122,7 @@ function PlannedLayers() {
                 key={l.id}
                 disabled
                 title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
-                className="flex items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-[13px] text-[var(--text-2)] outline-none"
+                className="flex items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-ui-13 text-[var(--text-2)] outline-none"
               >
                 <span className="flex text-[var(--text-3)]">{l.icon}</span>
                 <span className="flex-1">{t(`monitor.layers.${l.label}`)}</span>
@@ -194,7 +194,7 @@ function MaskButton({
       aria-label={label}
       title={`${label} (${hint})`}
       onClick={onClick}
-      className={`flex h-7 cursor-pointer items-center gap-1 rounded-[5px] px-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+      className={`flex h-7 cursor-pointer items-center gap-1 rounded-[5px] px-2 text-ui-11 font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
         on
           ? 'bg-[var(--tally-program)] text-white'
           : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
@@ -269,7 +269,7 @@ export function RightColumn() {
             <TallyLabel tone="program" active={onAir}>
               {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
             </TallyLabel>
-            <span className="truncate text-[11px] text-[var(--text-3)]">
+            <span className="truncate text-ui-11 text-[var(--text-3)]">
               {p.content?.label ?? mediaName ?? ''}
             </span>
           </div>

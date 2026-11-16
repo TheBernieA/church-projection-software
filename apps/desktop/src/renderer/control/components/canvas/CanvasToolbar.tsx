@@ -101,7 +101,7 @@ export function CanvasToolbar({ item, index }: { item: TextItem; index: number }
       >
         <Trash2 size={15} />
       </IconButton>
-      <span className="ml-auto text-[11px] text-[var(--text-3)]">{t('canvas.hint')}</span>
+      <span className="ml-auto text-ui-11 text-[var(--text-3)]">{t('canvas.hint')}</span>
     </div>
   );
 }

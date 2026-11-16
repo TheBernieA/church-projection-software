@@ -18,8 +18,8 @@ export function SettingsPage({
     <div className="mx-auto w-full max-w-[640px] px-8 pb-10 pt-7">
       <header className="mb-6 flex items-start justify-between gap-4 pr-8">
         <div>
-          <h2 className="text-[20px] font-semibold tracking-[-0.015em]">{title}</h2>
-          <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-2)]">{description}</p>
+          <h2 className="text-ui-20 font-semibold tracking-[-0.015em]">{title}</h2>
+          <p className="mt-1 text-ui-13 leading-relaxed text-[var(--text-2)]">{description}</p>
         </div>
         {action && <div className="shrink-0 pt-1">{action}</div>}
       </header>
@@ -45,7 +45,7 @@ export function Group({
         {children}
       </div>
       {footnote && (
-        <p className="mt-2 px-1 text-[12px] leading-relaxed text-[var(--text-3)]">{footnote}</p>
+        <p className="mt-2 px-1 text-ui-12 leading-relaxed text-[var(--text-3)]">{footnote}</p>
       )}
     </section>
   );
@@ -73,12 +73,12 @@ export function Row({
       <div className="min-w-0">
         <Label
           {...(htmlFor ? { htmlFor } : {})}
-          className="block text-[13px] font-medium text-[var(--text-1)]"
+          className="block text-ui-13 font-medium text-[var(--text-1)]"
         >
           {label}
         </Label>
         {description && (
-          <p className="mt-0.5 text-[12px] leading-snug text-[var(--text-3)]">{description}</p>
+          <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">{description}</p>
         )}
       </div>
       <div className={stack ? '' : 'shrink-0'}>{children}</div>
@@ -117,7 +117,7 @@ export function UnitInput({
         className={`field !h-8 ${wide ? '!w-40 text-left' : '!w-20 text-right'} tnum`}
         {...rest}
       />
-      {unit && <span className="text-[13px] text-[var(--text-3)]">{unit}</span>}
+      {unit && <span className="text-ui-13 text-[var(--text-3)]">{unit}</span>}
     </div>
   );
 }
@@ -175,7 +175,7 @@ export function ThemeTiles({
           )}
         </span>
         <span
-          className={`text-[12px] ${on ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+          className={`text-ui-12 ${on ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
         >
           {labels[mode]}
         </span>

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
 import { SlideObjectSchema, WebUrlSchema } from './scene';
-import { BackgroundRefSchema } from './theme';
+import { BackgroundRefSchema, TextFormatSchema } from './theme';
 
 const TextSlideSchema = z.object({
   id: IdSchema,
@@ -27,6 +27,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     /** Transpose chords on the stage display by this many semitones. */
     transpose: z.number().int().min(-11).max(11).optional(),
     themeId: IdSchema.optional(),
+    textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
   }),
   z.object({
@@ -35,6 +36,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     passage: PassageRefSchema,
     versionIds: z.array(z.string().max(32)).min(1).max(4),
     themeId: IdSchema.optional(),
+    textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
   }),
   z.object({
@@ -51,6 +53,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     title: z.string().max(200),
     slides: z.array(TextSlideSchema).max(500),
     themeId: IdSchema.optional(),
+    textFormat: TextFormatSchema.optional(),
   }),
   z.object({
     ...base,
@@ -59,6 +62,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     slides: z.array(TextSlideSchema).max(500),
     loopIntervalSec: z.number().int().min(2).max(600),
     themeId: IdSchema.optional(),
+    textFormat: TextFormatSchema.optional(),
   }),
   z.object({
     ...base,
@@ -69,6 +73,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
       z.object({ durationSec: z.number().int().min(1).max(86400) }),
     ]),
     themeId: IdSchema.optional(),
+    textFormat: TextFormatSchema.optional(),
   }),
   z.object({ ...base, kind: z.literal('header'), label: z.string().max(200) }),
   /** A web page (giving page, live feed…), shown in an isolated web view. */

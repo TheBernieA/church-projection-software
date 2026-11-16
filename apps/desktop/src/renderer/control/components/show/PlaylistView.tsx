@@ -126,8 +126,8 @@ function ItemSection({
           className="flex min-w-0 cursor-pointer items-center gap-2 text-left"
         >
           <KindTile kind={item.kind} size={20} />
-          <span className="truncate text-[13px] font-semibold">{title}</span>
-          <span className="shrink-0 text-[12px] text-[var(--text-3)]">
+          <span className="truncate text-ui-13 font-semibold">{title}</span>
+          <span className="shrink-0 text-ui-12 text-[var(--text-3)]">
             {t('slides.count', { count: slides.length })}
           </span>
         </button>
@@ -224,7 +224,7 @@ export function PlaylistView() {
               key={item.id}
               role="heading"
               aria-level={2}
-              className="flex h-9 items-center px-3 text-[15px] font-semibold text-white"
+              className="flex h-9 items-center px-3 text-ui-15 font-semibold text-white"
               style={{ background: sectionColor(item.label) }}
             >
               {item.label}

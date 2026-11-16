@@ -187,7 +187,7 @@ function QuickBarBody() {
           />
           <input
             autoFocus
-            className="h-16 w-full bg-transparent pl-12 pr-5 text-[18px] outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)]"
+            className="h-16 w-full bg-transparent pl-12 pr-5 text-ui-18 outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)]"
             placeholder={t('quick.placeholder')}
             value={text}
             onChange={(e) => {
@@ -231,9 +231,9 @@ function QuickBarBody() {
                         className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 ${i === active ? 'bg-[var(--surface-3)] shadow-[inset_2px_0_0_var(--accent)]' : ''}`}
                       >
                         <RowIcon group={r.group} />
-                        <span className="shrink-0 text-[14px] font-medium">{r.title}</span>
+                        <span className="shrink-0 text-ui-14 font-medium">{r.title}</span>
                         {r.subtitle && (
-                          <span className="truncate text-[13px] text-[var(--text-3)]">
+                          <span className="truncate text-ui-13 text-[var(--text-3)]">
                             {r.subtitle}
                           </span>
                         )}
@@ -244,7 +244,7 @@ function QuickBarBody() {
               );
             })}
           </div>
-          <div className="bg-[var(--surface-0)]/40 px-5 py-2.5 text-[12px] text-[var(--text-3)] shadow-[0_-1px_0_var(--hairline)]">
+          <div className="bg-[var(--surface-0)]/40 px-5 py-2.5 text-ui-12 text-[var(--text-3)] shadow-[0_-1px_0_var(--hairline)]">
             {t('quick.hint')}
           </div>
         </RD.Content>

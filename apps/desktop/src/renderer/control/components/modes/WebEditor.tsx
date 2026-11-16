@@ -18,10 +18,10 @@ export function WebEditor({ item }: { item: WebItem }) {
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
       <div className="flex items-center gap-2">
         <Globe size={18} className="text-[var(--text-3)]" />
-        <h2 className="text-[15px] font-semibold">{t('web.title')}</h2>
+        <h2 className="text-ui-15 font-semibold">{t('web.title')}</h2>
       </div>
       <div className="grid max-w-xl gap-4">
-        <label className="flex flex-col gap-1.5 text-[12px] font-medium text-[var(--text-2)]">
+        <label className="flex flex-col gap-1.5 text-ui-12 font-medium text-[var(--text-2)]">
           {t('web.name')}
           <input
             className="field"
@@ -34,7 +34,7 @@ export function WebEditor({ item }: { item: WebItem }) {
             }
           />
         </label>
-        <label className="flex flex-col gap-1.5 text-[12px] font-medium text-[var(--text-2)]">
+        <label className="flex flex-col gap-1.5 text-ui-12 font-medium text-[var(--text-2)]">
           {t('web.address')}
           <input
             className="field"

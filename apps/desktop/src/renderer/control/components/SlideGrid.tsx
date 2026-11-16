@@ -102,11 +102,11 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('slides.title')}>
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-3">
         {item && <KindTile kind={item.kind} size={22} />}
-        <h2 className="min-w-0 truncate text-[14px] font-semibold">
+        <h2 className="min-w-0 truncate text-ui-14 font-semibold">
           {item ? itemTitle(item, { songs, media }) : t('slides.title')}
         </h2>
         {item && slides.length > 0 && (
-          <span className="shrink-0 text-[12px] text-[var(--text-3)]">
+          <span className="shrink-0 text-ui-12 text-[var(--text-3)]">
             {t('slides.count', { count: slides.length })}
           </span>
         )}
@@ -198,7 +198,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
                 <AddCard
                   label={t('inspector.addSlide')}
                   onClick={addSlide}
-                  className="aspect-[16/10.4] w-full rounded-[6px] text-[13px]"
+                  className="aspect-[16/10.4] w-full rounded-[6px] text-ui-13"
                   icon={<Plus size={22} strokeWidth={1.75} />}
                 />
               </li>

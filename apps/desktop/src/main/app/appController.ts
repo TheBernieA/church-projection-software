@@ -255,7 +255,7 @@ export class AppController {
     bus.register({
       type: 'settings.update',
       // Don't use SettingsSchema.partial(): in Zod 4 it still fills each field's *default*, so a
-      // patch of `{ uiScale }` would silently reset windowMode, displays, shortcuts… Instead the
+      // patch of `{ textScale }` would silently reset windowMode, displays, shortcuts… Instead the
       // store validates the merged result against the full schema.
       schema: z.object({ patch: z.record(z.string().max(60), z.unknown()) }),
       undoable: false,

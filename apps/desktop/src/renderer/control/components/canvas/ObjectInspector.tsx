@@ -109,7 +109,7 @@ export function ObjectInspector({
               { value: 'right', label: t('canvas.right') },
             ]}
           />
-          <div className="flex gap-4 text-[12px]">
+          <div className="flex gap-4 text-ui-12">
             <Checkbox
               label={t('canvas.bold')}
               checked={!!o.bold}
@@ -133,7 +133,7 @@ export function ObjectInspector({
               onChange={(fill) => set({ fill }, false)}
             />
             <Checkbox
-              className="self-end pb-2 text-[12px]"
+              className="self-end pb-2 text-ui-12"
               label={t('canvas.noFill')}
               checked={!o.fill}
               onChange={(none) => set({ fill: none ? undefined : '#f0a73a' }, false)}

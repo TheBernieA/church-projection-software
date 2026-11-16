@@ -61,11 +61,11 @@ export function FeaturesPage() {
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-2 text-[13px] font-medium text-[var(--text-1)]">
+                  <p className="flex items-center gap-2 text-ui-13 font-medium text-[var(--text-1)]">
                     {f.name}
                     {f.status === 'soon' && <SoonBadge label={t('soon.badge')} />}
                   </p>
-                  <p className="mt-0.5 text-[12px] leading-snug text-[var(--text-3)]">
+                  <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">
                     {f.description}
                   </p>
                 </div>

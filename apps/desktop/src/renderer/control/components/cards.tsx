@@ -23,7 +23,7 @@ export function AddCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-[12px] font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${className}`}
+      className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-ui-12 font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${className}`}
     >
       {icon}
       {label}
@@ -50,7 +50,7 @@ export function BinRow({ children }: { children: ReactNode }) {
 /** Small grey label: "Built-in", a message style, a timer kind. */
 export function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="shrink-0 rounded-[4px] bg-[var(--surface-3)] px-1.5 py-px text-[10px] font-medium text-[var(--text-3)]">
+    <span className="shrink-0 rounded-[4px] bg-[var(--surface-3)] px-1.5 py-px text-ui-10 font-medium text-[var(--text-3)]">
       {children}
     </span>
   );
@@ -70,7 +70,7 @@ export function CardTitle({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-ui-12 font-semibold">{name}</span>
       {badge && <Badge>{badge}</Badge>}
       <IconButton
         size="xs"
@@ -140,7 +140,7 @@ export function Tile({
         {children}
       </div>
       <span
-        className={`mt-1.5 block truncate text-[12px] ${selected ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+        className={`mt-1.5 block truncate text-ui-12 ${selected ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
       >
         {label}
       </span>

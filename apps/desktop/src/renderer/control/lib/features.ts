@@ -231,8 +231,7 @@ export const FEATURES: Feature[] = [
     'text-format',
     'presentations',
     'Text formatting',
-    'Change the font, size, colour and alignment of the selected slides straight from the toolbar.',
-    'soon',
+    'Change the font, size, bold/italic, colour and alignment of a playlist item’s slides from the toolbar’s Text button, on top of its theme.',
   ),
   f(
     'looks',

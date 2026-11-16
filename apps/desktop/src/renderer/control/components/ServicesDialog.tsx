@@ -66,7 +66,7 @@ export function ServicesDialog() {
                   >
                     {s.name}
                   </span>
-                  <span className="text-[11px] text-[var(--text-3)]">
+                  <span className="text-ui-11 text-[var(--text-3)]">
                     {s.itemCount} · {s.updatedAt.slice(0, 10)}
                   </span>
                   {group === 'templates' ? (
@@ -99,7 +99,7 @@ export function ServicesDialog() {
         );
       })}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold text-[var(--text-2)]">
+        <summary className="cursor-pointer px-4 py-2.5 text-ui-12 font-semibold text-[var(--text-2)]">
           {t('service.syncSoon')}
         </summary>
         <SoonList ids={['planning-center', 'calendar', 'cloud']} />

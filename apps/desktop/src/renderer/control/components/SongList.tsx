@@ -81,14 +81,14 @@ export function SongList({ hymns }: { hymns: boolean }) {
           <SoonFeature
             id="song-import"
             label={t('library.importFile')}
-            className="!h-6 !px-1.5 !text-[11px]"
+            className="!h-6 !px-1.5 !text-ui-11"
           />
-          <SoonFeature id="songselect" label="SongSelect" className="!h-6 !px-1.5 !text-[11px]" />
-          <SoonFeature id="multitracks" label="MultiTracks" className="!h-6 !px-1.5 !text-[11px]" />
+          <SoonFeature id="songselect" label="SongSelect" className="!h-6 !px-1.5 !text-ui-11" />
+          <SoonFeature id="multitracks" label="MultiTracks" className="!h-6 !px-1.5 !text-ui-11" />
         </div>
       )}
       {rows.length === 0 && (
-        <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">
+        <p className="px-5 py-3 text-ui-13 leading-relaxed text-[var(--text-3)]">
           {hymns && !filter ? t('library.noHymnals') : t('library.noResults')}
         </p>
       )}
@@ -113,13 +113,13 @@ export function SongList({ hymns }: { hymns: boolean }) {
                   {...libraryDragSource(() => item)}
                 >
                   {s.hymnNumber?.[0] && (
-                    <span className="tnum w-8 shrink-0 text-right text-[13px] font-semibold text-[var(--accent)]">
+                    <span className="tnum w-8 shrink-0 text-right text-ui-13 font-semibold text-[var(--accent)]">
                       {s.hymnNumber[0].number}
                     </span>
                   )}
                   <span className="flex min-w-0 flex-col leading-tight">
-                    <span className="truncate text-[13px] font-medium">{s.title}</span>
-                    <span className="truncate text-[12px] text-[var(--text-3)]">
+                    <span className="truncate text-ui-13 font-medium">{s.title}</span>
+                    <span className="truncate text-ui-12 text-[var(--text-3)]">
                       {stripChords(s.sections[0]?.lines[0] ?? '')}
                     </span>
                   </span>

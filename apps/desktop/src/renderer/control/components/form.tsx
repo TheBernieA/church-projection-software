@@ -26,7 +26,7 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
-  const hintNode = hint && <p className="mt-1.5 text-[12px] text-[var(--text-3)]">{hint}</p>;
+  const hintNode = hint && <p className="mt-1.5 text-ui-12 text-[var(--text-3)]">{hint}</p>;
   if (htmlFor || group)
     return (
       <div className={className}>
@@ -140,7 +140,7 @@ export function RangeField({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="grid grid-cols-[96px_minmax(0,1fr)_minmax(44px,auto)] items-center gap-2 text-[12px] text-[var(--text-2)]">
+    <label className="grid grid-cols-[96px_minmax(0,1fr)_minmax(44px,auto)] items-center gap-2 text-ui-12 text-[var(--text-2)]">
       <span>{label}</span>
       <input
         type="range"
@@ -192,7 +192,7 @@ export function Checkbox({
       {box}
       <span>
         <span className="font-medium">{label}</span>
-        <span className="block text-[12px] text-[var(--text-2)]">{description}</span>
+        <span className="block text-ui-12 text-[var(--text-2)]">{description}</span>
       </span>
     </label>
   );

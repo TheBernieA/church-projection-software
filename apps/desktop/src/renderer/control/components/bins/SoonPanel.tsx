@@ -22,17 +22,17 @@ export function SoonPanel({ ids, icon }: { ids: string[]; icon: ReactNode }) {
         </div>
         {items.map((f) => (
           <div key={f.id} className="flex flex-col items-center gap-1">
-            <h3 className="flex items-center gap-2 text-[14px] font-semibold text-[var(--text-1)]">
+            <h3 className="flex items-center gap-2 text-ui-14 font-semibold text-[var(--text-1)]">
               {f.name}
               <SoonBadge label={t('soon.badge')} />
             </h3>
-            <p className="text-[12px] leading-relaxed text-[var(--text-2)]">{f.description}</p>
+            <p className="text-ui-12 leading-relaxed text-[var(--text-2)]">{f.description}</p>
           </div>
         ))}
         <button
           type="button"
           onClick={() => openDialog('settings', { settingsPage: 'features' })}
-          className="mt-1 cursor-pointer text-[12px] font-medium text-[var(--accent)] hover:underline"
+          className="mt-1 cursor-pointer text-ui-12 font-medium text-[var(--accent)] hover:underline"
         >
           {t('soon.roadmap')}
         </button>

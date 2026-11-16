@@ -2,6 +2,22 @@
 @import '@lampstand/ui/tokens.css';
 @source '../../../../../packages/ui/src';
 
+/* UI text sizes. `inline` so each use reads --text-scale where it is used: Settings ›
+   Text size scales the words without zooming icons, rows or panes. */
+@theme inline {
+  --text-ui-10: calc(10px * var(--text-scale));
+  --text-ui-11: calc(11px * var(--text-scale));
+  --text-ui-12: calc(12px * var(--text-scale));
+  --text-ui-13: calc(13px * var(--text-scale));
+  --text-ui-14: calc(14px * var(--text-scale));
+  --text-ui-15: calc(15px * var(--text-scale));
+  --text-ui-16: calc(16px * var(--text-scale));
+  --text-ui-18: calc(18px * var(--text-scale));
+  --text-ui-20: calc(20px * var(--text-scale));
+  --text-ui-26: calc(26px * var(--text-scale));
+  --text-ui-28: calc(28px * var(--text-scale));
+}
+
 html,
 body,
 #root {
@@ -12,7 +28,7 @@ body {
   background: var(--surface-0);
   color: var(--text-1);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -107,7 +123,7 @@ select:disabled {
   border: 0;
   box-shadow: inset 0 0 0 1px var(--hairline-strong);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   transition: box-shadow 120ms;
 }
 .field::placeholder {
@@ -132,7 +148,7 @@ textarea.field {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
 .label {
-  font-size: 12px;
+  font-size: calc(12px * var(--text-scale));
   font-weight: 500;
   color: var(--text-2);
   margin-bottom: 6px;

@@ -112,7 +112,7 @@ function TextInspector({ item }: { item: TextItem }) {
                 value={item.loopIntervalSec}
                 onChange={(v) => replaceItem({ ...item, loopIntervalSec: clamp(v, 2, 600) }, true)}
               />
-              <span className="text-[13px] text-[var(--text-2)]">{t('inspector.seconds')}</span>
+              <span className="text-ui-13 text-[var(--text-2)]">{t('inspector.seconds')}</span>
             </div>
           </Field>
         )}
@@ -155,7 +155,7 @@ function TextInspector({ item }: { item: TextItem }) {
           <Field label={t('inspector.text')} htmlFor="insp-body">
             <textarea
               id="insp-body"
-              className="field !font-sans !text-[14px]"
+              className="field !font-sans !text-ui-14"
               rows={7}
               value={slide.body}
               placeholder={t('inspector.textPlaceholder')}
@@ -172,7 +172,7 @@ function TextInspector({ item }: { item: TextItem }) {
             />
           </Field>
           {isLive && (
-            <p className="flex items-start gap-2 rounded-[var(--radius-control)] bg-[var(--surface-2)] px-3 py-2.5 text-[12px] leading-snug text-[var(--text-2)]">
+            <p className="flex items-start gap-2 rounded-[var(--radius-control)] bg-[var(--surface-2)] px-3 py-2.5 text-ui-12 leading-snug text-[var(--text-2)]">
               <Info size={14} className="mt-px shrink-0" />
               {t('inspector.liveHint')}
             </p>
@@ -226,7 +226,7 @@ function TextInspector({ item }: { item: TextItem }) {
           </div>
         </section>
       ) : (
-        <p className="text-[13px] text-[var(--text-3)]">{t('inspector.noSlide')}</p>
+        <p className="text-ui-13 text-[var(--text-3)]">{t('inspector.noSlide')}</p>
       )}
     </div>
   );

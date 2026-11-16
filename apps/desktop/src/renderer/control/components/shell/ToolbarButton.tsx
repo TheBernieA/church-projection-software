@@ -35,7 +35,7 @@ export const ToolbarButton = forwardRef<
         {icon}
         {badge}
       </span>
-      <span className="whitespace-nowrap text-[11px] leading-none">{label}</span>
+      <span className="whitespace-nowrap text-ui-11 leading-none">{label}</span>
       {soon && (
         <span className="pointer-events-none absolute -right-1 -top-0.5 scale-[0.8]">
           <SoonBadge />

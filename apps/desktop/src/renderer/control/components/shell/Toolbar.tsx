@@ -48,7 +48,7 @@ const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: S
 const MENU_CLASS =
   'z-[60] min-w-[220px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]';
 const ITEM_CLASS =
-  'flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-[13px] outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white';
+  'flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-ui-13 outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white';
 
 /** Tooltip for a planned item: what it will do (from the feature catalogue). */
 const soonTitle = (id: string): string => {
@@ -140,7 +140,7 @@ function StatusMenu() {
         <DropdownMenu.Content
           align="end"
           sideOffset={4}
-          className={`${MENU_CLASS} w-[260px] p-3 text-[12px]`}
+          className={`${MENU_CLASS} w-[260px] p-3 text-ui-12`}
         >
           <p className="flex items-center justify-between font-semibold">
             <span>{onAir ? t('toolbar.onAir') : t('toolbar.offAir')}</span>
@@ -148,7 +148,7 @@ function StatusMenu() {
               {onAir && since ? formatClock(secondsSince(since, now), { hours: 'always' }) : ''}
             </span>
           </p>
-          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          <p className="mt-2 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
             {t('toolbar.outputs')}
           </p>
           <ul className="mt-1 space-y-1">
@@ -184,6 +184,7 @@ function StatusMenu() {
  */
 export function Toolbar() {
   const { t } = useTranslation();
+  const textBarOpen = useStore((s) => s.textBarOpen);
   const mode = useStore((s) => s.mode);
   const binOpen = useStore((s) => s.binOpen);
   const clickGoesLive = useStore((s) => s.settings?.clickGoesLive ?? true);
@@ -215,8 +216,10 @@ export function Toolbar() {
       <ToolbarButton
         icon={<Type size={20} />}
         label={t('toolbar.text')}
-        soon
-        title={soonTitle('text-format')}
+        aria-label={t('textBar.label')}
+        title={t('textBar.help')}
+        pressed={textBarOpen}
+        onClick={() => useStore.setState({ textBarOpen: !textBarOpen })}
       />
       <ToolbarButton
         icon={<Palette size={20} />}
@@ -304,7 +307,7 @@ export function Toolbar() {
             onChange={(on) => void saveSettings({ clickGoesLive: !on })}
           />
         </span>
-        <span className="text-[11px] leading-none">{t('toolbar.preview')}</span>
+        <span className="text-ui-11 leading-none">{t('toolbar.preview')}</span>
       </label>
       <ToolbarButton
         icon={<Settings size={20} />}

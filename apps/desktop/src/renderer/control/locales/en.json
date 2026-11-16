@@ -311,7 +311,14 @@
     "uiTheme": "Interface theme",
     "dark": "Dark",
     "light": "Light",
-    "uiScale": "Interface size",
+    "textScale": "Text size",
+    "textPreview": "Preview",
+    "textPreviewHeading": "Sunday service",
+    "textPreviewRows": "Welcome|Amazing Grace|Psalm 23:1–6",
+    "textPreviewNote": "Words in lists, menus and panels change size; icons and layout stay the same.",
+    "textSmaller": "Smaller text",
+    "textLarger": "Larger text",
+    "textReset": "Reset",
     "scripture": "Scripture",
     "versesPerSlide": "Verses per slide",
     "one": "One verse",
@@ -354,7 +361,7 @@
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
-    "uiScaleHelp": "Make the whole interface larger or smaller.",
+    "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
     "defaultVersion": "Default Bible version",
     "defaultVersionHelp": "Used by the quick bar and the Bible browser.",
     "slides": "Slides",
@@ -665,6 +672,10 @@
           "q": "Change how the words look",
           "a": "Theme in the toolbar opens Themes. Duplicate a built-in theme to change fonts, colours, effects (shadow, glow, outline) and the background, and choose which theme each kind of slide uses."
         },
+        "text": {
+          "q": "Change one song’s font or colour",
+          "a": "Select the item in the playlist and press Text in the toolbar. Pick a font, size, bold or italic, colour and alignment; only that item changes, on top of its theme. Use theme puts it back."
+        },
         "logo": {
           "q": "Set the logo and off-air screen",
           "a": "Settings › Presenting: your church name and a tagline on a choice of looks, or your own picture or video. The off-air screen shows it whenever nothing is live."
@@ -916,5 +927,23 @@
     "messages": "Messages",
     "props": "Props",
     "macros": "Macros"
+  },
+  "textBar": {
+    "label": "Text formatting",
+    "help": "Text: format the selected item's slides",
+    "pick": "Select a song, scripture or slides item to change its font, size, colour and alignment.",
+    "font": "Font",
+    "size": "Size",
+    "sizeHelp": "Largest text size; long slides still shrink to fit.",
+    "bold": "Bold",
+    "italic": "Italic",
+    "color": "Text colour",
+    "align": "Alignment",
+    "left": "Align left",
+    "center": "Align centre",
+    "right": "Align right",
+    "reset": "Use theme",
+    "resetHelp": "Remove this item's text formatting and use its theme again.",
+    "close": "Close text bar"
   }
 }

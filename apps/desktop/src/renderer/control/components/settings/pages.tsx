@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   BookOpen,
   Download,
@@ -7,6 +7,7 @@ import {
   PackagePlus,
   ShieldCheck,
   Trash2,
+  Type,
   Upload,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +17,7 @@ import { Button, Segmented, Switch } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
-import { CommitSlider, DeferredInput } from '../DeferredControls';
+import { DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
@@ -44,22 +45,121 @@ export function GeneralPage({ s, update }: PageProps) {
           />
         </Row>
         <Row
-          label={t('settings.uiScale')}
-          description={t('settings.uiScaleHelp')}
-          htmlFor="ui-scale"
+          label={t('settings.textScale')}
+          description={t('settings.textScaleHelp')}
+          htmlFor="text-scale"
+          stack
         >
-          <CommitSlider
-            id="ui-scale"
-            min={0.9}
-            max={1.5}
-            step={0.05}
-            value={s.uiScale}
-            onCommit={(uiScale) => update({ uiScale })}
-            format={(v) => `${Math.round(v * 100)}%`}
-          />
+          <TextSize value={s.textScale} onCommit={(textScale) => update({ textScale })} />
         </Row>
       </Group>
     </SettingsPage>
+  );
+}
+
+const TEXT_MIN = 0.85;
+const TEXT_MAX = 1.4;
+const TEXT_STEP = 0.05;
+
+/**
+ * Text size: a slider with A−/A+ steps and a live preview drawn at the size being chosen, so the
+ * operator sees the result while dragging. The setting is saved once, on release.
+ */
+function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) => void }) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState<number | null>(null);
+  const shown = draft ?? value;
+  const round = (v: number): number =>
+    Math.round(clamp(v, TEXT_MIN, TEXT_MAX) / TEXT_STEP) * TEXT_STEP;
+  const commit = (v = draft): void => {
+    if (v !== null && Math.abs(v - value) > 0.001) onCommit(round(v));
+    setDraft(null);
+  };
+  const rows = t('settings.textPreviewRows').split('|');
+  const stepBtn =
+    'flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)] disabled:cursor-default disabled:opacity-40';
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          aria-label={t('settings.textSmaller')}
+          title={t('settings.textSmaller')}
+          disabled={shown <= TEXT_MIN}
+          onClick={() => commit(shown - TEXT_STEP)}
+          className={stepBtn}
+        >
+          <Type size={12} />
+        </button>
+        <input
+          id="text-scale"
+          type="range"
+          min={TEXT_MIN}
+          max={TEXT_MAX}
+          step={TEXT_STEP}
+          value={shown}
+          onChange={(e) => setDraft(Number(e.target.value))}
+          onPointerUp={() => commit()}
+          onKeyUp={() => commit()}
+          onBlur={() => commit()}
+          className="h-1.5 w-56 cursor-pointer accent-[var(--accent)]"
+        />
+        <button
+          type="button"
+          aria-label={t('settings.textLarger')}
+          title={t('settings.textLarger')}
+          disabled={shown >= TEXT_MAX}
+          onClick={() => commit(shown + TEXT_STEP)}
+          className={stepBtn}
+        >
+          <Type size={17} />
+        </button>
+        <span className="tnum w-12 text-right text-ui-13 text-[var(--text-2)]">
+          {Math.round(shown * 100)}%
+        </span>
+        {Math.abs(shown - 1) > 0.001 && (
+          <Button size="xs" variant="ghost" onClick={() => commit(1)}>
+            {t('settings.textReset')}
+          </Button>
+        )}
+      </div>
+      {/* Drawn with the chosen scale, using the same text sizes as the real panels. */}
+      <figure
+        aria-label={t('settings.textPreview')}
+        style={{ '--text-scale': shown } as CSSProperties}
+        className="m-0 flex max-w-[460px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--divider)] bg-[var(--surface-1)]"
+      >
+        <div className="w-[190px] shrink-0 border-r border-[var(--divider)] py-2">
+          <p className="px-3 pb-1 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+            {t('sidebar.playlists')}
+          </p>
+          {rows.map((r, i) => (
+            <p
+              key={r}
+              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 text-ui-13 ${
+                i === 1 ? 'bg-[var(--select)] text-white' : 'text-[var(--text-1)]'
+              }`}
+            >
+              <ListMusic size={14} className="shrink-0 opacity-80" />
+              <span className="truncate">{r}</span>
+            </p>
+          ))}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
+          <div>
+            <p className="truncate text-ui-13 font-semibold text-[var(--text-1)]">
+              {t('settings.textPreviewHeading')}
+            </p>
+            <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">
+              {t('settings.textPreviewNote')}
+            </p>
+          </div>
+          <span className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5 text-ui-11 font-medium text-white">
+            1 Verse 1
+          </span>
+        </div>
+      </figure>
+    </div>
   );
 }
 
@@ -197,7 +297,7 @@ function PictureRow({
           }))}
         />
       ) : (
-        <span className="text-[12px] text-[var(--text-3)]">{t('settings.picture.none')}</span>
+        <span className="text-ui-12 text-[var(--text-3)]">{t('settings.picture.none')}</span>
       )}
     </Row>
   );
@@ -410,7 +510,7 @@ export function PackagesPage() {
       {groups.map(({ kind, items }) => (
         <Group key={kind} title={t(`modules.groups.${kind}`)}>
           {items.length === 0 ? (
-            <p className="px-4 py-4 text-[13px] text-[var(--text-3)]">
+            <p className="px-4 py-4 text-ui-13 text-[var(--text-3)]">
               {t(`modules.empty.${kind}`)}
             </p>
           ) : (
@@ -418,10 +518,10 @@ export function PackagesPage() {
               <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <IconTile icon={kind === 'bible' ? BookOpen : ListMusic} size={36} />
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="truncate text-[13px] font-medium">{m.name}</span>
-                  <span className="truncate text-[12px] text-[var(--text-3)]">{m.detail}</span>
+                  <span className="truncate text-ui-13 font-medium">{m.name}</span>
+                  <span className="truncate text-ui-12 text-[var(--text-3)]">{m.detail}</span>
                 </span>
-                <span className="rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-2)]">
+                <span className="rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-ui-11 font-medium text-[var(--text-2)]">
                   {t(`modules.source.${m.source}`)}
                 </span>
                 {m.removable && (
@@ -513,15 +613,15 @@ export function AboutPage() {
       <div className="flex gap-3 rounded-[var(--radius-card)] bg-[var(--surface-2)] p-4 shadow-[var(--shadow-1)]">
         <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" />
         <div className="space-y-1.5">
-          <p className="text-[13px] font-medium">{t('settings.privacyTitle')}</p>
-          <p className="text-[12px] leading-relaxed text-[var(--text-2)]">
+          <p className="text-ui-13 font-medium">{t('settings.privacyTitle')}</p>
+          <p className="text-ui-12 leading-relaxed text-[var(--text-2)]">
             {t('settings.privacyText')}
           </p>
         </div>
       </div>
       <Group title={t('settings.version')}>
         <Row label="Lampstand">
-          <span className="tnum text-[13px] text-[var(--text-2)]">
+          <span className="tnum text-ui-13 text-[var(--text-2)]">
             {info ? `${info.version} · Electron ${info.electron} · ${info.platform}` : '…'}
           </span>
         </Row>

@@ -44,7 +44,7 @@ function Effect({
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
         <Checkbox
-          className="flex-1 text-[12px] font-medium"
+          className="flex-1 text-ui-12 font-medium"
           label={label}
           checked={on}
           onChange={onToggle}

@@ -42,11 +42,11 @@ function MessageCard({ m, onDelete }: { m: Message; onDelete: () => void }) {
         deleteLabel={t('messages.delete', { name: m.name })}
         onDelete={onDelete}
       />
-      <p className="line-clamp-2 text-[12px] leading-snug text-[var(--text-2)]">{text}</p>
+      <p className="line-clamp-2 text-ui-12 leading-snug text-[var(--text-2)]">{text}</p>
       {tokens.map((k) => (
         <input
           key={k}
-          className="field !h-7 text-[12px]"
+          className="field !h-7 text-ui-12"
           aria-label={k}
           placeholder={k}
           value={values[k] ?? ''}
@@ -141,7 +141,7 @@ export function StageMessage() {
       }}
     >
       <label
-        className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]"
+        className="flex items-center gap-1.5 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]"
         htmlFor="stage-msg"
       >
         <MessageSquare size={13} /> {t('monitor.stageMessage')}
@@ -160,7 +160,7 @@ export function StageMessage() {
         </Button>
       </div>
       {current && (
-        <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-2.5 py-1.5 text-[12px]">
+        <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-2.5 py-1.5 text-ui-12">
           <span className="truncate">“{current.text}”</span>
           <Button
             size="xs"

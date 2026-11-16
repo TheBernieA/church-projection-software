@@ -22,6 +22,21 @@ export const TextStyleSchema = z.object({
   textTransform: z.enum(['none', 'uppercase']).optional(),
 });
 export type TextStyle = z.infer<typeof TextStyleSchema>;
+
+/**
+ * Per-item text formatting from the toolbar's Text bar, applied on top of the item's theme.
+ * Every field is optional: unset means "as the theme has it".
+ */
+export const TextFormatSchema = z.object({
+  fontFamily: z.string().min(1).max(200).optional(),
+  /** Largest size; auto-fit can still shrink long slides. */
+  fontSize: z.number().min(8).max(400).optional(),
+  color: ColorSchema.optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+});
+export type TextFormat = z.infer<typeof TextFormatSchema>;
 /** Animated backgrounds drawn by the renderer itself (no video files, any resolution). */
 export const GeneratedPresetSchema = z.enum([
   'aurora',

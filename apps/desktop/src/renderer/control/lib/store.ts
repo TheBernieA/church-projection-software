@@ -28,6 +28,7 @@ export const useStore = create<ControlState>((set) => ({
   binTab: 'media',
   controlsTab: 'timers',
   binOpen: true,
+  textBarOpen: false,
   settingsPage: 'general',
   dialog: null,
   editingSongId: null,

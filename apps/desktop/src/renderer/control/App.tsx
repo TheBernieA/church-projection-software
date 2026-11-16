@@ -9,6 +9,7 @@ import { Bin } from './components/shell/Bin';
 import { LeftSidebar } from './components/shell/LeftSidebar';
 import { RightColumn } from './components/shell/RightColumn';
 import { Splitter, usePaneSize } from './components/shell/Splitter';
+import { TextBar } from './components/shell/TextBar';
 import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
 
@@ -31,8 +32,9 @@ const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEd
 export function App() {
   const { t } = useTranslation();
   const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
-  const uiScale = useStore((s) => s.settings?.uiScale ?? 1);
+  const textScale = useStore((s) => s.settings?.textScale ?? 1);
   const binOpen = useStore((s) => s.binOpen);
+  const textBarOpen = useStore((s) => s.textBarOpen);
   const dialog = useStore((s) => s.dialog);
   const left = usePaneSize('leftWidth', 290, 220, 460);
   const right = usePaneSize('rightWidth', 340, 280, 560);
@@ -41,12 +43,14 @@ export function App() {
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;
-    document.documentElement.style.zoom = String(uiScale);
-  }, [uiTheme, uiScale]);
+    // Scales the words only (every UI text size reads --text-scale); icons and panes stay put.
+    document.documentElement.style.setProperty('--text-scale', String(textScale));
+  }, [uiTheme, textScale]);
 
   return (
     <div className="flex h-full flex-col bg-[var(--surface-0)]">
       <Toolbar />
+      {textBarOpen && <TextBar />}
       {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
       <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
         <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>

@@ -51,9 +51,7 @@ export function Dialog({
           ) : (
             <>
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--hairline)] px-5">
-                <RD.Title className="text-[16px] font-semibold tracking-[-0.01em]">
-                  {title}
-                </RD.Title>
+                <RD.Title className="text-ui-16 font-semibold tracking-[-0.01em]">{title}</RD.Title>
                 <RD.Close
                   className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
                   aria-label="Close"

@@ -156,7 +156,7 @@ function SongEditorBody({
   const body = (
     <>
       {readOnly && (
-        <p className="mb-3 rounded bg-[var(--accent-soft)] p-2 text-[12px]">{t('song.readOnly')}</p>
+        <p className="mb-3 rounded bg-[var(--accent-soft)] p-2 text-ui-12">{t('song.readOnly')}</p>
       )}
       <fieldset disabled={readOnly} className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-3">
@@ -219,7 +219,7 @@ function SongEditorBody({
               onChange={(e) => setText(e.target.value)}
               spellCheck
             />
-            <p className="mt-1 text-[11px] text-[var(--text-3)]">{t('song.lyricsHelp')}</p>
+            <p className="mt-1 text-ui-11 text-[var(--text-3)]">{t('song.lyricsHelp')}</p>
           </div>
           <section aria-label={t('song.arrangements')}>
             <span className="label">{t('song.arrangements')}</span>
@@ -280,7 +280,7 @@ function SongEditorBody({
             >
               + {t('song.addArrangement')}
             </Button>
-            <p className="mt-1 text-[11px] text-[var(--text-3)]">{t('song.arrangementHelp')}</p>
+            <p className="mt-1 text-ui-11 text-[var(--text-3)]">{t('song.arrangementHelp')}</p>
           </section>
           <section aria-label={t('song.translationSection')}>
             <div className="flex items-end gap-2">
@@ -297,7 +297,7 @@ function SongEditorBody({
                   onChange={(e) => setTransLang(e.target.value)}
                 />
               </div>
-              <p className="pb-1.5 text-[11px] text-[var(--text-3)]">{t('song.translationHelp')}</p>
+              <p className="pb-1.5 text-ui-11 text-[var(--text-3)]">{t('song.translationHelp')}</p>
             </div>
             <label className="label mt-2" htmlFor="s-trans">
               {t('song.translation')}
@@ -321,9 +321,9 @@ function SongEditorBody({
             {slides.map((s, i) => (
               <li
                 key={s.key}
-                className="rounded bg-black p-2 text-center text-[12px] leading-snug text-white"
+                className="rounded bg-black p-2 text-center text-ui-12 leading-snug text-white"
               >
-                <div className="mb-1 text-left text-[10px] text-[var(--text-3)]">
+                <div className="mb-1 text-left text-ui-10 text-[var(--text-3)]">
                   {i + 1} · {s.label}
                 </div>
                 {s.lines.map((l, j) => (
@@ -340,7 +340,7 @@ function SongEditorBody({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
-          <h2 className="min-w-0 flex-1 truncate text-[14px] font-semibold">{draft.title}</h2>
+          <h2 className="min-w-0 flex-1 truncate text-ui-14 font-semibold">{draft.title}</h2>
           {actions}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">{body}</div>

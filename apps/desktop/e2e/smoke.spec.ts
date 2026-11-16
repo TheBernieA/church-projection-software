@@ -341,6 +341,39 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
     .toContain('24px');
 });
 
+test('text bar: formatting the selected song reaches the output; Use theme removes it', async () => {
+  const out = await outputPage();
+  await (await servicePlan()).getByText('Test Song').first().click();
+  await control.getByRole('banner').getByRole('button', { name: 'Text formatting' }).click();
+  const bar = control.getByRole('region', { name: 'Text formatting' });
+  await bar.getByRole('button', { name: 'Align left' }).click();
+  await bar.getByRole('button', { name: 'Italic' }).click();
+  await bar.getByLabel('Size').fill('50');
+  await bar.getByLabel('Size').press('Enter');
+  await expect(bar.getByRole('button', { name: 'Align left' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  const style = () =>
+    out
+      .locator('.ls-text')
+      .last()
+      .evaluate((e) => {
+        const s = (e as HTMLElement).style;
+        return `${s.textAlign} ${s.fontStyle}`;
+      });
+  await expect.poll(style).toBe('left italic');
+  await control.screenshot({ path: 'test-results/05e-text-bar.png' });
+  // Use theme removes the item's formatting.
+  await bar.getByRole('button', { name: 'Use theme' }).click();
+  await expect(bar.getByRole('button', { name: 'Use theme' })).toBeDisabled();
+  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await expect.poll(style).not.toBe('left italic');
+  await bar.getByRole('button', { name: 'Close text bar' }).click();
+  await expect(bar).toBeHidden();
+});
+
 test('settings: category pages, installed Bible packages', async () => {
   await control.getByTitle('Settings').click();
   const nav = control.getByRole('navigation', { name: 'Settings' });
@@ -949,9 +982,9 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
 });
 
 test('smoothness: slider drag commits once; output transitions do not accumulate', async () => {
-  // Interface-size slider: dragging stays local and commits a single update on release.
+  // Text-size slider: dragging stays local and commits a single update on release.
   await control.getByRole('button', { name: 'Settings', exact: true }).click();
-  const slider = control.locator('#ui-scale');
+  const slider = control.locator('#text-scale');
   const box = await slider.boundingBox();
   if (!box) throw new Error('slider not visible');
   const readAudit = async () => {
@@ -968,9 +1001,17 @@ test('smoothness: slider drag commits once; output transitions do not accumulate
   const audit = await readAudit();
   const updates = audit.slice(auditBefore).filter((e) => e.type === 'settings.update');
   expect(updates).toHaveLength(1);
+  // Only the words grow: the page sets --text-scale, it does not zoom the window.
+  const scale = await control.evaluate(() => ({
+    text: document.documentElement.style.getPropertyValue('--text-scale'),
+    zoom: document.documentElement.style.zoom,
+  }));
+  expect(Number(scale.text)).toBeGreaterThan(1);
+  expect(scale.zoom).toBe('');
+  await control.screenshot({ path: 'test-results/23-text-size.png' });
   // Put the size back so later screenshots are comparable.
   await control.evaluate(() =>
-    window.lampstand.command({ type: 'settings.update', payload: { patch: { uiScale: 1 } } }),
+    window.lampstand.command({ type: 'settings.update', payload: { patch: { textScale: 1 } } }),
   );
   await control.keyboard.press('Escape');
 

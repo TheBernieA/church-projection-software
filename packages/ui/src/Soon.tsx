@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 export function SoonBadge({ label = 'Soon' }: { label?: string }) {
   return (
     <span
-      className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--soon-soft)] px-1.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--soon)]"
+      className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--soon-soft)] px-1.5 text-ui-10 font-semibold uppercase tracking-[0.04em] text-[var(--soon)]"
       data-soon
     >
       {label}
@@ -38,7 +38,7 @@ export function ComingSoonButton({
       disabled
       aria-disabled
       title={title}
-      className={`inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-[12px] font-medium text-[var(--text-3)] ${className}`}
+      className={`inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-ui-12 font-medium text-[var(--text-3)] ${className}`}
     >
       {icon}
       <span className={compact ? 'sr-only' : ''}>{children}</span>

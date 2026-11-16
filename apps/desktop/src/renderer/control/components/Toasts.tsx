@@ -27,7 +27,7 @@ export function Toasts() {
           <div
             key={x.id}
             role={x.level === 'error' ? 'alert' : 'status'}
-            className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 text-[12.5px] shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
+            className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 text-ui-13 shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
           >
             <Icon size={15} className="mt-px shrink-0" style={{ color: TONE[x.level] }} />
             <span className="leading-snug">{x.text}</span>

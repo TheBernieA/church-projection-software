@@ -45,7 +45,7 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
     >
       <span
         aria-hidden
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ui-12 font-semibold ${
           step.done
             ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
             : 'bg-[var(--surface-3)] text-[var(--text-2)]'
@@ -54,12 +54,12 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
         {step.done ? <Check size={14} strokeWidth={3} /> : n}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-[13px] font-medium">
+        <p className="flex items-center gap-2 text-ui-13 font-medium">
           <span className="text-[var(--text-3)]">{step.icon}</span>
           {title}
           {step.done && <span className="sr-only"> (done)</span>}
         </p>
-        <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-2)]">{body}</p>
+        <p className="mt-1 text-ui-12 leading-relaxed text-[var(--text-2)]">{body}</p>
       </div>
       {step.action && (
         <Button
@@ -139,7 +139,7 @@ function FeatureIndex() {
         />
       </div>
       {groups.length === 0 && (
-        <p className="py-2 text-[12px] text-[var(--text-3)]">{t('guide.everything.none')}</p>
+        <p className="py-2 text-ui-12 text-[var(--text-3)]">{t('guide.everything.none')}</p>
       )}
       {groups.map((g) => (
         <section key={g.id} className="mb-3 last:mb-0">
@@ -147,8 +147,8 @@ function FeatureIndex() {
           <ul className="divide-y divide-[var(--hairline)] rounded-[6px] bg-[var(--surface-1)] shadow-[inset_0_0_0_1px_var(--hairline)]">
             {g.items.map((f) => (
               <li key={f.id} className="px-3 py-2" data-feature={f.id}>
-                <p className="text-[13px] font-medium">{f.name}</p>
-                <p className="mt-0.5 text-[12px] leading-snug text-[var(--text-3)]">
+                <p className="text-ui-13 font-medium">{f.name}</p>
+                <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">
                   {f.description}
                 </p>
               </li>
@@ -175,6 +175,7 @@ const HOWTO = [
   'timers',
   'stage',
   'themes',
+  'text',
   'logo',
   'backup',
   'undo',
@@ -246,8 +247,8 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
           <div key={r.id} className="flex gap-3 px-4 py-3" data-tour={r.id}>
             <span className="mt-0.5 shrink-0 text-[var(--accent)]">{r.icon}</span>
             <div className="min-w-0">
-              <p className="text-[13px] font-medium">{t(`guide.tour.${r.id}.title`)}</p>
-              <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--text-2)]">
+              <p className="text-ui-13 font-medium">{t(`guide.tour.${r.id}.title`)}</p>
+              <p className="mt-0.5 text-ui-12 leading-relaxed text-[var(--text-2)]">
                 {t(`guide.tour.${r.id}.body`, keyNames)}
               </p>
             </div>
@@ -258,7 +259,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       <Group title={t('guide.howto.title')} footnote={t('guide.howto.help')}>
         {HOWTO.map((id) => (
           <details key={id} className="group px-4 py-2.5" data-howto={id}>
-            <summary className="flex cursor-pointer list-none items-center gap-2 text-[13px] font-medium [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-ui-13 font-medium [&::-webkit-details-marker]:hidden">
               <ChevronRight
                 size={14}
                 aria-hidden
@@ -266,7 +267,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
               />
               {t(`guide.howto.items.${id}.q`)}
             </summary>
-            <p className="mt-1.5 pl-[22px] text-[12px] leading-relaxed text-[var(--text-2)]">
+            <p className="mt-1.5 pl-[22px] text-ui-12 leading-relaxed text-[var(--text-2)]">
               {t(`guide.howto.items.${id}.a`, keyNames)}
             </p>
           </details>
@@ -282,7 +283,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
           {QUICK_EXAMPLES.map((ex) => (
             <code
               key={ex}
-              className="rounded-[6px] bg-[var(--surface-1)] px-2 py-1 font-mono text-[12px] text-[var(--text-1)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+              className="rounded-[6px] bg-[var(--surface-1)] px-2 py-1 font-mono text-ui-12 text-[var(--text-1)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
             >
               {ex}
             </code>
@@ -293,7 +294,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       <Group title={t('guide.allKeys')} footnote={t('guide.keysHelp')}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 px-4 py-4">
           {KEYS.map((k) => (
-            <div key={k} className="flex items-center justify-between gap-3 text-[13px]">
+            <div key={k} className="flex items-center justify-between gap-3 text-ui-13">
               <span className="truncate text-[var(--text-2)]">{t(`shortcuts.action.${k}`)}</span>
               <Kbd>{displayCombo(keys[k])}</Kbd>
             </div>
@@ -320,8 +321,8 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
                       : 'var(--accent)',
               }}
             />
-            <span className="text-[13px] font-medium">{t(`guide.colour.${c}.title`)}</span>
-            <span className="text-[12px] text-[var(--text-3)]">{t(`guide.colour.${c}.body`)}</span>
+            <span className="text-ui-13 font-medium">{t(`guide.colour.${c}.title`)}</span>
+            <span className="text-ui-12 text-[var(--text-3)]">{t(`guide.colour.${c}.body`)}</span>
           </div>
         ))}
       </Group>

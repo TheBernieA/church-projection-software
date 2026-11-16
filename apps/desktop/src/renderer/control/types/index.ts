@@ -98,6 +98,8 @@ export interface ControlState {
   binTab: BinTab;
   controlsTab: ControlsTab;
   binOpen: boolean;
+  /** The toolbar's Text bar (formatting for the selected item) is showing. */
+  textBarOpen: boolean;
   /** Open page of the Settings window (remembered between openings). */
   settingsPage: SettingsPageId;
   dialog: DialogName;

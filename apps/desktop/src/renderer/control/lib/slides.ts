@@ -1,5 +1,6 @@
 import {
   DEFAULT_THEME_IDS,
+  withTextFormat,
   findTheme,
   type BackgroundLayer,
   type BibleVersionInfo,
@@ -96,7 +97,10 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'song': {
       const song = ctx.songs.find((s) => s.id === item.songId);
       if (!song) return none;
-      const theme = themeFor(ctx, 'lyrics', item.themeId ?? song.themeId);
+      const theme = withTextFormat(
+        themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
+        item.textFormat,
+      );
       const background = themeBackground(theme, item.background);
       const lyricSlides = buildSongSlides(song, {
         arrangementId: item.arrangementId,
@@ -167,7 +171,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         language: v.language,
         verse: (r: VerseRef) => ctx.chapters[chapterKey(v.id, r.book, r.chapter)]?.[r.verse - 1],
       }));
-      const theme = themeFor(ctx, 'scripture', item.themeId);
+      const theme = withTextFormat(themeFor(ctx, 'scripture', item.themeId), item.textFormat);
       const background = themeBackground(theme, item.background);
       const s = ctx.settings?.scripture;
       const built = buildScriptureSlides(refs, texts, {
@@ -245,7 +249,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     }
     case 'presentation':
     case 'announcements': {
-      const theme = themeFor(ctx, 'text', item.themeId);
+      const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
       const background = themeBackground(theme);
       return {
         missing: [],
@@ -272,7 +276,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
       };
     }
     case 'countdown': {
-      const theme = themeFor(ctx, 'text', item.themeId);
+      const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
       const durationSec = typeof item.target === 'string' ? undefined : item.target.durationSec;
       const target =
         typeof item.target === 'string'

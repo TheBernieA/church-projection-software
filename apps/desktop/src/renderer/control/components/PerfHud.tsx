@@ -36,7 +36,7 @@ export function PerfHud() {
   }, [open]);
   if (!open) return null;
   return (
-    <div className="tnum fixed right-3 top-12 z-50 rounded bg-black/85 px-3 py-2 font-mono text-[11px] text-white">
+    <div className="tnum fixed right-3 top-12 z-50 rounded bg-black/85 px-3 py-2 font-mono text-ui-11 text-white">
       <div>
         {t('perf.fps')}: {fps}
       </div>

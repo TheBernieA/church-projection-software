@@ -40,7 +40,7 @@ export function Bin({ height }: { height: number }) {
         aria-label={t('bin.label')}
         className="flex w-[180px] shrink-0 flex-col gap-px overflow-y-auto border-r border-[var(--divider)] bg-[var(--surface-1)] py-1.5"
       >
-        <h2 className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+        <h2 className="px-3 pb-1 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
           {t('bin.tabs.media')}
         </h2>
         {CATEGORIES.map(({ tab: x, icon: Icon, soon }) => {
@@ -52,7 +52,7 @@ export function Bin({ height }: { height: number }) {
               aria-pressed={on}
               title={soon ? t('soon.tooltip', { name: feature(soon[0] ?? '').name }) : undefined}
               onClick={() => useStore.setState({ binTab: x })}
-              className={`mx-1.5 flex h-[26px] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-[13px] ${
+              className={`mx-1.5 flex h-[26px] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-ui-13 ${
                 on
                   ? 'bg-[var(--select)] text-white'
                   : soon
@@ -63,7 +63,7 @@ export function Bin({ height }: { height: number }) {
               <Icon size={14} className={on ? '' : 'text-[var(--text-3)]'} />
               <span className="flex-1 truncate">{t(`bin.tabs.${x}`)}</span>
               {x === 'media' && mediaCount > 0 && (
-                <span aria-hidden className="tnum text-[11px] opacity-70">
+                <span aria-hidden className="tnum text-ui-11 opacity-70">
                   {mediaCount}
                 </span>
               )}
@@ -73,7 +73,7 @@ export function Bin({ height }: { height: number }) {
         })}
       </nav>
       <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
-        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 text-[12px] text-[var(--text-2)]">
+        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 text-ui-12 text-[var(--text-2)]">
           <span>{t('bin.tabs.media')}</span>
           {current && current.tab !== 'media' && (
             <>

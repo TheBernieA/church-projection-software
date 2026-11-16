@@ -29,7 +29,8 @@ export const SettingsSchema = z
   .object({
     schemaVersion: z.literal(1).default(1),
     uiTheme: z.enum(['dark', 'light']).default('dark'),
-    uiScale: z.number().min(0.9).max(1.5).default(1),
+    /** Size of the control window's text (1 = 100%); icons and layout keep their size. */
+    textScale: z.number().min(0.85).max(1.4).default(1),
     language: z.string().max(35).default('en'),
     libraryPath: z.string().max(1000).optional(),
     displays: z.array(DisplayAssignmentSchema).max(16).default([]),

@@ -143,7 +143,7 @@ export function MediaTransport({ media }: { media: MediaLayer }) {
       aria-label={t('media.transport')}
     >
       <div className="flex items-center gap-2">
-        <span className="tnum w-10 text-right text-[11px] text-[var(--text-2)]">
+        <span className="tnum w-10 text-right text-ui-11 text-[var(--text-2)]">
           {formatClock(shown)}
         </span>
         <input
@@ -157,7 +157,7 @@ export function MediaTransport({ media }: { media: MediaLayer }) {
           {...scrub.props}
           className="h-1.5 min-w-0 flex-1 accent-[var(--tally-program)]"
         />
-        <span className="tnum w-10 text-[11px] text-[var(--text-3)]">
+        <span className="tnum w-10 text-ui-11 text-[var(--text-3)]">
           {duration ? formatClock(duration) : '--:--'}
         </span>
       </div>

@@ -94,9 +94,9 @@ describe('SettingsStore.update', () => {
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
     store.update({ windowMode: true, liveEditingKinds: ['song'], shortcuts: { goLive: 'Enter' } });
-    store.update({ uiScale: 1.2 });
+    store.update({ textScale: 1.2 });
     const s = store.get();
-    expect(s.uiScale).toBe(1.2);
+    expect(s.textScale).toBe(1.2);
     expect(s.windowMode).toBe(true);
     expect(s.liveEditingKinds).toEqual(['song']);
     expect(s.shortcuts).toEqual({ goLive: 'Enter' });
@@ -106,8 +106,8 @@ describe('SettingsStore.update', () => {
     const { SettingsStore } = await import('./settingsStore');
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
-    expect(() => store.update({ uiScale: 9 })).toThrow();
-    expect(store.get().uiScale).toBe(1);
+    expect(() => store.update({ textScale: 9 })).toThrow();
+    expect(store.get().textScale).toBe(1);
     await store.flush();
   });
 });

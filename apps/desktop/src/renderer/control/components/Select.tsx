@@ -40,7 +40,7 @@ export function Select<T extends string>({
   ...rest
 }: SelectProps<T>) {
   const current = options.find((o) => o.value === value);
-  const h = size === 'sm' ? 'h-8 text-[13px]' : 'h-9 text-[13px]';
+  const h = size === 'sm' ? 'h-8 text-ui-13' : 'h-9 text-ui-13';
   return (
     <RS.Root value={value} onValueChange={(v) => onChange(v as T)}>
       <RS.Trigger
@@ -74,7 +74,7 @@ export function Select<T extends string>({
                 key={o.value}
                 value={o.value}
                 disabled={o.disabled}
-                className="relative flex cursor-pointer select-none items-center gap-2.5 rounded-[8px] py-2 pl-2.5 pr-8 text-[13px] text-[var(--text-1)] outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-4)] data-[state=checked]:font-semibold"
+                className="relative flex cursor-pointer select-none items-center gap-2.5 rounded-[8px] py-2 pl-2.5 pr-8 text-ui-13 text-[var(--text-1)] outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-4)] data-[state=checked]:font-semibold"
               >
                 {o.leading}
                 <span className="flex min-w-0 flex-col leading-tight">
@@ -82,7 +82,7 @@ export function Select<T extends string>({
                     <span style={o.labelStyle}>{o.label}</span>
                   </RS.ItemText>
                   {o.description && (
-                    <span className="mt-0.5 truncate text-[12px] font-normal text-[var(--text-3)]">
+                    <span className="mt-0.5 truncate text-ui-12 font-normal text-[var(--text-3)]">
                       {o.description}
                     </span>
                   )}

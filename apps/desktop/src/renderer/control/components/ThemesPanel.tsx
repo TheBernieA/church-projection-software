@@ -91,7 +91,7 @@ export function ThemesPanel() {
               </Button>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5 text-[12px]">
+          <div className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5 text-ui-12">
             <span className="text-[var(--text-3)]">{t('theme.useFor')}:</span>
             {kinds.map((k) => (
               <button

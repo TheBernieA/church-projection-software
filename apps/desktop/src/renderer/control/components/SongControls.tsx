@@ -60,7 +60,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
             <li
               key={`${id}-${i}`}
               title={section.label}
-              className="shrink-0 rounded-[3px] px-1 text-[10px] font-bold text-white"
+              className="shrink-0 rounded-[3px] px-1 text-ui-10 font-bold text-white"
               style={{ background: groupColor(section.label) }}
             >
               {shortLabel(section.label)}
@@ -79,7 +79,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
             <Minus size={13} />
           </IconButton>
           <span
-            className="tnum flex min-w-12 items-center justify-center gap-1 px-1 text-[12px] font-semibold"
+            className="tnum flex min-w-12 items-center justify-center gap-1 px-1 text-ui-12 font-semibold"
             title={t('slides.transposeHint')}
             data-testid="transpose-value"
           >

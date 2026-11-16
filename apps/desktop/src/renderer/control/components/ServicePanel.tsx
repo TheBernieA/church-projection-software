@@ -149,7 +149,7 @@ export function ServicePanel() {
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('service.title')}>
       {/* "11 ITEMS  +": the playlist's contents, with the add menu on the right. */}
       <div className="flex h-7 shrink-0 items-center justify-between border-b border-[var(--hairline)] pb-1 pl-3 pr-1.5">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+        <h2 className="text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
           <span className="sr-only">{t('service.title')} · </span>
           {t('sidebar.items', { count: items.filter((i) => i.kind !== 'header').length })}
         </h2>
@@ -186,7 +186,7 @@ export function ServicePanel() {
           <li
             onDragOver={(e) => trackOver(e, 0)}
             onDrop={drop}
-            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center text-[13px] text-[var(--text-3)] ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
+            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center text-ui-13 text-[var(--text-3)] ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
           >
             {t('service.empty')}
           </li>
@@ -222,7 +222,7 @@ export function ServicePanel() {
                     type="button"
                     onDoubleClick={() => setEditing(item.id)}
                     title={t('service.renameHint')}
-                    className="min-w-0 flex-1 truncate text-left text-[12px] font-semibold text-white"
+                    className="min-w-0 flex-1 truncate text-left text-ui-12 font-semibold text-white"
                   >
                     {item.label}
                   </button>
@@ -267,16 +267,16 @@ export function ServicePanel() {
                   <KindTile kind={item.kind} size={20} />
                   {/* One line: the title, and its source (song, version…) in muted text on the right. */}
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                    <span className="min-w-0 flex-1 truncate text-[13px]">
+                    <span className="min-w-0 flex-1 truncate text-ui-13">
                       {itemTitle(item, { songs, media })}
                     </span>
-                    <span className="ls-sub max-w-[45%] shrink-0 truncate text-[12px] text-[var(--text-3)]">
+                    <span className="ls-sub max-w-[45%] shrink-0 truncate text-ui-12 text-[var(--text-3)]">
                       {subtitle(item)}
                     </span>
                   </span>
                 </button>
                 {isLive && (
-                  <span className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-white">
+                  <span className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 text-ui-10 font-bold tracking-wide text-white">
                     LIVE
                   </span>
                 )}
@@ -401,10 +401,10 @@ export function AddMenu({
                   {e.icon}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13px] font-medium text-[var(--text-1)]">
+                  <span className="block text-ui-13 font-medium text-[var(--text-1)]">
                     {e.label}
                   </span>
-                  <span className="block text-[11px] leading-snug text-[var(--text-3)]">
+                  <span className="block text-ui-11 leading-snug text-[var(--text-3)]">
                     {e.help}
                   </span>
                 </span>
