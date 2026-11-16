@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge, Text, NavItem } from '@lampstand/ui';
+import { SoonBadge, Typography, NavItem } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel, MediaPanel } from '../MediaPanel';
@@ -40,9 +40,9 @@ export function Bin({ height }: { height: number }) {
         aria-label={t('bin.label')}
         className="flex w-[180px] shrink-0 flex-col gap-px overflow-y-auto border-r border-[var(--divider)] bg-[var(--surface-1)] py-1.5"
       >
-        <Text as="h2" variant="overline" className="px-3 pb-1">
+        <Typography as="h2" variant="overline" className="px-3 pb-1">
           {t('bin.tabs.media')}
-        </Text>
+        </Typography>
         {CATEGORIES.map(({ tab: x, icon: Icon, soon }) => {
           const on = x === tab;
           return (
@@ -58,9 +58,9 @@ export function Bin({ height }: { height: number }) {
               trailing={
                 <>
                   {x === 'media' && mediaCount > 0 && (
-                    <Text size={11} tabular aria-hidden className="opacity-70">
+                    <Typography size={11} tabular aria-hidden className="opacity-70">
                       {mediaCount}
-                    </Text>
+                    </Typography>
                   )}
                   {soon && <SoonBadge label={t('soon.badge')} />}
                 </>
@@ -70,7 +70,12 @@ export function Bin({ height }: { height: number }) {
         })}
       </nav>
       <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
-        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 text-ui-12 text-[var(--text-2)]">
+        <Typography
+          as="div"
+          size={12}
+          tone="secondary"
+          className="flex h-8 shrink-0 items-center gap-1 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3"
+        >
           <span>{t('bin.tabs.media')}</span>
           {current && current.tab !== 'media' && (
             <>
@@ -78,7 +83,7 @@ export function Bin({ height }: { height: number }) {
               <span className="text-[var(--text-1)]">{t(`bin.tabs.${current.tab}`)}</span>
             </>
           )}
-        </div>
+        </Typography>
         <div className="flex min-h-0 flex-1 flex-col">
           {current?.soon ? (
             <SoonPanel ids={current.soon} icon={<current.icon size={20} />} />

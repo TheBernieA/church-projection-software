@@ -9,7 +9,7 @@ import {
   parseSongText,
   songSectionsToText,
 } from '@lampstand/lyrics';
-import { Button, Text } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, toast, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -156,17 +156,17 @@ function SongEditorBody({
   const body = (
     <>
       {readOnly && (
-        <Text as="p" size={12} className="mb-3 rounded bg-[var(--accent-soft)] p-2">
+        <Typography as="p" size={12} className="mb-3 rounded bg-[var(--accent-soft)] p-2">
           {t('song.readOnly')}
-        </Text>
+        </Typography>
       )}
       <fieldset disabled={readOnly} className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label" htmlFor="s-title">
+              <Typography as="label" variant="field" htmlFor="s-title">
                 {t('song.title')}
-              </label>
+              </Typography>
               <input
                 id="s-title"
                 className="field"
@@ -176,9 +176,9 @@ function SongEditorBody({
               />
             </div>
             <div>
-              <label className="label" htmlFor="s-auth">
+              <Typography as="label" variant="field" htmlFor="s-auth">
                 {t('song.authors')}
-              </label>
+              </Typography>
               <input
                 id="s-auth"
                 className="field"
@@ -187,9 +187,9 @@ function SongEditorBody({
               />
             </div>
             <div>
-              <label className="label" htmlFor="s-copy">
+              <Typography as="label" variant="field" htmlFor="s-copy">
                 {t('song.copyright')}
-              </label>
+              </Typography>
               <input
                 id="s-copy"
                 className="field"
@@ -198,9 +198,9 @@ function SongEditorBody({
               />
             </div>
             <div>
-              <label className="label" htmlFor="s-ccli">
+              <Typography as="label" variant="field" htmlFor="s-ccli">
                 {t('song.ccli')}
-              </label>
+              </Typography>
               <input
                 id="s-ccli"
                 className="field"
@@ -210,9 +210,9 @@ function SongEditorBody({
             </div>
           </div>
           <div>
-            <label className="label" htmlFor="s-lyrics">
+            <Typography as="label" variant="field" htmlFor="s-lyrics">
               {t('song.lyrics')}
-            </label>
+            </Typography>
             <textarea
               id="s-lyrics"
               className="field"
@@ -221,12 +221,12 @@ function SongEditorBody({
               onChange={(e) => setText(e.target.value)}
               spellCheck
             />
-            <Text as="p" size={11} tone="muted" className="mt-1">
+            <Typography as="p" size={11} tone="muted" className="mt-1">
               {t('song.lyricsHelp')}
-            </Text>
+            </Typography>
           </div>
           <section aria-label={t('song.arrangements')}>
-            <span className="label">{t('song.arrangements')}</span>
+            <Typography variant="field">{t('song.arrangements')}</Typography>
             <ul className="space-y-1.5">
               {arrangements.map((a) => (
                 <li key={a.id} className="flex items-center gap-1.5">
@@ -284,16 +284,16 @@ function SongEditorBody({
             >
               + {t('song.addArrangement')}
             </Button>
-            <Text as="p" size={11} tone="muted" className="mt-1">
+            <Typography as="p" size={11} tone="muted" className="mt-1">
               {t('song.arrangementHelp')}
-            </Text>
+            </Typography>
           </section>
           <section aria-label={t('song.translationSection')}>
             <div className="flex items-end gap-2">
               <div className="w-28">
-                <label className="label" htmlFor="s-tlang">
+                <Typography as="label" variant="field" htmlFor="s-tlang">
                   {t('song.translationLang')}
-                </label>
+                </Typography>
                 <input
                   id="s-tlang"
                   className="field !h-8"
@@ -303,13 +303,13 @@ function SongEditorBody({
                   onChange={(e) => setTransLang(e.target.value)}
                 />
               </div>
-              <Text as="p" size={11} tone="muted" className="pb-1.5">
+              <Typography as="p" size={11} tone="muted" className="pb-1.5">
                 {t('song.translationHelp')}
-              </Text>
+              </Typography>
             </div>
-            <label className="label mt-2" htmlFor="s-trans">
+            <Typography as="label" variant="field" className="mt-2" htmlFor="s-trans">
               {t('song.translation')}
-            </label>
+            </Typography>
             <textarea
               id="s-trans"
               className="field"
@@ -322,12 +322,12 @@ function SongEditorBody({
           </section>
         </div>
         <div className="min-h-0">
-          <span className="label">
+          <Typography variant="field">
             {t('song.preview')} · {slides.length}
-          </span>
+          </Typography>
           <ol className="max-h-[60vh] space-y-1.5 overflow-y-auto">
             {slides.map((s, i) => (
-              <Text
+              <Typography
                 as="li"
                 size={12}
                 tone="white"
@@ -335,13 +335,13 @@ function SongEditorBody({
                 key={s.key}
                 className="rounded bg-black p-2 text-center"
               >
-                <div className="mb-1 text-left text-ui-10 text-[var(--text-3)]">
+                <Typography as="div" size={10} tone="muted" className="mb-1 text-left">
                   {i + 1} · {s.label}
-                </div>
+                </Typography>
                 {s.lines.map((l, j) => (
                   <div key={j}>{l}</div>
                 ))}
-              </Text>
+              </Typography>
             ))}
           </ol>
         </div>
@@ -352,9 +352,9 @@ function SongEditorBody({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
-          <Text as="h2" variant="title" truncate className="min-w-0 flex-1">
+          <Typography as="h2" variant="title" truncate className="min-w-0 flex-1">
             {draft.title}
-          </Text>
+          </Typography>
           {actions}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">{body}</div>

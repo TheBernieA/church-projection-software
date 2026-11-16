@@ -3,7 +3,7 @@ import { MousePointerClick, Rows3, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { nowIso, type Song } from '@lampstand/core';
 import { buildSongSlides, parseSongText, songSectionsToText } from '@lampstand/lyrics';
-import { Button, Text } from '@lampstand/ui';
+import { Button, Typography, typographyClass } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { reflowToSlides, slidesToReflow } from '../../lib/reflow';
@@ -40,10 +40,10 @@ function ReflowEditor({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
         <Rows3 size={16} className="text-[var(--text-3)]" />
-        <Text as="h2" variant="title" truncate className="min-w-0 flex-1">
+        <Typography as="h2" variant="title" truncate className="min-w-0 flex-1">
           {title}
-        </Text>
-        <Text variant="caption">{t('slides.count', { count: slides.length })}</Text>
+        </Typography>
+        <Typography variant="caption">{t('slides.count', { count: slides.length })}</Typography>
         <Button size="sm" variant="ghost" disabled={!dirty} onClick={() => setText(initial)}>
           {t('reflow.revert')}
         </Button>
@@ -61,28 +61,32 @@ function ReflowEditor({
         <div className="flex min-h-0 flex-col p-4">
           <textarea
             aria-label={t('reflow.label')}
-            className="field min-h-0 flex-1 resize-none font-mono !text-ui-13 leading-relaxed"
+            className={`field min-h-0 flex-1 resize-none ${typographyClass({ size: 13, leading: 'relaxed', mono: true, important: true })}`}
             value={text}
             readOnly={readOnly}
             onChange={(e) => setText(e.target.value)}
             spellCheck
           />
-          <Text as="p" size={11} tone="muted" className="mt-2">
+          <Typography as="p" size={11} tone="muted" className="mt-2">
             {t('reflow.help')}
-          </Text>
+          </Typography>
         </div>
         <ol className="min-h-0 space-y-1.5 overflow-y-auto border-l border-[var(--hairline)] p-3">
           {slides.map((s, i) => {
             const color = groupColor(s.label);
             return (
               <li key={s.key} className="overflow-hidden rounded-[4px] bg-black">
-                <div
-                  className="flex h-5 items-center px-2 text-ui-10 font-semibold text-white"
+                <Typography
+                  as="div"
+                  size={10}
+                  tone="white"
+                  weight="semibold"
+                  className="flex h-5 items-center px-2"
                   style={{ background: color ?? 'var(--surface-3)' }}
                 >
                   {i + 1} · {s.label}
-                </div>
-                <Text
+                </Typography>
+                <Typography
                   as="p"
                   size={11}
                   tone="white"
@@ -90,7 +94,7 @@ function ReflowEditor({
                   className="whitespace-pre-line p-2 text-center"
                 >
                   {s.text}
-                </Text>
+                </Typography>
               </li>
             );
           })}

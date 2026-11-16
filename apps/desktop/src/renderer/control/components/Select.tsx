@@ -1,7 +1,7 @@
 import * as RS from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
-import { Text } from '@lampstand/ui';
+import { Typography, typographyClass } from '@lampstand/ui';
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -41,7 +41,8 @@ export function Select<T extends string>({
   ...rest
 }: SelectProps<T>) {
   const current = options.find((o) => o.value === value);
-  const h = size === 'sm' ? 'h-8 text-ui-13' : 'h-9 text-ui-13';
+  const h =
+    size === 'sm' ? `h-8 ${typographyClass({ size: 13 })}` : `h-9 ${typographyClass({ size: 13 })}`;
   return (
     <RS.Root value={value} onValueChange={(v) => onChange(v as T)}>
       <RS.Trigger
@@ -75,7 +76,7 @@ export function Select<T extends string>({
                 key={o.value}
                 value={o.value}
                 disabled={o.disabled}
-                className="relative flex cursor-pointer select-none items-center gap-2.5 rounded-[8px] py-2 pl-2.5 pr-8 text-ui-13 text-[var(--text-1)] outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-4)] data-[state=checked]:font-semibold"
+                className={`relative flex cursor-pointer select-none items-center gap-2.5 rounded-[8px] py-2 pl-2.5 pr-8 outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-4)] data-[state=checked]:font-semibold ${typographyClass({ size: 13, tone: 'primary' })}`}
               >
                 {o.leading}
                 <span className="flex min-w-0 flex-col leading-tight">
@@ -83,9 +84,9 @@ export function Select<T extends string>({
                     <span style={o.labelStyle}>{o.label}</span>
                   </RS.ItemText>
                   {o.description && (
-                    <Text size={12} tone="muted" weight="regular" truncate className="mt-0.5">
+                    <Typography size={12} tone="muted" weight="regular" truncate className="mt-0.5">
                       {o.description}
-                    </Text>
+                    </Typography>
                   )}
                 </span>
                 <RS.ItemIndicator className="absolute right-2.5 text-[var(--accent)]">

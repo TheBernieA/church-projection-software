@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SoonList } from './Soon';
-import { Button, Text } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { q } from '../lib/api';
 import { closeDialog, editService, openService, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -21,9 +21,9 @@ export function ServicesDialog() {
     <Dialog name="services" title={t('top.services')}>
       {current && (
         <div className="mb-5">
-          <label className="label" htmlFor="svc-name">
+          <Typography as="label" variant="field" htmlFor="svc-name">
             {t('service.rename')}
-          </label>
+          </Typography>
           <input
             id="svc-name"
             className="field"
@@ -54,7 +54,9 @@ export function ServicesDialog() {
         if (!list.length) return null;
         return (
           <section key={group} className="mb-4">
-            <h3 className="label">{t(`service.${group}`)}</h3>
+            <Typography as="h3" variant="field">
+              {t(`service.${group}`)}
+            </Typography>
             <ul>
               {list.map((s) => (
                 <li
@@ -66,9 +68,9 @@ export function ServicesDialog() {
                   >
                     {s.name}
                   </span>
-                  <Text size={11} tone="muted">
+                  <Typography size={11} tone="muted">
                     {s.itemCount} · {s.updatedAt.slice(0, 10)}
-                  </Text>
+                  </Typography>
                   {group === 'templates' ? (
                     <Button
                       size="sm"
@@ -99,7 +101,7 @@ export function ServicesDialog() {
         );
       })}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <Text
+        <Typography
           as="summary"
           size={12}
           tone="secondary"
@@ -107,7 +109,7 @@ export function ServicesDialog() {
           className="cursor-pointer px-4 py-2.5"
         >
           {t('service.syncSoon')}
-        </Text>
+        </Typography>
         <SoonList ids={['planning-center', 'calendar', 'cloud']} />
       </details>
     </Dialog>

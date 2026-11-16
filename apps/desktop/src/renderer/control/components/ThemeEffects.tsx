@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundAdjust, Theme } from '@lampstand/core';
 import { Checkbox, ColorInput, RangeField } from './form';
+import { Typography, typographyClass } from '@lampstand/ui';
 
 type TextStyle = Theme['text'];
 
@@ -44,7 +45,7 @@ function Effect({
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
         <Checkbox
-          className="flex-1 text-ui-12 font-medium"
+          className={`flex-1 ${typographyClass({ size: 12, weight: 'medium' })}`}
           label={label}
           checked={on}
           onChange={onToggle}
@@ -77,7 +78,9 @@ export function ThemeEffects({
   return (
     <section aria-label={t('theme.effects.title')} className="space-y-5">
       <div className="space-y-3">
-        <h4 className="section-label">{t('theme.effects.text')}</h4>
+        <Typography as="h4" variant="overline">
+          {t('theme.effects.text')}
+        </Typography>
         <Effect
           label={t('theme.shadow')}
           on={!!text.shadow}
@@ -181,7 +184,9 @@ export function ThemeEffects({
         />
       </div>
       <div className="space-y-2">
-        <h4 className="section-label">{t('theme.effects.background')}</h4>
+        <Typography as="h4" variant="overline">
+          {t('theme.effects.background')}
+        </Typography>
         <RangeField
           label={t('theme.effects.dim')}
           value={adj.dim ?? 0}

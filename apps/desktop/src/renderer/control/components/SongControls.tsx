@@ -2,7 +2,7 @@ import { Languages, Minus, Music2, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Song } from '@lampstand/core';
 import { hasChords, transposeChord } from '@lampstand/lyrics';
-import { IconButton, Text } from '@lampstand/ui';
+import { IconButton, Typography } from '@lampstand/ui';
 import { groupColor } from '../lib/slides';
 import { refreshLiveSlide } from '../lib/actions';
 import { patchItem } from '../lib/store';
@@ -57,7 +57,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           const section = song.sections.find((s) => s.id === id);
           if (!section) return null;
           return (
-            <Text
+            <Typography
               as="li"
               size={10}
               tone="white"
@@ -68,7 +68,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
               style={{ background: groupColor(section.label) }}
             >
               {shortLabel(section.label)}
-            </Text>
+            </Typography>
           );
         })}
       </ol>
@@ -82,7 +82,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           <IconButton size="xs" aria-label={t('slides.transposeDown')} onClick={() => shift(-1)}>
             <Minus size={13} />
           </IconButton>
-          <Text
+          <Typography
             size={12}
             weight="semibold"
             tabular
@@ -96,7 +96,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
               : transpose > 0
                 ? `+${transpose}`
                 : transpose}
-          </Text>
+          </Typography>
           <IconButton size="xs" aria-label={t('slides.transposeUp')} onClick={() => shift(1)}>
             <Plus size={13} />
           </IconButton>

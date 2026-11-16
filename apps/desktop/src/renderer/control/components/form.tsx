@@ -1,5 +1,5 @@
 import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Text } from '@lampstand/ui';
+import { Typography } from '@lampstand/ui';
 
 /**
  * Shared form controls for editors and inspectors, so every label, colour well, number box,
@@ -28,19 +28,19 @@ export function Field({
   className?: string;
 }) {
   const hintNode = hint && (
-    <Text as="p" variant="caption" className="mt-1.5">
+    <Typography as="p" variant="caption" className="mt-1.5">
       {hint}
-    </Text>
+    </Typography>
   );
   if (htmlFor || group)
     return (
       <div className={className}>
         {htmlFor ? (
-          <label className="label" htmlFor={htmlFor}>
+          <Typography as="label" variant="field" htmlFor={htmlFor}>
             {label}
-          </label>
+          </Typography>
         ) : (
-          <span className="label">{label}</span>
+          <Typography variant="field">{label}</Typography>
         )}
         {children}
         {hintNode}
@@ -48,7 +48,7 @@ export function Field({
     );
   return (
     <label className={`block ${className}`}>
-      <span className="label">{label}</span>
+      <Typography variant="field">{label}</Typography>
       {children}
       {hintNode}
     </label>
@@ -145,7 +145,7 @@ export function RangeField({
   onChange: (v: number) => void;
 }) {
   return (
-    <Text
+    <Typography
       as="label"
       size={12}
       tone="secondary"
@@ -163,7 +163,7 @@ export function RangeField({
         className="h-1.5 cursor-pointer accent-[var(--accent)]"
       />
       <span className="tnum text-right text-[var(--text-3)]">{format(value)}</span>
-    </Text>
+    </Typography>
   );
 }
 
@@ -202,9 +202,9 @@ export function Checkbox({
       {box}
       <span>
         <span className="font-medium">{label}</span>
-        <Text size={12} tone="secondary" className="block">
+        <Typography size={12} tone="secondary" className="block">
           {description}
-        </Text>
+        </Typography>
       </span>
     </label>
   );

@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { typographyClass } from './Typography';
 
 export type ButtonVariant =
   'primary' | 'secondary' | 'ghost' | 'quiet' | 'link' | 'live' | 'preview' | 'danger' | 'subtle';
@@ -28,13 +29,13 @@ const variants: Record<ButtonVariant, string> = {
 
 const sizes = {
   /** No box: sits in a line of text (links, "Delete" under a tile). */
-  inline: 'text-ui-12',
-  '3xs': 'h-5 px-1.5 text-ui-11 rounded-[var(--radius-sm)]',
-  '2xs': 'h-6 px-2 text-ui-11 rounded-[var(--radius-sm)]',
-  xs: 'h-7 px-2 text-ui-12 rounded-[var(--radius-control)]',
-  sm: 'h-8 px-3 text-ui-13 rounded-[var(--radius-control)]',
-  md: 'h-9 px-3.5 text-ui-13 rounded-[var(--radius-control)]',
-  lg: 'h-12 px-5 text-ui-15 rounded-[var(--radius-control)]',
+  inline: typographyClass({ size: 12 }),
+  '3xs': `h-5 px-1.5 rounded-[var(--radius-sm)] ${typographyClass({ size: 11 })}`,
+  '2xs': `h-6 px-2 rounded-[var(--radius-sm)] ${typographyClass({ size: 11 })}`,
+  xs: `h-7 px-2 rounded-[var(--radius-control)] ${typographyClass({ size: 12 })}`,
+  sm: `h-8 px-3 rounded-[var(--radius-control)] ${typographyClass({ size: 13 })}`,
+  md: `h-9 px-3.5 rounded-[var(--radius-control)] ${typographyClass({ size: 13 })}`,
+  lg: `h-12 px-5 rounded-[var(--radius-control)] ${typographyClass({ size: 15 })}`,
 } as const;
 export type ButtonSize = keyof typeof sizes;
 

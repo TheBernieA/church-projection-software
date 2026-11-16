@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
 import { stripChords } from '@lampstand/lyrics';
-import { IconButton, Text } from '@lampstand/ui';
+import { IconButton, Typography, typographyClass } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { addItemToService, useStore } from '../lib/store';
@@ -81,16 +81,24 @@ export function SongList({ hymns }: { hymns: boolean }) {
           <SoonFeature
             id="song-import"
             label={t('library.importFile')}
-            className="!h-6 !px-1.5 !text-ui-11"
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
           />
-          <SoonFeature id="songselect" label="SongSelect" className="!h-6 !px-1.5 !text-ui-11" />
-          <SoonFeature id="multitracks" label="MultiTracks" className="!h-6 !px-1.5 !text-ui-11" />
+          <SoonFeature
+            id="songselect"
+            label="SongSelect"
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
+          />
+          <SoonFeature
+            id="multitracks"
+            label="MultiTracks"
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
+          />
         </div>
       )}
       {rows.length === 0 && (
-        <Text as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
+        <Typography as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
           {hymns && !filter ? t('library.noHymnals') : t('library.noResults')}
-        </Text>
+        </Typography>
       )}
       <div ref={parent} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         <div style={{ height: v.getTotalSize(), position: 'relative' }}>
@@ -113,22 +121,22 @@ export function SongList({ hymns }: { hymns: boolean }) {
                   {...libraryDragSource(() => item)}
                 >
                   {s.hymnNumber?.[0] && (
-                    <Text
+                    <Typography
                       size={13}
                       weight="semibold"
                       tabular
                       className="w-8 shrink-0 text-right text-[var(--accent)]"
                     >
                       {s.hymnNumber[0].number}
-                    </Text>
+                    </Typography>
                   )}
                   <span className="flex min-w-0 flex-col leading-tight">
-                    <Text variant="label" truncate>
+                    <Typography variant="label" truncate>
                       {s.title}
-                    </Text>
-                    <Text variant="caption" truncate>
+                    </Typography>
+                    <Typography variant="caption" truncate>
                       {stripChords(s.sections[0]?.lines[0] ?? '')}
-                    </Text>
+                    </Typography>
                   </span>
                 </button>
                 <IconButton

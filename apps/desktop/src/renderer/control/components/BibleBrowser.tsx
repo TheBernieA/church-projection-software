@@ -7,7 +7,7 @@ import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
-import { Text, Button } from '@lampstand/ui';
+import { Typography, Button, typographyClass } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -71,7 +71,7 @@ export function BibleBrowser() {
             size="sm"
             icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
             onClick={() => setBook(null)}
-            className="-ml-2 min-w-0 !gap-1 !text-ui-15 !font-semibold !text-[var(--text-1)]"
+            className={`-ml-2 min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
           >
             <span className="truncate">{bookName(book)}</span>
           </Button>
@@ -107,9 +107,9 @@ export function BibleBrowser() {
             if (!list.length) return null;
             return (
               <div key={tst} className="mb-4">
-                <h3 className="section-label px-2 pb-1.5">
+                <Typography as="h3" variant="overline" className="px-2 pb-1.5">
                   {tst === 'OT' ? t('bible.ot') : t('bible.nt')}
-                </h3>
+                </Typography>
                 <div className="grid grid-cols-2 gap-px">
                   {list.map((b) => (
                     <button
@@ -120,7 +120,7 @@ export function BibleBrowser() {
                         setChapter(1);
                         setFilter('');
                       }}
-                      className="truncate rounded-[7px] px-2 py-1.5 text-left text-ui-13 text-[var(--text-1)] transition-colors hover:bg-[var(--surface-3)]"
+                      className={`rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-[var(--surface-3)] ${typographyClass({ size: 13, tone: 'primary', truncate: true })}`}
                     >
                       {b.name}
                     </button>
@@ -141,15 +141,15 @@ export function BibleBrowser() {
                   type="button"
                   onClick={() => setChapter(c)}
                   aria-current={c === chapter}
-                  className={`tnum h-8 rounded-[7px] text-ui-12 font-medium transition-colors ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
+                  className={`h-8 rounded-[7px] transition-colors ${typographyClass({ size: 12, weight: 'medium', tabular: true })} ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
                 >
                   {c}
                 </button>
               ))}
             </div>
-            <Text as="p" variant="caption" leading="snug" className="pb-2 pt-2">
+            <Typography as="p" variant="caption" leading="snug" className="pb-2 pt-2">
               {t('bible.hint')}
-            </Text>
+            </Typography>
           </div>
           <ol className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
             {(verses ?? []).map((text, i) => {
@@ -173,16 +173,16 @@ export function BibleBrowser() {
                         versionIds: [versionId],
                       };
                     })}
-                    className={`flex w-full gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-ui-13 leading-relaxed transition-colors ${isSel ? 'bg-[var(--accent-soft)] shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[var(--surface-2)]'}`}
+                    className={`flex w-full gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors ${typographyClass({ size: 13, leading: 'relaxed' })} ${isSel ? 'bg-[var(--accent-soft)] shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[var(--surface-2)]'}`}
                   >
-                    <Text
+                    <Typography
                       size={11}
                       weight="semibold"
                       tabular
                       className="w-5 shrink-0 pt-px text-right text-[var(--accent)]"
                     >
                       {v}
-                    </Text>
+                    </Typography>
                     <span className="text-[var(--text-1)]">
                       {parseBibleMarkup(text)
                         .map((s) => s.text)

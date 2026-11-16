@@ -25,7 +25,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, secondsSince } from '@lampstand/core';
-import { SoonBadge, Switch, Text } from '@lampstand/ui';
+import { SoonBadge, Switch, Typography, typographyClass } from '@lampstand/ui';
 import i18n from '../../i18n';
 import { saveSettings } from '../../lib/actions';
 import { feature } from '../../lib/features';
@@ -47,8 +47,7 @@ const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: S
 
 const MENU_CLASS =
   'z-[60] min-w-[220px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]';
-const ITEM_CLASS =
-  'flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-ui-13 outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white';
+const ITEM_CLASS = `flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white ${typographyClass({ size: 13 })}`;
 
 /** Tooltip for a planned item: what it will do (from the feature catalogue). */
 const soonTitle = (id: string): string => {
@@ -140,7 +139,7 @@ function StatusMenu() {
         <DropdownMenu.Content
           align="end"
           sideOffset={4}
-          className={`${MENU_CLASS} w-[260px] p-3 text-ui-12`}
+          className={`${MENU_CLASS} w-[260px] p-3 ${typographyClass({ size: 12 })}`}
         >
           <p className="flex items-center justify-between font-semibold">
             <span>{onAir ? t('toolbar.onAir') : t('toolbar.offAir')}</span>
@@ -148,9 +147,9 @@ function StatusMenu() {
               {onAir && since ? formatClock(secondsSince(since, now), { hours: 'always' }) : ''}
             </span>
           </p>
-          <Text as="p" variant="overline" className="mt-2">
+          <Typography as="p" variant="overline" className="mt-2">
             {t('toolbar.outputs')}
-          </Text>
+          </Typography>
           <ul className="mt-1 space-y-1">
             {windowMode ? (
               <li>{t('toolbar.window')}</li>
@@ -307,9 +306,9 @@ export function Toolbar() {
             onChange={(on) => void saveSettings({ clickGoesLive: !on })}
           />
         </span>
-        <Text size={11} leading="none">
+        <Typography size={11} leading="none">
           {t('toolbar.preview')}
-        </Text>
+        </Typography>
       </label>
       <ToolbarButton
         icon={<Settings size={20} />}

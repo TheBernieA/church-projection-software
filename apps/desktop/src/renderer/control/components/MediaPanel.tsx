@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { newId, type BackgroundRef, type MediaItem } from '@lampstand/core';
-import { Button, Text } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { cmd, q } from '../lib/api';
@@ -49,9 +49,9 @@ export function MediaPanel() {
         <SoonFeature id="playback-markers" label={t('media.soon.markers')} />
       </div>
       {media.length === 0 && (
-        <Text as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
+        <Typography as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
           {t('media.empty')}
-        </Text>
+        </Typography>
       )}
       <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 overflow-y-auto px-4 pb-4">
         {media.map((m) => {
@@ -98,7 +98,9 @@ export function BackgroundsPanel() {
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
       {(['motion', 'still'] as const).map((group) => (
         <section key={group} className={group === 'still' ? 'mt-5' : ''}>
-          <h3 className="section-label pb-2">{t(`media.${group}`)}</h3>
+          <Typography as="h3" variant="overline" className="pb-2">
+            {t(`media.${group}`)}
+          </Typography>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
             {BUILT_IN_BACKGROUNDS.filter(
               (b) => (b.ref.kind === 'generated') === (group === 'motion'),
@@ -115,7 +117,9 @@ export function BackgroundsPanel() {
         </section>
       ))}
       <div className="mt-6 flex items-center justify-between pb-2">
-        <h3 className="section-label">{t('media.yours')}</h3>
+        <Typography as="h3" variant="overline">
+          {t('media.yours')}
+        </Typography>
         <Button size="sm" variant="ghost" onClick={() => void importMedia(true)}>
           + {t('media.addBackground')}
         </Button>

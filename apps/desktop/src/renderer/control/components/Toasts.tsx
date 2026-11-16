@@ -3,6 +3,7 @@ import { CircleAlert, Info, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../lib/api';
 import { toast, useStore } from '../lib/store';
+import { Typography } from '@lampstand/ui';
 
 const ICON = { info: Info, warning: TriangleAlert, error: CircleAlert } as const;
 const TONE = {
@@ -24,14 +25,16 @@ export function Toasts() {
       {toasts.slice(-3).map((x) => {
         const Icon = ICON[x.level];
         return (
-          <div
+          <Typography
+            as="div"
+            variant="body"
             key={x.id}
             role={x.level === 'error' ? 'alert' : 'status'}
-            className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 text-ui-13 shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
+            className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
           >
             <Icon size={15} className="mt-px shrink-0" style={{ color: TONE[x.level] }} />
             <span className="leading-snug">{x.text}</span>
-          </div>
+          </Typography>
         );
       })}
     </div>

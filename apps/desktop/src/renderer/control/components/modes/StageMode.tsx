@@ -5,7 +5,7 @@ import { SceneView } from '../SceneView';
 import { SoonPanel } from '../bins/SoonPanel';
 import { useNow } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
-import { Text } from '@lampstand/ui';
+import { Typography } from '@lampstand/ui';
 
 const clock = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
 
@@ -26,12 +26,12 @@ export function StageMode() {
         data-testid="stage-mirror"
       >
         <div className="flex items-center justify-between gap-4">
-          <Text size={28} weight="bold" tabular>
+          <Typography size={28} weight="bold" tabular>
             {clock.format(now)}
-          </Text>
-          <Text variant="heading" truncate className="text-[var(--accent)]">
+          </Typography>
+          <Typography variant="heading" truncate className="text-[var(--accent)]">
             {p.content?.label ?? ''}
-          </Text>
+          </Typography>
           <div className="flex gap-2">
             {live.timers.map((tm) => {
               const secs = timerSeconds(tm, now);
@@ -40,17 +40,17 @@ export function StageMode() {
                   key={tm.id}
                   className="flex items-baseline gap-1.5 rounded-[6px] bg-white/5 px-2 py-1"
                 >
-                  <Text size={10} className="uppercase tracking-wider text-[#9aa1b5]">
+                  <Typography size={10} className="uppercase tracking-wider text-[#9aa1b5]">
                     {tm.name}
-                  </Text>
-                  <Text
+                  </Typography>
+                  <Typography
                     size={18}
                     weight="bold"
                     tabular
                     className={secs < 0 ? 'text-[var(--tally-program)]' : ''}
                   >
                     {formatTimer(secs, tm.kind)}
-                  </Text>
+                  </Typography>
                 </span>
               );
             })}
@@ -58,9 +58,13 @@ export function StageMode() {
         </div>
         <div className="grid grid-cols-[3fr_2fr] gap-4">
           <div>
-            <Text as="p" size={11} className="mb-1 uppercase tracking-[0.12em] text-[#e5484d]">
+            <Typography
+              as="p"
+              size={11}
+              className="mb-1 uppercase tracking-[0.12em] text-[#e5484d]"
+            >
               {t('stage.now')}
-            </Text>
+            </Typography>
             <div className="overflow-hidden rounded-[4px]">
               <SceneView
                 scene={makeScene({ background: p.background, media: p.media, content: p.content })}
@@ -69,9 +73,13 @@ export function StageMode() {
             </div>
           </div>
           <div>
-            <Text as="p" size={11} className="mb-1 uppercase tracking-[0.12em] text-[#9aa1b5]">
+            <Typography
+              as="p"
+              size={11}
+              className="mb-1 uppercase tracking-[0.12em] text-[#9aa1b5]"
+            >
               {t('stage.next')}
-            </Text>
+            </Typography>
             <div className="overflow-hidden rounded-[4px]">
               <SceneView
                 scene={makeScene({ background: p.background, content: live.next })}
@@ -81,14 +89,14 @@ export function StageMode() {
           </div>
         </div>
         {live.stageMessage && (
-          <Text
+          <Typography
             as="p"
             size={16}
             weight="bold"
             className="rounded-[6px] bg-[var(--accent)] px-3 py-2 text-center text-[var(--accent-ink)]"
           >
             {live.stageMessage.text}
-          </Text>
+          </Typography>
         )}
       </div>
       <div className="flex min-h-[180px] flex-1">

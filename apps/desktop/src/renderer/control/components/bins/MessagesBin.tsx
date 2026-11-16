@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Clock, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId } from '@lampstand/core';
-import { Button, Segmented, Text } from '@lampstand/ui';
+import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { fillMessage, messageTokens } from '../../lib/messages';
@@ -42,13 +42,13 @@ function MessageCard({ m, onDelete }: { m: Message; onDelete: () => void }) {
         deleteLabel={t('messages.delete', { name: m.name })}
         onDelete={onDelete}
       />
-      <Text as="p" size={12} tone="secondary" leading="snug" className="line-clamp-2">
+      <Typography as="p" size={12} tone="secondary" leading="snug" className="line-clamp-2">
         {text}
-      </Text>
+      </Typography>
       {tokens.map((k) => (
         <input
           key={k}
-          className="field !h-7 text-ui-12"
+          className={`field !h-7 ${typographyClass({ size: 12 })}`}
           aria-label={k}
           placeholder={k}
           value={values[k] ?? ''}
@@ -142,9 +142,14 @@ export function StageMessage() {
         void attempt(() => cmd('stage.message', { text: msg, flash: true }), 'errors.action');
       }}
     >
-      <Text as="label" variant="overline" className="flex items-center gap-1.5" htmlFor="stage-msg">
+      <Typography
+        as="label"
+        variant="overline"
+        className="flex items-center gap-1.5"
+        htmlFor="stage-msg"
+      >
         <MessageSquare size={13} /> {t('monitor.stageMessage')}
-      </Text>
+      </Typography>
       <div className="flex gap-1.5">
         <input
           id="stage-msg"
@@ -159,7 +164,11 @@ export function StageMessage() {
         </Button>
       </div>
       {current && (
-        <div className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-2.5 py-1.5 text-ui-12">
+        <Typography
+          as="div"
+          size={12}
+          className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-2.5 py-1.5"
+        >
           <span className="truncate">“{current.text}”</span>
           <Button
             size="xs"
@@ -171,7 +180,7 @@ export function StageMessage() {
           >
             {t('monitor.clearMessage')}
           </Button>
-        </div>
+        </Typography>
       )}
     </form>
   );

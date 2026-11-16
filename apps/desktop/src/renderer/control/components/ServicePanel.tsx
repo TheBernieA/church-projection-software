@@ -16,7 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
-import { IconButton, Text } from '@lampstand/ui';
+import { IconButton, Typography, typographyClass } from '@lampstand/ui';
 import { importSlides } from '../lib/importSlides';
 import { itemTitle, sectionColor } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
@@ -149,10 +149,10 @@ export function ServicePanel() {
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('service.title')}>
       {/* "11 ITEMS  +": the playlist's contents, with the add menu on the right. */}
       <div className="flex h-7 shrink-0 items-center justify-between border-b border-[var(--hairline)] pb-1 pl-3 pr-1.5">
-        <Text as="h2" variant="overline">
+        <Typography as="h2" variant="overline">
           <span className="sr-only">{t('service.title')} · </span>
           {t('sidebar.items', { count: items.filter((i) => i.kind !== 'header').length })}
-        </Text>
+        </Typography>
         <AddMenu
           update={update}
           trigger={
@@ -181,7 +181,7 @@ export function ServicePanel() {
           <li
             onDragOver={(e) => trackOver(e, 0)}
             onDrop={drop}
-            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center text-ui-13 text-[var(--text-3)] ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
+            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center ${typographyClass({ size: 13, tone: 'muted' })} ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
           >
             {t('service.empty')}
           </li>
@@ -217,7 +217,7 @@ export function ServicePanel() {
                     type="button"
                     onDoubleClick={() => setEditing(item.id)}
                     title={t('service.renameHint')}
-                    className="min-w-0 flex-1 truncate text-left text-ui-12 font-semibold text-white"
+                    className={`min-w-0 flex-1 text-left ${typographyClass({ size: 12, tone: 'white', weight: 'semibold', truncate: true })}`}
                   >
                     {item.label}
                   </button>
@@ -262,23 +262,23 @@ export function ServicePanel() {
                   <KindTile kind={item.kind} size={20} />
                   {/* One line: the title, and its source (song, version…) in muted text on the right. */}
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                    <Text variant="body" truncate className="min-w-0 flex-1">
+                    <Typography variant="body" truncate className="min-w-0 flex-1">
                       {itemTitle(item, { songs, media })}
-                    </Text>
-                    <Text variant="caption" truncate className="ls-sub max-w-[45%] shrink-0">
+                    </Typography>
+                    <Typography variant="caption" truncate className="ls-sub max-w-[45%] shrink-0">
                       {subtitle(item)}
-                    </Text>
+                    </Typography>
                   </span>
                 </button>
                 {isLive && (
-                  <Text
+                  <Typography
                     size={10}
                     tone="white"
                     weight="bold"
                     className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 tracking-wide"
                   >
                     LIVE
-                  </Text>
+                  </Typography>
                 )}
                 {isPrev && (
                   <span
@@ -401,12 +401,12 @@ export function AddMenu({
                   {e.icon}
                 </span>
                 <span className="min-w-0">
-                  <Text size={13} tone="primary" weight="medium" className="block">
+                  <Typography size={13} tone="primary" weight="medium" className="block">
                     {e.label}
-                  </Text>
-                  <Text size={11} tone="muted" leading="snug" className="block">
+                  </Typography>
+                  <Typography size={11} tone="muted" leading="snug" className="block">
                     {e.help}
-                  </Text>
+                  </Typography>
                 </span>
               </DropdownMenu.Item>
             ))}

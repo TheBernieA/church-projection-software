@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch, Text, IconButton } from '@lampstand/ui';
+import { Button, Segmented, Switch, Typography, IconButton, typographyClass } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
@@ -108,9 +108,9 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         >
           <Type size={17} />
         </IconButton>
-        <Text size={13} tone="secondary" tabular className="w-12 text-right">
+        <Typography size={13} tone="secondary" tabular className="w-12 text-right">
           {Math.round(shown * 100)}%
-        </Text>
+        </Typography>
         {Math.abs(shown - 1) > 0.001 && (
           <Button size="xs" variant="ghost" onClick={() => commit(1)}>
             {t('settings.textReset')}
@@ -124,13 +124,13 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         className="m-0 flex max-w-[460px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--divider)] bg-[var(--surface-1)]"
       >
         <div className="w-[190px] shrink-0 border-r border-[var(--divider)] py-2">
-          <Text as="p" variant="overline" className="px-3 pb-1">
+          <Typography as="p" variant="overline" className="px-3 pb-1">
             {t('sidebar.playlists')}
-          </Text>
+          </Typography>
           {rows.map((r, i) => (
             <p
               key={r}
-              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 text-ui-13 ${
+              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 ${typographyClass({ size: 13 })} ${
                 i === 1 ? 'bg-[var(--select)] text-white' : 'text-[var(--text-1)]'
               }`}
             >
@@ -141,21 +141,21 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
           <div>
-            <Text as="p" size={13} tone="primary" weight="semibold" truncate>
+            <Typography as="p" size={13} tone="primary" weight="semibold" truncate>
               {t('settings.textPreviewHeading')}
-            </Text>
-            <Text as="p" variant="caption" leading="snug" className="mt-0.5">
+            </Typography>
+            <Typography as="p" variant="caption" leading="snug" className="mt-0.5">
               {t('settings.textPreviewNote')}
-            </Text>
+            </Typography>
           </div>
-          <Text
+          <Typography
             size={11}
             tone="white"
             weight="medium"
             className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5"
           >
             1 Verse 1
-          </Text>
+          </Typography>
         </div>
       </figure>
     </div>
@@ -296,7 +296,7 @@ function PictureRow({
           }))}
         />
       ) : (
-        <Text variant="caption">{t('settings.picture.none')}</Text>
+        <Typography variant="caption">{t('settings.picture.none')}</Typography>
       )}
     </Row>
   );
@@ -509,29 +509,29 @@ export function PackagesPage() {
       {groups.map(({ kind, items }) => (
         <Group key={kind} title={t(`modules.groups.${kind}`)}>
           {items.length === 0 ? (
-            <Text as="p" size={13} tone="muted" className="px-4 py-4">
+            <Typography as="p" size={13} tone="muted" className="px-4 py-4">
               {t(`modules.empty.${kind}`)}
-            </Text>
+            </Typography>
           ) : (
             items.map((m) => (
               <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <IconTile icon={kind === 'bible' ? BookOpen : ListMusic} size={36} />
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <Text variant="label" truncate>
+                  <Typography variant="label" truncate>
                     {m.name}
-                  </Text>
-                  <Text variant="caption" truncate>
+                  </Typography>
+                  <Typography variant="caption" truncate>
                     {m.detail}
-                  </Text>
+                  </Typography>
                 </span>
-                <Text
+                <Typography
                   size={11}
                   tone="secondary"
                   weight="medium"
                   className="rounded-full bg-[var(--surface-3)] px-2 py-0.5"
                 >
                   {t(`modules.source.${m.source}`)}
-                </Text>
+                </Typography>
                 {m.removable && (
                   <Button
                     size="xs"
@@ -621,19 +621,19 @@ export function AboutPage() {
       <div className="flex gap-3 rounded-[var(--radius-card)] bg-[var(--surface-2)] p-4 shadow-[var(--shadow-1)]">
         <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" />
         <div className="space-y-1.5">
-          <Text as="p" variant="label">
+          <Typography as="p" variant="label">
             {t('settings.privacyTitle')}
-          </Text>
-          <Text as="p" size={12} tone="secondary" leading="relaxed">
+          </Typography>
+          <Typography as="p" size={12} tone="secondary" leading="relaxed">
             {t('settings.privacyText')}
-          </Text>
+          </Typography>
         </div>
       </div>
       <Group title={t('settings.version')}>
         <Row label="Lampstand">
-          <Text size={13} tone="secondary" tabular>
+          <Typography size={13} tone="secondary" tabular>
             {info ? `${info.version} · Electron ${info.electron} · ${info.platform}` : '…'}
-          </Text>
+          </Typography>
         </Row>
       </Group>
     </SettingsPage>

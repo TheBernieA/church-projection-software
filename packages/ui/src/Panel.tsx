@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text } from './Text';
+import { Typography, typographyClass } from './Typography';
 
 /** Panel header: sentence-case title (13px semibold), optional icon, actions on the right. */
 export function PanelHeader({
@@ -17,13 +17,13 @@ export function PanelHeader({
     <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[var(--hairline)] px-4">
       <div className="flex min-w-0 items-center gap-2">
         {icon && <span className="text-[var(--text-3)]">{icon}</span>}
-        <Text as="h2" size={13} tone="primary" weight="semibold" truncate>
+        <Typography as="h2" size={13} tone="primary" weight="semibold" truncate>
           {title}
-        </Text>
+        </Typography>
         {subtitle && (
-          <Text variant="caption" truncate>
+          <Typography variant="caption" truncate>
             {subtitle}
-          </Text>
+          </Typography>
         )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
@@ -43,7 +43,7 @@ export function TallyLabel({
 }) {
   const c = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <Text
+    <Typography
       size={12}
       weight="semibold"
       className="inline-flex items-center gap-1.5"
@@ -59,7 +59,7 @@ export function TallyLabel({
         }}
       />
       {children}
-    </Text>
+    </Typography>
   );
 }
 
@@ -85,7 +85,7 @@ export function ToggleChip({
       aria-pressed={on}
       onClick={onClick}
       title={hint ? `${label} (${hint})` : label}
-      className={`group inline-flex h-8 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] px-3 text-ui-12 font-medium transition-[background-color,box-shadow,color] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+      className={`group inline-flex h-8 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] px-3 transition-[background-color,box-shadow,color] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
         on
           ? 'bg-[var(--tally-program)] text-white shadow-[0_4px_16px_rgba(239,74,80,0.35)]'
           : 'bg-[var(--surface-2)] text-[var(--text-1)] shadow-[var(--shadow-1)] hover:bg-[var(--surface-3)]'
@@ -94,9 +94,9 @@ export function ToggleChip({
       {icon}
       <span className="truncate">{label}</span>
       {hint && (
-        <Text size={11} tone={on ? 'inherit' : 'muted'} className={on ? 'text-white/75' : ''}>
+        <Typography size={11} tone={on ? 'inherit' : 'muted'} className={on ? 'text-white/75' : ''}>
           {hint}
-        </Text>
+        </Typography>
       )}
     </button>
   );
@@ -114,7 +114,7 @@ export function TallyTag({
 }) {
   return (
     <span
-      className={`absolute right-1.5 top-1.5 rounded-[4px] px-1.5 py-px text-ui-10 font-bold tracking-[0.06em] text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${
+      className={`absolute right-1.5 top-1.5 rounded-[4px] px-1.5 py-px tracking-[0.06em] shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${typographyClass({ size: 10, tone: 'white', weight: 'bold' })} ${
         tone === 'program' ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'
       } ${className}`}
     >

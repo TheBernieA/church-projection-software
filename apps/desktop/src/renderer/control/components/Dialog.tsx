@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { closeDialog, useStore } from '../lib/store';
 import { type DialogName } from '../types';
+import { typographyClass } from '@lampstand/ui';
 
 /**
  * Dimmed backdrop shared by every modal surface (dialogs, quick bar). Solid, no backdrop blur:
@@ -51,7 +52,11 @@ export function Dialog({
           ) : (
             <>
               <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--hairline)] px-5">
-                <RD.Title className="text-ui-16 font-semibold tracking-[-0.01em]">{title}</RD.Title>
+                <RD.Title
+                  className={`tracking-[-0.01em] ${typographyClass({ size: 16, weight: 'semibold' })}`}
+                >
+                  {title}
+                </RD.Title>
                 <RD.Close
                   className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
                   aria-label="Close"

@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, IconButton, Text } from '@lampstand/ui';
+import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
 
 /** Card style shared by bin items (messages, timers) and their "new" forms. */
 export const BIN_CARD =
@@ -23,7 +23,7 @@ export function AddCard({
     <button
       type="button"
       onClick={onClick}
-      className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] text-ui-12 font-medium text-[var(--text-3)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${className}`}
+      className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${typographyClass({ size: 12, tone: 'muted', weight: 'medium' })} ${className}`}
     >
       {icon}
       {label}
@@ -50,14 +50,14 @@ export function BinRow({ children }: { children: ReactNode }) {
 /** Small grey label: "Built-in", a message style, a timer kind. */
 export function Badge({ children }: { children: ReactNode }) {
   return (
-    <Text
+    <Typography
       size={10}
       tone="muted"
       weight="medium"
       className="shrink-0 rounded-[4px] bg-[var(--surface-3)] px-1.5 py-px"
     >
       {children}
-    </Text>
+    </Typography>
   );
 }
 
@@ -75,9 +75,9 @@ export function CardTitle({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <Text size={12} weight="semibold" truncate className="min-w-0 flex-1">
+      <Typography size={12} weight="semibold" truncate className="min-w-0 flex-1">
         {name}
-      </Text>
+      </Typography>
       {badge && <Badge>{badge}</Badge>}
       <IconButton
         size="xs"
@@ -146,7 +146,7 @@ export function Tile({
       >
         {children}
       </div>
-      <Text
+      <Typography
         size={12}
         tone={selected ? 'primary' : 'secondary'}
         weight={selected ? 'medium' : 'regular'}
@@ -154,7 +154,7 @@ export function Tile({
         className="mt-1.5 block"
       >
         {label}
-      </Text>
+      </Typography>
     </button>
   );
 }

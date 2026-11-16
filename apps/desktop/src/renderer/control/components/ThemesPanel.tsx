@@ -7,7 +7,7 @@ import {
   type Scene,
   type Theme,
 } from '@lampstand/core';
-import { Button } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
 import { attempt, openDialog, useStore } from '../lib/store';
@@ -91,7 +91,11 @@ export function ThemesPanel() {
               </Button>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5 text-ui-12">
+          <Typography
+            as="div"
+            size={12}
+            className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5"
+          >
             <span className="text-[var(--text-3)]">{t('theme.useFor')}:</span>
             {kinds.map((k) => (
               <Button
@@ -104,7 +108,7 @@ export function ThemesPanel() {
                 {t(`theme.kinds.${k}`)}
               </Button>
             ))}
-          </div>
+          </Typography>
         </div>
       ))}
     </div>

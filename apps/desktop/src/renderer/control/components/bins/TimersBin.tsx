@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Film, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
-import { Button, Segmented, Text } from '@lampstand/ui';
+import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
@@ -47,7 +47,7 @@ function TimerCard({
         onDelete={onDelete}
       />
       <div
-        className={`tnum text-ui-26 font-bold leading-none ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+        className={`${typographyClass({ size: 26, weight: 'bold', leading: 'none', tabular: true })} ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
         data-testid={`timer-${def.id}`}
       >
         {formatTimer(secs, def.kind)}
@@ -136,7 +136,7 @@ function NewTimer({
         ]}
       />
       {kind === 'countdown' && (
-        <Text as="label" size={12} tone="secondary" className="flex items-center gap-2">
+        <Typography as="label" size={12} tone="secondary" className="flex items-center gap-2">
           <input
             className="field !h-8 !w-20"
             type="number"
@@ -147,7 +147,7 @@ function NewTimer({
             onChange={(e) => setMinutes(e.target.value)}
           />
           {t('timers.minutes')}
-        </Text>
+        </Typography>
       )}
       {kind === 'to-time' && (
         <input
@@ -207,9 +207,15 @@ export function TimersBin() {
         />
       )}
       <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
-      <Text as="p" size={11} tone="muted" leading="snug" className="ml-auto max-w-[220px] self-end">
+      <Typography
+        as="p"
+        size={11}
+        tone="muted"
+        leading="snug"
+        className="ml-auto max-w-[220px] self-end"
+      >
         {t('timers.stageHint')}
-      </Text>
+      </Typography>
     </BinRow>
   );
 }

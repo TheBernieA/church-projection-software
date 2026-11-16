@@ -9,7 +9,7 @@ import { clearLayer, openAdhoc, toggleMask } from '../lib/actions';
 import { q } from '../lib/api';
 import { addItemToService, closeDialog, openDialog, useStore } from '../lib/store';
 import { OVERLAY_CLASS } from './Dialog';
-import { Text } from '@lampstand/ui';
+import { Typography, typographyClass } from '@lampstand/ui';
 
 interface Row {
   id: string;
@@ -188,7 +188,7 @@ function QuickBarBody() {
           />
           <input
             autoFocus
-            className="h-16 w-full bg-transparent pl-12 pr-5 text-ui-18 outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)]"
+            className={`h-16 w-full bg-transparent pl-12 pr-5 outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)] ${typographyClass({ size: 18 })}`}
             placeholder={t('quick.placeholder')}
             value={text}
             onChange={(e) => {
@@ -218,7 +218,9 @@ function QuickBarBody() {
               if (!inGroup.length) return null;
               return (
                 <div key={g}>
-                  <div className="section-label px-3 pb-1.5 pt-3">{t(`quick.${g}`)}</div>
+                  <Typography as="div" variant="overline" className="px-3 pb-1.5 pt-3">
+                    {t(`quick.${g}`)}
+                  </Typography>
                   {inGroup.map((r) => {
                     index += 1;
                     const i = index;
@@ -232,13 +234,13 @@ function QuickBarBody() {
                         className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 ${i === active ? 'bg-[var(--surface-3)] shadow-[inset_2px_0_0_var(--accent)]' : ''}`}
                       >
                         <RowIcon group={r.group} />
-                        <Text size={14} weight="medium" className="shrink-0">
+                        <Typography size={14} weight="medium" className="shrink-0">
                           {r.title}
-                        </Text>
+                        </Typography>
                         {r.subtitle && (
-                          <Text size={13} tone="muted" truncate>
+                          <Typography size={13} tone="muted" truncate>
                             {r.subtitle}
-                          </Text>
+                          </Typography>
                         )}
                       </div>
                     );
@@ -247,9 +249,13 @@ function QuickBarBody() {
               );
             })}
           </div>
-          <div className="bg-[var(--surface-0)]/40 px-5 py-2.5 text-ui-12 text-[var(--text-3)] shadow-[0_-1px_0_var(--hairline)]">
+          <Typography
+            as="div"
+            variant="caption"
+            className="bg-[var(--surface-0)]/40 px-5 py-2.5 shadow-[0_-1px_0_var(--hairline)]"
+          >
             {t('quick.hint')}
-          </div>
+          </Typography>
         </RD.Content>
       </RD.Portal>
     </RD.Root>

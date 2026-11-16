@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Text } from '@lampstand/ui';
+import { Typography } from '@lampstand/ui';
 
 /** Centred hint for a workspace with nothing to show yet. */
 export function EmptyState({
@@ -14,13 +14,13 @@ export function EmptyState({
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
       <div className="text-[var(--text-3)]">{icon}</div>
-      <Text as="p" size={14} tone="secondary" weight="semibold">
+      <Typography as="p" size={14} tone="secondary" weight="semibold">
         {title}
-      </Text>
+      </Typography>
       {body && (
-        <Text as="p" variant="caption" leading="relaxed" className="max-w-sm">
+        <Typography as="p" variant="caption" leading="relaxed" className="max-w-sm">
           {body}
-        </Text>
+        </Typography>
       )}
     </div>
   );

@@ -18,7 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, Kbd, Text } from '@lampstand/ui';
+import { Button, Kbd, Typography, typographyClass } from '@lampstand/ui';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { openDialog, useStore } from '../../lib/store';
@@ -45,7 +45,7 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
     >
       <span
         aria-hidden
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ui-12 font-semibold ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${typographyClass({ size: 12, weight: 'semibold' })} ${
           step.done
             ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
             : 'bg-[var(--surface-3)] text-[var(--text-2)]'
@@ -54,14 +54,14 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
         {step.done ? <Check size={14} strokeWidth={3} /> : n}
       </span>
       <div className="min-w-0 flex-1">
-        <Text as="p" variant="label" className="flex items-center gap-2">
+        <Typography as="p" variant="label" className="flex items-center gap-2">
           <span className="text-[var(--text-3)]">{step.icon}</span>
           {title}
           {step.done && <span className="sr-only"> (done)</span>}
-        </Text>
-        <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-1">
+        </Typography>
+        <Typography as="p" size={12} tone="secondary" leading="relaxed" className="mt-1">
           {body}
-        </Text>
+        </Typography>
       </div>
       {step.action && (
         <Button
@@ -141,22 +141,24 @@ function FeatureIndex() {
         />
       </div>
       {groups.length === 0 && (
-        <Text as="p" variant="caption" className="py-2">
+        <Typography as="p" variant="caption" className="py-2">
           {t('guide.everything.none')}
-        </Text>
+        </Typography>
       )}
       {groups.map((g) => (
         <section key={g.id} className="mb-3 last:mb-0">
-          <h4 className="section-label pb-1.5">{g.name}</h4>
+          <Typography as="h4" variant="overline" className="pb-1.5">
+            {g.name}
+          </Typography>
           <ul className="divide-y divide-[var(--hairline)] rounded-[6px] bg-[var(--surface-1)] shadow-[inset_0_0_0_1px_var(--hairline)]">
             {g.items.map((f) => (
               <li key={f.id} className="px-3 py-2" data-feature={f.id}>
-                <Text as="p" variant="label">
+                <Typography as="p" variant="label">
                   {f.name}
-                </Text>
-                <Text as="p" variant="caption" leading="snug" className="mt-0.5">
+                </Typography>
+                <Typography as="p" variant="caption" leading="snug" className="mt-0.5">
                   {f.description}
-                </Text>
+                </Typography>
               </li>
             ))}
           </ul>
@@ -253,12 +255,12 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
           <div key={r.id} className="flex gap-3 px-4 py-3" data-tour={r.id}>
             <span className="mt-0.5 shrink-0 text-[var(--accent)]">{r.icon}</span>
             <div className="min-w-0">
-              <Text as="p" variant="label">
+              <Typography as="p" variant="label">
                 {t(`guide.tour.${r.id}.title`)}
-              </Text>
-              <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-0.5">
+              </Typography>
+              <Typography as="p" size={12} tone="secondary" leading="relaxed" className="mt-0.5">
                 {t(`guide.tour.${r.id}.body`, keyNames)}
-              </Text>
+              </Typography>
             </div>
           </div>
         ))}
@@ -267,7 +269,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       <Group title={t('guide.howto.title')} footnote={t('guide.howto.help')}>
         {HOWTO.map((id) => (
           <details key={id} className="group px-4 py-2.5" data-howto={id}>
-            <Text
+            <Typography
               as="summary"
               variant="label"
               className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden"
@@ -278,10 +280,16 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
                 className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
               />
               {t(`guide.howto.items.${id}.q`)}
-            </Text>
-            <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-1.5 pl-[22px]">
+            </Typography>
+            <Typography
+              as="p"
+              size={12}
+              tone="secondary"
+              leading="relaxed"
+              className="mt-1.5 pl-[22px]"
+            >
               {t(`guide.howto.items.${id}.a`, keyNames)}
-            </Text>
+            </Typography>
           </details>
         ))}
       </Group>
@@ -293,12 +301,15 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
         <div className="flex flex-wrap items-center gap-2 px-4 py-4">
           <Search size={15} className="text-[var(--text-3)]" aria-hidden />
           {QUICK_EXAMPLES.map((ex) => (
-            <code
+            <Typography
+              as="code"
+              size={12}
+              tone="primary"
               key={ex}
-              className="rounded-[6px] bg-[var(--surface-1)] px-2 py-1 font-mono text-ui-12 text-[var(--text-1)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+              className="rounded-[6px] bg-[var(--surface-1)] px-2 py-1 font-mono shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
             >
               {ex}
-            </code>
+            </Typography>
           ))}
         </div>
       </Group>
@@ -306,10 +317,15 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       <Group title={t('guide.allKeys')} footnote={t('guide.keysHelp')}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 px-4 py-4">
           {KEYS.map((k) => (
-            <div key={k} className="flex items-center justify-between gap-3 text-ui-13">
+            <Typography
+              as="div"
+              variant="body"
+              key={k}
+              className="flex items-center justify-between gap-3"
+            >
               <span className="truncate text-[var(--text-2)]">{t(`shortcuts.action.${k}`)}</span>
               <Kbd>{displayCombo(keys[k])}</Kbd>
-            </div>
+            </Typography>
           ))}
         </div>
       </Group>
@@ -333,8 +349,8 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
                       : 'var(--accent)',
               }}
             />
-            <Text variant="label">{t(`guide.colour.${c}.title`)}</Text>
-            <Text variant="caption">{t(`guide.colour.${c}.body`)}</Text>
+            <Typography variant="label">{t(`guide.colour.${c}.title`)}</Typography>
+            <Typography variant="caption">{t(`guide.colour.${c}.body`)}</Typography>
           </div>
         ))}
       </Group>

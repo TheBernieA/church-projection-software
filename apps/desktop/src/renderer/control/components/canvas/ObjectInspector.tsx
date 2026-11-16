@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SlideObject } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
 import { patchObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
@@ -72,7 +72,9 @@ export function ObjectInspector({
       >
         {t('canvas.backToSlide')}
       </Button>
-      <h3 className="section-label">{t(`canvas.kinds.${o.kind}`)}</h3>
+      <Typography as="h3" variant="overline">
+        {t(`canvas.kinds.${o.kind}`)}
+      </Typography>
 
       {o.kind === 'text' && (
         <>
@@ -109,7 +111,7 @@ export function ObjectInspector({
               { value: 'right', label: t('canvas.right') },
             ]}
           />
-          <div className="flex gap-4 text-ui-12">
+          <Typography as="div" size={12} className="flex gap-4">
             <Checkbox
               label={t('canvas.bold')}
               checked={!!o.bold}
@@ -120,7 +122,7 @@ export function ObjectInspector({
               checked={!!o.italic}
               onChange={(italic) => set({ italic }, false)}
             />
-          </div>
+          </Typography>
         </>
       )}
 
@@ -133,7 +135,7 @@ export function ObjectInspector({
               onChange={(fill) => set({ fill }, false)}
             />
             <Checkbox
-              className="self-end pb-2 text-ui-12"
+              className={`self-end pb-2 ${typographyClass({ size: 12 })}`}
               label={t('canvas.noFill')}
               checked={!o.fill}
               onChange={(none) => set({ fill: none ? undefined : '#f0a73a' }, false)}

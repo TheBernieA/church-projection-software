@@ -1,4 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { typographyClass } from './Typography';
 
 export interface NavItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   icon?: ReactNode;
@@ -46,7 +47,7 @@ export function NavItem({
   return (
     <button
       type={type}
-      className={`flex cursor-pointer items-center text-left text-ui-13 transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${DENSITY[density]} ${look} ${className}`}
+      className={`flex cursor-pointer items-center text-left transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 13 })} ${DENSITY[density]} ${look} ${className}`}
       {...rest}
     >
       {icon && <span className="flex shrink-0">{icon}</span>}

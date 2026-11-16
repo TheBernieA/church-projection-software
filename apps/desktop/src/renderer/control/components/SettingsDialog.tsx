@@ -27,7 +27,7 @@ import {
 } from './settings/pages';
 import { ConnectionsPage, FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
-import { Text, NavItem } from '@lampstand/ui';
+import { Typography, NavItem } from '@lampstand/ui';
 
 type PageId = SettingsPageId;
 
@@ -63,18 +63,25 @@ export function SettingsDialog() {
         aria-label={t('settings.title')}
         className="flex w-[220px] shrink-0 flex-col gap-0.5 bg-[var(--surface-0)]/45 p-3 shadow-[1px_0_0_var(--hairline)]"
       >
-        <Text as="p" variant="heading" aria-hidden className="px-2.5 pb-3 pt-2 tracking-[-0.01em]">
+        <Typography
+          as="p"
+          variant="heading"
+          aria-hidden
+          className="px-2.5 pb-3 pt-2 tracking-[-0.01em]"
+        >
           {t('settings.title')}
-        </Text>
+        </Typography>
         {[...NAV, null, ...HELP_NAV].map((entry) => {
           if (!entry)
             return (
-              <p
+              <Typography
+                as="p"
+                variant="overline"
                 key="help"
-                className="section-label mt-4 border-t border-[var(--hairline)] px-2.5 pb-1.5 pt-4"
+                className="mt-4 border-t border-[var(--hairline)] px-2.5 pb-1.5 pt-4"
               >
                 {t('settings.help')}
-              </p>
+              </Typography>
             );
           const { id, icon: Icon } = entry;
           const on = page === id;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundRef, Theme } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -232,7 +232,7 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
         <div className="space-y-3">
           {(Object.keys(SAMPLES) as (keyof typeof SAMPLES)[]).map((k) => (
             <div key={k}>
-              <span className="label">{t(`theme.sample.${k}`)}</span>
+              <Typography variant="field">{t(`theme.sample.${k}`)}</Typography>
               <SceneView
                 scene={sampleScene(
                   draft,

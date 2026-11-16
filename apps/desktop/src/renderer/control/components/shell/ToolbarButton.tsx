@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { SoonBadge, Text } from '@lampstand/ui';
+import { SoonBadge, Typography } from '@lampstand/ui';
 
 /**
  * A toolbar item in the operator-console style: icon above a small label. `pressed` marks the
@@ -35,9 +35,9 @@ export const ToolbarButton = forwardRef<
         {icon}
         {badge}
       </span>
-      <Text size={11} leading="none" className="whitespace-nowrap">
+      <Typography size={11} leading="none" className="whitespace-nowrap">
         {label}
-      </Text>
+      </Typography>
       {soon && (
         <span className="pointer-events-none absolute -right-1 -top-0.5 scale-[0.8]">
           <SoonBadge />

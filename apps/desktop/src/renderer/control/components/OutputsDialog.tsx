@@ -9,7 +9,7 @@ import { Dialog } from './Dialog';
 import { Checkbox } from './form';
 import { Select } from './Select';
 import { EMPTY_LIST } from '../constants';
-import { Text } from '@lampstand/ui';
+import { Typography, typographyClass } from '@lampstand/ui';
 
 const ROLES: OutputRole[] = ['main', 'stage', 'secondary', 'none'];
 
@@ -44,16 +44,21 @@ export function OutputsDialog() {
               key={d.id}
               className="flex items-center gap-3 rounded-[var(--radius-control)] bg-[var(--surface-2)] p-3"
             >
-              <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-0)] text-ui-10 text-[var(--text-3)]">
+              <Typography
+                as="div"
+                size={10}
+                tone="muted"
+                className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-0)]"
+              >
                 {d.width}×{d.height}
-              </div>
+              </Typography>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{d.label}</div>
-                <div className="text-ui-11 text-[var(--text-3)]">
+                <Typography as="div" size={11} tone="muted">
                   {[d.isControl && t('outputs.control'), d.isPrimary && t('outputs.primary')]
                     .filter(Boolean)
                     .join(' · ')}
-                </div>
+                </Typography>
               </div>
               <div className="w-48 shrink-0">
                 <Select
@@ -68,7 +73,7 @@ export function OutputsDialog() {
                 />
               </div>
               <Checkbox
-                className="text-ui-12"
+                className={typographyClass({ size: 12 })}
                 label={t('outputs.testPattern')}
                 disabled={d.role === 'none' || windowMode}
                 checked={testOn}
@@ -87,14 +92,14 @@ export function OutputsDialog() {
       />
       {windowMode && (
         <Checkbox
-          className="mt-2 pl-6 text-ui-12"
+          className={`mt-2 pl-6 ${typographyClass({ size: 12 })}`}
           label={t('outputs.testPattern')}
           checked={patterns.includes('window-main')}
           onChange={(on) => void cmd('live.testPattern', { outputId: 'window-main', on })}
         />
       )}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <Text
+        <Typography
           as="summary"
           size={12}
           tone="secondary"
@@ -102,7 +107,7 @@ export function OutputsDialog() {
           className="cursor-pointer px-4 py-2.5"
         >
           {t('outputs.more')}
-        </Text>
+        </Typography>
         <SoonList
           ids={['ndi', 'sdi', 'alpha-key', 'syphon', 'edge-blend', 'output-adjust', 'multiview']}
         />

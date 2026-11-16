@@ -1,17 +1,17 @@
 import type { ReactNode } from 'react';
-import { Text } from './Text';
+import { Typography, typographyClass } from './Typography';
 
 /** Small "Soon" pill marking a feature that is planned but not built yet. */
 export function SoonBadge({ label = 'Soon' }: { label?: string }) {
   return (
-    <Text
+    <Typography
       size={10}
       weight="semibold"
       className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--soon-soft)] px-1.5 uppercase tracking-[0.04em] text-[var(--soon)]"
       data-soon
     >
       {label}
-    </Text>
+    </Typography>
   );
 }
 
@@ -41,7 +41,7 @@ export function ComingSoonButton({
       disabled
       aria-disabled
       title={title}
-      className={`inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-ui-12 font-medium text-[var(--text-3)] ${className}`}
+      className={`inline-flex h-8 items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 ${typographyClass({ size: 12, tone: 'muted', weight: 'medium' })} ${className}`}
     >
       {icon}
       <span className={compact ? 'sr-only' : ''}>{children}</span>

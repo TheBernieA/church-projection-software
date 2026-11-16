@@ -147,20 +147,6 @@ textarea.field {
   line-height: 1.55;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
-.label {
-  font-size: calc(12px * var(--text-scale));
-  font-weight: 500;
-  color: var(--text-2);
-  margin-bottom: 6px;
-  display: block;
-}
-.section-label {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
 /* A main window pane: flush, edge to edge; the splitters between panes are the dividers. */
 .pane {
   overflow: hidden;

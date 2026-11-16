@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { q } from '../lib/api';
 import { useStore } from '../lib/store';
+import { Typography } from '@lampstand/ui';
 
 /** Hidden performance HUD (Ctrl/⌘+Alt+P, §18). */
 export function PerfHud() {
@@ -36,7 +37,13 @@ export function PerfHud() {
   }, [open]);
   if (!open) return null;
   return (
-    <div className="tnum fixed right-3 top-12 z-50 rounded bg-black/85 px-3 py-2 font-mono text-ui-11 text-white">
+    <Typography
+      as="div"
+      size={11}
+      tone="white"
+      tabular
+      className="fixed right-3 top-12 z-50 rounded bg-black/85 px-3 py-2 font-mono"
+    >
       <div>
         {t('perf.fps')}: {fps}
       </div>
@@ -46,6 +53,6 @@ export function PerfHud() {
       <div>
         {t('perf.revision')}: {revision}
       </div>
-    </div>
+    </Typography>
   );
 }

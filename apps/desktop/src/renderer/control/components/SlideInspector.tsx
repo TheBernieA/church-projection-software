@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem, type TextSlide } from '@lampstand/core';
-import { Button, IconButton, Text } from '@lampstand/ui';
+import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
 import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
@@ -88,7 +88,9 @@ function TextInspector({ item }: { item: TextItem }) {
   return (
     <div className="flex flex-col gap-6 p-5">
       <section className="space-y-4">
-        <h3 className="section-label">{t(`service.kind.${item.kind}`)}</h3>
+        <Typography as="h3" variant="overline">
+          {t(`service.kind.${item.kind}`)}
+        </Typography>
         <Field label={t('inspector.name')} htmlFor="insp-name">
           <input
             id="insp-name"
@@ -112,9 +114,9 @@ function TextInspector({ item }: { item: TextItem }) {
                 value={item.loopIntervalSec}
                 onChange={(v) => replaceItem({ ...item, loopIntervalSec: clamp(v, 2, 600) }, true)}
               />
-              <Text size={13} tone="secondary">
+              <Typography size={13} tone="secondary">
                 {t('inspector.seconds')}
-              </Text>
+              </Typography>
             </div>
           </Field>
         )}
@@ -123,9 +125,9 @@ function TextInspector({ item }: { item: TextItem }) {
       {slide ? (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="section-label">
+            <Typography as="h3" variant="overline">
               {t('inspector.slideOf', { n: index + 1, total: count })}
-            </h3>
+            </Typography>
             <div className="flex">
               <IconButton
                 size="xs"
@@ -157,7 +159,7 @@ function TextInspector({ item }: { item: TextItem }) {
           <Field label={t('inspector.text')} htmlFor="insp-body">
             <textarea
               id="insp-body"
-              className="field !font-sans !text-ui-14"
+              className={`field !font-sans ${typographyClass({ size: 14, important: true })}`}
               rows={7}
               value={slide.body}
               placeholder={t('inspector.textPlaceholder')}
@@ -174,7 +176,7 @@ function TextInspector({ item }: { item: TextItem }) {
             />
           </Field>
           {isLive && (
-            <Text
+            <Typography
               as="p"
               size={12}
               tone="secondary"
@@ -183,7 +185,7 @@ function TextInspector({ item }: { item: TextItem }) {
             >
               <Info size={14} className="mt-px shrink-0" />
               {t('inspector.liveHint')}
-            </Text>
+            </Typography>
           )}
           <div className="flex items-center gap-1 pt-1">
             <IconButton
@@ -234,9 +236,9 @@ function TextInspector({ item }: { item: TextItem }) {
           </div>
         </section>
       ) : (
-        <Text as="p" size={13} tone="muted">
+        <Typography as="p" size={13} tone="muted">
           {t('inspector.noSlide')}
-        </Text>
+        </Typography>
       )}
     </div>
   );
@@ -248,7 +250,9 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
     typeof item.target === 'string' ? '' : String(Math.round(item.target.durationSec / 60));
   return (
     <div className="flex flex-col gap-4 p-5">
-      <h3 className="section-label">{t('service.kind.countdown')}</h3>
+      <Typography as="h3" variant="overline">
+        {t('service.kind.countdown')}
+      </Typography>
       <Field label={t('inspector.countdownText')} htmlFor="insp-cd-title">
         <input
           id="insp-cd-title"

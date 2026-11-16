@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { typographyClass } from './Typography';
 
 export interface SegmentedProps<T extends string> {
   value: T;
@@ -27,7 +28,7 @@ export function Segmented<T extends string>({
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] px-3 text-ui-12 font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+          className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] px-3 transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
             value === o.value
               ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_0_1px_var(--hairline),var(--highlight-top)]'
               : 'text-[var(--text-2)] hover:text-[var(--text-1)]'

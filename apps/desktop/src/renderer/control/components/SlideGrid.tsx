@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button, Segmented, Text } from '@lampstand/ui';
+import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { itemTitle } from '../lib/slides';
@@ -102,13 +102,13 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('slides.title')}>
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-3">
         {item && <KindTile kind={item.kind} size={22} />}
-        <Text as="h2" variant="title" truncate className="min-w-0">
+        <Typography as="h2" variant="title" truncate className="min-w-0">
           {item ? itemTitle(item, { songs, media }) : t('slides.title')}
-        </Text>
+        </Typography>
         {item && slides.length > 0 && (
-          <Text variant="caption" className="shrink-0">
+          <Typography variant="caption" className="shrink-0">
             {t('slides.count', { count: slides.length })}
-          </Text>
+          </Typography>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {song && item?.kind === 'song' && (
@@ -198,7 +198,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
                 <AddCard
                   label={t('inspector.addSlide')}
                   onClick={addSlide}
-                  className="aspect-[16/10.4] w-full rounded-[6px] text-ui-13"
+                  className={`aspect-[16/10.4] w-full rounded-[6px] ${typographyClass({ size: 13 })}`}
                   icon={<Plus size={22} strokeWidth={1.75} />}
                 />
               </li>

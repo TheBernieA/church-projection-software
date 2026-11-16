@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Segmented, SoonBadge, Text } from '@lampstand/ui';
+import { Segmented, SoonBadge, Typography } from '@lampstand/ui';
 import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { SoonList } from '../Soon';
 import { Group, SettingsPage } from './parts';
@@ -61,7 +61,7 @@ export function FeaturesPage() {
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <Text
+                  <Typography
                     as="p"
                     size={13}
                     tone="primary"
@@ -70,10 +70,10 @@ export function FeaturesPage() {
                   >
                     {f.name}
                     {f.status === 'soon' && <SoonBadge label={t('soon.badge')} />}
-                  </Text>
-                  <Text as="p" variant="caption" leading="snug" className="mt-0.5">
+                  </Typography>
+                  <Typography as="p" variant="caption" leading="snug" className="mt-0.5">
                     {f.description}
-                  </Text>
+                  </Typography>
                 </div>
               </div>
             ))}
