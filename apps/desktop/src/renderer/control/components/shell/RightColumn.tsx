@@ -1,5 +1,4 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Church,
   Film,
@@ -11,10 +10,7 @@ import {
   Sparkle,
   Square,
   Type,
-  ListChecks,
-  Settings2,
   Power,
-  Ellipsis,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,7 +24,6 @@ import {
   type MediaLayer,
   type RestorableLayer,
   type Scene,
-  type Settings,
   type Standby,
 } from '@lampstand/core';
 import {
@@ -40,20 +35,13 @@ import {
   typographyClass,
   Segmented,
 } from '@lampstand/ui';
-import {
-  clearGroup,
-  clearLayer,
-  goLive,
-  restoreAll,
-  restoreLayer,
-  toggleMask,
-} from '../../lib/actions';
+import { clearLayer, goLive, restoreAll, restoreLayer, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { openDialog, useStore } from '../../lib/store';
-import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
+import { useStore } from '../../lib/store';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
+import { LayerStrip, type StripLayer } from './LayerStrip';
 import { ShowControls } from './ShowControls';
 import { Select } from '../Select';
 import { urlHost } from '../../lib/utils';
@@ -103,108 +91,6 @@ function MonitorCard({
       </div>
       {footer}
     </figure>
-  );
-}
-
-/**
- * "…" at the foot of the layer strip: the operator's clear groups (one click clears exactly
- * those layers) and a way to edit them.
- */
-function LayersMenu() {
-  const { t } = useTranslation();
-  const groups = useStore((s) => s.settings?.clearGroups ?? EMPTY_GROUPS);
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <IconButton size="2xs" variant="quiet" aria-label={t('monitor.moreLayers')}>
-          <Ellipsis size={14} />
-        </IconButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content side="left" align="end" sideOffset={6} className={MENU_CLASS}>
-          <DropdownMenu.Label className={MENU_LABEL_CLASS}>
-            {t('clearGroups.title')}
-          </DropdownMenu.Label>
-          {groups.map((g) => (
-            <DropdownMenu.Item
-              key={g.id}
-              className={ITEM_CLASS}
-              onSelect={() => void clearGroup(g.layers)}
-              title={g.layers.map((l) => t(`clearGroups.layers.${l}`)).join(', ')}
-            >
-              <ListChecks size={14} />
-              <Typography truncate className="flex-1">
-                {t('clearGroups.clear', { name: g.name })}
-              </Typography>
-            </DropdownMenu.Item>
-          ))}
-          <DropdownMenu.Item
-            className={ITEM_CLASS}
-            onSelect={() => openDialog('settings', { settingsPage: 'presenting' })}
-          >
-            <Settings2 size={14} />
-            {groups.length ? t('clearGroups.edit') : t('clearGroups.create')}
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  );
-}
-
-const EMPTY_GROUPS: NonNullable<Settings['clearGroups']> = [];
-
-/**
- * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
- * something; clicking clears just that layer. Once cleared it remembers what was there: it gets
- * a red outline and clicking again brings it back. Inert when there is nothing to bring back.
- */
-function LayerButton({
-  icon,
-  label,
-  hint,
-  on,
-  restorable,
-  restoreWhat,
-  onClick,
-  onRestore,
-}: {
-  icon: ReactNode;
-  label: string;
-  hint?: string;
-  on: boolean;
-  /** Empty now, but the last clear can be undone. */
-  restorable: boolean;
-  /** What would come back (a slide label, a file name), for the tooltip. */
-  restoreWhat?: string | undefined;
-  onClick: () => void;
-  onRestore: () => void;
-}) {
-  const { t } = useTranslation();
-  const restore = !on && restorable;
-  const name = restore
-    ? t('monitor.restoreLayer', { name: label })
-    : t('monitor.clearLayer', { name: label });
-  const tip = restore && restoreWhat ? `${name}: ${restoreWhat}` : name;
-  return (
-    <IconButton
-      size="2xs"
-      variant="quiet"
-      onClick={restore ? onRestore : onClick}
-      disabled={!on && !restorable}
-      active={on}
-      activeTone="live"
-      aria-label={name}
-      title={hint && !restore ? `${tip} (${hint})` : tip}
-      // An empty layer is shown as a plain icon, not a faded "disabled" one; a layer that can be
-      // brought back is outlined in red.
-      className={`disabled:cursor-default disabled:opacity-100 ${
-        restore
-          ? '!text-[var(--text-1)] shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--tally-program)_70%,transparent)]'
-          : ''
-      }`}
-    >
-      {icon}
-    </IconButton>
   );
 }
 
@@ -343,6 +229,76 @@ export function RightColumn() {
     ? media.find((m) => m.id === cleared.media?.mediaId)?.name
     : undefined;
   const anything = onAir || p.overlays.length > 0 || p.masks.black || p.masks.logo;
+  const stripLayers: StripLayer[] = [
+    {
+      id: 'messages',
+      icon: <MessageSquareText size={14} />,
+      label: t('monitor.layers.messages'),
+      on: has('messages'),
+      onClear: clear('messages'),
+      restorable: !!cleared.messages,
+      restoreWhat: cleared.messages?.length
+        ? t('monitor.restoreCount', { count: cleared.messages.length })
+        : undefined,
+      onRestore: back('messages'),
+    },
+    {
+      id: 'props',
+      icon: <Sparkle size={14} />,
+      label: t('monitor.layers.props'),
+      on: has('props'),
+      onClear: clear('props'),
+      restorable: !!cleared.props,
+      restoreWhat: cleared.props?.length
+        ? t('monitor.restoreCount', { count: cleared.props.length })
+        : undefined,
+      onRestore: back('props'),
+    },
+    {
+      id: 'announcements',
+      icon: <Megaphone size={14} />,
+      label: t('monitor.layers.announcements'),
+      on: !!p.announcement,
+      onClear: clear('announcements'),
+      restorable: !!cleared.announcements,
+      restoreWhat: cleared.announcements?.label,
+      onRestore: back('announcements'),
+    },
+    {
+      id: 'content',
+      icon: <Type size={14} />,
+      label: t('monitor.layers.slide'),
+      hint: displayCombo(keys.clearContent),
+      on: !!p.content,
+      onClear: clear('content'),
+      restorable: !!cleared.content,
+      restoreWhat:
+        cleared.content?.content?.label ??
+        (cleared.content?.web ? urlHost(cleared.content.web.url) : undefined),
+      onRestore: back('content'),
+    },
+    {
+      id: 'media',
+      icon: <Film size={14} />,
+      label: t('monitor.layers.media'),
+      hint: displayCombo(keys.clearMedia),
+      on: !!p.media || !!p.web || !!p.input,
+      onClear: clear('media'),
+      restorable: !!cleared.media || !!cleared.input,
+      restoreWhat: clearedMedia ?? cleared.input?.label,
+      onRestore: back('media'),
+    },
+    {
+      id: 'background',
+      icon: <ImageIcon size={14} />,
+      label: t('monitor.layers.background'),
+      hint: displayCombo(keys.clearBackground),
+      on: !!p.background,
+      onClear: clear('background'),
+      restorable: !!cleared.background,
+      onRestore: back('background'),
+    },
+  ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -353,12 +309,12 @@ export function RightColumn() {
           <div
             role="status"
             aria-live="polite"
-            className="flex h-5 items-center justify-between px-0.5"
+            className="flex h-5 items-center justify-between gap-3 px-0.5"
           >
             <TallyLabel tone="program" active={onAir}>
               {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
             </TallyLabel>
-            <Typography size={11} tone="muted" truncate>
+            <Typography size={11} tone="muted" truncate className="min-w-0">
               {p.content?.label ?? mediaName ?? ''}
             </Typography>
           </div>
@@ -404,114 +360,44 @@ export function RightColumn() {
                 </>
               )}
             </div>
-            {/* Layers, top to bottom as stacked on screen; each clears just its layer. */}
-            <div
-              role="group"
-              aria-label={t('monitor.clear')}
-              className="flex w-7 shrink-0 flex-col items-center gap-[3px]"
-            >
-              {anything ? (
-                <IconButton
-                  size="2xs"
-                  active
-                  activeTone="live"
-                  aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
-                  onClick={() => void clearLayer('all')}
-                  className="!rounded-full"
-                >
-                  <Power size={13} strokeWidth={2.5} />
-                </IconButton>
-              ) : cleared.off ? (
-                // After Turn off live, the power button brings everything back (mouse only).
-                <IconButton
-                  size="2xs"
-                  variant="quiet"
-                  aria-label={t('monitor.restoreAll')}
-                  title={`${t('monitor.restoreAll')}: ${offSummary}`}
-                  onClick={() => void restoreAll()}
-                  className="!rounded-full !text-[var(--tally-program)] shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--tally-program)_70%,transparent)]"
-                >
-                  <Power size={13} strokeWidth={2.5} />
-                </IconButton>
-              ) : (
-                <Typography
-                  tone="muted"
-                  aria-hidden
-                  className="flex h-6 w-6 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
-                >
-                  <Power size={12} />
-                </Typography>
-              )}
-              <LayerButton
-                icon={<MessageSquareText size={14} />}
-                label={t('monitor.layers.messages')}
-                on={has('messages')}
-                onClick={clear('messages')}
-                restorable={!!cleared.messages}
-                restoreWhat={
-                  cleared.messages?.length
-                    ? t('monitor.restoreCount', { count: cleared.messages.length })
-                    : undefined
-                }
-                onRestore={back('messages')}
-              />
-              <LayerButton
-                icon={<Sparkle size={14} />}
-                label={t('monitor.layers.props')}
-                on={has('props')}
-                onClick={clear('props')}
-                restorable={!!cleared.props}
-                restoreWhat={
-                  cleared.props?.length
-                    ? t('monitor.restoreCount', { count: cleared.props.length })
-                    : undefined
-                }
-                onRestore={back('props')}
-              />
-              <LayerButton
-                icon={<Megaphone size={14} />}
-                label={t('monitor.layers.announcements')}
-                on={!!p.announcement}
-                onClick={clear('announcements')}
-                restorable={!!cleared.announcements}
-                restoreWhat={cleared.announcements?.label}
-                onRestore={back('announcements')}
-              />
-              <LayerButton
-                icon={<Type size={14} />}
-                label={t('monitor.layers.slide')}
-                hint={displayCombo(keys.clearContent)}
-                on={!!p.content}
-                onClick={clear('content')}
-                restorable={!!cleared.content}
-                restoreWhat={
-                  cleared.content?.content?.label ??
-                  (cleared.content?.web ? urlHost(cleared.content.web.url) : undefined)
-                }
-                onRestore={back('content')}
-              />
-              <LayerButton
-                icon={<Film size={14} />}
-                label={t('monitor.layers.media')}
-                hint={displayCombo(keys.clearMedia)}
-                on={!!p.media || !!p.web || !!p.input}
-                onClick={clear('media')}
-                restorable={!!cleared.media || !!cleared.input}
-                restoreWhat={clearedMedia ?? cleared.input?.label}
-                onRestore={back('media')}
-              />
-              <LayerButton
-                icon={<ImageIcon size={14} />}
-                label={t('monitor.layers.background')}
-                hint={displayCombo(keys.clearBackground)}
-                on={!!p.background}
-                onClick={clear('background')}
-                restorable={!!cleared.background}
-                restoreWhat={undefined}
-                onRestore={back('background')}
-              />
-              <LayersMenu />
-            </div>
+            {/* Layers, top to bottom in the operator's order; each clears just its layer. */}
+            <LayerStrip
+              power={
+                anything ? (
+                  <IconButton
+                    size="2xs"
+                    active
+                    activeTone="live"
+                    aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
+                    onClick={() => void clearLayer('all')}
+                    className="!rounded-full"
+                  >
+                    <Power size={13} strokeWidth={2.5} />
+                  </IconButton>
+                ) : cleared.off ? (
+                  // After Turn off live, the power button brings everything back (mouse only).
+                  <IconButton
+                    size="2xs"
+                    variant="quiet"
+                    aria-label={t('monitor.restoreAll')}
+                    title={`${t('monitor.restoreAll')}: ${offSummary}`}
+                    onClick={() => void restoreAll()}
+                    className="!rounded-full !text-[var(--tally-program)] shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--tally-program)_70%,transparent)]"
+                  >
+                    <Power size={13} strokeWidth={2.5} />
+                  </IconButton>
+                ) : (
+                  <Typography
+                    tone="muted"
+                    aria-hidden
+                    className="flex h-6 w-6 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+                  >
+                    <Power size={12} />
+                  </Typography>
+                )
+              }
+              layers={stripLayers}
+            />
           </div>
         </figure>
         <div className="flex items-center gap-1.5">

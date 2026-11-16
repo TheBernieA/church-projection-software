@@ -181,7 +181,12 @@
     "screen": "Screen",
     "next": "Next slide",
     "stageNext": "Stage (next)",
-    "moreLayers": "More layers"
+    "moreLayers": "More layers",
+    "moreLayersHint": "More layers and clear groups (drop a layer here to move it into this menu)",
+    "dragToMove": "Drag to move it, or onto … to tuck it away",
+    "layersLabel": "Layers",
+    "onTheStrip": "On the strip",
+    "resetStrip": "Reset the strip"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",

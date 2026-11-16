@@ -1050,7 +1050,9 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
   await bin.getByRole('button', { name: 'Seed image', exact: true }).click();
   await expect(out.locator('.ls-prop-top-right img')).toHaveCount(1);
   await control.screenshot({ path: 'test-results/19-props.png' });
-  await control.getByRole('button', { name: 'Clear Props' }).click();
+  // Props live in the strip's "…" menu by default; "…" shows a red dot while one is up.
+  await control.getByRole('button', { name: 'More layers' }).click();
+  await control.getByRole('menuitem', { name: 'Clear Props' }).click();
   await expect(out.locator('.ls-prop')).toHaveCount(0);
 
   // Messages: fill the {number} field, show it as a lower third, clear the Messages layer.
@@ -1465,6 +1467,7 @@ test('media bin: hover outline, list view, sort and rename', async () => {
   await nav.getByRole('button', { name: 'All media', exact: true }).click();
   // Hover outlines a tile without moving it.
   const tile = bin.getByRole('button', { name: 'Seed clip', exact: true });
+  await tile.scrollIntoViewIfNeeded();
   const before = await tile.boundingBox();
   await tile.hover();
   await control.waitForTimeout(200);
@@ -1511,6 +1514,40 @@ test('media bin: hover outline, list view, sort and rename', async () => {
   await expect(bin.getByRole('heading', { level: 3 }).first()).toBeVisible();
   await control.screenshot({ path: 'test-results/27-media-grid.png' });
   await bin.getByRole('searchbox', { name: 'Search media' }).fill('');
+});
+
+test('layer strip: drag a layer to move it, tuck it into "…", put it back', async () => {
+  const strip = control.getByRole('group', { name: 'Clear', exact: true });
+  const names = async (): Promise<string[]> =>
+    (
+      await strip
+        .getByRole('button')
+        .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))
+    ).map((n) => n.replace(/^(Clear|Bring back) /, '').replace(/ \(.*$/, ''));
+  const order = await names();
+  expect(order).not.toContain('Props');
+  const at = (label: string) =>
+    strip.locator(
+      `button[aria-label^="Clear ${label}"], button[aria-label^="Bring back ${label}"]`,
+    );
+  // Drag Background above Messages.
+  await at('Background').dragTo(at('Messages'));
+  await expect
+    .poll(async () => (await names()).indexOf('Background'))
+    .toBeLessThan((await names()).indexOf('Messages'));
+  // Drop Announcements onto "…": it leaves the strip and appears in the menu.
+  await at('Announcements').dragTo(strip.getByRole('button', { name: 'More layers' }));
+  await expect(at('Announcements')).toHaveCount(0);
+  await strip.getByRole('button', { name: 'More layers' }).click();
+  await expect(control.getByRole('menuitem', { name: /Announcements/ })).toBeVisible();
+  // Put Props on the strip from the menu, then reset everything.
+  await control.getByRole('menuitemcheckbox', { name: 'Props' }).click();
+  await control.keyboard.press('Escape');
+  await expect(at('Props')).toHaveCount(1);
+  await control.screenshot({ path: 'test-results/29-layer-strip.png' });
+  await strip.getByRole('button', { name: 'More layers' }).click();
+  await control.getByRole('menuitem', { name: 'Reset the strip' }).click();
+  await expect.poll(names).toEqual(order);
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {
