@@ -250,7 +250,10 @@ export function Toolbar() {
         onClick={() => useStore.setState({ mode: 'themes' })}
       />
 
-      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
+      <span
+        aria-hidden
+        className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]"
+      />
 
       <nav aria-label={t('modes.label')} className="flex items-center gap-1">
         {MAIN_MODES.map(({ mode: m, icon: Icon }) => (
@@ -287,7 +290,10 @@ export function Toolbar() {
         title={`${soonTitle('record')}\n${soonTitle('stream')}`}
       />
 
-      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
+      <span
+        aria-hidden
+        className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]"
+      />
 
       {/* Screens: lit green when connected, red when there's nowhere to show. */}
       <ToolbarButton
@@ -306,7 +312,10 @@ export function Toolbar() {
         onClick={() => openDialog('outputs')}
       />
 
-      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
+      <span
+        aria-hidden
+        className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]"
+      />
 
       <label
         className="flex h-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[3px] rounded-[6px] px-1.5 text-[var(--text-2)] hover:bg-[color-mix(in_srgb,var(--text-1)_7%,transparent)]"

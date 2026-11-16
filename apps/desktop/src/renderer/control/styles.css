@@ -166,15 +166,14 @@ input[type='checkbox'] {
     opacity: 0;
   }
 }
-/* Dialogs are centred with translateX(-50%), so the entrance keeps that offset. */
+/*
+ * Dialog entrance. Tailwind centres dialogs with the `translate` property, which composes with
+ * `transform`, so this must not repeat the -50% offset (that slid dialogs in from the left).
+ */
 @keyframes ls-dialog {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(6px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%);
+    transform: translateY(6px) scale(0.98);
   }
 }
 @keyframes ls-toast {

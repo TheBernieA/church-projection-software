@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   AudioLines,
   Church,
@@ -14,6 +15,7 @@ import {
   ListChecks,
   Video,
   Power,
+  Ellipsis,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -24,7 +26,8 @@ import {
   type Scene,
   type Standby,
 } from '@lampstand/core';
-import { Button, Kbd, TallyLabel } from '@lampstand/ui';
+import { Button, Kbd, SoonBadge, TallyLabel } from '@lampstand/ui';
+import { feature } from '../../lib/features';
 import { clearLayer, goLive, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
@@ -81,11 +84,57 @@ function MonitorCard({
 
 /** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
 const PLANNED_LAYERS = [
-  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={13} /> },
-  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={13} /> },
-  { id: 'video-input', label: 'videoInput', icon: <Video size={13} /> },
-  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={13} /> },
+  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={14} /> },
+  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={14} /> },
+  { id: 'video-input', label: 'videoInput', icon: <Video size={14} /> },
+  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={14} /> },
 ];
+
+/** "…" at the foot of the layer strip: the layers still to come, each marked Soon. */
+function PlannedLayers() {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          aria-label={t('monitor.moreLayers')}
+          title={t('monitor.moreLayers')}
+          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-[5px] text-[var(--text-3)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+        >
+          <Ellipsis size={14} />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side="left"
+          align="end"
+          sideOffset={6}
+          className="z-[60] min-w-[230px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
+        >
+          <DropdownMenu.Label className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+            {t('monitor.moreLayers')}
+          </DropdownMenu.Label>
+          {PLANNED_LAYERS.map((l) => {
+            const f = feature(l.id);
+            return (
+              <DropdownMenu.Item
+                key={l.id}
+                disabled
+                title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
+                className="flex items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-[13px] text-[var(--text-2)] outline-none"
+              >
+                <span className="flex text-[var(--text-3)]">{l.icon}</span>
+                <span className="flex-1">{t(`monitor.layers.${l.label}`)}</span>
+                <SoonBadge label={t('soon.badge')} />
+              </DropdownMenu.Item>
+            );
+          })}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
 
 /**
  * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
@@ -322,23 +371,8 @@ export function RightColumn() {
                 on={!!p.background}
                 onClick={clear('background')}
               />
+              <PlannedLayers />
             </div>
-          </div>
-          {/* Layers still to come: a quiet row, so the strip stays as tall as the monitor. */}
-          <div className="flex items-center gap-2 px-0.5 text-[var(--text-3)]">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.06em] opacity-70">
-              {t('soon.badge')}
-            </span>
-            {PLANNED_LAYERS.map((l) => (
-              <span
-                key={l.id}
-                aria-hidden
-                title={t('soon.tooltip', { name: t(`monitor.layers.${l.label}`) })}
-                className="flex opacity-60"
-              >
-                {l.icon}
-              </span>
-            ))}
           </div>
         </figure>
         <div className="flex items-center gap-1.5">

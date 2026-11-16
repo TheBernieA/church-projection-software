@@ -164,7 +164,8 @@
     "clearAllLayers": "Clear all",
     "screen": "Screen",
     "next": "Next slide",
-    "stageNext": "Stage (next)"
+    "stageNext": "Stage (next)",
+    "moreLayers": "More layers"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
