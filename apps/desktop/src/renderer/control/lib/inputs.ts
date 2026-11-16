@@ -7,7 +7,7 @@ export interface InputDevice {
 }
 
 /** Ask for camera/mic access once, so devices come with their real names. */
-async function unlock(kind: 'videoinput' | 'audioinput'): Promise<void> {
+async function unlock(kind: 'videoinput' | 'audioinput' | 'audiooutput'): Promise<void> {
   try {
     const s = await navigator.mediaDevices.getUserMedia(
       kind === 'videoinput' ? { video: true } : { audio: true },
@@ -22,7 +22,9 @@ async function unlock(kind: 'videoinput' | 'audioinput'): Promise<void> {
  * The cameras/capture cards (`videoinput`) or microphones/mixer inputs (`audioinput`) this
  * computer has, kept up to date as devices are plugged in or out.
  */
-export function useInputDevices(kind: 'videoinput' | 'audioinput'): InputDevice[] | null {
+export function useInputDevices(
+  kind: 'videoinput' | 'audioinput' | 'audiooutput',
+): InputDevice[] | null {
   const [devices, setDevices] = useState<InputDevice[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -34,7 +36,9 @@ export function useInputDevices(kind: 'videoinput' | 'audioinput'): InputDevice[
           .filter((d) => d.kind === kind && d.deviceId && d.deviceId !== 'default')
           .map((d, i) => ({
             deviceId: d.deviceId,
-            label: d.label || `${kind === 'videoinput' ? 'Camera' : 'Input'} ${i + 1}`,
+            label:
+              d.label ||
+              `${kind === 'videoinput' ? 'Camera' : kind === 'audiooutput' ? 'Output' : 'Input'} ${i + 1}`,
           })),
       );
     };

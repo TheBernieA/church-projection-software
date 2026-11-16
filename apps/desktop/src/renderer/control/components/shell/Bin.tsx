@@ -8,6 +8,9 @@ import {
   Music,
   ListVideo,
   Pencil,
+  Star,
+  History,
+  FolderPlus,
   Plus,
   Store,
   Trash2,
@@ -17,12 +20,14 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MediaPlaylist } from '@lampstand/core';
-import { IconButton, NavItem, Typography } from '@lampstand/ui';
+import { IconButton, NavItem, SoonBadge, Typography } from '@lampstand/ui';
+import { feature, soonTitle } from '../../lib/features';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
 import {
   addToMediaPlaylist,
   createMediaPlaylist,
   deleteMediaPlaylist,
+  FAVOURITE,
   renameMediaPlaylist,
   usePlaylists,
 } from '../../lib/mediaPlaylists';
@@ -36,6 +41,7 @@ import { type BinTab } from '../../types';
 
 const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
   { tab: 'media', icon: Images },
+  { tab: 'favourites', icon: Star },
   { tab: 'images', icon: ImageIcon },
   { tab: 'videos', icon: Film },
   { tab: 'audio', icon: Music },
@@ -61,6 +67,26 @@ function SectionHeading({ title, action }: { title: string; action?: ReactNode }
       </Typography>
       {action}
     </div>
+  );
+}
+
+/** A planned entry in the media sidebar: dimmed, with a Soon badge and what it will do. */
+function SoonNavItem({ id, icon }: { id: string; icon: ReactNode }) {
+  const { t } = useTranslation();
+  return (
+    <NavItem
+      dim
+      disabled
+      title={soonTitle(id)}
+      icon={
+        <Typography tone="muted" className="flex">
+          {icon}
+        </Typography>
+      }
+      label={feature(id).name}
+      trailing={<SoonBadge label={t('soon.badge')} />}
+      className="w-[calc(100%-12px)] cursor-default"
+    />
   );
 }
 
@@ -167,6 +193,7 @@ export function BinNav() {
   const ids = useMemo(() => new Set(library.map((m) => m.id)), [library]);
   const counts: Partial<Record<BinTab, number>> = {
     media: library.length,
+    favourites: library.filter((m) => m.tags.includes(FAVOURITE)).length,
     images: library.filter((m) => m.kind === 'image').length,
     videos: library.filter((m) => m.kind === 'video').length,
     audio: library.filter((m) => m.kind === 'audio').length,
@@ -189,6 +216,8 @@ export function BinNav() {
           className="w-[calc(100%-12px)]"
         />
       ))}
+
+      <SoonNavItem id="media-recent" icon={<History size={14} />} />
 
       <SectionHeading
         title={t('mediaBin.playlists')}
@@ -213,6 +242,8 @@ export function BinNav() {
         .map((p) => (
           <PlaylistRow key={p.id} p={p} count={p.mediaIds.filter((id) => ids.has(id)).length} />
         ))}
+
+      <SoonNavItem id="playlist-folders" icon={<FolderPlus size={14} />} />
 
       <SectionHeading title={t('mediaBin.sources')} />
       {SOURCES.map(({ tab: x, icon: Icon }) => (
@@ -241,7 +272,7 @@ export function Bin({ height }: { height: number }) {
   const playlists = usePlaylists('media');
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
   const view =
-    tab === 'images' || tab === 'videos' || tab === 'audio'
+    tab === 'images' || tab === 'videos' || tab === 'audio' || tab === 'favourites'
       ? tab
       : openPlaylist
         ? 'playlist'

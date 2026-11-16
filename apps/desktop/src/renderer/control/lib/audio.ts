@@ -12,8 +12,11 @@ export const audioCmd = (payload: Record<string, unknown>): Promise<unknown> =>
   attempt(() => cmd('live.audio', payload), 'errors.audio');
 
 /** Play a track through the room; from a playlist, the playlist carries on after it. */
-export const playAudio = (mediaId: string, playlistId: string | null = null): Promise<unknown> =>
-  audioCmd({ action: 'play', mediaId, playlistId });
+export const playAudio = (
+  mediaId: string,
+  playlistId: string | null = null,
+  position = 0,
+): Promise<unknown> => audioCmd({ action: 'play', mediaId, playlistId, position });
 
 /** The tracks an audio playlist plays, in order (missing files skipped). */
 export function playlistTracks(playlistId: string): string[] {

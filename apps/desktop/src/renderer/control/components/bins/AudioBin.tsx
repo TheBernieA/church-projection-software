@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Ellipsis,
+  Headphones,
   ListPlus,
   Music,
   Pause,
   Play,
   Plus,
+  Radio,
   Repeat,
   SkipBack,
   SkipForward,
@@ -23,6 +25,15 @@ import { Button, IconButton, Typography } from '@lampstand/ui';
 import { audioCmd, neighbourTrack, playAudio, probeDuration } from '../../lib/audio';
 
 import { useNow } from '../../lib/hooks';
+import {
+  previewTrack,
+  seekPreview,
+  setPreviewOutput,
+  stopPreview,
+  togglePreview,
+  useAudioPreview,
+} from '../../lib/audioPreview';
+import { useInputDevices } from '../../lib/inputs';
 import { pct, useDraft } from '../../lib/slider';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import {
@@ -57,12 +68,25 @@ function NowPlaying() {
   const volume = useDraft(a?.volume, (v) => void audioCmd({ action: 'set', volume: v }));
   const pos = seek.draft ?? playhead;
   const vol = volume.draft ?? a?.volume ?? 1;
-  const idle = !a;
+  // Nothing in the room: one quiet line, so the track list gets the height.
+  if (!a)
+    return (
+      <div
+        role="group"
+        aria-label={t('audio.nowPlaying')}
+        className="m-2.5 flex items-center gap-2 rounded-[8px] bg-[var(--surface-0)] px-3 py-2 shadow-[inset_0_0_0_1px_var(--hairline)]"
+      >
+        <Music size={13} className="shrink-0 text-[var(--text-3)]" />
+        <Typography size={12} tone="muted" truncate>
+          {t('audio.nothing')} · {t('audio.nothingHint')}
+        </Typography>
+      </div>
+    );
   return (
     <div
       role="group"
       aria-label={t('audio.nowPlaying')}
-      className={`m-2.5 flex flex-col gap-1.5 rounded-[10px] bg-[var(--surface-0)] px-3 pb-2 pt-2.5 shadow-[inset_0_0_0_1px_var(--hairline),var(--highlight-top)] ${idle ? 'opacity-80' : ''}`}
+      className={`m-2.5 flex flex-col gap-1.5 rounded-[10px] bg-[var(--surface-0)] px-3 pb-2 pt-2.5 shadow-[inset_0_0_0_1px_var(--hairline),var(--highlight-top)]`}
     >
       <div className="flex items-center gap-2.5">
         <Typography
@@ -73,17 +97,11 @@ function NowPlaying() {
           <Music size={16} />
         </Typography>
         <div className="min-w-0 flex-1">
-          <Typography as="p" size={12} weight="medium" truncate tone={idle ? 'muted' : 'primary'}>
-            {name ?? t('audio.nothing')}
+          <Typography as="p" size={12} weight="medium" truncate tone="primary">
+            {name}
           </Typography>
           <Typography as="p" size={11} tone="muted" truncate>
-            {idle
-              ? t('audio.nothingHint')
-              : a.fade
-                ? t('audio.fading')
-                : a.playing
-                  ? t('audio.playing')
-                  : t('audio.paused')}
+            {a.fade ? t('audio.fading') : a.playing ? t('audio.playing') : t('audio.paused')}
           </Typography>
         </div>
         <Volume2 size={14} className="shrink-0 text-[var(--text-3)]" />
@@ -93,7 +111,6 @@ function NowPlaying() {
           min={0}
           max={1}
           step={0.05}
-          disabled={idle}
           value={vol}
           {...volume.props}
           style={pct(vol, 1)}
@@ -115,10 +132,10 @@ function NowPlaying() {
         />
         <div className="flex justify-between">
           <Typography size={10} tone="muted" tabular>
-            {a ? formatClock(Math.floor(pos)) : '--:--'}
+            {formatClock(Math.floor(pos))}
           </Typography>
           <Typography size={10} tone="muted" tabular>
-            {a && duration ? `−${formatClock(Math.ceil(duration - pos))}` : '--:--'}
+            {duration ? `−${formatClock(Math.ceil(duration - pos))}` : '--:--'}
           </Typography>
         </div>
       </div>
@@ -126,11 +143,10 @@ function NowPlaying() {
         <IconButton
           size="xs"
           variant="quiet"
-          disabled={idle}
           aria-label={t('audio.loop')}
-          aria-pressed={!!a?.loop}
-          active={!!a?.loop}
-          onClick={() => void audioCmd({ action: 'set', loop: !a?.loop })}
+          aria-pressed={a.loop}
+          active={a.loop}
+          onClick={() => void audioCmd({ action: 'set', loop: !a.loop })}
         >
           <Repeat size={14} />
         </IconButton>
@@ -138,12 +154,11 @@ function NowPlaying() {
           <IconButton
             size="sm"
             variant="quiet"
-            disabled={idle}
             aria-label={t('audio.previous')}
             onClick={() => {
               const prev = neighbourTrack(-1);
               void (prev && pos < 3
-                ? playAudio(prev, a?.playlistId ?? null)
+                ? playAudio(prev, a.playlistId ?? null)
                 : audioCmd({ action: 'seek', position: 0 }));
             }}
           >
@@ -151,13 +166,12 @@ function NowPlaying() {
           </IconButton>
           <Button
             variant="bare"
-            disabled={idle}
-            aria-label={a?.playing ? t('audio.pause') : t('audio.play')}
-            title={a?.playing ? t('audio.pause') : t('audio.play')}
+            aria-label={a.playing ? t('audio.pause') : t('audio.play')}
+            title={a.playing ? t('audio.pause') : t('audio.play')}
             onClick={() => void audioCmd({ action: 'toggle' })}
             className="mx-1 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--text-1)] text-[var(--surface-0)] shadow-[0_2px_10px_rgba(0,0,0,0.45)] hover:brightness-110 active:scale-95 disabled:opacity-40"
           >
-            {a?.playing ? (
+            {a.playing ? (
               <Pause size={15} fill="currentColor" strokeWidth={0} />
             ) : (
               <Play size={15} fill="currentColor" strokeWidth={0} className="translate-x-px" />
@@ -166,11 +180,11 @@ function NowPlaying() {
           <IconButton
             size="sm"
             variant="quiet"
-            disabled={idle || !neighbourTrack(1)}
+            disabled={!neighbourTrack(1)}
             aria-label={t('audio.next')}
             onClick={() => {
               const next = neighbourTrack(1);
-              if (next) void playAudio(next, a?.playlistId ?? null);
+              if (next) void playAudio(next, a.playlistId ?? null);
             }}
           >
             <SkipForward size={16} fill="currentColor" />
@@ -180,7 +194,7 @@ function NowPlaying() {
           <IconButton
             size="xs"
             variant="quiet"
-            disabled={idle || !!a.fade}
+            disabled={!!a.fade}
             aria-label={t('audio.fadeOut')}
             onClick={() => void audioCmd({ action: 'fadeOut', sec: 3 })}
           >
@@ -189,7 +203,6 @@ function NowPlaying() {
           <IconButton
             size="xs"
             variant="quiet"
-            disabled={idle}
             aria-label={t('audio.stop')}
             onClick={() => void audioCmd({ action: 'stop' })}
           >
@@ -201,10 +214,108 @@ function NowPlaying() {
   );
 }
 
+/**
+ * Listening on this computer before the room hears it: the track, where it plays (headphones,
+ * speakers), its transport, and "Play in room", which carries on from where you are.
+ */
+function PreviewBar({ playlistId }: { playlistId: string | null }) {
+  const { t } = useTranslation();
+  const p = useAudioPreview();
+  const name = useStore((s) => s.media.find((m) => m.id === p.mediaId)?.name);
+  const duration = useKnownDuration(p.mediaId ?? undefined);
+  const outputs = useInputDevices('audiooutput');
+  if (!p.mediaId) return null;
+  const id = p.mediaId;
+  return (
+    <div
+      role="group"
+      aria-label={t('audio.preview')}
+      className="mx-2.5 mb-2 flex flex-col gap-1.5 rounded-[10px] bg-[color-mix(in_srgb,var(--tally-preview)_10%,var(--surface-0))] px-3 py-2 shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--tally-preview)_45%,transparent)]"
+    >
+      <div className="flex items-center gap-2">
+        <Headphones size={14} className="shrink-0 text-[var(--tally-preview)]" />
+        <div className="min-w-0 flex-1">
+          <Typography as="p" size={12} weight="medium" truncate>
+            {name}
+          </Typography>
+          <Typography as="p" size={11} tone="muted" truncate>
+            {t('audio.previewHint')}
+          </Typography>
+        </div>
+        <IconButton
+          size="xs"
+          variant="quiet"
+          aria-label={t('audio.stopPreview')}
+          onClick={stopPreview}
+        >
+          <X size={14} />
+        </IconButton>
+      </div>
+      <div className="flex items-center gap-2">
+        <IconButton
+          size="xs"
+          variant="subtle"
+          aria-label={p.playing ? t('audio.pausePreview') : t('audio.playPreview')}
+          onClick={togglePreview}
+          className="!rounded-full"
+        >
+          {p.playing ? (
+            <Pause size={12} fill="currentColor" />
+          ) : (
+            <Play size={12} fill="currentColor" />
+          )}
+        </IconButton>
+        <input
+          type="range"
+          aria-label={t('audio.previewPosition')}
+          min={0}
+          max={duration ?? 0}
+          step={0.1}
+          disabled={!duration}
+          value={Math.min(p.position, duration ?? 0)}
+          onChange={(e) => seekPreview(Number(e.target.value))}
+          style={pct(p.position, duration ?? 0)}
+          className="ls-range min-w-0 flex-1"
+        />
+        <Typography size={10} tone="muted" tabular className="w-9 text-right">
+          {formatClock(Math.floor(p.position))}
+        </Typography>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <Select<string>
+            size="sm"
+            aria-label={t('audio.listenOn')}
+            value={p.sinkId || 'default'}
+            onChange={(v) => setPreviewOutput(v === 'default' ? '' : v)}
+            options={[
+              { value: 'default', label: t('audio.defaultOutput') },
+              ...(outputs ?? []).map((o) => ({ value: o.deviceId, label: o.label })),
+            ]}
+          />
+        </div>
+        <Button
+          size="sm"
+          variant="primary"
+          icon={<Radio size={13} />}
+          onClick={() => {
+            const at = p.position;
+            stopPreview();
+            void playAudio(id, playlistId, at);
+          }}
+        >
+          {t('audio.sendToRoom')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 /** One track: click plays it; its menu adds it to (or takes it out of) audio playlists. */
 function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
   const playing = useStore((s) => s.live?.audio?.mediaId === m.id);
+  const listening = useAudioPreview().mediaId === m.id;
   const playlists = usePlaylists('audio');
   const length = useKnownDuration(m.id, m.durationSec);
   useEffect(() => probeDuration(m.id), [m.id]);
@@ -212,14 +323,28 @@ function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }
     <li className="group relative">
       <Button
         variant="bare"
-        aria-label={m.name}
+        aria-label={t('audio.listenTo', { name: m.name })}
         aria-current={playing || undefined}
-        onClick={() => void playAudio(m.id, playlistId)}
-        className={`flex h-8 w-full items-center gap-2 rounded-[5px] px-2 pr-8 text-left transition-colors ${
-          playing ? 'bg-[var(--select)] text-white' : 'hover:bg-[var(--surface-2)]'
+        title={t('audio.rowHint')}
+        // Click: listen here first (headphones). Double-click: straight into the room.
+        onClick={() => previewTrack(m.id)}
+        onDoubleClick={() => {
+          stopPreview();
+          void playAudio(m.id, playlistId);
+        }}
+        className={`flex h-8 w-full items-center gap-2 rounded-[5px] px-2 pr-14 text-left transition-colors ${
+          playing
+            ? 'bg-[var(--select)] text-white'
+            : listening
+              ? 'bg-[color-mix(in_srgb,var(--tally-preview)_18%,transparent)] shadow-[inset_0_0_0_1px_var(--tally-preview)]'
+              : 'hover:bg-[var(--surface-2)]'
         }`}
       >
-        <Music size={13} className={playing ? '' : 'text-[var(--text-3)]'} />
+        {listening ? (
+          <Headphones size={13} className="text-[var(--tally-preview)]" />
+        ) : (
+          <Music size={13} className={playing ? '' : 'text-[var(--text-3)]'} />
+        )}
         <Typography size={12} truncate className="min-w-0 flex-1">
           {m.name}
         </Typography>
@@ -227,6 +352,18 @@ function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }
           {length ? formatClock(Math.round(length)) : ''}
         </Typography>
       </Button>
+      <IconButton
+        size="3xs"
+        variant="quiet"
+        aria-label={t('audio.playInRoom', { name: m.name })}
+        onClick={() => {
+          stopPreview();
+          void playAudio(m.id, playlistId);
+        }}
+        className={`absolute right-7 top-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 ${playing ? '!text-white' : ''}`}
+      >
+        <Radio size={13} />
+      </IconButton>
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <IconButton
@@ -301,6 +438,7 @@ export function AudioBin() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <NowPlaying />
+      <PreviewBar playlistId={playlist?.id ?? null} />
       <div className="flex items-center gap-1.5 px-2.5 pb-2">
         <div className="min-w-0 flex-1">
           <Select<string>

@@ -30,7 +30,7 @@ export const useStore = create<ControlState>((set) => ({
   binPlaylistId: null,
   announceItemId: null,
   audioPlaylistId: null,
-  controlsTab: 'timers',
+  controlsTab: 'audio',
   binOpen: true,
   textBarOpen: false,
   settingsPage: 'general',

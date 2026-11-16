@@ -1,4 +1,10 @@
-import { MEDIA_PLAYLIST_SCHEMA_VERSION, newId, nowIso, type MediaPlaylist } from '@lampstand/core';
+import {
+  MEDIA_PLAYLIST_SCHEMA_VERSION,
+  newId,
+  nowIso,
+  type MediaItem,
+  type MediaPlaylist,
+} from '@lampstand/core';
 import { useMemo } from 'react';
 import { cmd, q } from './api';
 import { attempt, toast, useStore } from './store';
@@ -131,4 +137,13 @@ export async function importMedia(
   if (r.imported) toast(i18n.t('media.imported', { count: r.imported }));
   if (r.rejected) toast(i18n.t('media.rejected', { count: r.rejected }), 'warning');
   if (opts.playlistId && r.ids.length) await addToMediaPlaylist(opts.playlistId, r.ids);
+}
+
+export const FAVOURITE = 'favourite';
+
+/** Star or unstar media (media bin › Favourites). Kept as a tag on the library item. */
+export async function toggleFavourite(m: MediaItem): Promise<void> {
+  const on = m.tags.includes(FAVOURITE);
+  const tags = on ? m.tags.filter((t) => t !== FAVOURITE) : [...m.tags, FAVOURITE];
+  await attempt(() => cmd('media.update', { id: m.id, tags }), 'errors.save');
 }

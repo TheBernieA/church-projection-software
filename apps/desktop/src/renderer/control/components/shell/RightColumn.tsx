@@ -251,6 +251,8 @@ function VideoControls({
 }) {
   const { t } = useTranslation();
   const [pick, setPick] = useState<'program' | 'preview'>('program');
+  // Only there when there's a video to drive: the height goes to the show controls otherwise.
+  if (!program && !preview) return null;
   const target = program && preview ? pick : preview && !program ? 'preview' : 'program';
   return (
     <MediaTransport

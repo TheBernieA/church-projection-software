@@ -1322,8 +1322,16 @@ test('audio bin: play a track, a playlist plays on, fade out', async () => {
     const r = await control.evaluate(() => window.lampstand.query('live.get'));
     return r.ok ? r.value.audio : null;
   };
-  await panel.getByRole('button', { name: 'Seed tone B', exact: true }).click();
+  // A click listens on this computer first: the room hears nothing yet.
+  await panel.getByRole('button', { name: 'Listen to Seed tone B' }).click();
+  const preview = panel.getByRole('group', { name: 'Listening on this computer' });
+  await expect(preview).toBeVisible();
+  expect(await audio()).toBeNull();
+  await control.screenshot({ path: 'test-results/35-audio-preview.png' });
+  // "Play in room" sends it out.
+  await preview.getByRole('button', { name: 'Play in room' }).click();
   await expect.poll(async () => (await audio())?.mediaId).toBe('seed-tone-b');
+  await expect(preview).toBeHidden();
   await expect(panel.getByRole('button', { name: 'Pause audio' })).toBeVisible();
   // An audio playlist: A then B. Playing A moves on to B by itself.
   await panel.getByRole('button', { name: 'New audio playlist' }).click();
@@ -1335,7 +1343,7 @@ test('audio bin: play a track, a playlist plays on, fade out', async () => {
   }
   await panel.getByRole('combobox', { name: 'Audio to show' }).click();
   await control.getByRole('option', { name: 'New playlist' }).click();
-  await panel.getByRole('button', { name: 'Seed tone A', exact: true }).click();
+  await panel.getByRole('button', { name: 'Play Seed tone A in the room' }).click();
   await expect.poll(async () => (await audio())?.mediaId).toBe('seed-tone-a');
   await expect.poll(async () => (await audio())?.mediaId, { timeout: 8000 }).toBe('seed-tone-b');
   await control.screenshot({ path: 'test-results/32-audio-bin.png' });

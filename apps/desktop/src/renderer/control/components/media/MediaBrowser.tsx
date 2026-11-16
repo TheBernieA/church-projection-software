@@ -9,7 +9,9 @@ import {
   ListPlus,
   ListVideo,
   Plus,
+  Radio,
   Search,
+  Star,
   Trash2,
   X,
 } from 'lucide-react';
@@ -19,12 +21,15 @@ import { Button, IconButton, Segmented, SoonBadge, Typography } from '@lampstand
 import { feature, soonTitle } from '../../lib/features';
 import { openAdhoc } from '../../lib/actions';
 import { playAudio } from '../../lib/audio';
+import { previewTrack } from '../../lib/audioPreview';
 import { cmd } from '../../lib/api';
 import { isLibraryDrag, libraryDragSource, readLibraryDrop } from '../../lib/libraryDrag';
 import {
   addToMediaPlaylist,
   createMediaPlaylist,
+  FAVOURITE,
   importMedia,
+  toggleFavourite,
   placeInMediaPlaylist,
   usePlaylists,
   removeFromMediaPlaylist,
@@ -33,12 +38,13 @@ import { addItemToService, attempt, useStore } from '../../lib/store';
 import { thumbUrl, mediaUrl } from '../../../shared/mediaUrl';
 import { usePaneSize } from '../shell/Splitter';
 import { EmptyState } from '../EmptyState';
+import { SoonFeature } from '../Soon';
 import { REVEAL } from '../cards';
-import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
 import i18n from '../../i18n';
 
 type Sort = 'date' | 'name';
-export type MediaView = 'media' | 'images' | 'videos' | 'audio' | 'playlist';
+export type MediaView = 'media' | 'favourites' | 'images' | 'videos' | 'audio' | 'playlist';
 
 /** What the media bin lists: library pictures, videos and audio (backgrounds have their own view). */
 export const inMediaBin = (m: MediaItem): boolean => !m.isBackground;
@@ -101,6 +107,43 @@ export function Thumb({ m }: { m: MediaItem }) {
   );
 }
 
+/** Per-clip tools still to come, listed (dimmed) in each tile's menu. */
+const PLANNED_TILE_TOOLS = ['playback-markers', 'media-tags', 'media-relink', 'media-optimise'];
+
+/** "Video · 1920×1080 · 2:14 · 48 MB": what a piece of media is, for its menu. */
+function mediaInfo(m: MediaItem): string {
+  const kind = i18n.t(`mediaBin.kinds.${m.kind}`);
+  const size = m.width && m.height ? `${m.width}×${m.height}` : null;
+  const length = m.durationSec ? formatClock(Math.round(m.durationSec)) : null;
+  const mb =
+    m.sizeBytes >= 1e6
+      ? `${(m.sizeBytes / 1e6).toFixed(1)} MB`
+      : `${Math.ceil(m.sizeBytes / 1e3)} KB`;
+  return [kind, size, length, mb].filter(Boolean).join(' · ');
+}
+
+/** Star a piece of media for the Favourites view; always shown once starred. */
+function FavouriteStar({ m }: { m: MediaItem }) {
+  const { t } = useTranslation();
+  const on = m.tags.includes(FAVOURITE);
+  return (
+    <IconButton
+      size="2xs"
+      variant="secondary"
+      aria-label={
+        on ? t('mediaBin.unfavourite', { name: m.name }) : t('mediaBin.favourite', { name: m.name })
+      }
+      aria-pressed={on}
+      onClick={() => void toggleFavourite(m)}
+      className={`absolute right-9 top-1.5 z-[1] !rounded-full !bg-black/60 backdrop-blur-sm hover:!bg-black/80 ${
+        on ? '!text-[#f5c542]' : `!text-white ${REVEAL}`
+      }`}
+    >
+      <Star size={13} fill={on ? 'currentColor' : 'none'} />
+    </IconButton>
+  );
+}
+
 /** The "…" menu on a tile: add to a playlist, take it out of this one, delete it. */
 function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
@@ -119,6 +162,14 @@ function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
+          {/* What it is, at a glance. */}
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>{mediaInfo(m)}</DropdownMenu.Label>
+          {m.kind === 'audio' && (
+            <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void playAudio(m.id)}>
+              <Radio size={14} />
+              {t('audio.playInRoom', { name: m.name })}
+            </DropdownMenu.Item>
+          )}
           {m.kind !== 'audio' && (
             <DropdownMenu.Item
               className={ITEM_CLASS}
@@ -165,10 +216,13 @@ function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }
             </DropdownMenu.Portal>
           </DropdownMenu.Sub>
           {/* Planned per-clip settings. */}
-          <DropdownMenu.Item disabled className={ITEM_CLASS} title={soonTitle('playback-markers')}>
-            <Typography className="flex-1">{feature('playback-markers').name}</Typography>
-            <SoonBadge label={t('soon.badge')} />
-          </DropdownMenu.Item>
+          {/* Planned per-clip tools. */}
+          {PLANNED_TILE_TOOLS.map((id) => (
+            <DropdownMenu.Item key={id} disabled className={ITEM_CLASS} title={soonTitle(id)}>
+              <Typography className="flex-1">{feature(id).name}</Typography>
+              <SoonBadge label={t('soon.badge')} />
+            </DropdownMenu.Item>
+          ))}
           {playlistId && (
             <DropdownMenu.Item
               className={ITEM_CLASS}
@@ -240,7 +294,13 @@ function MediaTile({
         title={m.name}
         {...(m.kind === 'audio'
           ? // Audio plays through the room (Audio tab); it stays out of the service plan.
-            { onClick: () => void playAudio(m.id) }
+            {
+              // Listen first, on this computer (Audio tab); the room hears it on "Play in room".
+              onClick: () => {
+                useStore.setState({ controlsTab: 'audio' });
+                previewTrack(m.id);
+              },
+            }
           : {
               onClick: () => void openAdhoc(asItem(m), 'preview'),
               onDoubleClick: () => addItemToService({ ...asItem(m), id: newId() }),
@@ -296,6 +356,7 @@ function MediaTile({
           {m.name}
         </Typography>
       </Button>
+      <FavouriteStar m={m} />
       <TileMenu m={m} playlistId={playlistId} />
     </li>
   );
@@ -334,7 +395,13 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
       // Playlist order; media deleted from the library simply drops out.
       list = (playlist?.mediaIds ?? []).flatMap((id) => byId.get(id) ?? []);
     } else {
-      list = library.filter((m) => view === 'media' || m.kind === KIND_OF[view]);
+      list = library.filter((m) =>
+        view === 'media'
+          ? true
+          : view === 'favourites'
+            ? m.tags.includes(FAVOURITE)
+            : m.kind === KIND_OF[view],
+      );
       list = [...list].sort((a, b) =>
         sort === 'name' ? a.name.localeCompare(b.name) : b.createdAt.localeCompare(a.createdAt),
       );
@@ -374,6 +441,11 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
           {items.length}
         </Typography>
         <span className="flex-1" />
+        <SoonFeature
+          id="media-multiselect"
+          label={t('mediaBin.select')}
+          className="!h-7 shrink-0"
+        />
         <label className="relative flex shrink-0 items-center">
           <Typography tone="muted" className="pointer-events-none absolute left-2 flex">
             <Search size={13} />

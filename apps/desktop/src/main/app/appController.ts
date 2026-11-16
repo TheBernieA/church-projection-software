@@ -310,15 +310,18 @@ export class AppController {
         id: z.string().max(64),
         name: z.string().min(1).max(260).optional(),
         isBackground: z.boolean().optional(),
+        /** Labels such as 'favourite' (media bin › Favourites). */
+        tags: z.array(z.string().min(1).max(60)).max(50).optional(),
       }),
       undoable: false,
-      handle: async ({ id, name, isBackground }) => {
+      handle: async ({ id, name, isBackground, tags }) => {
         const item = await this.s.media.get(id);
         if (!item) throw new AppError('not-found', 'Media not found.');
         const next = {
           ...item,
           ...(name ? { name } : {}),
           ...(isBackground !== undefined ? { isBackground } : {}),
+          ...(tags ? { tags } : {}),
         };
         return { result: await this.s.media.upsert(next) };
       },

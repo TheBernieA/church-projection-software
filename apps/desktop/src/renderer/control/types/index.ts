@@ -55,6 +55,7 @@ export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
 /** What the media bin shows: a library view, a media playlist (see binPlaylistId), or a planned source. */
 export type BinTab =
   | 'media'
+  | 'favourites'
   | 'images'
   | 'videos'
   | 'audio'
