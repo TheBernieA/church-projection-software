@@ -2,6 +2,7 @@ import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lazyNamed, preloadLazyViews } from './lib/lazy';
 import { installShortcuts } from './lib/shortcuts';
+import { installNumberWheelGuard } from './lib/utils';
 import { useStore } from './lib/store';
 import { CenterPane } from './components/modes/CenterPane';
 import { QuickBar } from './components/QuickBar';
@@ -47,6 +48,7 @@ export function App() {
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
   useEffect(() => preloadLazyViews(), []);
+  useEffect(() => installNumberWheelGuard(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;
     // Scales the words only (every UI text size reads --text-scale); icons and panes stay put.

@@ -44,3 +44,17 @@ export function shortLabel(label: string): string {
     .filter(Boolean);
   return (words.map((w) => w[0]?.toUpperCase() ?? '').join('') || label.slice(0, 2)) + num;
 }
+
+/**
+ * Scrolling over a focused number field changes its value in Chromium (a trackpad scroll can
+ * silently turn 320 into 290). Let go of the field instead: the value stays, the page scrolls.
+ */
+export function installNumberWheelGuard(): () => void {
+  const onWheel = (e: WheelEvent): void => {
+    const t = e.target;
+    if (t instanceof HTMLInputElement && t.type === 'number' && document.activeElement === t)
+      t.blur();
+  };
+  document.addEventListener('wheel', onWheel, { capture: true, passive: true });
+  return () => document.removeEventListener('wheel', onWheel, { capture: true });
+}

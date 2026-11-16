@@ -445,6 +445,16 @@ test('settings: category pages, installed Bible packages', async () => {
       path: `test-results/06-settings-${page.split(' ')[0]?.toLowerCase() ?? page}.png`,
     });
   }
+  // Scrolling over a focused number field never changes it (a trackpad used to nudge 320 → 290).
+  await nav.getByRole('button', { name: 'Scripture' }).click();
+  const chars = control.getByRole('spinbutton').first();
+  const was = await chars.inputValue();
+  await chars.click();
+  await chars.hover();
+  await control.mouse.wheel(0, 300);
+  await control.mouse.wheel(0, -300);
+  await control.waitForTimeout(300);
+  await expect(chars).toHaveValue(was);
   // Toggle a live-editing switch on and off again: it must persist without touching other settings.
   await nav.getByRole('button', { name: 'Presenting' }).click();
   const songSwitch = control.getByRole('switch', { name: 'Song' });
