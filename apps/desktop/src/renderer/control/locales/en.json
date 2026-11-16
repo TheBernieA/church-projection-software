@@ -299,7 +299,7 @@
   },
   "outputs": {
     "title": "Outputs",
-    "help": "Choose what each screen shows. Assignments are remembered — a projector is re-mapped automatically when it is plugged back in.",
+    "help": "Choose what each screen shows. A projector keeps its job when it’s plugged back in.",
     "role": {
       "main": "Main output",
       "stage": "Stage display",
@@ -316,15 +316,22 @@
     "count_other": "{{count}} outputs",
     "windowShort": "Window mode",
     "roleHelp": {
-      "main": "Lyrics, scripture and media for the room",
-      "stage": "Current/next slide, clock and notes for the speaker",
-      "secondary": "A copy of the output, e.g. lobby TV",
-      "none": "This screen shows nothing"
+      "main": "Lyrics, scripture and media for the room.",
+      "stage": "Current and next slide, clock and notes for the speaker.",
+      "secondary": "A copy of the audience screen, e.g. a lobby TV.",
+      "none": "This screen shows nothing."
     },
     "none": "No output",
     "noneHelp": "Nothing you put live will be visible. Choose a screen in Outputs, or turn on window mode.",
     "noneToast": "Nothing is showing on any screen: no output is set. Open Outputs to pick a projector, or turn on Rehearsal / window mode.",
-    "more": "More output types"
+    "more": "More output types",
+    "roleShort": {
+      "main": "Audience",
+      "stage": "Stage",
+      "secondary": "Copy",
+      "none": "Off"
+    },
+    "roleOf": "What {{name}} shows"
   },
   "settings": {
     "title": "Settings",
@@ -1337,5 +1344,20 @@
     "listenHelp": "Where you hear a track when you click it in the Audio tab, before the room does (headphones, say).",
     "inputs": "Microphones & audio inputs",
     "inputsHelp": "Speak or play into an input to see its level. Put one through the room from the Audio tab."
+  },
+  "screensMenu": {
+    "main": {
+      "title": "Audience screens",
+      "tip": "Audience screens: choose where the room sees the show"
+    },
+    "stage": {
+      "title": "Stage screens",
+      "tip": "Stage screens: choose where the speaker sees what’s next"
+    },
+    "nowShowing": "Now: {{role}}",
+    "window": "Rehearsal window",
+    "windowHint": "Show it in a window on this screen",
+    "editStage": "Edit the stage layout",
+    "settings": "Output settings…"
   }
 }

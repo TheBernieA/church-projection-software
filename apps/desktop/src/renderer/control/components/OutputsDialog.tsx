@@ -1,19 +1,57 @@
 import { useEffect } from 'react';
+import { AppWindow, Grid3x3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { SoonList } from './Soon';
 import type { OutputRole } from '@lampstand/core';
+import { Button, Segmented, Switch, Typography } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
-import { attempt, refresh, useStore } from '../lib/store';
-import { Dialog } from './Dialog';
-import { Checkbox } from './form';
-import { Select } from './Select';
+import { refresh, useStore } from '../lib/store';
 import { EMPTY_LIST } from '../constants';
-import { Typography, typographyClass } from '@lampstand/ui';
+import { assignDisplay } from './shell/ScreensMenu';
+import { Dialog } from './Dialog';
+import { SoonList } from './Soon';
 
 const ROLES: OutputRole[] = ['main', 'stage', 'secondary', 'none'];
 
-/** Display role assignment + test patterns + window mode (§7.3). */
+/** Each role's colour on the little screen picture (live red, stage blue, copy grey). */
+const ROLE_TINT: Record<OutputRole, string> = {
+  main: 'var(--tally-program)',
+  stage: 'var(--select)',
+  secondary: 'var(--text-3)',
+  none: 'transparent',
+};
+
+/** A test pattern on/off button for one output. */
+function PatternButton({
+  outputId,
+  on,
+  disabled,
+}: {
+  outputId: string;
+  on: boolean;
+  disabled: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Button
+      size="xs"
+      variant={on ? 'primary' : 'ghost'}
+      icon={<Grid3x3 size={13} />}
+      aria-pressed={on}
+      disabled={disabled}
+      onClick={() => void cmd('live.testPattern', { outputId, on: !on })}
+      className="shrink-0"
+    >
+      {t('outputs.testPattern')}
+    </Button>
+  );
+}
+
+/**
+ * Outputs: every display with a picture of its shape, what it shows (Audience, Stage, a copy, or
+ * nothing) and a test pattern; then the rehearsal window. The toolbar's Audience and Stage
+ * menus do the same for one kind of screen at a time.
+ */
 export function OutputsDialog() {
   const { t } = useTranslation();
   const open = useStore((s) => s.dialog === 'outputs');
@@ -24,85 +62,106 @@ export function OutputsDialog() {
     if (open) void refresh('displays');
   }, [open]);
 
-  const assign = async (displayId: string, role: OutputRole, isControl: boolean): Promise<void> => {
-    if (isControl && role !== 'none' && !window.confirm(t('outputs.warnControl'))) return;
-    await attempt(async () => {
-      await cmd('display.assign', { displayId, role });
-      await refresh('displays');
-    });
-  };
-
   return (
     <Dialog name="outputs" title={t('outputs.title')}>
-      <Typography as="p" tone="secondary" className="mb-4">
+      <Typography as="p" size={13} tone="secondary" className="mb-4">
         {t('outputs.help')}
       </Typography>
-      <ul className="space-y-2">
-        {displays.map((d) => {
+      <ul className="divide-y divide-[var(--hairline)] overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
+        {displays.map((d, i) => {
           const outputId = `display-${d.id}`;
-          const testOn = patterns.includes(outputId);
+          const ratio = d.width && d.height ? d.width / d.height : 16 / 9;
           return (
-            <li
-              key={d.id}
-              className="flex items-center gap-3 rounded-[var(--radius-control)] bg-[var(--surface-2)] p-3"
-            >
-              <Typography
-                as="div"
-                size={10}
-                tone="muted"
-                className="flex h-10 w-16 shrink-0 items-center justify-center rounded border border-[var(--border)] bg-[var(--surface-0)]"
-              >
-                {d.width}×{d.height}
-              </Typography>
-              <div className="min-w-0 flex-1">
-                <Typography as="div" weight="medium" truncate>
-                  {d.label}
-                </Typography>
-                <Typography as="div" size={11} tone="muted">
-                  {[d.isControl && t('outputs.control'), d.isPrimary && t('outputs.primary')]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </Typography>
-              </div>
-              <div className="w-48 shrink-0">
-                <Select
-                  aria-label={`${d.label} role`}
-                  value={d.role}
-                  onChange={(r) => void assign(d.id, r, d.isControl)}
-                  options={ROLES.map((r) => ({
-                    value: r,
-                    label: t(`outputs.role.${r}`),
-                    description: t(`outputs.roleHelp.${r}`),
-                  }))}
+            <li key={d.id} className="flex flex-col gap-3 px-4 py-3.5">
+              <div className="flex items-center gap-3">
+                {/* The screen's shape, numbered, tinted by what it shows. */}
+                <div className="flex h-11 w-[72px] shrink-0 items-center justify-center">
+                  <Typography
+                    as="div"
+                    size={12}
+                    weight="bold"
+                    tone={d.role === 'none' ? 'muted' : 'white'}
+                    className="flex max-h-full max-w-full items-center justify-center rounded-[4px] shadow-[0_0_0_1.5px_var(--hairline-strong)]"
+                    style={{
+                      aspectRatio: String(ratio),
+                      height: ratio >= 1 ? undefined : '100%',
+                      width: ratio >= 1 ? '100%' : undefined,
+                      background:
+                        d.role === 'none'
+                          ? 'var(--surface-0)'
+                          : `color-mix(in srgb, ${ROLE_TINT[d.role]} 70%, #000)`,
+                    }}
+                  >
+                    {i + 1}
+                  </Typography>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Typography as="p" size={13} weight="semibold" tone="primary" truncate>
+                    {d.label}
+                  </Typography>
+                  <Typography as="p" size={11} tone="muted" truncate>
+                    {[
+                      `${d.width}×${d.height}`,
+                      d.isControl && t('outputs.control'),
+                      d.isPrimary && t('outputs.primary'),
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </Typography>
+                </div>
+                <PatternButton
+                  outputId={outputId}
+                  on={patterns.includes(outputId)}
+                  disabled={d.role === 'none' || windowMode}
                 />
               </div>
-              <Checkbox
-                className={typographyClass({ size: 12 })}
-                label={t('outputs.testPattern')}
-                disabled={d.role === 'none' || windowMode}
-                checked={testOn}
-                onChange={(on) => void cmd('live.testPattern', { outputId, on })}
-              />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <Segmented<OutputRole>
+                  label={t('outputs.roleOf', { name: d.label })}
+                  value={d.role}
+                  onChange={(r) =>
+                    void assignDisplay(d.id, r, d.isControl, t('outputs.warnControl'))
+                  }
+                  options={ROLES.map((r) => ({ value: r, label: t(`outputs.roleShort.${r}`) }))}
+                />
+                <Typography size={11} tone="muted" className="min-w-0 flex-1">
+                  {t(`outputs.roleHelp.${d.role}`)}
+                </Typography>
+              </div>
             </li>
           );
         })}
+        {/* Rehearsal: the audience output as an ordinary window on this screen. */}
+        <li className="flex items-center gap-3 px-4 py-3.5">
+          <Typography
+            tone="muted"
+            className="flex h-11 w-[72px] shrink-0 items-center justify-center"
+          >
+            <AppWindow size={22} />
+          </Typography>
+          <div className="min-w-0 flex-1">
+            <Typography as="p" size={13} weight="semibold" tone="primary">
+              {t('outputs.windowMode')}
+            </Typography>
+            <Typography as="p" size={11} tone="muted">
+              {t('outputs.windowModeHelp')}
+            </Typography>
+          </div>
+          {windowMode && (
+            <PatternButton
+              outputId="window-main"
+              on={patterns.includes('window-main')}
+              disabled={false}
+            />
+          )}
+          <Switch
+            label={t('outputs.windowMode')}
+            checked={windowMode}
+            onChange={(on) => void saveSettings({ windowMode: on })}
+          />
+        </li>
       </ul>
-      <Checkbox
-        className="mt-5"
-        label={t('outputs.windowMode')}
-        description={t('outputs.windowModeHelp')}
-        checked={windowMode}
-        onChange={(on) => void saveSettings({ windowMode: on })}
-      />
-      {windowMode && (
-        <Checkbox
-          className={`mt-2 pl-6 ${typographyClass({ size: 12 })}`}
-          label={t('outputs.testPattern')}
-          checked={patterns.includes('window-main')}
-          onChange={(on) => void cmd('live.testPattern', { outputId: 'window-main', on })}
-        />
-      )}
-      <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
+      <details className="mt-4 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
         <Typography
           as="summary"
           size={12}

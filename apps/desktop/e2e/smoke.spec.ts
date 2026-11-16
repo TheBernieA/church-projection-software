@@ -484,14 +484,23 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/07-dropdown-version.png' });
   await control.keyboard.press('Escape');
-  // Output role dropdown inside a dialog.
-  await control.getByTitle('Outputs').first().click();
-  const role = control.getByRole('dialog').getByRole('combobox').first();
-  await role.click();
-  await expect(control.getByRole('option', { name: /Stage display/ })).toBeVisible();
+  // Audience and Stage each open their own screens menu; both lead to the output settings.
+  await control.getByRole('button', { name: /^Audience:/ }).click();
+  await expect(control.getByRole('menuitemcheckbox', { name: /Rehearsal window/ })).toBeChecked();
   await control.waitForTimeout(300);
-  await control.screenshot({ path: 'test-results/08-dropdown-role.png' });
+  await control.screenshot({ path: 'test-results/08-audience-menu.png' });
   await control.keyboard.press('Escape');
+  await control.getByRole('button', { name: /^Stage:/ }).click();
+  await expect(control.getByRole('menuitem', { name: 'Edit the stage layout' })).toBeVisible();
+  await control.getByRole('menuitem', { name: 'Output settings…' }).click();
+  const dialog = control.getByRole('dialog', { name: 'Outputs' });
+  await expect(dialog.getByRole('radio', { name: 'Stage' }).first()).toBeVisible();
+  await expect(dialog.getByRole('switch', { name: /Rehearsal/ })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/08-outputs.png' });
   await control.keyboard.press('Escape');
   // Theme editor: font + background dropdowns with previews.
   await mode('Themes');

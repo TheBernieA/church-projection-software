@@ -34,6 +34,7 @@ import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
+import { ScreensMenu } from './ScreensMenu';
 import { type Mode } from '../../types';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 
@@ -342,20 +343,29 @@ export function Toolbar() {
       />
 
       {/* Screens: lit green when connected, red when there's nowhere to show. */}
-      <ToolbarButton
-        icon={<Circle size={20} />}
-        label={t('toolbar.audience')}
-        badge={<Dot color={audienceOn ? green : red} />}
-        title={t('top.outputs')}
-        aria-label={`${t('toolbar.audience')}: ${audienceOn ? (windowMode ? t('toolbar.window') : t('toolbar.assigned')) : t('outputs.none')}`}
-        onClick={() => openDialog('outputs')}
+      <ScreensMenu
+        role="main"
+        trigger={
+          <ToolbarButton
+            icon={<Circle size={20} />}
+            label={t('toolbar.audience')}
+            badge={<Dot color={audienceOn ? green : red} />}
+            title={t('screensMenu.main.tip')}
+            aria-label={`${t('toolbar.audience')}: ${audienceOn ? (windowMode ? t('toolbar.window') : t('toolbar.assigned')) : t('outputs.none')}`}
+          />
+        }
       />
-      <ToolbarButton
-        icon={<Clapperboard size={20} />}
-        label={t('toolbar.stage')}
-        badge={<Dot color={hasStage ? green : 'var(--text-3)'} />}
-        aria-label={`${t('toolbar.stage')}: ${hasStage ? t('toolbar.assigned') : t('toolbar.notAssigned')}`}
-        onClick={() => openDialog('outputs')}
+      <ScreensMenu
+        role="stage"
+        trigger={
+          <ToolbarButton
+            icon={<Clapperboard size={20} />}
+            label={t('toolbar.stage')}
+            badge={<Dot color={hasStage ? green : 'var(--text-3)'} />}
+            title={t('screensMenu.stage.tip')}
+            aria-label={`${t('toolbar.stage')}: ${hasStage ? t('toolbar.assigned') : t('toolbar.notAssigned')}`}
+          />
+        }
       />
 
       <span
