@@ -7,6 +7,7 @@ export * from './utils';
 export * from './types';
 export * from './live';
 export * from './themes';
+export * from './backgrounds';
 export * from './hymnal';
 export * from './migrations';
 export * from './schemas/common';

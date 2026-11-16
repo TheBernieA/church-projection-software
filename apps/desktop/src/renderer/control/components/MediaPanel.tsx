@@ -6,10 +6,10 @@ import { libraryDragSource } from '../lib/libraryDrag';
 import { cmd, q } from '../lib/api';
 import { addItemToService, attempt, toast, useStore } from '../lib/store';
 import { thumbUrl } from '../../shared/mediaUrl';
+import { BackgroundTile } from './BackgroundTile';
 import { SoonFeature } from './Soon';
 import i18n from '../i18n';
 import { BUILT_IN_BACKGROUNDS } from '../constants';
-import { swatchCss } from '../lib/utils';
 
 async function importMedia(asBackground: boolean): Promise<void> {
   const r = await attempt(() => q('media.import', { asBackground }), 'errors.import');
@@ -100,24 +100,24 @@ export function BackgroundsPanel() {
     void cmd('live.setBackground', { background: { ref } });
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
-      <h3 className="section-label pb-2">{t('media.builtIn')}</h3>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
-        {BUILT_IN_BACKGROUNDS.map((b) => (
-          <button
-            key={b.name}
-            type="button"
-            title={t('media.setBackground')}
-            onClick={() => setBg(b.ref)}
-            className="group text-left"
-          >
-            <div
-              className="aspect-video w-full rounded-[8px] shadow-[var(--shadow-1)] transition-transform duration-150 will-change-transform group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-2)]"
-              style={{ background: swatchCss(b.ref) }}
-            />
-            <span className="mt-1.5 block text-[12px] text-[var(--text-2)]">{b.name}</span>
-          </button>
-        ))}
-      </div>
+      {(['motion', 'still'] as const).map((group) => (
+        <section key={group} className={group === 'still' ? 'mt-5' : ''}>
+          <h3 className="section-label pb-2">{t(`media.${group}`)}</h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
+            {BUILT_IN_BACKGROUNDS.filter(
+              (b) => (b.ref.kind === 'generated') === (group === 'motion'),
+            ).map((b) => (
+              <BackgroundTile
+                key={b.name}
+                name={b.name}
+                bgRef={b.ref}
+                title={t('media.setBackground')}
+                onPick={() => setBg(b.ref)}
+              />
+            ))}
+          </div>
+        </section>
+      ))}
       <div className="mt-6 flex items-center justify-between pb-2">
         <h3 className="section-label">{t('media.yours')}</h3>
         <Button size="sm" variant="ghost" onClick={() => void importMedia(true)}>

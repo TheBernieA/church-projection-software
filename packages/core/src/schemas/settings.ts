@@ -13,6 +13,18 @@ export const DisplayAssignmentSchema = z.object({
 });
 export type DisplayAssignment = z.infer<typeof DisplayAssignmentSchema>;
 
+/** Name-card looks for the logo and off-air screen. */
+export const LogoStyleSchema = z.enum([
+  'halo',
+  'rays',
+  'aurora',
+  'bokeh',
+  'gold',
+  'minimal',
+  'classic',
+]);
+export type LogoStyle = z.infer<typeof LogoStyleSchema>;
+
 export const SettingsSchema = z
   .object({
     schemaVersion: z.literal(1).default(1),
@@ -102,9 +114,13 @@ export const SettingsSchema = z
       .object({
         kind: z.enum(['text', 'media']).default('text'),
         text: z.string().max(80).default('Lampstand'),
+        /** Look of the name card: its moving background and lettering. */
+        style: LogoStyleSchema.default('halo'),
+        /** Optional smaller line under the name (e.g. "Welcome home"). */
+        tagline: z.string().max(120).optional(),
         mediaId: z.string().max(64).optional(),
       })
-      .default({ kind: 'text', text: 'Lampstand' }),
+      .default({ kind: 'text', text: 'Lampstand', style: 'halo' }),
     /** What the projector shows when nothing is live: black, the logo card, or a library image/video. */
     offAir: z
       .object({

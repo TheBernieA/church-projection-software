@@ -1,6 +1,7 @@
 import { mediaPositionAt, type BackgroundLayer, type MediaLayer } from '@lampstand/core';
 import { el, loop, safePlay } from './dom';
 import { backgroundFilter, gradientCss } from './style';
+import { buildGenerated } from './generated';
 import { FILL } from './constants';
 import { type MediaResolver, type RenderMode } from './types';
 
@@ -72,74 +73,6 @@ export function buildBackground(
   if (bg.adjust?.dim)
     wrap.append(el(doc, 'div', '', { ...FILL, background: `rgba(0,0,0,${bg.adjust.dim})` }));
   return wrap;
-}
-
-/** Lightweight in-engine animated backgrounds (§12). Transform/opacity only — GPU composited. */
-function buildGenerated(
-  doc: Document,
-  preset: 'aurora' | 'drift' | 'glow',
-  colors: string[],
-  speed: number,
-  animated: boolean,
-): HTMLElement {
-  const root = el(doc, 'div', '', {
-    ...FILL,
-    background: colors[colors.length - 1] ?? '#000',
-    overflow: 'hidden',
-  });
-  const dur = (ms: number): number => ms / speed;
-  if (preset === 'drift') {
-    const layer = el(doc, 'div', '', {
-      position: 'absolute',
-      left: '-50%',
-      top: '-50%',
-      width: '200%',
-      height: '200%',
-      background: `linear-gradient(120deg, ${colors.join(', ')}, ${colors[0] ?? '#000'})`,
-    });
-    root.append(layer);
-    if (animated)
-      loop(
-        layer,
-        [
-          { transform: 'translate(0,0) rotate(0deg)' },
-          { transform: 'translate(10%, 8%) rotate(8deg)' },
-        ],
-        { duration: dur(40000), direction: 'alternate', easing: 'ease-in-out' },
-      );
-    return root;
-  }
-  colors.forEach((c, i) => {
-    const size = preset === 'glow' ? 120 : 90;
-    const blob = el(doc, 'div', '', {
-      position: 'absolute',
-      width: `${size}%`,
-      height: `${size * 1.6}%`,
-      left: `${((i * 37) % 60) - 20}%`,
-      top: `${((i * 53) % 50) - 40}%`,
-      background: `radial-gradient(closest-side, ${c}, transparent)`,
-      opacity: '0.9',
-    });
-    root.append(blob);
-    if (animated) {
-      const dx = 18 - i * 9;
-      const dy = -12 + i * 10;
-      loop(
-        blob,
-        preset === 'glow'
-          ? [
-              { opacity: 0.55, transform: 'scale(1)' },
-              { opacity: 1, transform: 'scale(1.15)' },
-            ]
-          : [
-              { transform: 'translate(0,0) scale(1)' },
-              { transform: `translate(${dx}%, ${dy}%) scale(1.2)` },
-            ],
-        { duration: dur(18000 + i * 7000), direction: 'alternate', easing: 'ease-in-out' },
-      );
-    }
-  });
-  return root;
 }
 
 /**

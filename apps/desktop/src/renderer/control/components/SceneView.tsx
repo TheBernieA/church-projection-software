@@ -60,7 +60,8 @@ export const SceneView = memo(function SceneView({
     renderer.current?.setAudio(audio);
     renderer.current?.setStandby(standby);
     renderer.current?.render(scene);
-  }, [scene, standby, audio, logo, visible]);
+    // mode/transparent: a new renderer was just built and needs the scene drawn into it.
+  }, [scene, standby, audio, logo, visible, mode, transparent]);
 
   return (
     <div

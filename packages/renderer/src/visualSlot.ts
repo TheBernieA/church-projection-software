@@ -1,24 +1,7 @@
 import { standbyKey, type ScreenVisual } from '@lampstand/core';
 import { animate, el, safePlay } from './dom';
 import { FILL } from './constants';
-
-/** The text logo card: a name, centred on a soft dark gradient. */
-function styleLogoCard(node: HTMLElement, text: string): void {
-  Object.assign(node.style, {
-    background: 'radial-gradient(ellipse at 50% 40%, #1A1E2C 0%, #0B0D14 70%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    padding: '0 120px',
-    color: '#ECEEF4',
-    fontFamily: '"Inter", sans-serif',
-    fontSize: '96px',
-    fontWeight: '700',
-    letterSpacing: '0.02em',
-  });
-  node.textContent = text;
-}
+import { buildLogoCard } from './logoCard';
 
 /**
  * A full-screen picture layer (the logo mask, the off-air screen): a text card, an image, or a
@@ -72,10 +55,18 @@ export class VisualSlot {
     this.syncPlayback();
   }
 
+  /** Video and motion run only while the slot is on screen and not frozen. */
   private syncPlayback(): void {
+    const run = this.shown && !this.frozen;
+    if (typeof this.node.getAnimations === 'function')
+      for (const a of this.node.getAnimations({ subtree: true }))
+        if (a.effect?.getComputedTiming().iterations === Infinity) {
+          if (run) a.play();
+          else a.pause();
+        }
     const v = this.node.querySelector('video');
     if (!v) return;
-    if (this.shown && !this.frozen) safePlay(v);
+    if (run) safePlay(v);
     else v.pause();
   }
 
@@ -85,7 +76,7 @@ export class VisualSlot {
       ...FILL,
       background: '#000',
     });
-    if (visual.kind === 'logo') styleLogoCard(node, visual.text);
+    if (visual.kind === 'logo') buildLogoCard(doc, node, visual, true);
     else if (visual.kind === 'image') {
       const img = el(doc, 'img', '', { ...FILL, objectFit: 'cover' });
       img.src = this.mediaUrl(visual.mediaId);

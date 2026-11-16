@@ -2,6 +2,8 @@ export * from './fit';
 export * from './style';
 export * from './content';
 export * from './background';
+export * from './generated';
+export * from './logoCard';
 export * from './overlays';
 export * from './transitions';
 export * from './sceneRenderer';

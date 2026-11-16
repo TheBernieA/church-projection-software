@@ -10,7 +10,7 @@ import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
 import { ThemeEffects } from './ThemeEffects';
 import { sampleScene } from './ThemesPanel';
-import { BUILT_IN_BACKGROUNDS, FONTS } from '../constants';
+import { BUILT_IN_BACKGROUNDS, BUNDLED_FONTS } from '../constants';
 import { swatchCss } from '../lib/utils';
 
 const SAMPLES = {
@@ -77,10 +77,11 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
               id="th-font"
               value={draft.text.fontFamily}
               onChange={(fontFamily) => setText({ fontFamily })}
-              options={FONTS.map((f) => ({
-                value: f,
-                label: f,
-                labelStyle: { fontFamily: `"${f}"`, fontSize: 14 },
+              options={BUNDLED_FONTS.map((f) => ({
+                value: f.family,
+                label: f.family,
+                description: t(`theme.fontKinds.${f.category}`),
+                labelStyle: { fontFamily: `"${f.family}"`, fontSize: 14 },
               }))}
             />
           </div>
@@ -179,6 +180,7 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 ...BUILT_IN_BACKGROUNDS.map((b) => ({
                   value: b.name,
                   label: b.name,
+                  ...(b.ref.kind === 'generated' ? { description: t('media.motionOne') } : {}),
                   leading: <Swatch background={swatchCss(b.ref)} />,
                 })),
               ]}

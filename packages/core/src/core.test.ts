@@ -6,6 +6,9 @@ import {
   LiveStateStore,
   STARTER_THEMES,
   ThemeSchema,
+  BUILT_IN_BACKGROUNDS,
+  BackgroundRefSchema,
+  standbyKey,
   clearLayer,
   initialLiveState,
   migrate,
@@ -375,11 +378,29 @@ describe('logo and off-air screen', () => {
   const kindOf = (id: string): string | undefined => kinds[id];
   const logo = defaultSettings().logo;
   it('defaults to the Lampstand logo card, also as the off-air screen', () => {
-    expect(resolveLogo(logo, kindOf)).toEqual({ kind: 'logo', text: 'Lampstand' });
+    expect(resolveLogo(logo, kindOf)).toEqual({ kind: 'logo', text: 'Lampstand', style: 'halo' });
     expect(resolveStandby(defaultSettings().offAir, logo, kindOf)).toEqual({
       kind: 'logo',
       text: 'Lampstand',
+      style: 'halo',
     });
+  });
+  it('carries the card look and tagline, and they change its identity', () => {
+    const card = resolveLogo(
+      { kind: 'text', text: 'Grace', style: 'gold', tagline: '  Welcome home ' },
+      kindOf,
+    );
+    expect(card).toEqual({ kind: 'logo', text: 'Grace', style: 'gold', tagline: 'Welcome home' });
+    expect(standbyKey(card)).not.toBe(
+      standbyKey({ kind: 'logo', text: 'Grace', style: 'rays', tagline: 'Welcome home' }),
+    );
+    expect(standbyKey(card)).not.toBe(standbyKey({ kind: 'logo', text: 'Grace', style: 'gold' }));
+  });
+  it('every built-in background is valid, and starter themes use them', () => {
+    for (const b of BUILT_IN_BACKGROUNDS)
+      expect(BackgroundRefSchema.safeParse(b.ref).success).toBe(true);
+    expect(new Set(BUILT_IN_BACKGROUNDS.map((b) => b.name)).size).toBe(BUILT_IN_BACKGROUNDS.length);
+    expect(new Set(STARTER_THEMES.map((t) => t.id)).size).toBe(STARTER_THEMES.length);
   });
   it('the logo can be a church name, an image or a video', () => {
     expect(resolveLogo({ kind: 'text', text: 'Grace Church' }, kindOf)).toEqual({

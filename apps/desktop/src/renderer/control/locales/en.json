@@ -93,7 +93,10 @@
       "cues": "Playback options",
       "markers": "Markers",
       "stock": "Stock media"
-    }
+    },
+    "motion": "Motion",
+    "still": "Still",
+    "motionOne": "Motion"
   },
   "slides": {
     "empty": "Pick a song from the library, or an item from the service plan.",
@@ -250,6 +253,11 @@
       "tint": "Colour tint",
       "tintColour": "Tint colour",
       "strength": "Strength"
+    },
+    "fontKinds": {
+      "sans": "Sans-serif · lyrics",
+      "serif": "Serif · scripture",
+      "display": "Display · titles"
     }
   },
   "outputs": {
@@ -390,7 +398,21 @@
       "media": "Image or video",
       "name": "Church name",
       "nameHelp": "Shown large in the middle of the screen.",
-      "picture": "Logo picture"
+      "picture": "Logo picture",
+      "tagline": "Tagline",
+      "taglineHelp": "Optional smaller line under the name.",
+      "taglinePlaceholder": "e.g. Welcome home",
+      "look": "Look",
+      "lookHelp": "The moving background and lettering of the name card.",
+      "looks": {
+        "halo": "Halo",
+        "rays": "Heaven’s light",
+        "aurora": "Aurora",
+        "bokeh": "Candlelight",
+        "gold": "Gold",
+        "minimal": "Minimal",
+        "classic": "Classic"
+      }
     }
   },
   "shortcuts": {

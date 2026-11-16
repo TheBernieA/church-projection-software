@@ -22,6 +22,19 @@ export const TextStyleSchema = z.object({
   textTransform: z.enum(['none', 'uppercase']).optional(),
 });
 export type TextStyle = z.infer<typeof TextStyleSchema>;
+/** Animated backgrounds drawn by the renderer itself (no video files, any resolution). */
+export const GeneratedPresetSchema = z.enum([
+  'aurora',
+  'drift',
+  'glow',
+  'rays',
+  'bokeh',
+  'mesh',
+  'dust',
+  'waves',
+  'halo',
+]);
+export type GeneratedPreset = z.infer<typeof GeneratedPresetSchema>;
 
 const GradientStopSchema = z.object({ color: ColorSchema, pos: z.number().min(0).max(100) });
 
@@ -42,7 +55,7 @@ export const BackgroundRefSchema = z.discriminatedUnion('kind', [
   }),
   z.object({
     kind: z.literal('generated'),
-    preset: z.enum(['aurora', 'drift', 'glow']),
+    preset: GeneratedPresetSchema,
     colors: z.array(ColorSchema).min(2).max(5),
     speed: z.number().min(0.1).max(4).optional(),
   }),

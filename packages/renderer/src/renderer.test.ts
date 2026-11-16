@@ -1,6 +1,15 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { EMPTY_MASKS, EMPTY_SCENE, STARTER_THEMES, type Scene } from '@lampstand/core';
+import {
+  EMPTY_MASKS,
+  EMPTY_SCENE,
+  GeneratedPresetSchema,
+  LogoStyleSchema,
+  STARTER_THEMES,
+  type Scene,
+} from '@lampstand/core';
+import { buildGenerated } from './generated';
+import { buildLogoCard } from './logoCard';
 import { FitCache, fitFontSize } from './fit';
 import { SceneRenderer } from './sceneRenderer';
 import { backgroundFilter, backgroundKey } from './style';
@@ -339,5 +348,24 @@ describe('helpers', () => {
     expect(formatCountdown(new Date(65_000).toISOString(), 0)).toBe('01:05');
     expect(formatCountdown(new Date(3_661_000).toISOString(), 0)).toBe('1:01:01');
     expect(formatCountdown(new Date(0).toISOString(), 10_000)).toBe('00:00');
+  });
+});
+
+describe('motion backgrounds and logo cards', () => {
+  it('draws every generated preset, still in thumbnails', () => {
+    for (const preset of GeneratedPresetSchema.options) {
+      const node = buildGenerated(document, preset, ['#ffffff', '#336699', '#000000'], 1, false);
+      expect(node.classList.contains(`ls-gen-${preset}`)).toBe(true);
+      expect(node.children.length).toBeGreaterThan(0);
+    }
+  });
+  it('the name card shows the name and tagline as text, in every look', () => {
+    for (const style of LogoStyleSchema.options) {
+      const node = document.createElement('div');
+      buildLogoCard(document, node, { text: '<b>Grace</b>', style, tagline: 'Welcome' }, false);
+      expect(node.querySelector('.ls-logo-name')?.textContent).toBe('<b>Grace</b>');
+      expect(node.querySelector('b')).toBeNull();
+      expect(node.querySelector('.ls-logo-tagline')?.textContent).toBe('Welcome');
+    }
   });
 });

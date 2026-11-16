@@ -20,6 +20,7 @@ import { CommitSlider, DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
+import { LogoLooks } from './LogoLooks';
 import { Group, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
 import { LIVE_KINDS } from '../../constants';
 import { clamp } from '../../lib/utils';
@@ -256,19 +257,42 @@ function LogoGroup({ s, update }: PageProps) {
         />
       </Row>
       {s.logo.kind === 'text' ? (
-        <Row
-          label={t('settings.logo.name')}
-          description={t('settings.logo.nameHelp')}
-          htmlFor="logo-name"
-        >
-          <DeferredInput
-            id="logo-name"
-            className="field !h-8 !w-56"
-            maxLength={80}
-            value={s.logo.text}
-            onCommit={(text) => set({ text })}
-          />
-        </Row>
+        <>
+          <Row
+            label={t('settings.logo.name')}
+            description={t('settings.logo.nameHelp')}
+            htmlFor="logo-name"
+          >
+            <DeferredInput
+              id="logo-name"
+              className="field !h-8 !w-56"
+              maxLength={80}
+              value={s.logo.text}
+              onCommit={(text) => set({ text })}
+            />
+          </Row>
+          <Row
+            label={t('settings.logo.tagline')}
+            description={t('settings.logo.taglineHelp')}
+            htmlFor="logo-tagline"
+          >
+            <DeferredInput
+              id="logo-tagline"
+              className="field !h-8 !w-56"
+              maxLength={120}
+              value={s.logo.tagline ?? ''}
+              placeholder={t('settings.logo.taglinePlaceholder')}
+              onCommit={(tagline) => set({ tagline: tagline.trim() || undefined })}
+            />
+          </Row>
+          <Row label={t('settings.logo.look')} description={t('settings.logo.lookHelp')} stack>
+            <LogoLooks
+              value={s.logo.style}
+              text={s.logo.text}
+              onChange={(style) => set({ style })}
+            />
+          </Row>
+        </>
       ) : (
         <PictureRow
           label={t('settings.logo.picture')}

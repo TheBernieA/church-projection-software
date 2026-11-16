@@ -19,7 +19,16 @@ export function urlHost(url: string): string {
 export function swatchCss(ref: BackgroundRef): string {
   if (ref.kind === 'gradient') return gradientCss(ref);
   if (ref.kind === 'color') return ref.color;
-  if (ref.kind === 'generated') return `linear-gradient(135deg, ${ref.colors.join(', ')})`;
+  if (ref.kind === 'generated') {
+    // A still that hints at the motion: light pools over the base colour.
+    const base = ref.colors[ref.colors.length - 1] ?? '#000';
+    const lights = ref.colors.slice(0, -1);
+    const spots = ['30% 25%', '78% 35%', '55% 85%', '15% 80%'];
+    return [
+      ...lights.map((c, i) => `radial-gradient(circle at ${spots[i % 4]}, color-mix(in srgb, ${c} 45%, transparent), transparent 55%)`),
+      base,
+    ].join(', ');
+  }
   return '#000';
 }
 
