@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { RAW_AUDIO } from '@lampstand/renderer';
+import { cmd } from './api';
+import { attempt, useStore } from './store';
 
 export interface InputDevice {
   deviceId: string;
@@ -149,6 +151,8 @@ export interface CameraSettings {
   mirror: boolean;
   resolution: 'auto' | '720' | '1080' | '2160';
 }
+export const CAMERA_FITS = ['cover', 'contain'] as const;
+export const CAMERA_RESOLUTIONS = ['auto', '720', '1080', '2160'] as const;
 export const DEFAULT_CAMERA: CameraSettings = {
   name: '',
   fit: 'cover',
@@ -192,4 +196,30 @@ export function useCameraSettings(deviceId: string): CameraSettings {
     () => cameras,
   );
   return { ...DEFAULT_CAMERA, ...all[deviceId] };
+}
+
+/** Put a camera on screen with its settings (or take any camera off with `null`). */
+export function showCamera(device: InputDevice | null): Promise<unknown> {
+  if (!device) return attempt(() => cmd('live.setInput', { input: null }), 'errors.input');
+  const s = cameraSettings(device.deviceId);
+  return attempt(
+    () =>
+      cmd('live.setInput', {
+        input: {
+          deviceId: device.deviceId,
+          label: s.name || device.label,
+          fit: s.fit,
+          mirror: s.mirror,
+          resolution: s.resolution,
+        },
+      }),
+    'errors.input',
+  );
+}
+
+/** Change a camera's settings; if it's on screen, the screen follows straight away. */
+export function updateCamera(device: InputDevice, patch: Partial<CameraSettings>): void {
+  setCameraSettings(device.deviceId, patch);
+  if (useStore.getState().live?.program.input?.deviceId === device.deviceId)
+    void showCamera(device);
 }

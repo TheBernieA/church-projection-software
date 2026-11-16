@@ -38,6 +38,7 @@ export type SettingsPageId =
   | 'songs'
   | 'presenting'
   | 'screens'
+  | 'cameras'
   | 'packages'
   | 'library'
   | 'about'

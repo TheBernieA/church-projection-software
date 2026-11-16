@@ -3,43 +3,22 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Check, Ellipsis, FlipHorizontal2, Pencil, RotateCcw, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, IconButton, Typography } from '@lampstand/ui';
-import { cmd } from '../../lib/api';
 import {
-  cameraSettings,
+  CAMERA_FITS,
+  CAMERA_RESOLUTIONS,
   DEFAULT_CAMERA,
-  setCameraSettings,
+  showCamera,
+  updateCamera,
   useCameraSettings,
   useDeviceStream,
   useInputDevices,
   type CameraSettings,
   type InputDevice,
 } from '../../lib/inputs';
-import { attempt, useStore } from '../../lib/store';
+import { useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { REVEAL } from '../cards';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
-
-/** Put a camera on screen with its settings (or take it off with `null`). */
-const sendInput = (device: InputDevice | null): Promise<unknown> => {
-  if (!device) return attempt(() => cmd('live.setInput', { input: null }), 'errors.input');
-  const s = cameraSettings(device.deviceId);
-  return attempt(
-    () =>
-      cmd('live.setInput', {
-        input: {
-          deviceId: device.deviceId,
-          label: s.name || device.label,
-          fit: s.fit,
-          mirror: s.mirror,
-          resolution: s.resolution,
-        },
-      }),
-    'errors.input',
-  );
-};
-
-const FITS = ['cover', 'contain'] as const;
-const RESOLUTIONS = ['auto', '720', '1080', '2160'] as const;
 
 /** A radio group in the camera menu (Fill/Fit, resolution). */
 function RadioSection<T extends string>({
@@ -137,7 +116,7 @@ function CameraMenu({
           <RadioSection
             label={t('inputs.fitLabel')}
             value={settings.fit}
-            options={FITS}
+            options={CAMERA_FITS}
             name={(f) => t(`inputs.fit.${f}`)}
             onChange={(fit) => onChange({ fit })}
           />
@@ -145,7 +124,7 @@ function CameraMenu({
           <RadioSection
             label={t('inputs.resolutionLabel')}
             value={settings.resolution}
-            options={RESOLUTIONS}
+            options={CAMERA_RESOLUTIONS}
             name={(r) => t(`inputs.resolution.${r}`)}
             onChange={(resolution) => onChange({ resolution })}
           />
@@ -180,17 +159,14 @@ function InputTile({ device }: { device: InputDevice }) {
   useEffect(() => {
     if (video.current) video.current.srcObject = stream;
   }, [stream]);
-  const change = (patch: Partial<CameraSettings>): void => {
-    setCameraSettings(device.deviceId, patch);
-    if (live) void sendInput(device);
-  };
+  const change = (patch: Partial<CameraSettings>): void => updateCamera(device, patch);
   return (
     <li className="group relative">
       <Button
         variant="bare"
         aria-label={live ? t('inputs.takeOff', { name }) : t('inputs.show', { name })}
         aria-pressed={live}
-        onClick={() => void sendInput(live ? null : device)}
+        onClick={() => void showCamera(live ? null : device)}
         className="group/tile block w-full text-left focus-visible:outline-none"
       >
         <div

@@ -370,7 +370,8 @@
       "guide": "Guide",
       "features": "Features",
       "connections": "Connections",
-      "screens": "Screens"
+      "screens": "Screens",
+      "cameras": "Cameras"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -381,7 +382,8 @@
       "about": "What Lampstand does with your data, and which version you are running.",
       "features": "Everything Lampstand does today, and what is coming.",
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
-      "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks)."
+      "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
+      "cameras": "How each camera or capture card goes on screen: its name, fill or fit, mirror and capture size."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -1232,7 +1234,20 @@
       "2160": "4K"
     },
     "reset": "Reset to defaults",
-    "fitTag": "Fit"
+    "fitTag": "Fit",
+    "camerasTitle": "Cameras on this computer",
+    "camerasFootnote": "Saved for each camera on this computer. While a camera is on screen, changes show straight away. The same settings are in each camera’s … menu in Media › Video input.",
+    "looking": "Looking for cameras…",
+    "nameLabel": "Name",
+    "fitShort": {
+      "cover": "Fill",
+      "contain": "Fit"
+    },
+    "mirrorOf": "Mirror {{name}}",
+    "resolutionOf": "Capture size for {{name}}",
+    "previewOf": "{{name}} preview",
+    "showShort": "Show on screen",
+    "takeOffShort": "Take off screen"
   },
   "stock": {
     "category": "Stock category",
