@@ -920,6 +920,59 @@ test('click goes live: a video from the bin plays on every output; Turn off live
   await control.keyboard.press('Escape');
 });
 
+test('video cues: play in Preview, wait for Play, playback options trim the clip', async () => {
+  const out = await outputPage();
+  const outVideo = out.locator('.ls-layer-media video');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  const transport = control.getByRole('group', { name: 'Video controls' });
+  const setSetting = (patch: Record<string, unknown>) =>
+    control.evaluate(
+      (p) => window.lampstand.command({ type: 'settings.update', payload: { patch: p } }),
+      patch,
+    );
+
+  // Preview first: the clip waits in Preview, and the transport plays it there, silently.
+  await previewFirst(true);
+  await binTab('Media');
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).click();
+  await expect(transport.getByText('In Preview (only you can see it)')).toBeVisible();
+  await transport.getByRole('button', { name: 'Play' }).click();
+  const previewVideo = control.locator('figure').filter({ hasText: 'Preview' }).locator('video');
+  await expect
+    .poll(() => previewVideo.evaluate((v: HTMLVideoElement) => v.currentTime))
+    .toBeGreaterThan(0.5);
+  await expect(outVideo).toHaveCount(0);
+  await control.screenshot({ path: 'test-results/26-preview-playback.png' });
+  await previewFirst(false);
+
+  // "Wait for Play": a clip that goes live sits on its first frame until Play.
+  await setSetting({ mediaAutoplay: false });
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).click();
+  await expect(outVideo).toHaveCount(1);
+  await control.waitForTimeout(800);
+  expect(await outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+  await transport.getByRole('button', { name: 'Play' }).click();
+  await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
+  await setSetting({ mediaAutoplay: true });
+
+  // Playback options on a cue in the playlist: start 2 s in.
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).dblclick();
+  const cue = control.getByRole('region', { name: 'Seed clip', exact: true }).first();
+  await cue.getByRole('button', { name: 'Playback options' }).click();
+  const dialog = control.getByRole('dialog');
+  await dialog.getByLabel('Start at').fill('2');
+  await dialog.getByLabel('Start at').press('Enter');
+  await dialog.getByRole('radio', { name: 'Loop' }).click();
+  await control.screenshot({ path: 'test-results/27-playback-options.png' });
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await cue.getByRole('list').getByRole('button').first().click();
+  await expect
+    .poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.currentTime))
+    .toBeGreaterThan(1.9);
+  await control.getByRole('button', { name: /^Turn off live/ }).click();
+  await expect(outVideo).toHaveCount(0);
+});
+
 test('new tools: reflow, props, messages with fields, timers on stage, coming soon', async () => {
   const out = await outputPage();
   // Props, messages and timers are show controls, under the output monitor.

@@ -1,14 +1,23 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AlignLeft, Clock3, LayoutGrid, ListPlus, Plus, Repeat, Shuffle } from 'lucide-react';
+import {
+  AlignLeft,
+  Clock3,
+  LayoutGrid,
+  ListPlus,
+  Plus,
+  Repeat,
+  Shuffle,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
-import { Button, Segmented, Typography } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../../lib/actions';
 import { feature } from '../../lib/features';
 import { useItemSlides } from '../../lib/hooks';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
 import { itemTitle, sectionColor } from '../../lib/slides';
-import { editItems, useStore } from '../../lib/store';
+import { editItems, openDialog, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { KindTile } from '../kindIcons';
 import { AddMenu } from '../ServicePanel';
@@ -140,6 +149,17 @@ function ItemSection({
           <SoonTool id="transitions" icon={<Shuffle size={14} />} />
           <SoonTool id="timeline" icon={<Clock3 size={14} />} />
           <SoonTool id="slide-actions" icon={<Repeat size={14} />} />
+          {item.kind === 'media' && (
+            <IconButton
+              size="2xs"
+              variant="quiet"
+              aria-label={t('playback.open')}
+              active={!!item.playback || item.loop || item.autoAdvance}
+              onClick={() => openDialog('playback', { playbackItemId: item.id })}
+            >
+              <SlidersHorizontal size={14} />
+            </IconButton>
+          )}
         </div>
       </header>
       {/* The selected item's slides are "the" slide list; the others are named after their item. */}

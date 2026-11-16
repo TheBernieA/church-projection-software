@@ -8,14 +8,13 @@ import {
 } from 'react';
 import { Film, Pause, Play, Repeat, SkipBack, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatClock, mediaPositionAt, type MediaLayer } from '@lampstand/core';
+import { formatClock, mediaEnd, mediaPositionAt, type MediaLayer } from '@lampstand/core';
 import { Button, IconButton, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
 import { mediaUrl, thumbUrl } from '../../shared/mediaUrl';
-
-const durations = new Map<string, number>();
+import { durations } from '../lib/mediaDurations';
 
 /**
  * Duration of a library clip: from the library record when known, else read once from the
@@ -113,7 +112,7 @@ function useDraft(resetKey: unknown, commit: (value: number) => void) {
   };
 }
 
-const send = (payload: Record<string, unknown>): void =>
+const sendMedia = (payload: Record<string, unknown>): void =>
   void attempt(() => cmd('live.media', payload));
 
 /** Circular-arrow "skip 15 s" glyph (back or forward), drawn in the icon's current colour. */
@@ -210,8 +209,19 @@ const LAST = 10;
  * same shared timeline, so projector and stage stay in sync. With no video live it rests,
  * dimmed, saying so.
  */
-export function MediaTransport({ media }: { media: MediaLayer | null }) {
+export function MediaTransport({
+  media,
+  target = 'program',
+  switcher,
+}: {
+  media: MediaLayer | null;
+  /** Control the video on screen, or the one waiting in Preview (silent, only you see it). */
+  target?: 'program' | 'preview';
+  /** Live / Preview switch, when both have a video. */
+  switcher?: ReactNode;
+}) {
   const { t } = useTranslation();
+  const send = (payload: Record<string, unknown>): void => sendMedia({ ...payload, target });
   const item = useStore((s) => (media ? s.media.find((m) => m.id === media.mediaId) : undefined));
   const name = item?.name;
   const duration = useMediaDuration(media?.mediaId);
@@ -220,9 +230,11 @@ export function MediaTransport({ media }: { media: MediaLayer | null }) {
   const volume = useDraft(media?.volume, (v) => send({ action: 'set', volume: v }));
   const idle = !media;
   const shown = scrub.draft ?? playhead;
-  const ended = !!media && !media.loop && duration !== undefined && playhead >= duration - 0.05;
+  // Trimmed clips end (and count down) to their out-point, not the file's end.
+  const end = media ? mediaEnd(media, duration) : undefined;
+  const ended = !!media && !media.loop && end !== undefined && playhead >= end - 0.05;
   const playing = !!media?.playing && !ended;
-  const remaining = duration !== undefined ? Math.max(0, duration - shown) : undefined;
+  const remaining = end !== undefined ? Math.max(0, end - shown) : undefined;
   const ending = playing && remaining !== undefined && remaining <= LAST;
   const vol = volume.draft ?? media?.volume ?? 1;
   const seek = (to: number): void =>
@@ -234,6 +246,7 @@ export function MediaTransport({ media }: { media: MediaLayer | null }) {
       aria-label={t('media.transport')}
       className={`flex flex-col gap-1.5 rounded-[10px] bg-[var(--surface-0)] px-3 pb-2 pt-2.5 shadow-[inset_0_0_0_1px_var(--hairline),var(--highlight-top)] ${idle ? 'opacity-80' : ''}`}
     >
+      {switcher}
       {/* What's playing, and its volume. */}
       <div className="flex items-center gap-2.5">
         <div className="relative flex aspect-video w-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-black shadow-[0_0_0_1px_var(--hairline-strong)]">
@@ -267,13 +280,15 @@ export function MediaTransport({ media }: { media: MediaLayer | null }) {
           <Typography as="p" size={11} tone="muted" truncate>
             {idle
               ? t('media.noVideoHint')
-              : [
-                  t('media.video'),
-                  media.loop ? t('media.looping') : null,
-                  media.muted ? t('media.muted') : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
+              : target === 'preview'
+                ? t('media.previewHint')
+                : [
+                    t('media.video'),
+                    media.loop ? t('media.looping') : null,
+                    media.muted ? t('media.muted') : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
           </Typography>
         </div>
         <IconButton

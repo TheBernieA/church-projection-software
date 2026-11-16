@@ -58,6 +58,8 @@ export const SettingsSchema = z
      * clicks load Preview and Go live (Space) sends it.
      */
     clickGoesLive: z.boolean().default(true),
+    /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
+    mediaAutoplay: z.boolean().default(true),
     /** Audience message templates; {tokens} are filled in when shown. */
     messages: z
       .array(

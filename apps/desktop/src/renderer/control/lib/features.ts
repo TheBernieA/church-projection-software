@@ -471,8 +471,7 @@ export const FEATURES: Feature[] = [
     'media-cues',
     'media',
     'Media playback options',
-    'Start and end points, fades, and what happens when a video ends: stop, loop or go to the next item.',
-    'soon',
+    'Start and end points, fades, what happens when a video ends (stop, loop or go to the next item), and whether it plays as soon as it goes live: “Playback options” on a video in the playlist.',
   ),
   f(
     'media-playlists',

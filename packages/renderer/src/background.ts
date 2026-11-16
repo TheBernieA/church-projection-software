@@ -1,4 +1,11 @@
-import { mediaPositionAt, type BackgroundLayer, type MediaLayer } from '@lampstand/core';
+import {
+  mediaEnd,
+  mediaFadeAt,
+  mediaPositionAt,
+  mediaStart,
+  type BackgroundLayer,
+  type MediaLayer,
+} from '@lampstand/core';
 import { el, loop, safePlay } from './dom';
 import { backgroundFilter, gradientCss } from './style';
 import { buildGenerated } from './generated';
@@ -92,22 +99,62 @@ export function syncMedia(
 ): void {
   const v = node.querySelector('video');
   if (!v || mode === 'thumbnail') return;
-  v.loop = m.loop;
+  const trimmed = m.start !== undefined || m.end !== undefined;
+  // A trimmed clip loops between its in- and out-points (handled below), not the whole file.
+  v.loop = m.loop && !trimmed;
   // Only one renderer plays audio (the main output, or the Program monitor when there is no
   // output), so the room never hears doubled sound.
   v.muted = m.muted || !audio;
-  v.volume = m.volume;
   const apply = (): void => {
     const duration = Number.isFinite(v.duration) ? v.duration : undefined;
     const target = mediaPositionAt(m, Date.now(), duration);
     if (Math.abs(v.currentTime - target) > 0.3) v.currentTime = target;
-    const finished = !m.loop && duration !== undefined && target >= duration - 0.05;
+    const end = mediaEnd(m, duration);
+    const finished = !m.loop && end !== undefined && target >= end - 0.05;
     // play() on an ended video would restart it from 0 — a finished clip stays on its last frame.
     if (m.playing && !finished) safePlay(v);
     else v.pause();
   };
   if (v.readyState >= 1) apply();
   else v.addEventListener('loadedmetadata', apply, { once: true });
+  watchPlayback(v, m);
+}
+
+/**
+ * Per frame while a clip shows: fade it in and out (picture and sound together), and honour
+ * the out-point: stop there, or jump back to the in-point when looping. One loop per element;
+ * a newer playback state replaces the older one.
+ */
+function watchPlayback(v: HTMLVideoElement, m: MediaLayer): void {
+  const state = v as HTMLVideoElement & { lsPlayback?: MediaLayer; lsWatching?: boolean };
+  state.lsPlayback = m;
+  const needs = m.fadeIn || m.fadeOut || m.start !== undefined || m.end !== undefined;
+  if (!needs) {
+    v.style.opacity = '';
+    v.volume = m.volume;
+    return;
+  }
+  const win = v.ownerDocument.defaultView;
+  if (state.lsWatching || !win) return;
+  state.lsWatching = true;
+  const tick = (): void => {
+    const cur = state.lsPlayback;
+    if (!cur || !v.isConnected) {
+      state.lsWatching = false;
+      return;
+    }
+    const duration = Number.isFinite(v.duration) ? v.duration : undefined;
+    const end = mediaEnd(cur, duration);
+    if (end !== undefined && v.currentTime >= end - 0.02 && !v.paused) {
+      if (cur.loop) v.currentTime = mediaStart(cur);
+      else v.pause();
+    }
+    const a = mediaFadeAt(cur, v.currentTime, duration);
+    v.style.opacity = String(a);
+    v.volume = Math.max(0, Math.min(1, cur.volume * a));
+    win.requestAnimationFrame(tick);
+  };
+  win.requestAnimationFrame(tick);
 }
 
 export function buildMedia(

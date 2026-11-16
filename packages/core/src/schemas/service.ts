@@ -46,6 +46,17 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     loop: z.boolean(),
     autoAdvance: z.boolean(),
     asBackground: z.boolean().default(false),
+    /** Playback options for this cue (trim, fades, play on go live). */
+    playback: z
+      .object({
+        start: z.number().min(0).max(86_400).optional(),
+        end: z.number().min(0).max(86_400).optional(),
+        fadeIn: z.number().min(0).max(30).optional(),
+        fadeOut: z.number().min(0).max(30).optional(),
+        /** Unset: Settings › Presenting decides. */
+        autoplay: z.boolean().optional(),
+      })
+      .optional(),
   }),
   z.object({
     ...base,

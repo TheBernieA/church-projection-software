@@ -442,6 +442,77 @@ describe('live video transport', () => {
   });
 });
 
+describe('video cues: autoplay, preview playback, trim and fades', () => {
+  const clip = {
+    mediaId: 'v',
+    kind: 'video' as const,
+    loop: false,
+    muted: false,
+    fit: 'contain' as const,
+    playing: true,
+    position: 0,
+    volume: 1,
+  };
+  const setup = () => {
+    let t = Date.parse('2026-01-01T00:00:00Z');
+    const bus = new CommandBus();
+    const store = new LiveStateStore();
+    registerLiveCommands(bus, store, () => new Date(t).toISOString());
+    return {
+      store,
+      tick: (ms: number) => (t += ms),
+      now: () => t,
+      run: (type: string, payload: unknown) => bus.dispatch({ type, payload, source: 'ui' }),
+    };
+  };
+
+  it('going live with autoplay off waits on the first frame', async () => {
+    const { store, run } = setup();
+    await run('live.goLive', { media: clip, content: null, autoplay: false });
+    expect(store.get().program.media?.playing).toBe(false);
+    await run('live.goLive', { media: clip, content: null });
+    expect(store.get().program.media?.playing).toBe(true);
+  });
+
+  it('the transport can play the video waiting in Preview without touching the screen', async () => {
+    const { store, run, tick, now } = setup();
+    const { mediaPositionAt } = await import('./index');
+    await run('live.setPreview', {
+      content: null,
+      background: null,
+      media: { ...clip, playing: false },
+    });
+    await run('live.media', { action: 'play', target: 'preview' });
+    tick(3_000);
+    expect(mediaPositionAt(store.get().preview.media!, now())).toBeCloseTo(3, 1);
+    expect(store.get().program.media).toBeNull();
+    // Going live always starts from the beginning.
+    await run('live.goLive', {});
+    expect(store.get().program.media?.position).toBe(0);
+  });
+
+  it('trimmed clips start at the in-point, stop or loop at the out-point', async () => {
+    const { mediaPositionAt, mediaEnd, startMedia } = await import('./index');
+    const t0 = Date.parse('2026-01-01T00:00:00Z');
+    const trimmed = startMedia({ ...clip, start: 5, end: 15 }, '2026-01-01T00:00:00Z');
+    expect(trimmed.position).toBe(5);
+    expect(mediaEnd(trimmed, 60)).toBe(15);
+    expect(mediaPositionAt(trimmed, t0 + 30_000, 60)).toBe(15); // stops at the out-point
+    const looping = { ...trimmed, loop: true };
+    expect(mediaPositionAt(looping, t0 + 12_000, 60)).toBeCloseTo(7, 1); // 5 + (17-5) % 10
+  });
+
+  it('fades follow the in- and out-points', async () => {
+    const { mediaFadeAt } = await import('./index');
+    const faded = { ...clip, start: 2, end: 12, fadeIn: 2, fadeOut: 4 };
+    expect(mediaFadeAt(faded, 2, 60)).toBe(0);
+    expect(mediaFadeAt(faded, 3, 60)).toBeCloseTo(0.5);
+    expect(mediaFadeAt(faded, 6, 60)).toBe(1);
+    expect(mediaFadeAt(faded, 10, 60)).toBeCloseTo(0.5);
+    expect(mediaFadeAt(faded, 12, 60)).toBe(0);
+  });
+});
+
 describe('logo and off-air screen', () => {
   const kinds: Record<string, string> = { pic: 'image', clip: 'video', song: 'audio' };
   const kindOf = (id: string): string | undefined => kinds[id];

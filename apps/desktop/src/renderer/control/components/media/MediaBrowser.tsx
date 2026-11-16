@@ -176,7 +176,7 @@ function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }
             </DropdownMenu.Portal>
           </DropdownMenu.Sub>
           {/* Planned per-clip settings. */}
-          {(['media-cues', 'playback-markers'] as const).map((id) => (
+          {(['playback-markers'] as const).map((id) => (
             <DropdownMenu.Item key={id} disabled className={ITEM_CLASS} title={soonTitle(id)}>
               <span className="flex-1">{feature(id).name}</span>
               <SoonBadge label={t('soon.badge')} />

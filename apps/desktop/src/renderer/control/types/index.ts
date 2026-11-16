@@ -66,7 +66,16 @@ export type BinTab =
 export type ControlsTab = 'audio' | 'stage' | 'timers' | 'messages' | 'props' | 'macros';
 
 export type DialogName =
-  'quick' | 'outputs' | 'settings' | 'shortcuts' | 'song' | 'theme' | 'services' | 'perf' | null;
+  | 'quick'
+  | 'outputs'
+  | 'settings'
+  | 'shortcuts'
+  | 'song'
+  | 'theme'
+  | 'services'
+  | 'perf'
+  | 'playback'
+  | null;
 
 export interface Toast {
   id: number;
@@ -117,6 +126,8 @@ export interface ControlState {
   settingsPage: SettingsPageId;
   dialog: DialogName;
   editingSongId: string | null;
+  /** The media cue whose playback options are open. */
+  playbackItemId: string | null;
   editingThemeId: string | null;
   history: { canUndo: boolean; canRedo: boolean };
   toasts: Toast[];

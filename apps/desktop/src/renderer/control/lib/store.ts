@@ -34,6 +34,7 @@ export const useStore = create<ControlState>((set) => ({
   settingsPage: 'general',
   dialog: null,
   editingSongId: null,
+  playbackItemId: null,
   editingThemeId: null,
   history: { canUndo: false, canRedo: false },
   toasts: [],

@@ -121,6 +121,14 @@ export const MediaLayerSchema = z.object({
   position: z.number().min(0).max(86_400).default(0),
   syncedAt: z.string().max(40).optional(),
   volume: z.number().min(0).max(1).default(1),
+  /** In-point (s): playback starts here and loops back here. */
+  start: z.number().min(0).max(86_400).optional(),
+  /** Out-point (s): playback stops (or loops, or moves on) here instead of the file's end. */
+  end: z.number().min(0).max(86_400).optional(),
+  /** Fade up from black/silence over this many seconds after the in-point. */
+  fadeIn: z.number().min(0).max(30).optional(),
+  /** Fade down to black/silence over this many seconds before the out-point. */
+  fadeOut: z.number().min(0).max(30).optional(),
 });
 export type MediaLayer = z.infer<typeof MediaLayerSchema>;
 

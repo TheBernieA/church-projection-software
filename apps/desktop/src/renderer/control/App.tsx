@@ -12,11 +12,13 @@ import { Splitter, usePaneSize } from './components/shell/Splitter';
 import { TextBar } from './components/shell/TextBar';
 import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
+import { installMediaWatch } from './lib/actions';
 
 // Opened on demand: loaded the first time they're needed, not at startup.
 const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
 const PerfHud = lazyNamed(() => import('./components/PerfHud'), 'PerfHud');
 const ServicesDialog = lazyNamed(() => import('./components/ServicesDialog'), 'ServicesDialog');
+const PlaybackDialog = lazyNamed(() => import('./components/PlaybackDialog'), 'PlaybackDialog');
 const SettingsDialog = lazyNamed(() => import('./components/SettingsDialog'), 'SettingsDialog');
 const ShortcutsDialog = lazyNamed(() => import('./components/ShortcutsDialog'), 'ShortcutsDialog');
 const SongEditor = lazyNamed(() => import('./components/SongEditor'), 'SongEditor');
@@ -40,6 +42,7 @@ export function App() {
   const right = usePaneSize('rightWidth', 340, 280, 560);
   const bin = usePaneSize('binHeight', 236, 150, 520);
   useEffect(() => installShortcuts(), []);
+  useEffect(() => installMediaWatch(), []);
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;
@@ -84,6 +87,7 @@ export function App() {
         {dialog === 'settings' && <SettingsDialog />}
         {dialog === 'shortcuts' && <ShortcutsDialog />}
         {dialog === 'services' && <ServicesDialog />}
+        {dialog === 'playback' && <PlaybackDialog />}
         {dialog === 'perf' && <PerfHud />}
       </Suspense>
       <Toasts />

@@ -15,7 +15,7 @@ import {
 import { TransitionSpecSchema } from './schemas/theme';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
-import { mediaPositionAt, startMedia } from './utils/mediaPlayback';
+import { mediaPositionAt, mediaStart, startMedia } from './utils/mediaPlayback';
 import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
@@ -298,6 +298,8 @@ const GoLiveSchema = z.object({
   web: WebLayerSchema.nullable().optional(),
   next: ContentLayerSchema.nullable().optional(),
   transition: TransitionSpecSchema.optional(),
+  /** Video going live: start playing at once (default) or wait on the first frame for Play. */
+  autoplay: z.boolean().optional(),
 });
 
 /** Registers every live-output command. Pure logic; the main process wires it to IPC. */
@@ -339,7 +341,9 @@ export function registerLiveCommands(
         const picked: MediaLayer | null =
           p.media !== undefined ? p.media : explicit ? null : (s.preview.media ?? null);
         // Media that goes live starts from the top, stamped so every output plays in sync.
-        const media = picked ? startMedia(picked, now()) : null;
+        const media = picked
+          ? { ...startMedia(picked, now()), playing: p.autoplay !== false }
+          : null;
         const bgFromPayload: BackgroundLayer | null | undefined =
           p.background !== undefined ? p.background : s.preview.background;
         const next = p.next !== undefined ? p.next : (s.preview.next ?? null);
@@ -457,6 +461,8 @@ export function registerLiveCommands(
     type: 'live.media',
     schema: z.object({
       action: z.enum(['play', 'pause', 'toggle', 'seek', 'restart', 'set']),
+      /** Which video: the one on screen (default) or the one waiting in Preview. */
+      target: z.enum(['program', 'preview']).optional(),
       position: z.number().min(0).max(86_400).optional(),
       volume: z.number().min(0).max(1).optional(),
       muted: z.boolean().optional(),
@@ -465,7 +471,8 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => {
-        const m = s.program.media;
+        const preview = p.target === 'preview';
+        const m = preview ? s.preview.media : s.program.media;
         if (!m) return s;
         const nowIso = now();
         // Re-anchor the timeline at "now" so the change applies from this instant on every output.
@@ -479,7 +486,11 @@ export function registerLiveCommands(
                 ? !m.playing
                 : m.playing;
         const position =
-          p.action === 'restart' ? 0 : p.action === 'seek' ? (p.position ?? here) : here;
+          p.action === 'restart'
+            ? mediaStart(m)
+            : p.action === 'seek'
+              ? (p.position ?? here)
+              : here;
         const media: MediaLayer = {
           ...m,
           playing,
@@ -489,7 +500,9 @@ export function registerLiveCommands(
           ...(p.muted !== undefined ? { muted: p.muted } : {}),
           ...(p.loop !== undefined ? { loop: p.loop } : {}),
         };
-        return { ...s, program: { ...s.program, media } };
+        return preview
+          ? { ...s, preview: { ...s.preview, media } }
+          : { ...s, program: { ...s.program, media } };
       });
       return { result: null };
     },

@@ -1,4 +1,13 @@
-import type { Layer, Overlay, RestorableLayer, ServiceItem, Settings } from '@lampstand/core';
+import {
+  mediaEnd,
+  mediaPositionAt,
+  type Layer,
+  type Overlay,
+  type RestorableLayer,
+  type ServiceItem,
+  type Settings,
+} from '@lampstand/core';
+import { knownDuration } from './mediaDurations';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides } from './slides';
@@ -64,6 +73,22 @@ function withFreshCountdown(slide: PresentableSlide): PresentableSlide {
   return { ...slide, action: { ...slide.action, content } };
 }
 
+/** Does this item's video start playing as soon as it goes live? (Settings › Presenting.) */
+function mediaAutoplay(item: ServiceItem): boolean {
+  const own = item.kind === 'media' ? item.playback?.autoplay : undefined;
+  return own ?? get().settings?.mediaAutoplay !== false;
+}
+
+/** Go live with the first slide of the item after `itemId` in the service (headers skipped). */
+export async function goLiveNextItem(itemId: string): Promise<void> {
+  const items = get().service?.items ?? [];
+  const at = items.findIndex((i) => i.id === itemId);
+  const next = items.slice(at + 1).find((i) => i.kind !== 'header');
+  if (at < 0 || !next) return;
+  useStore.setState({ selectedItemId: next.id, adhoc: null });
+  await goLiveSlide(next, 0);
+}
+
 /** Put a slide into Preview (green). Nothing changes on screen. */
 export async function previewSlide(item: ServiceItem, index: number): Promise<void> {
   const slides = slidesFor(item);
@@ -123,7 +148,13 @@ export async function goLiveSlide(
     );
   } else if (a.kind === 'media') {
     // Full-screen media replaces the slide on screen (the text is cleared; background stays).
-    await safe(cmd('live.goLive', { media: a.media, content: null, next: null }, source));
+    await safe(
+      cmd(
+        'live.goLive',
+        { media: a.media, content: null, next: null, autoplay: mediaAutoplay(item) },
+        source,
+      ),
+    );
   } else if (a.kind === 'web') {
     // A web page replaces the slide too; outputs show it in an isolated web view.
     await safe(cmd('live.goLive', { web: a.web, content: null, next: null }, source));
@@ -289,4 +320,30 @@ export async function openAdhoc(
   if (!slides.length) return;
   if (mode === 'live') await goLiveSlide(item, 0);
   else await previewSlide(item, 0);
+}
+
+// ---------- End of a video cue: go to the next item ----------
+/**
+ * Watch the live video: when a cue set to "Go to the next item" reaches its out-point (or the
+ * file's end), the next item in the playlist goes live. Once per play-through.
+ */
+export function installMediaWatch(): () => void {
+  let fired = '';
+  const timer = setInterval(() => {
+    const s = get();
+    const m = s.live?.program.media;
+    const cur = s.liveCursor;
+    if (!m || m.kind !== 'video' || m.loop || !m.playing || !cur) return;
+    const item = findItem(cur.itemId);
+    if (item?.kind !== 'media' || !item.autoAdvance || item.mediaId !== m.mediaId) return;
+    const duration = knownDuration(m.mediaId, s.media.find((x) => x.id === m.mediaId)?.durationSec);
+    const end = mediaEnd(m, duration);
+    const key = `${m.mediaId}|${m.syncedAt ?? ''}`;
+    if (end === undefined || key === fired) return;
+    if (mediaPositionAt(m, Date.now(), duration) >= end - 0.1) {
+      fired = key;
+      void goLiveNextItem(item.id);
+    }
+  }, 200);
+  return () => clearInterval(timer);
 }

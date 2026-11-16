@@ -23,6 +23,7 @@ import {
   overlayGroup,
   sceneIsVisible,
   type Layer,
+  type MediaLayer,
   type RestorableLayer,
   type Scene,
   type Standby,
@@ -35,6 +36,7 @@ import {
   Typography,
   IconButton,
   typographyClass,
+  Segmented,
 } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { clearLayer, goLive, restoreAll, restoreLayer, toggleMask } from '../../lib/actions';
@@ -230,6 +232,41 @@ function MaskButton({
     >
       {hint}
     </Button>
+  );
+}
+
+/**
+ * The transport under the monitor drives the video on screen, or the one waiting in Preview
+ * (played silently, so the operator can check it). With both, a Live / Preview switch picks.
+ */
+function VideoControls({
+  program,
+  preview,
+}: {
+  program: MediaLayer | null;
+  preview: MediaLayer | null;
+}) {
+  const { t } = useTranslation();
+  const [pick, setPick] = useState<'program' | 'preview'>('program');
+  const target = program && preview ? pick : preview && !program ? 'preview' : 'program';
+  return (
+    <MediaTransport
+      media={target === 'preview' ? preview : program}
+      target={target}
+      switcher={
+        program && preview ? (
+          <Segmented<'program' | 'preview'>
+            label={t('media.which')}
+            value={target}
+            onChange={setPick}
+            options={[
+              { value: 'program', label: t('media.liveLabel') },
+              { value: 'preview', label: t('media.previewLabel') },
+            ]}
+          />
+        ) : undefined
+      }
+    />
   );
 }
 
@@ -489,7 +526,10 @@ export function RightColumn() {
             hint={displayCombo(keys.freeze)}
           />
         </div>
-        <MediaTransport media={p.media?.kind === 'video' ? p.media : null} />
+        <VideoControls
+          program={p.media?.kind === 'video' ? p.media : null}
+          preview={live.preview.media?.kind === 'video' ? live.preview.media : null}
+        />
       </div>
       <ShowControls />
     </div>

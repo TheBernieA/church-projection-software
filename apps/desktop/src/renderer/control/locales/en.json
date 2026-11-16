@@ -111,7 +111,11 @@
     "noVideoHint": "Click a video in the media bin to play it",
     "video": "Video",
     "looping": "Looping",
-    "muted": "Muted"
+    "muted": "Muted",
+    "previewLabel": "Preview",
+    "liveLabel": "Live",
+    "which": "Which video",
+    "previewHint": "In Preview (only you can see it)"
   },
   "slides": {
     "empty": "Pick a song from the library, or an item from the service plan.",
@@ -448,7 +452,12 @@
         "minimal": "Minimal",
         "classic": "Classic"
       }
-    }
+    },
+    "video": "Video",
+    "mediaAutoplay": "When a video goes live",
+    "mediaAutoplayHelp": "Play it straight away, or show its first frame and wait until you press Play.",
+    "autoplayPlay": "Play straight away",
+    "autoplayWait": "Wait for Play"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -997,5 +1006,26 @@
     "live": "Live",
     "library": "Media library",
     "audioSoon": "Audio playback is coming soon. Your audio is kept in the library and in your media playlists."
+  },
+  "playback": {
+    "title": "Playback options: {{name}}",
+    "open": "Playback options",
+    "done": "Done",
+    "seconds": "seconds",
+    "trim": "Trim",
+    "start": "Start at",
+    "end": "End at",
+    "trimHelp": "The clip is {{length}} s long. It starts at the in-point, and stops (or loops, or moves on) at the out-point.",
+    "trimHelpUnknown": "It starts at the in-point, and stops (or loops, or moves on) at the out-point.",
+    "fades": "Fades",
+    "fadeIn": "Fade in",
+    "fadeOut": "Fade out",
+    "atEnd": "At the end",
+    "stop": "Stop on the last frame",
+    "loop": "Loop",
+    "next": "Go to the next item",
+    "whenLive": "When it goes live",
+    "useSetting": "As in Settings",
+    "endOfClip": "End of clip"
   }
 }

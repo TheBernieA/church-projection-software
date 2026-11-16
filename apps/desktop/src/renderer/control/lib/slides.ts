@@ -6,6 +6,7 @@ import {
   type BibleVersionInfo,
   type BookId,
   type ContentLayer,
+  type MediaLayer,
   type ServiceItem,
   type TextBlock,
   type Theme,
@@ -75,6 +76,18 @@ export function itemTitle(item: ServiceItem, ctx: Pick<SlideContext, 'songs' | '
     case 'header':
       return item.label;
   }
+}
+
+/** The parts of a cue's playback options that every output applies (in/out points, fades). */
+function trimOf(
+  pb: Extract<ServiceItem, { kind: 'media' }>['playback'],
+): Partial<Pick<MediaLayer, 'start' | 'end' | 'fadeIn' | 'fadeOut'>> {
+  const out: Partial<Pick<MediaLayer, 'start' | 'end' | 'fadeIn' | 'fadeOut'>> = {};
+  if (pb?.start !== undefined) out.start = pb.start;
+  if (pb?.end !== undefined) out.end = pb.end;
+  if (pb?.fadeIn !== undefined) out.fadeIn = pb.fadeIn;
+  if (pb?.fadeOut !== undefined) out.fadeOut = pb.fadeOut;
+  return out;
 }
 
 /** Turn a service item into the slides shown in the grid. Pure given the context. */
@@ -239,8 +252,9 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
                 muted: false,
                 fit: 'contain',
                 playing: true,
-                position: 0,
+                position: item.playback?.start ?? 0,
                 volume: 1,
+                ...trimOf(item.playback),
               },
             },
           },
