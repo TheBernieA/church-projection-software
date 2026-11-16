@@ -26,6 +26,7 @@ export const useStore = create<ControlState>((set) => ({
   libraryTab: 'songs',
   mode: 'show',
   binTab: 'media',
+  controlsTab: 'timers',
   binOpen: true,
   settingsPage: 'general',
   dialog: null,
@@ -34,6 +35,7 @@ export const useStore = create<ControlState>((set) => ({
   history: { canUndo: false, canRedo: false },
   toasts: [],
   saving: false,
+  sidebarView: 'playlist',
   set: (p) => set(p),
 }));
 

@@ -1,107 +1,97 @@
 import {
-  AudioLines,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Images,
-  MessageSquareText,
-  Sparkle,
-  Timer,
+  ListVideo,
+  Store,
   Video,
   Wallpaper,
-  Workflow,
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { IconButton, SoonBadge } from '@lampstand/ui';
+import { SoonBadge } from '@lampstand/ui';
+import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel, MediaPanel } from '../MediaPanel';
-import { MessagesBin } from '../bins/MessagesBin';
-import { PropsBin } from '../bins/PropsBin';
 import { SoonPanel } from '../bins/SoonPanel';
-import { TimersBin } from '../bins/TimersBin';
-import { PaneTab } from './PaneHeader';
 import { type BinTab } from '../../types';
 
-const TABS: { tab: BinTab; icon: LucideIcon; soon?: string[] }[] = [
+const CATEGORIES: { tab: BinTab; icon: LucideIcon; soon?: string[] }[] = [
   { tab: 'media', icon: Images },
   { tab: 'backgrounds', icon: Wallpaper },
-  { tab: 'props', icon: Sparkle },
-  { tab: 'messages', icon: MessageSquareText },
-  { tab: 'timers', icon: Timer },
-  { tab: 'audio', icon: AudioLines, soon: ['audio-bin', 'audio-input'] },
   { tab: 'video-input', icon: Video, soon: ['video-input'] },
-  { tab: 'macros', icon: Workflow, soon: ['macros', 'slide-actions', 'timeline'] },
+  { tab: 'media-playlists', icon: ListVideo, soon: ['media-playlists'] },
+  { tab: 'stock-media', icon: Store, soon: ['stock-media'] },
 ];
 
-/** Bottom bin: media, backgrounds, props, messages, timers (and the tools coming soon). */
+/**
+ * Media bin, under the slides (opened from the toolbar's Media button): categories on the
+ * left, a breadcrumb on top, and the pictures, videos or backgrounds of the category.
+ */
 export function Bin({ height }: { height: number }) {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
-  const open = useStore((s) => s.binOpen);
-  const current = TABS.find((x) => x.tab === tab) ?? { tab: 'media' as const, icon: Images };
-  // How many things each bin holds (primitives, so ticking live state doesn't re-render).
   const mediaCount = useStore(
     (s) => s.media.filter((m) => !m.isBackground && m.kind !== 'audio').length,
   );
-  const propCount = useStore((s) => s.settings?.props.length ?? 0);
-  const messageCount = useStore((s) => s.settings?.messages.length ?? 0);
-  const timerCount = useStore((s) => s.settings?.timers.length ?? 0);
-  const counts: Partial<Record<BinTab, number>> = {
-    media: mediaCount,
-    props: propCount,
-    messages: messageCount,
-    timers: timerCount,
-  };
+  const current = CATEGORIES.find((c) => c.tab === tab) ?? CATEGORIES[0];
   return (
-    <section
-      aria-label={t('bin.label')}
-      className="flex shrink-0 flex-col overflow-hidden"
-      style={{ height: open ? height : undefined }}
-    >
-      <div className="no-scrollbar flex h-10 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--hairline)] px-2">
-        {TABS.map(({ tab: x, icon: Icon, soon }) => (
-          <PaneTab
-            key={x}
-            active={tab === x}
-            onClick={() => useStore.setState({ binTab: x, binOpen: true })}
-            icon={<Icon size={13} />}
-          >
-            {t(`bin.tabs.${x}`)}
-            {/* Hidden from the accessible name: the tab is still just "Props". */}
-            {!soon && !!counts[x] && (
-              <span aria-hidden className="tnum text-[11px] text-[var(--text-3)]">
-                {counts[x]}
-              </span>
-            )}
-            {soon && <SoonBadge label={t('soon.badge')} />}
-          </PaneTab>
-        ))}
-        <IconButton
-          size="xs"
-          className="ml-auto"
-          aria-label={open ? t('bin.collapse') : t('bin.expand')}
-          onClick={() => useStore.setState({ binOpen: !open })}
-        >
-          {open ? <ChevronDown size={15} /> : <ChevronUp size={15} />}
-        </IconButton>
-      </div>
-      {open && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          {current.soon ? (
-            <SoonPanel ids={current.soon} icon={<current.icon size={20} />} />
-          ) : tab === 'media' ? (
-            <MediaPanel />
-          ) : tab === 'backgrounds' ? (
-            <BackgroundsPanel />
-          ) : tab === 'props' ? (
-            <PropsBin />
-          ) : tab === 'messages' ? (
-            <MessagesBin />
-          ) : (
-            <TimersBin />
+    <section aria-label={t('bin.label')} className="flex shrink-0" style={{ height }}>
+      <nav
+        aria-label={t('bin.label')}
+        className="flex w-[180px] shrink-0 flex-col gap-px overflow-y-auto border-r border-[var(--divider)] bg-[var(--surface-1)] py-1.5"
+      >
+        <h2 className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          {t('bin.tabs.media')}
+        </h2>
+        {CATEGORIES.map(({ tab: x, icon: Icon, soon }) => {
+          const on = x === tab;
+          return (
+            <button
+              key={x}
+              type="button"
+              aria-pressed={on}
+              title={soon ? t('soon.tooltip', { name: feature(soon[0] ?? '').name }) : undefined}
+              onClick={() => useStore.setState({ binTab: x })}
+              className={`mx-1.5 flex h-[26px] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-[13px] ${
+                on
+                  ? 'bg-[var(--select)] text-white'
+                  : soon
+                    ? 'text-[var(--text-3)] hover:bg-[var(--surface-2)]'
+                    : 'text-[var(--text-1)] hover:bg-[var(--surface-2)]'
+              }`}
+            >
+              <Icon size={14} className={on ? '' : 'text-[var(--text-3)]'} />
+              <span className="flex-1 truncate">{t(`bin.tabs.${x}`)}</span>
+              {x === 'media' && mediaCount > 0 && (
+                <span aria-hidden className="tnum text-[11px] opacity-70">
+                  {mediaCount}
+                </span>
+              )}
+              {soon && <SoonBadge label={t('soon.badge')} />}
+            </button>
+          );
+        })}
+      </nav>
+      <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
+        <div className="flex h-8 shrink-0 items-center gap-1 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 text-[12px] text-[var(--text-2)]">
+          <span>{t('bin.tabs.media')}</span>
+          {current && current.tab !== 'media' && (
+            <>
+              <ChevronRight size={12} className="text-[var(--text-3)]" />
+              <span className="text-[var(--text-1)]">{t(`bin.tabs.${current.tab}`)}</span>
+            </>
           )}
         </div>
-      )}
+        <div className="flex min-h-0 flex-1 flex-col">
+          {current?.soon ? (
+            <SoonPanel ids={current.soon} icon={<current.icon size={20} />} />
+          ) : tab === 'backgrounds' ? (
+            <BackgroundsPanel />
+          ) : (
+            <MediaPanel />
+          )}
+        </div>
+      </div>
     </section>
   );
 }

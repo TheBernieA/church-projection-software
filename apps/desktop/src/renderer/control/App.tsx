@@ -9,7 +9,6 @@ import { Bin } from './components/shell/Bin';
 import { LeftSidebar } from './components/shell/LeftSidebar';
 import { RightColumn } from './components/shell/RightColumn';
 import { Splitter, usePaneSize } from './components/shell/Splitter';
-import { StatusBar } from './components/shell/StatusBar';
 import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
 
@@ -48,8 +47,8 @@ export function App() {
   return (
     <div className="flex h-full flex-col bg-[var(--surface-0)]">
       <Toolbar />
-      {/* Panes float as rounded panels on the canvas; the splitters are the gutters. */}
-      <div className="flex min-h-0 flex-1 px-1.5">
+      {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
+      <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
         <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
           <LeftSidebar />
         </aside>
@@ -58,10 +57,15 @@ export function App() {
           <main className="pane flex min-h-0 flex-1 flex-col">
             <CenterPane />
           </main>
-          {binOpen && <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />}
-          <div className={`pane ${binOpen ? '' : 'mt-1.5'}`}>
-            <Bin height={bin.size} />
-          </div>
+          {/* The media bin opens under the slides from the toolbar's Media button. */}
+          {binOpen && (
+            <>
+              <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />
+              <div className="pane">
+                <Bin height={bin.size} />
+              </div>
+            </>
+          )}
         </div>
         <Splitter axis="x" pane={right} invert label={t('layout.resizeRight')} />
         <aside className="pane flex shrink-0 flex-col" style={{ width: right.size }}>
@@ -78,7 +82,6 @@ export function App() {
         {dialog === 'services' && <ServicesDialog />}
         {dialog === 'perf' && <PerfHud />}
       </Suspense>
-      <StatusBar />
       <Toasts />
     </div>
   );

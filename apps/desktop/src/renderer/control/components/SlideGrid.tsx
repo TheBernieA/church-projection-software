@@ -26,7 +26,7 @@ import { type PresentableSlide } from '../types';
 
 type SlideView = 'grid' | 'easy';
 
-function thumbScene(slide: PresentableSlide): Scene {
+export function thumbScene(slide: PresentableSlide): Scene {
   const a = slide.action;
   if (a.kind === 'content') return makeScene({ background: a.background, content: a.content });
   if (a.kind === 'media') return makeScene({ media: a.media });
@@ -35,7 +35,7 @@ function thumbScene(slide: PresentableSlide): Scene {
 }
 
 /** Items whose slides can be edited in the Edit workspace (Quick Edit, right-click). */
-function editable(item: ServiceItem): boolean {
+export function editable(item: ServiceItem): boolean {
   return (
     item.kind === 'song' ||
     item.kind === 'presentation' ||

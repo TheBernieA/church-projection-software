@@ -16,9 +16,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
-import { Button, IconButton, PanelHeader } from '@lampstand/ui';
+import { IconButton } from '@lampstand/ui';
 import { importSlides } from '../lib/importSlides';
-import { itemTitle } from '../lib/slides';
+import { itemTitle, sectionColor } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
 import { isLibraryDrag, readLibraryDrop } from '../lib/libraryDrag';
 import {
@@ -147,10 +147,26 @@ export function ServicePanel() {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('service.title')}>
-      <PanelHeader
-        title={t('service.title')}
-        subtitle={`${items.filter((i) => i.kind !== 'header').length}`}
-      />
+      {/* "11 ITEMS  +": the playlist's contents, with the add menu on the right. */}
+      <div className="flex h-7 shrink-0 items-center justify-between border-b border-[var(--hairline)] pb-1 pl-3 pr-1.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          <span className="sr-only">{t('service.title')} · </span>
+          {t('sidebar.items', { count: items.filter((i) => i.kind !== 'header').length })}
+        </h2>
+        <AddMenu
+          update={update}
+          trigger={
+            <button
+              type="button"
+              aria-label={t('service.add')}
+              title={t('service.add')}
+              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-3)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
+            >
+              <Plus size={14} />
+            </button>
+          }
+        />
+      </div>
       <ol
         className="min-h-0 flex-1 overflow-y-auto px-2 pb-2"
         onDragOver={(e) => {
@@ -186,7 +202,8 @@ export function ServicePanel() {
               <li
                 key={item.id}
                 {...dnd(i)}
-                className={`group relative mt-3 flex h-8 items-center px-2 first:mt-1 ${dropLine} ${dimmed}`}
+                className={`group relative mt-2 flex h-7 items-center rounded-[3px] px-2 first:mt-1 ${dropLine} ${dimmed}`}
+                style={{ background: sectionColor(item.label) }}
               >
                 {editing === item.id ? (
                   <input
@@ -205,16 +222,12 @@ export function ServicePanel() {
                     type="button"
                     onDoubleClick={() => setEditing(item.id)}
                     title={t('service.renameHint')}
-                    className="section-label max-w-[70%] shrink-0 truncate text-left !text-[var(--accent)]"
+                    className="min-w-0 flex-1 truncate text-left text-[12px] font-semibold text-white"
                   >
                     {item.label}
                   </button>
                 )}
-                {/* A hairline runs from the section name to the edge. */}
-                {editing !== item.id && (
-                  <span aria-hidden className="ml-2 h-px flex-1 bg-[var(--hairline-strong)]" />
-                )}
-                <ItemMenu index={i} items={items} update={update} item={item} />
+                <ItemMenu index={i} items={items} update={update} item={item} bg="band" />
               </li>
             );
           }
@@ -226,17 +239,17 @@ export function ServicePanel() {
               <div
                 className={`relative flex items-center gap-1 rounded-[var(--radius-card)] pr-1 transition-colors duration-100 ${
                   isSel
-                    ? 'bg-[var(--surface-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]'
+                    ? 'bg-[var(--select)] text-white [&_.ls-sub]:!text-white/75'
                     : 'hover:bg-[var(--surface-2)]'
                 }`}
               >
-                {/* Edge bar: red while live, accent while selected. */}
-                {(isLive || isSel) && (
+                {/* Edge bar: red while live (selection is the blue fill). */}
+                {isLive && (
                   <span
                     aria-hidden
                     className="absolute inset-y-1.5 left-0 w-[3px] rounded-full"
                     style={{
-                      background: isLive ? 'var(--tally-program)' : 'var(--accent)',
+                      background: 'var(--tally-program)',
                     }}
                   />
                 )}
@@ -247,18 +260,17 @@ export function ServicePanel() {
                 />
                 <button
                   type="button"
-                  className="flex min-w-0 flex-1 items-center gap-2.5 py-2 text-left"
+                  className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
                   onClick={() => useStore.setState({ selectedItemId: item.id, adhoc: null })}
                   aria-current={isSel}
                 >
-                  <KindTile kind={item.kind} />
-                  <span className="flex min-w-0 flex-col leading-tight">
-                    <span
-                      className={`truncate text-[13px] ${isSel ? 'font-semibold text-[var(--text-1)]' : 'font-medium text-[var(--text-1)]'}`}
-                    >
+                  <KindTile kind={item.kind} size={20} />
+                  {/* One line: the title, and its source (song, version…) in muted text on the right. */}
+                  <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                    <span className="min-w-0 flex-1 truncate text-[13px]">
                       {itemTitle(item, { songs, media })}
                     </span>
-                    <span className="truncate text-[12px] text-[var(--text-3)]">
+                    <span className="ls-sub max-w-[45%] shrink-0 truncate text-[12px] text-[var(--text-3)]">
                       {subtitle(item)}
                     </span>
                   </span>
@@ -294,16 +306,22 @@ export function ServicePanel() {
           />
         )}
       </ol>
-      <AddBar update={update} />
     </section>
   );
 }
 
 /**
- * "+ Add" at the foot of the service plan: one button, a menu of what can be added (section,
+ * The add menu for the playlist: what can be added (section,
  * text slides, countdown, web page, import), each with a line saying what it is.
  */
-function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void }) {
+export function AddMenu({
+  update,
+  trigger,
+}: {
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+  /** The button that opens the menu (a "+" in the sidebar, "+ Add" elsewhere). */
+  trigger: ReactNode;
+}) {
   const { t } = useTranslation();
   const add = (item: ServiceItem): void => update((xs) => [...xs, item]);
   const entries: { key: string; icon: ReactNode; label: string; help: string; run: () => void }[] =
@@ -361,16 +379,12 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
       },
     ];
   return (
-    <div className="px-2.5 py-2.5 shadow-[0_-1px_0_var(--hairline)]">
+    <>
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger asChild>
-          <Button size="sm" variant="subtle" className="w-full" icon={<Plus size={15} />}>
-            {t('service.add')}
-          </Button>
-        </DropdownMenu.Trigger>
+        <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
-            side="top"
+            side="bottom"
             align="start"
             sideOffset={6}
             collisionPadding={12}
@@ -399,7 +413,7 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
-    </div>
+    </>
   );
 }
 
@@ -415,7 +429,7 @@ function ItemMenu({
   item: ServiceItem;
   update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
   /** Background the overlay sits on, so its fade blends in. */
-  bg?: 'panel' | 'hover' | 'selected';
+  bg?: 'panel' | 'hover' | 'selected' | 'band';
 }) {
   const { t } = useTranslation();
   const isSection = item.kind === 'header';
@@ -437,10 +451,12 @@ function ItemMenu({
     <div
       className={`pointer-events-none absolute inset-y-0 right-1 flex items-center bg-gradient-to-l pl-8 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100 [&>button]:pointer-events-auto ${
         bg === 'selected'
-          ? 'from-[var(--surface-3)] via-[var(--surface-3)]'
-          : bg === 'hover'
-            ? 'from-[var(--surface-2)] via-[var(--surface-2)]'
-            : 'from-[var(--surface-1)] via-[var(--surface-1)]'
+          ? 'from-[var(--select)] via-[var(--select)] [&>button]:!text-white'
+          : bg === 'band'
+            ? 'from-transparent via-transparent [&>button]:!text-white'
+            : bg === 'hover'
+              ? 'from-[var(--surface-2)] via-[var(--surface-2)]'
+              : 'from-[var(--surface-1)] via-[var(--surface-1)]'
       } to-transparent`}
     >
       <IconButton

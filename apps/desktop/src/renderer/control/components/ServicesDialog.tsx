@@ -1,43 +1,10 @@
 import { useTranslation } from 'react-i18next';
 import { SoonList } from './Soon';
-import { newId, nowIso, SERVICE_SCHEMA_VERSION, type ServicePlan } from '@lampstand/core';
 import { Button } from '@lampstand/ui';
-import { cmd, q } from '../lib/api';
-import {
-  attempt,
-  closeDialog,
-  editService,
-  flushServiceSave,
-  openService,
-  toast,
-  useStore,
-} from '../lib/store';
-import i18n from '../i18n';
+import { q } from '../lib/api';
+import { closeDialog, editService, openService, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-
-async function create(from?: ServicePlan, asTemplate = false): Promise<void> {
-  await flushServiceSave();
-  const now = nowIso();
-  const plan: ServicePlan = {
-    id: newId(),
-    schemaVersion: SERVICE_SCHEMA_VERSION,
-    createdAt: now,
-    updatedAt: now,
-    name: from
-      ? asTemplate
-        ? `${from.name} (template)`
-        : from.name.replace(/ \(template\)$/, '')
-      : 'New service',
-    date: now.slice(0, 10),
-    isTemplate: asTemplate,
-    items: from ? from.items.map((i) => ({ ...i, id: newId() })) : [],
-  };
-  await attempt(async () => {
-    await cmd('service.save', { entity: plan });
-    if (!asTemplate) await openService(plan.id);
-    else toast(i18n.t('service.templateSaved'));
-  });
-}
+import { createService } from '../lib/services';
 
 /** Open/create services and templates ("Sunday morning"). */
 export function ServicesDialog() {
@@ -66,13 +33,17 @@ export function ServicesDialog() {
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
           />
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => void create().then(close)}>
+            <Button size="sm" onClick={() => void createService().then(close)}>
               + {t('service.new')}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void create(current).then(close)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void createService(current).then(close)}
+            >
               {t('service.newFromTemplate')}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void create(current, true)}>
+            <Button size="sm" variant="ghost" onClick={() => void createService(current, true)}>
               {t('service.saveAsTemplate')}
             </Button>
           </div>
@@ -104,7 +75,7 @@ export function ServicesDialog() {
                       variant="ghost"
                       onClick={() =>
                         void q('services.get', { id: s.id }).then(async (plan) => {
-                          if (plan) await create(plan);
+                          if (plan) await createService(plan);
                           close();
                         })
                       }

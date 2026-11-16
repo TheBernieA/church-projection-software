@@ -118,17 +118,34 @@ test.afterAll(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-/** Switch the centre workspace (toolbar mode tabs). */
+/** Switch the centre workspace: Show/Edit/Reflow/Bible in the toolbar, Themes/Stage under More. */
 const mode = async (name: 'Show' | 'Edit' | 'Reflow' | 'Bible' | 'Themes' | 'Stage') => {
-  const tab = control.getByRole('navigation', { name: 'Workspace' }).getByRole('button', { name });
+  const nav = control.getByRole('navigation', { name: 'Workspace' });
+  if (name === 'Themes' || name === 'Stage') {
+    await nav.getByRole('button', { name: 'More' }).click();
+    await control.getByRole('menuitem', { name }).click();
+    return;
+  }
+  const tab = nav.getByRole('button', { name, exact: true });
   if ((await tab.getAttribute('aria-pressed')) !== 'true') await tab.click();
 };
-/** Open a bin tab (Media, Props, Messages, Timers…). */
+/**
+ * Open a bin: Media and Backgrounds are in the media bin under the slides (opened from the
+ * toolbar); Props, Messages and Timers are show-control tabs under the output monitor.
+ */
 const binTab = async (name: string) => {
+  if (name === 'Media' || name === 'Backgrounds') {
+    const bin = control.getByRole('region', { name: 'Bin' });
+    if ((await bin.count()) === 0)
+      await control.getByRole('banner').getByRole('button', { name: 'Media', exact: true }).click();
+    const cat = bin.getByRole('button', { name, exact: true });
+    if ((await cat.getAttribute('aria-pressed')) !== 'true') await cat.click();
+    return;
+  }
   const tab = control
-    .getByRole('region', { name: 'Bin' })
-    .getByRole('button', { name, exact: true });
-  if ((await tab.getAttribute('aria-pressed')) !== 'true') await tab.click();
+    .getByRole('region', { name: 'Show controls' })
+    .getByRole('tab', { name, exact: true });
+  if ((await tab.getAttribute('aria-selected')) !== 'true') await tab.click();
 };
 /** "Preview first": clicks load Preview and Space sends it, instead of clicks going live. */
 const previewFirst = async (on: boolean) => {
@@ -136,12 +153,23 @@ const previewFirst = async (on: boolean) => {
   if ((await sw.getAttribute('aria-checked')) !== String(on)) await sw.click();
 };
 
+/**
+ * The open playlist's items in the sidebar. The sidebar lists either a library's songs or the
+ * playlist, so pick the playlist in the outline first when a library is showing.
+ */
+const servicePlan = async () => {
+  const plan = control.getByRole('region', { name: 'Service plan' });
+  if ((await plan.count()) === 0)
+    await control
+      .getByRole('region', { name: 'Library' })
+      .getByRole('button', { name: 'Sample Sunday service' })
+      .click();
+  return plan;
+};
+
 /** Add something to the service plan from its "+ Add" menu. */
 const addToPlan = async (name: string) => {
-  await control
-    .getByRole('region', { name: 'Service plan' })
-    .getByRole('button', { name: 'Add', exact: true })
-    .click();
+  await (await servicePlan()).getByRole('button', { name: 'Add', exact: true }).click();
   await control.getByRole('menuitem', { name, exact: true }).click();
 };
 
@@ -297,11 +325,7 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
     .getByRole('button', { name: 'Lyrics' })
     .click();
   await mode('Show');
-  await control
-    .getByRole('region', { name: 'Service plan' })
-    .getByText('Test Song')
-    .first()
-    .click();
+  await (await servicePlan()).getByText('Test Song').first().click();
   await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
   await expect
     .poll(() =>
@@ -405,11 +429,7 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
 
 test('canvas editor: add a rectangle, drag it, and it shows on the output where you put it', async () => {
   const out = await outputPage();
-  await control
-    .getByRole('region', { name: 'Service plan' })
-    .getByText('Text slides')
-    .last()
-    .click();
+  await (await servicePlan()).getByText('Text slides').last().click();
   await mode('Edit');
   const canvas = control.getByTestId('slide-canvas');
   await expect(canvas).toBeVisible();
@@ -467,7 +487,7 @@ const HANDOUT_PDF =
   '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R 4 0 R]/Count 2>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\n4 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n';
 
 test('import slides: PowerPoint becomes text slides, a PDF becomes one picture per page', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
+  const plan = await servicePlan();
   const pick = (file: string) =>
     app.evaluate(({ dialog }, f) => {
       dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: [f] });
@@ -522,7 +542,7 @@ test('web page: shown over the output in an isolated view; Black screen takes it
 });
 
 test('hovering service plan rows never shifts the layout', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
+  const plan = await servicePlan();
   const boxes = () =>
     plan.locator('ol > li').evaluateAll((els) =>
       els.map((e) => {
@@ -544,7 +564,7 @@ test('hovering service plan rows never shifts the layout', async () => {
 });
 
 test('dragging a section moves the whole block and never splits another section', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
+  const plan = await servicePlan();
   const order = () =>
     plan.locator('ol > li').evaluateAll((els) =>
       els
@@ -576,16 +596,21 @@ test('dragging a section moves the whole block and never splits another section'
 });
 
 test('drag from the library into the service plan (songs and verses)', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
+  const plan = await servicePlan();
   const titles = () =>
     plan.locator('ol > li').evaluateAll((els) => els.map((e) => e.textContent.trim()));
-  // Song: drop onto "Psalm 23:1–6" → inserted just before it.
+  // Song: drag it from the library onto "Psalm 23:1–6" in the playlist (centre) → it lands
+  // just before it. The sidebar shows the library meanwhile, so the playlist is the target.
   const library = control.getByRole('region', { name: 'Library' });
   await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  await mode('Show');
   await library
     .getByRole('button', { name: /Test Song/ })
     .first()
-    .dragTo(plan.getByText('Psalm 23:1–6'));
+    .dragTo(control.getByRole('region', { name: 'Psalm 23:1–6', exact: true }), {
+      targetPosition: { x: 60, y: 12 },
+    });
+  await servicePlan(); // back to the playlist in the sidebar
   // Inserted just before the item it was dropped on (wait for the save to land).
   await expect
     .poll(async () => {
@@ -610,7 +635,7 @@ test('drag from the library into the service plan (songs and verses)', async () 
 });
 
 test('undo / redo: buttons and ⌘Z revert and re-apply service edits', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
+  const plan = await servicePlan();
   const rows = () => plan.locator('ol > li').count();
   const undo = control.getByRole('button', { name: /^Undo/ });
   const redo = control.getByRole('button', { name: /^Redo/ });
@@ -842,15 +867,12 @@ test('click goes live: a video from the bin plays on every output; Turn off live
 
 test('new tools: reflow, props, messages with fields, timers on stage, coming soon', async () => {
   const out = await outputPage();
-  const bin = control.getByRole('region', { name: 'Bin' });
+  // Props, messages and timers are show controls, under the output monitor.
+  const bin = control.getByRole('region', { name: 'Show controls' });
 
   // Reflow: the whole text-slides item as one text block; blank lines split slides.
   await mode('Show');
-  await control
-    .getByRole('region', { name: 'Service plan' })
-    .getByText('Text slides')
-    .last()
-    .click();
+  await (await servicePlan()).getByText('Text slides').last().click();
   await mode('Reflow');
   const text = control.getByLabel('All slide text');
   await expect(text).toHaveValue(/\[Welcome\]\nCoffee is served after the service/);
@@ -897,7 +919,7 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
   await expect(stage.locator('.timer')).toHaveCount(0);
 
   // Coming soon: unbuilt tools say so, and Settings → Features lists the roadmap.
-  await bin.getByRole('button', { name: /^Audio/ }).click();
+  await bin.getByRole('tab', { name: 'Audio' }).click();
   await expect(bin.getByTestId('soon-panel')).toContainText('Audio bin & playlists');
   await bin.getByRole('button', { name: "See everything that's coming" }).click();
   await expect(control.getByRole('heading', { name: 'Features' })).toBeVisible();
@@ -974,7 +996,7 @@ test('Escape (panic) clears text but keeps the background', async () => {
   });
 });
 
-test('Easy view lists the words; Clear all takes everything off the screen', async () => {
+test('Easy view lists the words; Turn off live takes everything off the screen', async () => {
   await mode('Show');
   const out = await outputPage();
   // The verse from the previous test is in the grid; Easy view shows its words, large.
@@ -983,12 +1005,12 @@ test('Easy view lists the words; Clear all takes everything off the screen', asy
   await expect(list).toContainText('For God so loved the world');
   await control.screenshot({ path: 'test-results/23-easy-view.png' });
   await control.getByRole('radio', { name: 'Grid' }).click();
-  // Clear all: every layer comes off, and the button goes quiet once there's nothing left.
-  const clearAll = control.getByRole('button', { name: /^Clear all/ });
-  await expect(clearAll).toBeEnabled();
+  // Turn off live (the ✕ beside the monitor): every layer comes off, and the ✕ goes away.
+  const clearAll = control.getByRole('button', { name: /Turn off live/ });
+  await expect(clearAll).toBeVisible();
   await clearAll.click();
   await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
-  await expect(clearAll).toBeDisabled();
+  await expect(clearAll).toBeHidden();
   // Put the verse back for the crash test.
   await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
   await control.keyboard.type('jn 3 16');

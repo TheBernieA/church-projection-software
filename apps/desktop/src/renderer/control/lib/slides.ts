@@ -22,6 +22,14 @@ import { chapterKey } from './store';
 import { type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
 import { GROUP_COLORS } from '../constants';
 
+/** Muted band colours for playlist sections (Pre-service, Worship, Word…), picked by name. */
+const SECTION_COLORS = ['#3e7b4f', '#3a6aa6', '#8a6a3a', '#76508f', '#357f86', '#8f4b4b'];
+export function sectionColor(label: string): string {
+  let h = 0;
+  for (const ch of label.trim().toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return SECTION_COLORS[h % SECTION_COLORS.length] ?? '#555';
+}
+
 export function groupColor(label?: string): string | undefined {
   if (!label) return undefined;
   const l = label.trim().toLowerCase();

@@ -38,10 +38,12 @@ export function AddCard({
 export const REVEAL =
   'opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100';
 
-/** A horizontal, scrolling row of bin cards (props, messages, timers). */
+/** A column of show-control cards (props, messages, timers): each card takes the full width. */
 export function BinRow({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">{children}</div>
+    <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2.5 [&>*]:!w-full">
+      {children}
+    </div>
   );
 }
 

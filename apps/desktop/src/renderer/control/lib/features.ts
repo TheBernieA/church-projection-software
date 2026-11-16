@@ -228,6 +228,13 @@ export const FEATURES: Feature[] = [
     'soon',
   ),
   f(
+    'text-format',
+    'presentations',
+    'Text formatting',
+    'Change the font, size, colour and alignment of the selected slides straight from the toolbar.',
+    'soon',
+  ),
+  f(
     'looks',
     'layers',
     'Looks',

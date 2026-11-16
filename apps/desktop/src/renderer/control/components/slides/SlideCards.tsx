@@ -113,7 +113,7 @@ export function SlideCard({
         title={hint}
         aria-label={label}
         aria-current={state === 'editing' || undefined}
-        className={`group block w-full cursor-pointer overflow-hidden rounded-[6px] bg-[var(--surface-2)] text-left transition-[box-shadow,transform] duration-[var(--dur-med)] ease-[var(--ease-out)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--accent)] ${RING[state]}`}
+        className={`group block w-full cursor-pointer overflow-hidden rounded-[3px] bg-[var(--surface-2)] text-left transition-[box-shadow,transform] duration-[var(--dur-med)] ease-[var(--ease-out)] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--accent)] ${RING[state]}`}
       >
         <div className="relative">
           <SceneView scene={scene} mode="thumbnail" />
@@ -122,25 +122,20 @@ export function SlideCard({
             aria-hidden
             className="pointer-events-none absolute inset-0 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
           />
-          <span className="tnum absolute left-1.5 top-1.5 min-w-5 rounded-full bg-black/55 px-1.5 text-center text-[10px] font-semibold leading-[18px] text-white/90 backdrop-blur-sm">
-            {index + 1}
-          </span>
           <ActionIcon slide={slide} />
           <Tags state={state} />
         </div>
-        {/* Group: the colour IS the group, so you can find the chorus by eye. */}
-        <div className="relative flex h-7 items-center px-2.5">
-          <span
-            aria-hidden
-            className="absolute inset-x-0 top-0 h-[3px]"
-            style={{ background: color ?? 'var(--surface-4)' }}
-          />
-          <span
-            className="truncate text-[11px] font-semibold tracking-[0.02em]"
-            style={{ color: color ?? 'var(--text-2)' }}
-          >
-            {slide.label}
-          </span>
+        {/* Label bar in the group's colour (the colour IS the group): number, then name. */}
+        <div
+          className="flex h-6 items-center gap-1.5 px-2 text-[12px] font-semibold"
+          style={
+            color
+              ? { background: color, color: '#fff' }
+              : { background: 'var(--surface-3)', color: 'var(--text-2)' }
+          }
+        >
+          <span className="tnum shrink-0">{index + 1}</span>
+          <span className="truncate">{slide.label}</span>
         </div>
       </button>
     </li>

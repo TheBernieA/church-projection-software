@@ -50,8 +50,10 @@ export type LibraryTab = 'songs' | 'hymns';
 export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
 
 /** Bottom bin tabs. Audio, video input and macros are "Coming soon". */
-export type BinTab =
-  'media' | 'backgrounds' | 'props' | 'messages' | 'timers' | 'audio' | 'video-input' | 'macros';
+/** Media bin (under the slides) categories. */
+export type BinTab = 'media' | 'backgrounds' | 'video-input' | 'media-playlists' | 'stock-media';
+/** Show-controls tabs (under the output monitor). */
+export type ControlsTab = 'audio' | 'stage' | 'timers' | 'messages' | 'props' | 'macros';
 
 export type DialogName =
   'quick' | 'outputs' | 'settings' | 'shortcuts' | 'song' | 'theme' | 'services' | 'perf' | null;
@@ -90,8 +92,11 @@ export interface ControlState {
   editObjectId: string | null;
   liveCursor: Cursor | null;
   libraryTab: LibraryTab;
+  /** What the left sidebar lists below its outline: a library's songs, or the open playlist. */
+  sidebarView: 'library' | 'playlist';
   mode: Mode;
   binTab: BinTab;
+  controlsTab: ControlsTab;
   binOpen: boolean;
   /** Open page of the Settings window (remembered between openings). */
   settingsPage: SettingsPageId;

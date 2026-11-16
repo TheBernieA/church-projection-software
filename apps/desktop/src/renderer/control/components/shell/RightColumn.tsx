@@ -1,20 +1,19 @@
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   AudioLines,
   Church,
-  Eraser,
   Film,
   Image as ImageIcon,
-  ListChecks,
   Megaphone,
   MessageSquareText,
   Play,
   Snowflake,
   Sparkle,
   Square,
-  SquareDashed,
   Type,
+  ListChecks,
   Video,
+  X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,16 +24,15 @@ import {
   type Scene,
   type Standby,
 } from '@lampstand/core';
-import { Button, Kbd, SoonBadge, TallyLabel, ToggleChip } from '@lampstand/ui';
+import { Button, Kbd, TallyLabel } from '@lampstand/ui';
 import { clearLayer, goLive, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
-import { SoonFeature } from '../Soon';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
-import { PaneHeader } from './PaneHeader';
+import { ShowControls } from './ShowControls';
+import { Select } from '../Select';
 import { urlHost } from '../../lib/utils';
 
 function MonitorCard({
@@ -81,60 +79,17 @@ function MonitorCard({
   );
 }
 
-/** One row of the clear stack: lights up while its layer has something on screen. */
-function ClearRow({
-  icon,
-  label,
-  hint,
-  on,
-  onClick,
-  soon,
-}: {
-  icon: ReactNode;
-  label: string;
-  hint?: string;
-  on?: boolean;
-  onClick?: () => void;
-  /** Feature id of a planned layer: shown disabled with a "Soon" badge. */
-  soon?: string;
-}) {
-  const { t } = useTranslation();
-  const planned = soon ? feature(soon) : undefined;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!!soon || !on}
-      aria-label={
-        soon
-          ? `${t('monitor.clearLayer', { name: label })} (${t('soon.badge')})`
-          : t('monitor.clearLayer', { name: label })
-      }
-      title={
-        soon
-          ? `${t('soon.tooltip', { name: label })}. ${planned?.description ?? ''}`
-          : `${t('monitor.clearLayer', { name: label })}${hint ? ` (${hint})` : ''}`
-      }
-      className={`flex h-8 min-w-0 cursor-pointer items-center gap-2 rounded-[5px] px-2 text-left text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
-        on
-          ? 'bg-[var(--tally-program-soft)] text-[var(--text-1)] hover:bg-[rgba(239,74,80,0.24)]'
-          : 'text-[var(--text-3)]'
-      }`}
-    >
-      <span className={on ? 'text-[var(--tally-program)]' : ''}>{icon}</span>
-      <span className="min-w-0 flex-1 truncate">{label}</span>
-      {soon ? (
-        <SoonBadge />
-      ) : (
-        hint && <span className="text-[10px] text-[var(--text-3)]">{hint}</span>
-      )}
-    </button>
-  );
-}
+/** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
+const PLANNED_LAYERS = [
+  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={15} /> },
+  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={15} /> },
+  { id: 'video-input', label: 'videoInput', icon: <Video size={15} /> },
+  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={15} /> },
+];
 
 /**
- * One layer in the clear strip (in on-screen order). Lit red while its layer shows something;
- * clicking clears just that layer. Dimmed and inert when the layer is empty.
+ * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
+ * something; clicking clears just that layer. Inert when the layer is empty.
  */
 function LayerButton({
   icon,
@@ -158,20 +113,46 @@ function LayerButton({
       disabled={!on}
       aria-label={name}
       title={hint ? `${name} (${hint})` : name}
-      className={`relative flex min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-[6px] py-2 text-[10px] font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
+      className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-[5px] transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
         on
-          ? 'bg-[var(--tally-program-soft)] text-[var(--text-1)] shadow-[inset_0_0_0_1px_rgba(239,74,80,0.35)] hover:bg-[rgba(239,74,80,0.24)] [&_svg]:text-[var(--tally-program)]'
+          ? 'bg-[var(--tally-program)] text-white shadow-[0_0_8px_rgba(239,74,80,0.45)] hover:brightness-110'
           : 'text-[var(--text-3)]'
       }`}
     >
-      {on && (
-        <span
-          aria-hidden
-          className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--tally-program)] shadow-[0_0_6px_var(--tally-program)]"
-        />
-      )}
       {icon}
-      <span className="w-full truncate px-0.5 text-center">{label}</span>
+    </button>
+  );
+}
+
+/** Black / Logo / Freeze: compact toggles under the monitor; red while engaged. */
+function MaskButton({
+  on,
+  onClick,
+  icon,
+  label,
+  hint,
+}: {
+  on: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+  hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      aria-label={label}
+      title={`${label} (${hint})`}
+      onClick={onClick}
+      className={`flex h-7 cursor-pointer items-center gap-1 rounded-[5px] px-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+        on
+          ? 'bg-[var(--tally-program)] text-white'
+          : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
+      }`}
+    >
+      {icon}
+      <span>{hint}</span>
     </button>
   );
 }
@@ -188,6 +169,8 @@ export function RightColumn() {
   const keys = effectiveShortcuts();
   const standby = useStandby();
   const hasMainOutput = useHasMainOutput();
+  // The monitor shows the audience screen, or what the stage screen shows next.
+  const [screen, setScreen] = useState<'audience' | 'stage'>('audience');
 
   const previewScene: Scene | null = useMemo(() => {
     if (!live) return null;
@@ -199,7 +182,13 @@ export function RightColumn() {
     });
   }, [live]);
 
-  if (!live || !previewScene) return null;
+  const nextScene: Scene | null = useMemo(
+    () =>
+      live ? makeScene({ background: live.program.background, content: live.next ?? null }) : null,
+    [live],
+  );
+
+  if (!live || !previewScene || !nextScene) return null;
   const p = live.program;
   const mediaName = p.media
     ? media.find((m) => m.id === p.media?.mediaId)?.name
@@ -215,154 +204,174 @@ export function RightColumn() {
   );
   const has = (g: 'messages' | 'props'): boolean => p.overlays.some((o) => overlayGroup(o) === g);
   const clear = (layer: Layer) => () => void clearLayer(layer);
-  const anything = onAir || p.overlays.length > 0;
+  const anything = onAir || p.overlays.length > 0 || p.masks.black || p.masks.logo;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <PaneHeader title={t('monitor.output')} />
-      <div className="flex flex-col gap-3 p-3">
-        <MonitorCard
-          tone="program"
-          label={t('monitor.live')}
-          scene={p}
-          active={onAir}
-          caption={p.content?.label ?? mediaName ?? (onAir ? '' : t('monitor.offAir'))}
-          footer={p.media?.kind === 'video' ? <MediaTransport media={p.media} /> : undefined}
-          standby={standby}
-          audio={!hasMainOutput}
-        />
-        {!clickGoesLive && (
-          <>
-            <MonitorCard
-              tone="preview"
-              label={t('monitor.preview')}
-              scene={previewScene}
-              active={hasPreview}
-              caption={live.preview.content?.label ?? (hasPreview ? '' : t('monitor.empty'))}
-            />
-            <Button
-              variant="live"
-              size="md"
-              className="w-full"
-              onClick={() => void goLive('ui')}
-              disabled={!hasPreview}
-              icon={<Play size={16} fill="currentColor" />}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--divider)] p-2.5">
+        <figure className="flex flex-col gap-2">
+          <figcaption className="sr-only">{t('monitor.live')}</figcaption>
+          {/* What's on air: one line, red while live. */}
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex h-5 items-center justify-between px-0.5"
+          >
+            <TallyLabel tone="program" active={onAir}>
+              {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
+            </TallyLabel>
+            <span className="truncate text-[11px] text-[var(--text-3)]">
+              {p.content?.label ?? mediaName ?? ''}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {screen === 'audience' ? (
+                <div
+                  className={`overflow-hidden rounded-[3px] ${onAir ? 'shadow-[var(--tally-program-glow)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
+                >
+                  <SceneView
+                    scene={p}
+                    label={t('monitor.live')}
+                    standby={standby}
+                    audio={!hasMainOutput}
+                  />
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-[3px] shadow-[0_0_0_1px_var(--hairline-strong)]">
+                  <SceneView scene={nextScene} label={t('monitor.next')} />
+                </div>
+              )}
+              {!clickGoesLive && (
+                <>
+                  <MonitorCard
+                    tone="preview"
+                    label={t('monitor.preview')}
+                    scene={previewScene}
+                    active={hasPreview}
+                    caption={live.preview.content?.label ?? (hasPreview ? '' : t('monitor.empty'))}
+                  />
+                  <Button
+                    variant="live"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => void goLive('ui')}
+                    disabled={!hasPreview}
+                    icon={<Play size={14} fill="currentColor" />}
+                  >
+                    {t('monitor.goLive')}
+                    <Kbd tone="onColor">{displayCombo(keys.goLive)}</Kbd>
+                  </Button>
+                </>
+              )}
+            </div>
+            {/* Layers, top to bottom as stacked on screen; each clears just its layer. */}
+            <div
+              role="group"
+              aria-label={t('monitor.clear')}
+              className="flex w-8 shrink-0 flex-col items-center gap-1"
             >
-              {t('monitor.goLive')}
-              <Kbd tone="onColor">{displayCombo(keys.goLive)}</Kbd>
-            </Button>
-          </>
-        )}
-      </div>
-
-      <PaneHeader title={t('monitor.clear')} />
-      <div className="flex flex-col gap-2 p-2.5">
-        {/* Layers in on-screen order, top to bottom (as ProPresenter stacks them). */}
-        <div
-          role="group"
-          aria-label={t('monitor.clear')}
-          className="flex gap-1 rounded-[8px] bg-[var(--surface-0)] p-1 shadow-[inset_0_0_0_1px_var(--hairline)]"
-        >
-          <LayerButton
-            icon={<MessageSquareText size={16} />}
-            label={t('monitor.layers.messages')}
-            on={has('messages')}
-            onClick={clear('messages')}
+              {anything ? (
+                <button
+                  type="button"
+                  aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
+                  title={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
+                  onClick={() => void clearLayer('all')}
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-[var(--tally-program)] text-white shadow-[0_2px_10px_rgba(239,74,80,0.45)] hover:brightness-110"
+                >
+                  <X size={15} strokeWidth={2.5} />
+                </button>
+              ) : (
+                <span
+                  aria-hidden
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+                >
+                  <X size={14} />
+                </span>
+              )}
+              <LayerButton
+                icon={<MessageSquareText size={15} />}
+                label={t('monitor.layers.messages')}
+                on={has('messages')}
+                onClick={clear('messages')}
+              />
+              <LayerButton
+                icon={<Sparkle size={15} />}
+                label={t('monitor.layers.props')}
+                on={has('props')}
+                onClick={clear('props')}
+              />
+              <LayerButton
+                icon={<Type size={15} />}
+                label={t('monitor.layers.slide')}
+                hint={displayCombo(keys.clearContent)}
+                on={!!p.content}
+                onClick={clear('content')}
+              />
+              <LayerButton
+                icon={<Film size={15} />}
+                label={t('monitor.layers.media')}
+                hint={displayCombo(keys.clearMedia)}
+                on={!!p.media || !!p.web}
+                onClick={clear('media')}
+              />
+              <LayerButton
+                icon={<ImageIcon size={15} />}
+                label={t('monitor.layers.background')}
+                hint={displayCombo(keys.clearBackground)}
+                on={!!p.background}
+                onClick={clear('background')}
+              />
+              {PLANNED_LAYERS.map((l) => (
+                <span
+                  key={l.id}
+                  aria-hidden
+                  title={t('soon.tooltip', { name: t(`monitor.layers.${l.label}`) })}
+                  className="flex h-7 w-7 items-center justify-center text-[var(--text-3)] opacity-50"
+                >
+                  {l.icon}
+                </span>
+              ))}
+            </div>
+          </div>
+        </figure>
+        <div className="flex items-center gap-1.5">
+          <Select<'audience' | 'stage'>
+            size="sm"
+            aria-label={t('monitor.screen')}
+            value={screen}
+            onChange={setScreen}
+            options={[
+              { value: 'audience', label: t('toolbar.audience') },
+              { value: 'stage', label: t('monitor.stageNext') },
+            ]}
           />
-          <LayerButton
-            icon={<Sparkle size={16} />}
-            label={t('monitor.layers.props')}
-            on={has('props')}
-            onClick={clear('props')}
-          />
-          <LayerButton
-            icon={<Type size={16} />}
-            label={t('monitor.layers.slide')}
-            hint={displayCombo(keys.clearContent)}
-            on={!!p.content}
-            onClick={clear('content')}
-          />
-          <LayerButton
-            icon={<Film size={16} />}
-            label={t('monitor.layers.media')}
-            hint={displayCombo(keys.clearMedia)}
-            on={!!p.media || !!p.web}
-            onClick={clear('media')}
-          />
-          <LayerButton
-            icon={<ImageIcon size={16} />}
-            label={t('monitor.layers.background')}
-            hint={displayCombo(keys.clearBackground)}
-            on={!!p.background}
-            onClick={clear('background')}
-          />
-        </div>
-        <Button
-          size="sm"
-          variant={anything ? 'danger' : 'ghost'}
-          className={`w-full ${anything ? 'shadow-[inset_0_0_0_1px_rgba(239,74,80,0.4)]' : ''}`}
-          disabled={!anything}
-          icon={<Eraser size={14} />}
-          onClick={() => void clearLayer('all')}
-        >
-          {t('monitor.clearAllLayers')}
-          <Kbd>{displayCombo(keys.clearAll)}</Kbd>
-        </Button>
-        {/* Planned layers keep their "Soon" markers. */}
-        <div className="grid grid-cols-2 gap-1">
-          <ClearRow
-            icon={<Megaphone size={14} />}
-            label={t('monitor.layers.announcements')}
-            soon="announcements-layer"
-          />
-          <ClearRow
-            icon={<AudioLines size={14} />}
-            label={t('monitor.layers.audio')}
-            soon="audio-bin"
-          />
-          <ClearRow
-            icon={<Video size={14} />}
-            label={t('monitor.layers.videoInput')}
-            soon="video-input"
-          />
-          <ClearRow
-            icon={<ListChecks size={14} />}
-            label={t('monitor.layers.custom')}
-            soon="custom-clear-groups"
-          />
-        </div>
-      </div>
-
-      <PaneHeader title={t('monitor.masks')} />
-      <div role="group" aria-label={t('monitor.masks')} className="flex flex-col gap-1.5 p-2.5">
-        <div className="grid grid-cols-[1.45fr_1fr_1fr] gap-1">
-          <ToggleChip
+          <span className="flex-1" />
+          <MaskButton
             on={p.masks.black}
             onClick={() => void toggleMask('black')}
-            icon={<Square size={14} fill="currentColor" />}
+            icon={<Square size={13} fill="currentColor" />}
             label={t('monitor.black')}
             hint={displayCombo(keys.black)}
-            className="w-full justify-center !px-2"
           />
-          <ToggleChip
+          <MaskButton
             on={p.masks.logo}
             onClick={() => void toggleMask('logo')}
-            icon={<Church size={14} />}
+            icon={<Church size={13} />}
             label={t('monitor.logo')}
             hint={displayCombo(keys.logo)}
-            className="w-full justify-center !px-2"
           />
-          <ToggleChip
+          <MaskButton
             on={p.masks.freeze}
             onClick={() => void toggleMask('freeze')}
-            icon={<Snowflake size={14} />}
+            icon={<Snowflake size={13} />}
             label={t('monitor.freeze')}
             hint={displayCombo(keys.freeze)}
-            className="w-full justify-center !px-2"
           />
         </div>
-        <SoonFeature id="masks" icon={<SquareDashed size={14} />} label={t('monitor.masksSoon')} />
+        {p.media?.kind === 'video' && <MediaTransport media={p.media} />}
       </div>
+      <ShowControls />
     </div>
   );
 }

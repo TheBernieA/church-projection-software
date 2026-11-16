@@ -45,10 +45,8 @@ export function MediaPanel() {
           + {t('media.add')}
         </Button>
         <span className="mx-1 h-4 w-px bg-[var(--hairline-strong)]" aria-hidden />
-        <SoonFeature id="media-playlists" label={t('media.soon.playlists')} />
         <SoonFeature id="media-cues" label={t('media.soon.cues')} />
         <SoonFeature id="playback-markers" label={t('media.soon.markers')} />
-        <SoonFeature id="stock-media" label={t('media.soon.stock')} />
       </div>
       {media.length === 0 && (
         <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">

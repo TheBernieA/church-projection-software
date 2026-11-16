@@ -128,7 +128,7 @@ function NewMessage({
 }
 
 /** Booth → stage message (only the stage display shows it). */
-function StageMessage() {
+export function StageMessage() {
   const { t } = useTranslation();
   const current = useStore((s) => s.live?.stageMessage);
   const [msg, setMsg] = useState('');
@@ -211,9 +211,6 @@ export function MessagesBin() {
         />
       )}
       <SoonFeature id="message-tokens" icon={<Clock size={14} />} className="self-center" />
-      <div className="ml-auto flex">
-        <StageMessage />
-      </div>
     </BinRow>
   );
 }

@@ -71,14 +71,17 @@ export function Splitter({
         e.preventDefault();
         onCommit(size + (invert ? -dir : dir) * step);
       }}
-      className={`group relative shrink-0 focus-visible:outline-none ${
-        axis === 'x' ? 'w-1.5 cursor-col-resize' : 'h-1.5 cursor-row-resize'
+      // A 1px divider with a wider invisible grab area (the ::before) on both sides.
+      className={`group relative z-10 shrink-0 bg-[var(--divider)] focus-visible:outline-none before:absolute before:content-[''] ${
+        axis === 'x'
+          ? 'w-px cursor-col-resize before:inset-y-0 before:-left-1 before:w-[9px]'
+          : 'h-px cursor-row-resize before:inset-x-0 before:-top-1 before:h-[9px]'
       }`}
     >
       <span
         aria-hidden
-        className={`absolute rounded-full bg-[var(--accent)] opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-100 group-active:opacity-100 ${
-          axis === 'x' ? 'inset-y-2 left-[2px] w-[2px]' : 'inset-x-2 top-[2px] h-[2px]'
+        className={`absolute bg-[var(--select)] opacity-0 transition-opacity group-hover:opacity-80 group-focus-visible:opacity-100 group-active:opacity-100 ${
+          axis === 'x' ? 'inset-y-0 -left-px w-[3px]' : 'inset-x-0 -top-px h-[3px]'
         }`}
       />
     </div>

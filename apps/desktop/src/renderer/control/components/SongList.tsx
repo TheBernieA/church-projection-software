@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
-import { ListPlus, Plus, Search } from 'lucide-react';
+import { ListPlus, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
 import { stripChords } from '@lampstand/lyrics';
-import { Button, IconButton } from '@lampstand/ui';
+import { IconButton } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
-import { addItemToService, openDialog, useStore } from '../lib/store';
+import { addItemToService, useStore } from '../lib/store';
 import { SoonFeature } from './Soon';
 import { REVEAL } from './cards';
 
@@ -59,7 +59,7 @@ export function SongList({ hymns }: { hymns: boolean }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex gap-2 px-4 pb-3">
+      <div className="flex gap-2 px-3 pb-2">
         <div className="relative flex-1">
           <Search
             size={15}
@@ -74,16 +74,6 @@ export function SongList({ hymns }: { hymns: boolean }) {
             aria-label={t('library.filter')}
           />
         </div>
-        {!hymns && (
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus size={15} />}
-            onClick={() => openDialog('song', { editingSongId: null })}
-          >
-            {t('library.newSong')}
-          </Button>
-        )}
       </div>
       {!hymns && (
         // Ways to bring songs in, coming soon.

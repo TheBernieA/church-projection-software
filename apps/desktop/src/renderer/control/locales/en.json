@@ -126,7 +126,8 @@
     "transposeHint": "Key of the chords on the stage display",
     "view": "Slide view",
     "viewGrid": "Grid",
-    "viewEasy": "Easy"
+    "viewEasy": "Easy",
+    "itemSlides": "{{title}} slides"
   },
   "monitor": {
     "preview": "Preview",
@@ -160,7 +161,10 @@
       "custom": "Custom group"
     },
     "masksSoon": "Masks",
-    "clearAllLayers": "Clear all"
+    "clearAllLayers": "Clear all",
+    "screen": "Screen",
+    "next": "Next slide",
+    "stageNext": "Stage (next)"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -609,7 +613,9 @@
       "timers": "Timers",
       "audio": "Audio",
       "video-input": "Video input",
-      "macros": "Macros"
+      "macros": "Macros",
+      "media-playlists": "Playlists",
+      "stock-media": "Stock media"
     }
   },
   "props": {
@@ -755,5 +761,50 @@
     "clock": "Time",
     "onAir": "On air",
     "offAir": "Off air"
+  },
+  "toolbar": {
+    "search": "Search",
+    "text": "Text",
+    "theme": "Theme",
+    "more": "More",
+    "media": "Media",
+    "looks": "Looks",
+    "live": "Live",
+    "audience": "Audience",
+    "stage": "Stage",
+    "preview": "Preview",
+    "settings": "Settings",
+    "status": "Status",
+    "assigned": "On",
+    "notAssigned": "Not assigned",
+    "saved": "All changes saved",
+    "saving": "Saving…",
+    "outputs": "Outputs",
+    "clock": "Time",
+    "onAir": "On air",
+    "offAir": "Off air",
+    "window": "Window mode",
+    "shortcuts": "Keyboard shortcuts",
+    "services": "Services"
+  },
+  "sidebar": {
+    "library": "Library",
+    "playlists": "Playlists",
+    "songs": "Songs",
+    "hymns": "Hymns",
+    "newSong": "New song",
+    "newPlaylist": "New playlist",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "noPlaylists": "No playlists yet"
+  },
+  "showControls": {
+    "label": "Show controls",
+    "audio": "Audio",
+    "stage": "Stage message",
+    "timers": "Timers",
+    "messages": "Messages",
+    "props": "Props",
+    "macros": "Macros"
   }
 }

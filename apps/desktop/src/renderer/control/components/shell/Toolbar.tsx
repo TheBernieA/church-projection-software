@@ -1,240 +1,333 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   BookOpen,
-  ChevronDown,
   Circle,
+  Clapperboard,
+  Ellipsis,
   Flame,
+  Images,
   Keyboard,
   Layers3,
-  MonitorUp,
   Palette,
   Pencil,
-  Power,
-  Presentation,
+  Play,
   Radio,
   Redo2,
   Rows3,
   Search,
   Settings,
+  SquareDashed,
   SquareUser,
-  TriangleAlert,
+  Type,
   Undo2,
+  FileBadge,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatClock, sceneHasContent, sceneIsVisible, secondsSince } from '@lampstand/core';
-import { IconButton, Kbd, Switch } from '@lampstand/ui';
-import { clearLayer, saveSettings } from '../../lib/actions';
+import { formatClock, sceneHasContent, secondsSince } from '@lampstand/core';
+import { IconButton, SoonBadge, Switch } from '@lampstand/ui';
+import i18n from '../../i18n';
+import { saveSettings } from '../../lib/actions';
+import { feature } from '../../lib/features';
 import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, redo, undo, useStore } from '../../lib/store';
-import { SoonFeature } from '../Soon';
+import { ToolbarButton } from './ToolbarButton';
 import { type Mode } from '../../types';
 
-function useElapsed(since: string | null): string {
-  const now = useNow(1000, since !== null);
-  return since ? formatClock(secondsSince(since, now), { hours: 'always' }) : '00:00:00';
-}
-
-const MODES: { mode: Mode; icon: LucideIcon }[] = [
-  { mode: 'show', icon: Presentation },
+/** The four everyday workspaces sit in the toolbar; the rest are under More. */
+const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
+  { mode: 'show', icon: Play },
   { mode: 'edit', icon: Pencil },
   { mode: 'reflow', icon: Rows3 },
   { mode: 'bible', icon: BookOpen },
+];
+const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [
   { mode: 'themes', icon: Palette },
   { mode: 'stage', icon: SquareUser },
 ];
 
-/** Workspace switcher: what the centre pane shows (slides, editor, reflow, Bible, themes, stage). */
-function ModeTabs() {
-  const { t } = useTranslation();
-  const mode = useStore((s) => s.mode);
+const MENU_CLASS =
+  'z-[60] min-w-[220px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]';
+const ITEM_CLASS =
+  'flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 text-[13px] outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white';
+
+/** Tooltip for a planned item: what it will do (from the feature catalogue). */
+const soonTitle = (id: string): string => {
+  const f = feature(id);
+  return `${i18n.t('soon.tooltip', { name: f.name })}. ${f.description}`;
+};
+
+/** A small status light on a toolbar icon. */
+function Dot({ color }: { color: string }) {
   return (
-    <nav
-      aria-label={t('modes.label')}
-      className="flex shrink-0 items-center gap-0.5 rounded-[8px] bg-[var(--surface-1)] p-[3px] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)]"
-    >
-      {MODES.map(({ mode: m, icon: Icon }) => (
-        <button
-          key={m}
-          type="button"
-          title={t(`modes.${m}`)}
-          aria-pressed={mode === m}
-          onClick={() => useStore.setState({ mode: m })}
-          className={`flex h-[30px] cursor-pointer items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
-            mode === m
-              ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[0_1px_2px_rgba(0,0,0,0.35),0_0_0_1px_var(--hairline),var(--highlight-top)]'
-              : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]'
-          }`}
-        >
-          <Icon size={14} strokeWidth={2} />
-          <span className="max-[1600px]:sr-only">{t(`modes.${m}`)}</span>
-        </button>
-      ))}
-    </nav>
+    <span
+      aria-hidden
+      className="absolute -right-1.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-[var(--toolbar)]"
+      style={{ background: color, boxShadow: `0 0 6px ${color}` }}
+    />
   );
 }
 
-/** Top toolbar: service · modes · search · flow · history · screens · tools · live state. */
+/** Workspaces under More, plus editors that are planned. */
+function MoreMenu() {
+  const { t } = useTranslation();
+  const mode = useStore((s) => s.mode);
+  const inMore = MORE_MODES.some((m) => m.mode === mode);
+  const soon: { id: string; icon: ReactNode }[] = [
+    { id: 'masks', icon: <SquareDashed size={15} /> },
+    { id: 'ccli', icon: <FileBadge size={15} /> },
+  ];
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <ToolbarButton
+          icon={<Ellipsis size={20} />}
+          label={inMore ? t(`modes.${mode}`) : t('toolbar.more')}
+          pressed={inMore}
+          aria-label={t('toolbar.more')}
+        />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_CLASS}>
+          {MORE_MODES.map(({ mode: m, icon: Icon }) => (
+            <DropdownMenu.Item
+              key={m}
+              className={ITEM_CLASS}
+              onSelect={() => useStore.setState({ mode: m })}
+            >
+              <Icon size={15} />
+              {t(`modes.${m}`)}
+            </DropdownMenu.Item>
+          ))}
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => openDialog('shortcuts')}>
+            <Keyboard size={15} />
+            {t('toolbar.shortcuts')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className="my-1 h-px bg-[var(--hairline-strong)]" />
+          {soon.map((s) => (
+            <DropdownMenu.Item key={s.id} disabled className={ITEM_CLASS} title={soonTitle(s.id)}>
+              {s.icon}
+              <span className="flex-1">{feature(s.id).name}</span>
+              <SoonBadge label={t('soon.badge')} />
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+/** Status: what's on air, which screens are connected, whether changes are saved, the time. */
+function StatusMenu() {
+  const { t } = useTranslation();
+  const onAir = useStore((s) => !!s.live && sceneHasContent(s.live.program));
+  const since = useStore((s) => s.live?.programSince ?? null);
+  const saving = useStore((s) => s.saving);
+  const displays = useStore((s) => s.displays);
+  const windowMode = useStore((s) => s.settings?.windowMode ?? false);
+  const now = useNow(1000, onAir);
+  const outputs = displays.filter((d) => d.role !== 'none');
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <ToolbarButton
+          icon={<Activity size={20} />}
+          label={t('toolbar.status')}
+          badge={<Dot color={onAir ? 'var(--tally-program)' : 'var(--tally-preview)'} />}
+          aria-label={`${t('toolbar.status')}: ${onAir ? t('toolbar.onAir') : t('toolbar.offAir')}`}
+        />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={4}
+          className={`${MENU_CLASS} w-[260px] p-3 text-[12px]`}
+        >
+          <p className="flex items-center justify-between font-semibold">
+            <span>{onAir ? t('toolbar.onAir') : t('toolbar.offAir')}</span>
+            <span className="tnum text-[var(--text-2)]">
+              {onAir && since ? formatClock(secondsSince(since, now), { hours: 'always' }) : ''}
+            </span>
+          </p>
+          <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+            {t('toolbar.outputs')}
+          </p>
+          <ul className="mt-1 space-y-1">
+            {windowMode ? (
+              <li>{t('toolbar.window')}</li>
+            ) : outputs.length === 0 ? (
+              <li className="text-[var(--warning)]">{t('outputs.none')}</li>
+            ) : (
+              outputs.map((d) => (
+                <li key={d.id} className="flex justify-between gap-2">
+                  <span>{t(`outputs.role.${d.role}`)}</span>
+                  <span className="truncate text-[var(--text-3)]">{d.label}</span>
+                </li>
+              ))
+            )}
+          </ul>
+          <p className="mt-2 flex justify-between border-t border-[var(--hairline)] pt-2 text-[var(--text-2)]">
+            <span>{saving ? t('toolbar.saving') : t('toolbar.saved')}</span>
+            <span className="tnum">
+              {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </p>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+/**
+ * Toolbar in the operator-console layout: tools on the left (search, text, theme), the
+ * workspaces, then show tools on the right (media, looks, live, screens, settings, status).
+ * Every item is an icon over a short label.
+ */
 export function Toolbar() {
   const { t } = useTranslation();
-  const service = useStore((s) => s.service);
-  // Primitives only: live state is rebroadcast on every timer tick, and the toolbar shouldn't
-  // re-render unless what it shows actually changes.
-  const onAir = useStore((s) => !!s.live && sceneHasContent(s.live.program));
-  const programSince = useStore((s) => s.live?.programSince ?? null);
-  const mask = useStore((s) =>
-    s.live?.program.masks.black ? 'black' : s.live?.program.masks.logo ? 'logo' : null,
-  );
-  const masked = mask !== null;
-  const showing = useStore(
-    (s) => !!s.live && (sceneIsVisible(s.live.program) || s.live.program.overlays.length > 0),
-  );
-  const visible = showing || masked;
+  const mode = useStore((s) => s.mode);
+  const binOpen = useStore((s) => s.binOpen);
   const history = useStore((s) => s.history);
   const clickGoesLive = useStore((s) => s.settings?.clickGoesLive ?? true);
-  const outputs = useStore((s) => s.displays.filter((d) => d.role !== 'none').length);
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
+  const hasMain = useStore((s) => s.displays.some((d) => d.role === 'main'));
+  const hasStage = useStore((s) => s.displays.some((d) => d.role === 'stage'));
   const keys = effectiveShortcuts();
-  const noOutput = !windowMode && outputs === 0;
-  const elapsed = useElapsed(onAir ? programSince : null);
-  const hot = onAir && !masked;
+  const audienceOn = windowMode || hasMain;
+  const green = 'var(--tally-preview)';
+  const red = 'var(--tally-program)';
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 bg-[var(--surface-0)] px-3 max-[1440px]:gap-2">
+    <header className="flex h-[60px] shrink-0 items-center gap-1 bg-[var(--toolbar)] px-2">
       <div
         aria-hidden
-        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-gradient-to-br from-[#ffd28a] via-[#f0a73a] to-[#c27414] text-[#1c1306]"
+        className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#ffd28a] via-[#f0a73a] to-[#c27414] text-[#1c1306]"
       >
-        <Flame size={16} strokeWidth={2.25} />
+        <Flame size={18} strokeWidth={2.25} />
       </div>
-      <button
-        type="button"
-        onClick={() => openDialog('services')}
-        className="-ml-1.5 flex h-8 min-w-[110px] max-w-[220px] shrink-0 max-[1440px]:max-w-[160px] cursor-pointer items-center gap-1 rounded-[var(--radius-control)] px-2 text-left transition-colors hover:bg-[var(--surface-2)]"
-        title={`${t('top.services')}: ${service?.name ?? ''}`}
-      >
-        <span className="sr-only">{t('top.services')}</span>
-        <span className="truncate text-[length:var(--fs-md)] font-semibold">
-          {service?.name ?? ''}
-        </span>
-        <ChevronDown size={13} className="shrink-0 text-[var(--text-3)]" />
-      </button>
-
-      <ModeTabs />
-
-      <button
-        type="button"
-        onClick={() => openDialog('quick')}
-        aria-label={t('top.search')}
-        className="flex h-8 w-[clamp(150px,16vw,280px)] shrink-0 max-[1440px]:w-auto cursor-pointer items-center gap-2 rounded-[8px] bg-[var(--surface-1)] px-2.5 text-left text-[var(--text-3)] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)] transition-[color,box-shadow] duration-[var(--dur-fast)] hover:text-[var(--text-2)] hover:shadow-[0_0_0_1px_var(--hairline-strong),var(--highlight-top)]"
-      >
-        <Search size={14} strokeWidth={2} className="shrink-0" />
-        <span className="min-w-0 flex-1 truncate text-[12px] max-[1440px]:sr-only">
-          {t('top.search')}
-        </span>
-        <span className="shrink-0 max-lg:hidden">
-          <Kbd>{displayCombo(keys.quickBar)}</Kbd>
-        </span>
-      </button>
-
-      <label
-        className="flex h-8 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] px-2 text-[12px] font-medium text-[var(--text-2)] hover:bg-[var(--surface-2)]"
-        title={t('top.previewFirstHelp')}
-      >
-        <Switch
-          label={t('top.previewFirst')}
-          checked={!clickGoesLive}
-          onChange={(on) => void saveSettings({ clickGoesLive: !on })}
-        />
-        <span className="whitespace-nowrap max-[1600px]:sr-only">{t('top.previewFirst')}</span>
-      </label>
-
-      <div className="flex items-center">
+      <div className="mr-1 flex flex-col">
         <IconButton
+          size="xs"
+          className="!h-[22px]"
           aria-label={`${t('top.undo')} (${displayCombo(keys.undo)})`}
           onClick={() => void undo()}
           disabled={!history.canUndo}
         >
-          <Undo2 size={16} />
+          <Undo2 size={13} />
         </IconButton>
         <IconButton
+          size="xs"
+          className="!h-[22px]"
           aria-label={`${t('top.redo')} (${displayCombo(keys.redo)})`}
           onClick={() => void redo()}
           disabled={!history.canRedo}
         >
-          <Redo2 size={16} />
+          <Redo2 size={13} />
         </IconButton>
       </div>
 
-      <div className="ml-auto flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => openDialog('outputs')}
-          className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-[var(--radius-control)] px-2.5 text-[12px] font-medium transition-colors ${
-            noOutput
-              ? 'bg-[rgba(245,165,36,0.12)] text-[var(--warning)] shadow-[inset_0_0_0_1px_rgba(245,165,36,0.35)] hover:bg-[rgba(245,165,36,0.2)]'
-              : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]'
-          }`}
-          title={noOutput ? t('outputs.noneHelp') : t('top.outputs')}
-        >
-          {noOutput ? <TriangleAlert size={15} /> : <MonitorUp size={15} />}
-          <span className={`tnum whitespace-nowrap ${noOutput ? '' : 'max-[1600px]:sr-only'}`}>
-            {noOutput
-              ? t('outputs.none')
-              : windowMode
-                ? t('outputs.windowShort')
-                : t('outputs.count', { count: outputs })}
-          </span>
-        </button>
-        <SoonFeature id="looks" compact icon={<Layers3 size={15} />} />
-        <SoonFeature id="record" compact icon={<Circle size={15} />} />
-        <SoonFeature id="stream" compact icon={<Radio size={15} />} />
-        <IconButton aria-label={t('top.shortcuts')} onClick={() => openDialog('shortcuts')}>
-          <Keyboard size={16} />
-        </IconButton>
-        <IconButton aria-label={t('top.settings')} onClick={() => openDialog('settings')}>
-          <Settings size={16} />
-        </IconButton>
-      </div>
+      <ToolbarButton
+        icon={<Search size={20} />}
+        label={t('toolbar.search')}
+        aria-label={t('top.search')}
+        title={`${t('top.search')} (${displayCombo(keys.quickBar)})`}
+        onClick={() => openDialog('quick')}
+      />
+      <ToolbarButton
+        icon={<Type size={20} />}
+        label={t('toolbar.text')}
+        soon
+        title={soonTitle('text-format')}
+      />
+      <ToolbarButton
+        icon={<Palette size={20} />}
+        label={t('toolbar.theme')}
+        aria-label={t('toolbar.theme')}
+        pressed={mode === 'themes'}
+        onClick={() => useStore.setState({ mode: 'themes' })}
+      />
 
-      {/* Turn off live: one obvious control, right beside the indicator it switches off. */}
-      {visible && (
-        <IconButton
-          size="md"
-          variant="subtle"
-          className="shrink-0 !text-[var(--tally-program)] hover:!bg-[var(--danger-soft)]"
-          aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
-          onClick={() => void clearLayer('all')}
-        >
-          <Power size={17} />
-        </IconButton>
-      )}
+      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
 
-      {/* LIVE indicator: the one place red appears in the chrome. */}
-      <div
-        role="status"
-        aria-live="polite"
-        className={`tnum flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3 text-[12px] font-semibold transition-[background-color,box-shadow] duration-200 ${
-          hot
-            ? 'bg-[var(--tally-program)] text-white shadow-[0_4px_16px_rgba(239,74,80,0.45)]'
-            : 'bg-[var(--surface-2)] text-[var(--text-3)]'
-        }`}
+      <nav aria-label={t('modes.label')} className="flex items-center gap-1">
+        {MAIN_MODES.map(({ mode: m, icon: Icon }) => (
+          <ToolbarButton
+            key={m}
+            icon={<Icon size={20} />}
+            label={t(`modes.${m}`)}
+            pressed={mode === m}
+            onClick={() => useStore.setState({ mode: m })}
+          />
+        ))}
+        <MoreMenu />
+      </nav>
+
+      <span className="flex-1" />
+
+      <ToolbarButton
+        icon={<Images size={20} />}
+        label={t('toolbar.media')}
+        pressed={binOpen}
+        onClick={() => useStore.setState({ binOpen: !binOpen })}
+      />
+      <ToolbarButton
+        icon={<Layers3 size={20} />}
+        label={t('toolbar.looks')}
+        soon
+        title={soonTitle('looks')}
+      />
+      <ToolbarButton
+        icon={<Radio size={20} />}
+        label={t('toolbar.live')}
+        soon
+        // Live covers both planned capture features: recording and streaming.
+        title={`${soonTitle('record')}\n${soonTitle('stream')}`}
+      />
+
+      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
+
+      {/* Screens: lit green when connected, red when there's nowhere to show. */}
+      <ToolbarButton
+        icon={<Circle size={20} />}
+        label={t('toolbar.audience')}
+        badge={<Dot color={audienceOn ? green : red} />}
+        title={t('top.outputs')}
+        aria-label={`${t('toolbar.audience')}: ${audienceOn ? (windowMode ? t('toolbar.window') : t('toolbar.assigned')) : t('outputs.none')}`}
+        onClick={() => openDialog('outputs')}
+      />
+      <ToolbarButton
+        icon={<Clapperboard size={20} />}
+        label={t('toolbar.stage')}
+        badge={<Dot color={hasStage ? green : 'var(--text-3)'} />}
+        aria-label={`${t('toolbar.stage')}: ${hasStage ? t('toolbar.assigned') : t('toolbar.notAssigned')}`}
+        onClick={() => openDialog('outputs')}
+      />
+
+      <span aria-hidden className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]" />
+
+      <label
+        className="flex h-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[3px] rounded-[6px] px-1.5 text-[var(--text-2)] hover:bg-[color-mix(in_srgb,var(--text-1)_7%,transparent)]"
+        title={t('top.previewFirstHelp')}
       >
-        <span
-          aria-hidden
-          className={`h-2 w-2 rounded-full ${hot ? 'bg-white shadow-[0_0_8px_white]' : 'bg-[var(--text-3)]'}`}
-        />
-        <span className="tracking-wide">
-          {hot
-            ? t('top.live').toUpperCase()
-            : masked
-              ? mask === 'black'
-                ? t('monitor.black')
-                : t('monitor.logo')
-              : t('top.offAirShort')}
+        <span className="flex h-[22px] items-center">
+          <Switch
+            label={t('top.previewFirst')}
+            checked={!clickGoesLive}
+            onChange={(on) => void saveSettings({ clickGoesLive: !on })}
+          />
         </span>
-        {onAir && <span className={hot ? 'text-white/85' : ''}>{elapsed}</span>}
-      </div>
+        <span className="text-[11px] leading-none">{t('toolbar.preview')}</span>
+      </label>
+      <ToolbarButton
+        icon={<Settings size={20} />}
+        label={t('toolbar.settings')}
+        title={t('top.settings')}
+        onClick={() => openDialog('settings')}
+      />
+      <StatusMenu />
     </header>
   );
 }
