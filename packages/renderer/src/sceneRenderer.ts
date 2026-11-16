@@ -194,10 +194,10 @@ export class SceneRenderer {
     this.renderOverlays(scene);
   }
 
-  /** A live camera feed in the media layer; rebuilt only when the device or fit changes. */
+  /** A live camera feed in the media layer; rebuilt only when the device or its settings change. */
   private renderInput(scene: Scene): void {
     const input = scene.input ?? null;
-    const key = input ? `${input.deviceId}|${input.fit}` : '';
+    const key = input ? `${input.deviceId}|${input.fit}|${input.mirror}|${input.resolution}` : '';
     if ((this.input?.key ?? '') === key) return;
     this.input?.dispose();
     this.inputLayer.replaceChildren();

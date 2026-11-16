@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { RAW_AUDIO } from '@lampstand/renderer';
 
 export interface InputDevice {
@@ -139,4 +139,57 @@ export function useLevelMeter(stream: MediaStream | null): {
     };
   }, [stream]);
   return { track, bar };
+}
+
+/** How a camera goes on screen: kept per device on this computer. */
+export interface CameraSettings {
+  /** Shown instead of the device's own name ('' = the device's name). */
+  name: string;
+  fit: 'cover' | 'contain';
+  mirror: boolean;
+  resolution: 'auto' | '720' | '1080' | '2160';
+}
+export const DEFAULT_CAMERA: CameraSettings = {
+  name: '',
+  fit: 'cover',
+  mirror: false,
+  resolution: 'auto',
+};
+
+const CAMERAS_KEY = 'lampstand.cameras';
+let cameras: Record<string, CameraSettings> = (() => {
+  try {
+    const raw: unknown = JSON.parse(localStorage.getItem(CAMERAS_KEY) ?? '{}');
+    return raw && typeof raw === 'object' ? (raw as Record<string, CameraSettings>) : {};
+  } catch {
+    return {};
+  }
+})();
+const cameraListeners = new Set<() => void>();
+
+export const cameraSettings = (deviceId: string): CameraSettings => ({
+  ...DEFAULT_CAMERA,
+  ...cameras[deviceId],
+});
+
+export function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
+  cameras = { ...cameras, [deviceId]: { ...cameraSettings(deviceId), ...patch } };
+  try {
+    localStorage.setItem(CAMERAS_KEY, JSON.stringify(cameras));
+  } catch {
+    /* private window: just for this session */
+  }
+  for (const l of cameraListeners) l();
+}
+
+/** One camera's settings, kept up to date. */
+export function useCameraSettings(deviceId: string): CameraSettings {
+  const all = useSyncExternalStore(
+    (l) => {
+      cameraListeners.add(l);
+      return () => cameraListeners.delete(l);
+    },
+    () => cameras,
+  );
+  return { ...DEFAULT_CAMERA, ...all[deviceId] };
 }

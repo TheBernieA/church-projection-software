@@ -198,6 +198,10 @@ export const VideoInputLayerSchema = z.object({
   deviceId: z.string().max(300),
   label: z.string().max(200),
   fit: z.enum(['contain', 'cover']).default('cover'),
+  /** Flip left-to-right (a camera facing the presenter, used as a mirror). */
+  mirror: z.boolean().default(false),
+  /** Capture size asked of the device; 'auto' takes what it offers. */
+  resolution: z.enum(['auto', '720', '1080', '2160']).default('auto'),
 });
 export type VideoInputLayer = z.infer<typeof VideoInputLayerSchema>;
 

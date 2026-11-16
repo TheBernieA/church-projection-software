@@ -9,6 +9,17 @@ export const RAW_AUDIO = {
   autoGainControl: false,
 } as const;
 
+/** Ask the device for the chosen capture size (16:9), or whatever it offers. */
+export function videoConstraints(
+  input: Pick<VideoInputLayer, 'deviceId' | 'resolution'>,
+): MediaTrackConstraints {
+  const h = input.resolution === 'auto' ? 0 : Number(input.resolution);
+  return {
+    deviceId: { exact: input.deviceId },
+    ...(h ? { height: { ideal: h }, width: { ideal: Math.round((h * 16) / 9) } } : {}),
+  };
+}
+
 /** Stop every track of a stream (releases the camera or microphone). */
 function release(stream: MediaStream | null): void {
   for (const t of stream?.getTracks() ?? []) t.stop();
@@ -37,7 +48,11 @@ export function buildVideoInput(
     wrap.append(card);
     return { node: wrap, dispose: () => undefined };
   }
-  const v = el(doc, 'video', '', { ...FILL, objectFit: input.fit });
+  const v = el(doc, 'video', '', {
+    ...FILL,
+    objectFit: input.fit,
+    transform: input.mirror ? 'scaleX(-1)' : '',
+  });
   v.muted = true; // a camera's own sound comes through an audio input, if wanted
   v.autoplay = true;
   v.playsInline = true;
@@ -46,7 +61,7 @@ export function buildVideoInput(
   let disposed = false;
   const media = doc.defaultView?.navigator.mediaDevices;
   void media
-    ?.getUserMedia({ video: { deviceId: { exact: input.deviceId } }, audio: false })
+    ?.getUserMedia({ video: videoConstraints(input), audio: false })
     .then((s) => {
       if (disposed) return release(s);
       stream = s;

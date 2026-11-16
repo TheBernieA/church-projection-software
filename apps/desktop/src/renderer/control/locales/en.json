@@ -1207,13 +1207,32 @@
   "inputs": {
     "show": "Show {{name}} on screen",
     "takeOff": "Take {{name}} off the screen",
-    "videoHint": "Click a camera to put it on screen, under the slide's words.",
+    "videoHint": "Click a camera to put it on screen, under the slide's words. Its … menu sets how it shows.",
     "noCameras": "No cameras or capture cards found. Plug one in and it appears here.",
     "audioTitle": "Audio inputs",
     "liveAudio": "Play {{name}} through the room",
     "level": "{{name}} level",
     "volume": "{{name}} volume",
-    "noMics": "No microphones or audio inputs found."
+    "noMics": "No microphones or audio inputs found.",
+    "settings": "{{name}} settings",
+    "rename": "Rename",
+    "renameField": "Name for {{name}}",
+    "mirror": "Mirror",
+    "mirrored": "Mirrored",
+    "fitLabel": "On screen",
+    "fit": {
+      "cover": "Fill the screen",
+      "contain": "Fit (whole picture)"
+    },
+    "resolutionLabel": "Capture size",
+    "resolution": {
+      "auto": "Automatic",
+      "720": "720p",
+      "1080": "1080p",
+      "2160": "4K"
+    },
+    "reset": "Reset to defaults",
+    "fitTag": "Fit"
   },
   "stock": {
     "category": "Stock category",

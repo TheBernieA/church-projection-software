@@ -36,7 +36,7 @@ export function StockMedia() {
     toast(t('stock.countdownAdded', { count: minutes }));
   };
   return (
-    <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
       <div className="flex h-10 shrink-0 items-center gap-3 overflow-x-auto border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
         <Typography size={12} weight="medium" tone="primary" className="shrink-0">
           {t('bin.tabs.stock-media')}

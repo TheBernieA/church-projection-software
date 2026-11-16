@@ -1372,7 +1372,28 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
     .poll(() => feed.evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 })
     .toBeGreaterThan(0);
   await expect(out.locator('.ls-layer-content .ls-text').last()).toContainText('For God so loved');
+  // Its settings apply straight away while it's live: mirror it, fit the whole picture.
+  await bin
+    .getByRole('button', { name: /settings$/ })
+    .first()
+    .click();
+  await control.getByRole('menuitemcheckbox', { name: 'Mirror' }).click();
+  await control.getByRole('menuitemradio', { name: 'Fit (whole picture)' }).click();
+  await control.keyboard.press('Escape');
+  await expect
+    .poll(() =>
+      out
+        .locator('.ls-layer-input video')
+        .evaluate((v) => [getComputedStyle(v).transform, getComputedStyle(v).objectFit]),
+    )
+    .toEqual(['matrix(-1, 0, 0, 1, 0, 0)', 'contain']);
   await control.screenshot({ path: 'test-results/33-video-input.png' });
+  // Back to the defaults for the tests after this one.
+  await bin
+    .getByRole('button', { name: /settings$/ })
+    .first()
+    .click();
+  await control.getByRole('menuitem', { name: 'Reset to defaults' }).click();
   await bin.getByRole('button', { name: /^Take .* off the screen$/ }).click();
   await expect(feed).toHaveCount(0);
 
@@ -1400,6 +1421,11 @@ test('stock media: a motion background goes live; a countdown joins the playlist
     .getByRole('button', { name: 'Stock media', exact: true })
     .click();
   const bin = control.getByRole('region', { name: 'Bin' });
+  // Everything is reachable: the list scrolls inside the bin.
+  const list = bin.locator('.overflow-y-auto').first();
+  await expect.poll(() => list.evaluate((el) => el.scrollHeight > el.clientHeight + 10)).toBe(true);
+  await list.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await expect.poll(() => list.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
   await bin.getByRole('radio', { name: 'Worship' }).click();
   await bin.getByRole('button', { name: 'Glory', exact: true }).click();
   const bg = async () => {

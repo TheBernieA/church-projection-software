@@ -758,7 +758,7 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
 
   return (
     <Renaming.Provider value={renaming}>
-      <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
           {/* Where you are, and how many. */}
           <Typography size={12} tone="muted" className="shrink-0">
