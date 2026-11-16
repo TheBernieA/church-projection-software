@@ -228,6 +228,20 @@ describe('live commands', () => {
     expect(store.get().program.content?.key).toBe('verse');
   });
 
+  it('the announcements layer runs alongside the slide, and clears on its own', async () => {
+    const { store, run } = setup();
+    await run('live.goLive', { content: content('verse') });
+    await run('live.setAnnouncement', { content: content('welcome') });
+    // A new slide doesn't touch the announcements layer.
+    await run('live.goLive', { content: content('verse2') });
+    expect(store.get().program.announcement?.key).toBe('welcome');
+    await run('live.clearLayer', { layer: 'announcements' });
+    expect(store.get().program.announcement).toBeNull();
+    expect(store.get().program.content?.key).toBe('verse2');
+    await run('live.restoreLayer', { layer: 'announcements' });
+    expect(store.get().program.announcement?.key).toBe('welcome');
+  });
+
   it('clearing an empty layer keeps what can still be brought back', async () => {
     const { store, run } = setup();
     await run('live.goLive', { content: content('a') });

@@ -214,6 +214,7 @@ export async function step(delta: 1 | -1): Promise<void> {
 let clearedCursor: Cursor | null = null;
 
 export const clearLayer = (layer: Layer): Promise<void> => {
+  if (layer === 'announcements' || layer === 'all' || layer === 'panic') stopAnnounceLoop();
   if (layer === 'content' || layer === 'all' || layer === 'panic') {
     const cursor = get().liveCursor;
     if (cursor) clearedCursor = cursor;
@@ -226,6 +227,7 @@ export const clearLayer = (layer: Layer): Promise<void> => {
 /** A custom clear group: clear exactly these layers, in one step. */
 export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
   if (!layers.length) return Promise.resolve();
+  if (layers.includes('announcements')) stopAnnounceLoop();
   if (layers.includes('content')) {
     const cursor = get().liveCursor;
     if (cursor) clearedCursor = cursor;
@@ -364,3 +366,39 @@ export function installMediaWatch(): () => void {
 /** Switch the Look on screen (null: every layer on every screen). Instant, like a mask. */
 export const setLook = (look: Look | null): Promise<void> =>
   safe(cmd('live.setLook', { look }, 'ui'));
+
+// ---------- Announcements layer ----------
+let announceTimer: ReturnType<typeof setTimeout> | null = null;
+
+function stopAnnounceLoop(): void {
+  if (announceTimer) clearTimeout(announceTimer);
+  announceTimer = null;
+  if (get().announceItemId) useStore.setState({ announceItemId: null });
+}
+
+/**
+ * Loop an announcements (or slides) item on the announcements layer, its own layer above the
+ * slide: the main presentation carries on underneath, and Looks can send it to lobby screens.
+ */
+export async function runOnAnnouncementsLayer(item: ServiceItem): Promise<void> {
+  if (item.kind !== 'announcements' && item.kind !== 'presentation') return;
+  stopAnnounceLoop();
+  const slides = (await ensureItemReady(item)).filter((sl) => sl.action.kind === 'content');
+  if (!slides.length) return;
+  const every = (item.kind === 'announcements' ? item.loopIntervalSec : 8) * 1000;
+  useStore.setState({ announceItemId: item.id });
+  const show = async (i: number): Promise<void> => {
+    if (get().announceItemId !== item.id) return;
+    const sl = slides[i % slides.length];
+    if (sl?.action.kind === 'content')
+      await safe(cmd('live.setAnnouncement', { content: sl.action.content }, 'ui'));
+    if (slides.length > 1) announceTimer = setTimeout(() => void show(i + 1), every);
+  };
+  await show(0);
+}
+
+/** Stop the announcements loop and take the layer off the screen (it can be brought back). */
+export async function stopAnnouncementsLayer(): Promise<void> {
+  stopAnnounceLoop();
+  await clearLayer('announcements');
+}

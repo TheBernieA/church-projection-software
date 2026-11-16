@@ -37,6 +37,7 @@ export class SceneRenderer {
   private readonly bgLayer: HTMLElement;
   private readonly mediaLayer: HTMLElement;
   private readonly contentLayer: HTMLElement;
+  private readonly announceLayer: HTMLElement;
   private readonly webLayer: HTMLElement;
   private readonly overlayLayer: HTMLElement;
   private readonly blackMask: HTMLElement;
@@ -49,6 +50,7 @@ export class SceneRenderer {
   private bg: Slot<never> | null = null;
   private media: Slot<never> | null = null;
   private content: Slot<BuiltContent> | null = null;
+  private announce: Slot<BuiltContent> | null = null;
   private webKey = '';
   private overlaysKey = '[]';
   private overlayNodes = new Map<string, Slot<never>>();
@@ -85,6 +87,7 @@ export class SceneRenderer {
     this.bgLayer = layer('background');
     this.mediaLayer = layer('media');
     this.contentLayer = layer('content');
+    this.announceLayer = layer('announcements');
     this.webLayer = layer('web');
     this.overlayLayer = layer('overlays');
     this.blackMask = el(this.doc, 'div', 'ls-mask-black', {
@@ -100,6 +103,7 @@ export class SceneRenderer {
       this.mediaLayer,
       this.contentLayer,
       this.webLayer,
+      this.announceLayer,
       this.standby.node,
       this.overlayLayer,
       this.blackMask,
@@ -162,6 +166,7 @@ export class SceneRenderer {
     this.renderMedia(scene, instant);
     this.renderContent(scene.content, scene.transition, instant);
     this.renderWeb(scene);
+    this.renderContent(scene.announcement ?? null, undefined, instant, 'announce');
     this.applyStandby(scene, instant);
     this.renderOverlays(scene);
   }
@@ -221,6 +226,7 @@ export class SceneRenderer {
   destroy(): void {
     this.resizeObserver?.disconnect();
     this.content?.extra?.dispose();
+    this.announce?.extra?.dispose();
     this.root.remove();
   }
 
@@ -288,33 +294,39 @@ export class SceneRenderer {
     if (old) this.retire(old.node, instant ? 0 : 400);
   }
 
+  /**
+   * Draw a slide into the slide layer, or (`announce`) into the announcements layer above it,
+   * crossfading with the theme's transition.
+   */
   private renderContent(
     content: ContentLayer | null,
     transition: TransitionSpec | undefined,
     instant: boolean,
+    channel: 'content' | 'announce' = 'content',
   ): void {
+    const layer = channel === 'content' ? this.contentLayer : this.announceLayer;
     // Stage-only fields (notes, chords, label) never change what the room sees, so they don't
     // re-run the transition.
     const key = content ? JSON.stringify({ ...content, notes: 0, chords: 0, label: 0 }) : 'none';
-    if ((this.content?.key ?? 'none') === key) return;
+    if ((this[channel]?.key ?? 'none') === key) return;
     const t = transition ?? content?.theme.transition ?? DEFAULT_TRANSITION;
     const duration = instant || t.kind === 'cut' ? 0 : t.durationMs;
     const frames = transitionFrames(t.kind);
-    const old = this.content;
-    this.content = null;
+    const old = this[channel];
+    this[channel] = null;
     // Remove anything still fading from a previous rapid change so slots never pile up.
-    for (const child of [...this.contentLayer.children]) if (child !== old?.node) child.remove();
+    for (const child of [...layer.children]) if (child !== old?.node) child.remove();
     if (content) {
       const built = buildContent(this.doc, content, {
         live: this.opts.mode !== 'thumbnail',
         mediaUrl: (id) => this.opts.mediaUrl(id),
       });
       built.root.style.opacity = '0';
-      this.contentLayer.append(built.root);
+      layer.append(built.root);
       built.fit();
       built.root.style.opacity = duration ? '0' : '1';
       if (duration) void animate(built.root, frames.enter, { duration, easing: t.easing });
-      this.content = { key, node: built.root, extra: built };
+      this[channel] = { key, node: built.root, extra: built };
     }
     if (old) {
       if (duration)
@@ -379,6 +391,9 @@ export class SceneRenderer {
     this.content?.extra?.dispose();
     this.contentLayer.replaceChildren();
     this.content = null;
+    this.announce?.extra?.dispose();
+    this.announceLayer.replaceChildren();
+    this.announce = null;
     this.render(s, { instant: true });
   }
 }

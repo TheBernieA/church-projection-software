@@ -446,7 +446,7 @@ function OffAirGroup({ s, update }: PageProps) {
   );
 }
 
-const CLEARABLE = ['content', 'media', 'background', 'messages', 'props'] as const;
+const CLEARABLE = ['content', 'media', 'background', 'announcements', 'messages', 'props'] as const;
 type ClearGroup = Settings['clearGroups'][number];
 
 /**

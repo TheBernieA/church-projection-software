@@ -1046,7 +1046,8 @@
       "media": "Media",
       "background": "Background",
       "messages": "Messages",
-      "props": "Props"
+      "props": "Props",
+      "announcements": "Announcements"
     }
   },
   "masks": {
@@ -1104,7 +1105,12 @@
       "media": "Media",
       "content": "Slide",
       "messages": "Messages",
-      "props": "Props"
+      "props": "Props",
+      "announcements": "Announcements"
     }
+  },
+  "announce": {
+    "run": "Loop on the announcements layer",
+    "stop": "Stop the announcements layer"
   }
 }

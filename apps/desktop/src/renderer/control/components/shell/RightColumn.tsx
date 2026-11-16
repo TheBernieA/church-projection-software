@@ -110,7 +110,6 @@ function MonitorCard({
 
 /** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
 const PLANNED_LAYERS = [
-  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={14} /> },
   { id: 'audio-bin', label: 'audio', icon: <AudioLines size={14} /> },
   { id: 'video-input', label: 'videoInput', icon: <Video size={14} /> },
 ];
@@ -495,6 +494,15 @@ export function RightColumn() {
                     : undefined
                 }
                 onRestore={back('props')}
+              />
+              <LayerButton
+                icon={<Megaphone size={14} />}
+                label={t('monitor.layers.announcements')}
+                on={!!p.announcement}
+                onClick={clear('announcements')}
+                restorable={!!cleared.announcements}
+                restoreWhat={cleared.announcements?.label}
+                onRestore={back('announcements')}
               />
               <LayerButton
                 icon={<Type size={14} />}

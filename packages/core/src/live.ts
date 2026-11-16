@@ -49,6 +49,7 @@ export const ClearedLayersSchema = z.object({
   /** Paused-in-time copy: `position` is where the video was when it was cleared. */
   media: MediaLayerSchema.optional(),
   background: BackgroundLayerSchema.optional(),
+  announcements: ContentLayerSchema.optional(),
   messages: z.array(OverlaySchema).max(10).optional(),
   props: z.array(OverlaySchema).max(10).optional(),
   /**
@@ -58,7 +59,9 @@ export const ClearedLayersSchema = z.object({
   off: z
     .object({
       at: z.string().max(40),
-      layers: z.array(z.enum(['content', 'media', 'background', 'messages', 'props'])).max(5),
+      layers: z
+        .array(z.enum(['content', 'media', 'background', 'announcements', 'messages', 'props']))
+        .max(6),
     })
     .optional(),
 });
@@ -68,6 +71,7 @@ export const RestorableLayerSchema = z.enum([
   'content',
   'media',
   'background',
+  'announcements',
   'messages',
   'props',
 ]);
@@ -148,6 +152,7 @@ export class LiveStateStore {
 
 export const LayerSchema = z.enum([
   'content',
+  'announcements',
   'media',
   'background',
   'overlays',
@@ -165,6 +170,8 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
       return { ...scene, content: null, web: null };
     case 'media':
       return { ...scene, media: null };
+    case 'announcements':
+      return { ...scene, announcement: null };
     case 'background':
       return { ...scene, background: null };
     case 'overlays':
@@ -181,6 +188,7 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
         media: null,
         content: null,
         web: null,
+        announcement: null,
         overlays: [],
         masks: EMPTY_MASKS,
       };
@@ -190,13 +198,14 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
 /** The layers a clear empties (`overlays` = messages and props). */
 const CLEARS: Record<Layer, RestorableLayer[]> = {
   content: ['content'],
+  announcements: ['announcements'],
   media: ['media'],
   background: ['background'],
   overlays: ['messages', 'props'],
   messages: ['messages'],
   props: ['props'],
-  all: ['content', 'media', 'background', 'messages', 'props'],
-  panic: ['content', 'media', 'messages', 'props'],
+  all: ['content', 'media', 'background', 'announcements', 'messages', 'props'],
+  panic: ['content', 'media', 'announcements', 'messages', 'props'],
 };
 
 /**
@@ -214,6 +223,10 @@ export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): Clea
     }
     if (l === 'media' && p.media) {
       out.media = { ...p.media, position: mediaPositionAt(p.media, nowMs) };
+      taken.push(l);
+    }
+    if (l === 'announcements' && p.announcement) {
+      out.announcements = p.announcement;
       taken.push(l);
     }
     if (l === 'background' && p.background) {
@@ -246,7 +259,7 @@ export function restoreAll(s: LiveState, nowIso: string): LiveState {
   const layers = s.cleared.off?.layers ?? [];
   let next: LiveState = { ...s, cleared: withoutOff(s.cleared) };
   // Background first, so the words never flash up on black.
-  for (const l of ['background', 'media', 'content', 'messages', 'props'] as const)
+  for (const l of ['background', 'media', 'content', 'announcements', 'messages', 'props'] as const)
     if (layers.includes(l)) next = restoreLayer(next, l, nowIso);
   return next;
 }
@@ -277,6 +290,9 @@ export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: strin
         // It carries on from where it was cleared.
         program: { ...program, media: { ...c.media, syncedAt: nowIso }, content: null, web: null },
       };
+    case 'announcements':
+      if (!c.announcements) return s;
+      return { ...s, cleared, program: { ...program, announcement: c.announcements } };
     case 'background':
       if (!c.background) return s;
       return { ...s, cleared, program: { ...program, background: c.background } };
@@ -404,6 +420,20 @@ export function registerLiveCommands(
   });
 
   bus.register({
+    type: 'live.setAnnouncement',
+    schema: z.object({ content: ContentLayerSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({
+        ...s,
+        program: { ...s.program, announcement: p.content },
+        cleared: p.content ? withoutOff(s.cleared) : s.cleared,
+      }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
     type: 'live.setLook',
     schema: z.object({ look: LookSchema.nullable() }),
     undoable: false,
@@ -415,7 +445,7 @@ export function registerLiveCommands(
 
   bus.register({
     type: 'live.clearLayers',
-    schema: z.object({ layers: z.array(RestorableLayerSchema).min(1).max(5) }),
+    schema: z.object({ layers: z.array(RestorableLayerSchema).min(1).max(6) }),
     undoable: false,
     handle: (p) => {
       // One step for the room: every chosen layer goes at once, each remembered for "bring back".

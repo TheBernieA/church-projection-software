@@ -223,8 +223,7 @@ export const FEATURES: Feature[] = [
     'announcements-layer',
     'layers',
     'Announcements layer',
-    'Run looping announcements on their own layer alongside the main presentation.',
-    'soon',
+    'Run looping announcements on their own layer alongside the main presentation: the megaphone on an announcements or slides item; Looks can send it to lobby screens only.',
   ),
   f(
     'text-format',

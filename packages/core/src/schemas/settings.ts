@@ -45,9 +45,23 @@ export const ScreenMaskSchema = z.object({
 export type ScreenMask = z.infer<typeof ScreenMaskSchema>;
 
 /** Layers a Look can show or hide on a kind of screen. */
-export const LookLayerSchema = z.enum(['background', 'media', 'content', 'messages', 'props']);
+export const LookLayerSchema = z.enum([
+  'background',
+  'media',
+  'content',
+  'announcements',
+  'messages',
+  'props',
+]);
 export type LookLayer = z.infer<typeof LookLayerSchema>;
-export const ALL_LOOK_LAYERS: LookLayer[] = ['background', 'media', 'content', 'messages', 'props'];
+export const ALL_LOOK_LAYERS: LookLayer[] = [
+  'background',
+  'media',
+  'content',
+  'announcements',
+  'messages',
+  'props',
+];
 
 /**
  * A Look: which layers each kind of screen shows ("Lobby": secondary screens show only the
@@ -56,8 +70,8 @@ export const ALL_LOOK_LAYERS: LookLayer[] = ['background', 'media', 'content', '
 export const LookSchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().min(1).max(40),
-  main: z.array(LookLayerSchema).max(5),
-  secondary: z.array(LookLayerSchema).max(5),
+  main: z.array(LookLayerSchema).max(6),
+  secondary: z.array(LookLayerSchema).max(6),
 });
 export type Look = z.infer<typeof LookSchema>;
 
@@ -110,9 +124,9 @@ export const SettingsSchema = z
           id: z.string().min(1).max(64),
           name: z.string().min(1).max(40),
           layers: z
-            .array(z.enum(['content', 'media', 'background', 'messages', 'props']))
+            .array(z.enum(['content', 'media', 'background', 'announcements', 'messages', 'props']))
             .min(1)
-            .max(5),
+            .max(6),
         }),
       )
       .max(12)

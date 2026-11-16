@@ -119,6 +119,8 @@ export interface ControlState {
   binTab: BinTab;
   /** The media playlist open in the bin (when binTab is 'playlist'). */
   binPlaylistId: string | null;
+  /** The item looping on the announcements layer, if any. */
+  announceItemId: string | null;
   controlsTab: ControlsTab;
   binOpen: boolean;
   /** The toolbar's Text bar (formatting for the selected item) is showing. */

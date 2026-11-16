@@ -4,6 +4,7 @@ import {
   Clock3,
   LayoutGrid,
   ListPlus,
+  Megaphone,
   Plus,
   Repeat,
   Shuffle,
@@ -12,7 +13,12 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
-import { goLiveSlide, triggerSlide } from '../../lib/actions';
+import {
+  goLiveSlide,
+  runOnAnnouncementsLayer,
+  stopAnnouncementsLayer,
+  triggerSlide,
+} from '../../lib/actions';
 import { feature } from '../../lib/features';
 import { useItemSlides } from '../../lib/hooks';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
@@ -68,6 +74,7 @@ function ItemSection({
   const [dropping, setDropping] = useState(false);
   const { t } = useTranslation();
   const { slides } = useItemSlides(item);
+  const announcing = useStore((s) => s.announceItemId === item.id);
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
   const liveKey = useStore((s) => s.live?.program.content?.key);
@@ -149,6 +156,20 @@ function ItemSection({
           <SoonTool id="transitions" icon={<Shuffle size={14} />} />
           <SoonTool id="timeline" icon={<Clock3 size={14} />} />
           <SoonTool id="slide-actions" icon={<Repeat size={14} />} />
+          {(item.kind === 'announcements' || item.kind === 'presentation') && (
+            <IconButton
+              size="2xs"
+              variant="quiet"
+              aria-label={announcing ? t('announce.stop') : t('announce.run')}
+              aria-pressed={announcing}
+              active={announcing}
+              onClick={() =>
+                void (announcing ? stopAnnouncementsLayer() : runOnAnnouncementsLayer(item))
+              }
+            >
+              <Megaphone size={14} />
+            </IconButton>
+          )}
           {item.kind === 'media' && (
             <IconButton
               size="2xs"

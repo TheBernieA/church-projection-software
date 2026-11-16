@@ -189,6 +189,8 @@ export const SceneSchema = z.object({
   content: ContentLayerSchema.nullable(),
   /** A web page on screen (replaces text and media while it shows). */
   web: WebLayerSchema.nullable().optional(),
+  /** Announcements layer: looping announcement slides above the slide, below messages and props. */
+  announcement: ContentLayerSchema.nullable().optional(),
   overlays: z.array(OverlaySchema).max(10),
   masks: MasksSchema,
   /** Transition to use when this scene's content changes. */

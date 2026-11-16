@@ -154,7 +154,14 @@ function MaskEditor({
   );
 }
 
-const LOOK_LAYERS = ['background', 'media', 'content', 'messages', 'props'] as const;
+const LOOK_LAYERS = [
+  'background',
+  'media',
+  'content',
+  'announcements',
+  'messages',
+  'props',
+] as const;
 
 /**
  * Looks: named combinations of which layers the audience and secondary screens show. Switched

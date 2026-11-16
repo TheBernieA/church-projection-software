@@ -1234,6 +1234,37 @@ test('looks: switch which layers each screen shows from the toolbar', async () =
   await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
 });
 
+test('announcements layer: loops over the slide, clears on its own', async () => {
+  const out = await outputPage();
+  await expect(out.locator('.ls-layer-content .ls-text')).toContainText('For God so loved');
+  await (await servicePlan()).getByText('Welcome').first().click();
+  const welcome = control.getByRole('region', { name: 'Welcome', exact: true }).first();
+  await welcome.getByRole('button', { name: 'Loop on the announcements layer' }).click();
+  const ann = out.locator('.ls-layer-announcements .ls-text');
+  await expect(ann).toHaveCount(1, { timeout: 5000 });
+  // The verse is still on its own layer underneath.
+  await expect(out.locator('.ls-layer-content .ls-text')).toContainText('For God so loved');
+  await expect(
+    control.getByRole('button', { name: 'Clear Announcements', exact: true }),
+  ).toBeEnabled();
+  await control.waitForTimeout(500);
+  await control.screenshot({ path: 'test-results/31-announcements-layer.png' });
+  await control.getByRole('button', { name: 'Clear Announcements', exact: true }).click();
+  await expect(ann).toHaveCount(0, { timeout: 5000 });
+  await expect(
+    welcome.getByRole('button', { name: 'Loop on the announcements layer' }),
+  ).toHaveAttribute('aria-pressed', 'false');
+  // Leave the verse open and live, as the next tests expect.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
+  // (Mid-crossfade there can briefly be two copies; the newest is last.)
+  await expect(out.locator('.ls-layer-content .ls-text').last()).toContainText(
+    'For God so loved the world',
+  );
+});
+
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });
