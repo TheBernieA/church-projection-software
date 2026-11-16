@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge, Text } from '@lampstand/ui';
+import { SoonBadge, Text, NavItem } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel, MediaPanel } from '../MediaPanel';
@@ -46,29 +46,26 @@ export function Bin({ height }: { height: number }) {
         {CATEGORIES.map(({ tab: x, icon: Icon, soon }) => {
           const on = x === tab;
           return (
-            <button
+            <NavItem
               key={x}
-              type="button"
               aria-pressed={on}
+              selected={on}
+              dim={!!soon}
               title={soon ? t('soon.tooltip', { name: feature(soon[0] ?? '').name }) : undefined}
               onClick={() => useStore.setState({ binTab: x })}
-              className={`mx-1.5 flex h-[26px] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-ui-13 ${
-                on
-                  ? 'bg-[var(--select)] text-white'
-                  : soon
-                    ? 'text-[var(--text-3)] hover:bg-[var(--surface-2)]'
-                    : 'text-[var(--text-1)] hover:bg-[var(--surface-2)]'
-              }`}
-            >
-              <Icon size={14} className={on ? '' : 'text-[var(--text-3)]'} />
-              <span className="flex-1 truncate">{t(`bin.tabs.${x}`)}</span>
-              {x === 'media' && mediaCount > 0 && (
-                <Text size={11} tabular aria-hidden className="opacity-70">
-                  {mediaCount}
-                </Text>
-              )}
-              {soon && <SoonBadge label={t('soon.badge')} />}
-            </button>
+              icon={<Icon size={14} className="text-[var(--text-3)]" />}
+              label={t(`bin.tabs.${x}`)}
+              trailing={
+                <>
+                  {x === 'media' && mediaCount > 0 && (
+                    <Text size={11} tabular aria-hidden className="opacity-70">
+                      {mediaCount}
+                    </Text>
+                  )}
+                  {soon && <SoonBadge label={t('soon.badge')} />}
+                </>
+              }
+            />
           );
         })}
       </nav>

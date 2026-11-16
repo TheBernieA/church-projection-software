@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge, Text } from '@lampstand/ui';
+import { SoonBadge, Text, Button } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { openDialog } from '../../lib/store';
 
@@ -37,13 +37,14 @@ export function SoonPanel({ ids, icon }: { ids: string[]; icon: ReactNode }) {
             </Text>
           </div>
         ))}
-        <button
-          type="button"
+        <Button
+          variant="link"
+          size="inline"
           onClick={() => openDialog('settings', { settingsPage: 'features' })}
-          className="mt-1 cursor-pointer text-ui-12 font-medium text-[var(--accent)] hover:underline"
+          className="mt-1"
         >
           {t('soon.roadmap')}
-        </button>
+        </Button>
       </div>
     </div>
   );

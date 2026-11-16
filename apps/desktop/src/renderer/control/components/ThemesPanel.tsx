@@ -94,15 +94,15 @@ export function ThemesPanel() {
           <div className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5 text-ui-12">
             <span className="text-[var(--text-3)]">{t('theme.useFor')}:</span>
             {kinds.map((k) => (
-              <button
+              <Button
                 key={k}
-                type="button"
+                size="3xs"
+                variant={isDefault(th.id, k) ? 'primary' : 'secondary'}
                 aria-pressed={isDefault(th.id, k)}
                 onClick={() => void saveSettings({ defaultThemes: { ...defaults, [k]: th.id } })}
-                className={`rounded-[5px] px-2 py-0.5 font-medium transition-colors ${isDefault(th.id, k) ? 'bg-[var(--accent)] text-[var(--accent-ink)]' : 'bg-[var(--surface-3)] text-[var(--text-2)] hover:text-[var(--text-1)]'}`}
               >
                 {t(`theme.kinds.${k}`)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

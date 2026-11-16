@@ -73,13 +73,14 @@ export function MediaPanel() {
               >
                 <Thumb m={m} />
               </Tile>
-              <button
-                type="button"
-                className={`absolute bottom-0 right-0 bg-[var(--surface-1)] pl-1.5 text-ui-12 text-[var(--text-3)] hover:text-[var(--tally-program)] ${REVEAL}`}
+              <Button
+                variant="quiet"
+                size="inline"
+                className={`absolute bottom-0 right-0 bg-[var(--surface-1)] pl-1.5 font-normal hover:bg-[var(--surface-1)] hover:text-[var(--tally-program)] ${REVEAL}`}
                 onClick={() => void cmd('media.delete', { id: m.id })}
               >
                 {t('media.delete')}
-              </button>
+              </Button>
             </div>
           );
         })}

@@ -6,7 +6,7 @@ import { openDialog, openService, useStore } from '../../lib/store';
 import { ServicePanel } from '../ServicePanel';
 import { SongList } from '../SongList';
 import { Splitter, usePaneSize } from './Splitter';
-import { Text } from '@lampstand/ui';
+import { Text, IconButton, NavItem } from '@lampstand/ui';
 
 /** Small-caps outline heading with an optional "+" on the right. */
 function OutlineHeading({
@@ -24,15 +24,9 @@ function OutlineHeading({
         {title}
       </Text>
       {onAdd && (
-        <button
-          type="button"
-          aria-label={addLabel}
-          title={addLabel}
-          onClick={onAdd}
-          className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-3)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
-        >
+        <IconButton size="3xs" variant="quiet" aria-label={addLabel ?? title} onClick={onAdd}>
           <Plus size={14} />
-        </button>
+        </IconButton>
       )}
     </div>
   );
@@ -51,19 +45,14 @@ function OutlineRow({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <NavItem
       aria-pressed={selected}
+      selected={selected}
       onClick={onClick}
-      className={`mx-1.5 flex h-[26px] w-[calc(100%-12px)] cursor-pointer items-center gap-2 rounded-[4px] px-2 text-left text-ui-13 transition-colors ${
-        selected
-          ? 'bg-[var(--select)] text-white [&_svg]:text-white'
-          : 'text-[var(--text-1)] hover:bg-[var(--surface-2)]'
-      }`}
-    >
-      <span className="flex shrink-0 text-[var(--accent)]">{icon}</span>
-      <span className="truncate">{label}</span>
-    </button>
+      icon={<span className="flex text-[var(--accent)]">{icon}</span>}
+      label={label}
+      className="w-[calc(100%-12px)]"
+    />
   );
 }
 

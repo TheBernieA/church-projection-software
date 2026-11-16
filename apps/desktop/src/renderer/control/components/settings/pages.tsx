@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch, Text } from '@lampstand/ui';
+import { Button, Segmented, Switch, Text, IconButton } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
@@ -76,21 +76,17 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
     setDraft(null);
   };
   const rows = t('settings.textPreviewRows').split('|');
-  const stepBtn =
-    'flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)] disabled:cursor-default disabled:opacity-40';
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        <button
-          type="button"
+        <IconButton
+          size="xs"
           aria-label={t('settings.textSmaller')}
-          title={t('settings.textSmaller')}
           disabled={shown <= TEXT_MIN}
           onClick={() => commit(shown - TEXT_STEP)}
-          className={stepBtn}
         >
           <Type size={12} />
-        </button>
+        </IconButton>
         <input
           id="text-scale"
           type="range"
@@ -104,16 +100,14 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
           onBlur={() => commit()}
           className="h-1.5 w-56 cursor-pointer accent-[var(--accent)]"
         />
-        <button
-          type="button"
+        <IconButton
+          size="xs"
           aria-label={t('settings.textLarger')}
-          title={t('settings.textLarger')}
           disabled={shown >= TEXT_MAX}
           onClick={() => commit(shown + TEXT_STEP)}
-          className={stepBtn}
         >
           <Type size={17} />
-        </button>
+        </IconButton>
         <Text size={13} tone="secondary" tabular className="w-12 text-right">
           {Math.round(shown * 100)}%
         </Text>

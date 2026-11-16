@@ -156,14 +156,9 @@ export function ServicePanel() {
         <AddMenu
           update={update}
           trigger={
-            <button
-              type="button"
-              aria-label={t('service.add')}
-              title={t('service.add')}
-              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-[4px] text-[var(--text-3)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
-            >
+            <IconButton size="3xs" variant="quiet" aria-label={t('service.add')}>
               <Plus size={14} />
-            </button>
+            </IconButton>
           }
         />
       </div>

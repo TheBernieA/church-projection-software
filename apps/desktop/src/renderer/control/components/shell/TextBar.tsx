@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, RotateCcw, Type, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem, TextFormat, Theme } from '@lampstand/core';
-import { Button, Text } from '@lampstand/ui';
+import { Button, Text, IconButton } from '@lampstand/ui';
 import { BUNDLED_FONTS } from '../../constants';
 import { useItemSlides, useSelectedItem } from '../../lib/hooks';
 import { itemTitle } from '../../lib/slides';
@@ -35,20 +35,16 @@ function Toggle({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <IconButton
+      size="xs"
       aria-label={label}
-      title={label}
       aria-pressed={on}
+      active={on}
+      activeTone="select"
       onClick={onClick}
-      className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] transition-colors ${
-        on
-          ? 'bg-[var(--select)] text-white'
-          : 'text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
-      }`}
     >
       {children}
-    </button>
+    </IconButton>
   );
 }
 
@@ -242,15 +238,9 @@ export function TextBar() {
         </>
       )}
       <span className="flex-1" />
-      <button
-        type="button"
-        aria-label={t('textBar.close')}
-        title={t('textBar.close')}
-        onClick={close}
-        className="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-[var(--text-3)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
-      >
+      <IconButton size="2xs" variant="quiet" aria-label={t('textBar.close')} onClick={close}>
         <X size={14} />
-      </button>
+      </IconButton>
     </section>
   );
 }

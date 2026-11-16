@@ -27,7 +27,7 @@ import {
 } from './settings/pages';
 import { ConnectionsPage, FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
-import { Text } from '@lampstand/ui';
+import { Text, NavItem } from '@lampstand/ui';
 
 type PageId = SettingsPageId;
 
@@ -79,20 +79,16 @@ export function SettingsDialog() {
           const { id, icon: Icon } = entry;
           const on = page === id;
           return (
-            <button
+            <NavItem
               key={id}
-              type="button"
               onClick={() => setPage(id)}
               aria-current={on ? 'page' : undefined}
-              className={`flex h-9 cursor-pointer items-center gap-2.5 rounded-[8px] px-2.5 text-left text-ui-13 ${
-                on
-                  ? 'bg-[var(--accent-soft)] font-medium text-[var(--text-1)]'
-                  : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]'
-              }`}
-            >
-              <Icon size={16} className={on ? 'text-[var(--accent)]' : ''} />
-              {t(`settings.pages.${id}`)}
-            </button>
+              selected={on}
+              tone="accent"
+              density="comfortable"
+              icon={<Icon size={16} />}
+              label={t(`settings.pages.${id}`)}
+            />
           );
         })}
       </nav>

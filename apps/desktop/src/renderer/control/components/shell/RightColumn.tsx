@@ -26,7 +26,7 @@ import {
   type Scene,
   type Standby,
 } from '@lampstand/core';
-import { Button, Kbd, SoonBadge, TallyLabel, Text } from '@lampstand/ui';
+import { Button, Kbd, SoonBadge, TallyLabel, Text, IconButton } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { clearLayer, goLive, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
@@ -100,14 +100,9 @@ function PlannedLayers() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button
-          type="button"
-          aria-label={t('monitor.moreLayers')}
-          title={t('monitor.moreLayers')}
-          className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-[5px] text-[var(--text-3)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
-        >
+        <IconButton size="2xs" variant="quiet" aria-label={t('monitor.moreLayers')}>
           <Ellipsis size={14} />
-        </button>
+        </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
@@ -160,20 +155,20 @@ function LayerButton({
   const { t } = useTranslation();
   const name = t('monitor.clearLayer', { name: label });
   return (
-    <button
-      type="button"
+    <IconButton
+      size="2xs"
+      variant="quiet"
       onClick={onClick}
       disabled={!on}
+      active={on}
+      activeTone="live"
       aria-label={name}
       title={hint ? `${name} (${hint})` : name}
-      className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-[5px] transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
-        on
-          ? 'bg-[var(--tally-program)] text-white shadow-[0_0_8px_rgba(239,74,80,0.45)] hover:brightness-110'
-          : 'text-[var(--text-3)]'
-      }`}
+      // An empty layer is shown as a plain icon, not a faded "disabled" one.
+      className="disabled:cursor-default disabled:opacity-100"
     >
       {icon}
-    </button>
+    </IconButton>
   );
 }
 
@@ -192,21 +187,18 @@ function MaskButton({
   hint: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      size="xs"
+      variant="subtle"
       aria-pressed={on}
       aria-label={label}
       title={`${label} (${hint})`}
       onClick={onClick}
-      className={`flex h-7 cursor-pointer items-center gap-1 rounded-[5px] px-2 text-ui-11 font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
-        on
-          ? 'bg-[var(--tally-program)] text-white'
-          : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
-      }`}
+      icon={icon}
+      className={`!gap-1 !text-ui-11 ${on ? '!bg-[var(--tally-program)] !text-white' : '!text-[var(--text-2)]'}`}
     >
-      {icon}
-      <span>{hint}</span>
-    </button>
+      {hint}
+    </Button>
   );
 }
 
@@ -325,15 +317,16 @@ export function RightColumn() {
               className="flex w-7 shrink-0 flex-col items-center gap-[3px]"
             >
               {anything ? (
-                <button
-                  type="button"
+                <IconButton
+                  size="2xs"
+                  active
+                  activeTone="live"
                   aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
-                  title={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
                   onClick={() => void clearLayer('all')}
-                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-[var(--tally-program)] text-white shadow-[0_2px_10px_rgba(239,74,80,0.45)] hover:brightness-110"
+                  className="!rounded-full"
                 >
                   <Power size={13} strokeWidth={2.5} />
-                </button>
+                </IconButton>
               ) : (
                 <span
                   aria-hidden

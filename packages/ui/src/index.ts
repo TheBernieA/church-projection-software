@@ -5,3 +5,4 @@ export * from './Panel';
 export * from './Switch';
 export * from './Soon';
 export * from './Text';
+export * from './NavItem';

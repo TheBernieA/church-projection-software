@@ -7,7 +7,7 @@ import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
-import { Text } from '@lampstand/ui';
+import { Text, Button } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -66,14 +66,15 @@ export function BibleBrowser() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 px-4 pb-3">
         {book ? (
-          <button
-            type="button"
-            className="flex min-w-0 flex-1 items-center gap-1 text-left text-ui-15 font-semibold hover:text-[var(--accent)]"
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
             onClick={() => setBook(null)}
+            className="-ml-2 min-w-0 !gap-1 !text-ui-15 !font-semibold !text-[var(--text-1)]"
           >
-            <ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />
             <span className="truncate">{bookName(book)}</span>
-          </button>
+          </Button>
         ) : (
           <input
             className="field h-8 min-w-0 flex-1"
