@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Clock, MessageSquare, Trash2 } from 'lucide-react';
+import { Clock, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId } from '@lampstand/core';
-import { Button, IconButton, Segmented } from '@lampstand/ui';
+import { Button, Segmented } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { fillMessage, messageTokens } from '../../lib/messages';
 import { useOverlayLive, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
-import { AddCard, BIN_CARD } from '../cards';
+import { AddCard, BIN_CARD, BinRow, CardTitle, FormActions } from '../cards';
 import { SoonFeature } from '../Soon';
 import { type Message } from '../../types';
 
@@ -36,21 +36,12 @@ function MessageCard({ m, onDelete }: { m: Message; onDelete: () => void }) {
       style={live ? { boxShadow: 'var(--tally-program-glow)' } : undefined}
       className={`${BIN_CARD} group w-[250px]`}
     >
-      <div className="flex items-center gap-1.5">
-        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{m.name}</span>
-        <span className="rounded-[4px] bg-[var(--surface-3)] px-1.5 text-[10px] font-medium text-[var(--text-3)]">
-          {t(`messages.style.${m.style}`)}
-        </span>
-        <IconButton
-          size="xs"
-          type="button"
-          aria-label={t('messages.delete', { name: m.name })}
-          className="opacity-0 group-hover:opacity-100"
-          onClick={onDelete}
-        >
-          <Trash2 size={13} />
-        </IconButton>
-      </div>
+      <CardTitle
+        name={m.name}
+        badge={t(`messages.style.${m.style}`)}
+        deleteLabel={t('messages.delete', { name: m.name })}
+        onDelete={onDelete}
+      />
       <p className="line-clamp-2 text-[12px] leading-snug text-[var(--text-2)]">{text}</p>
       {tokens.map((k) => (
         <input
@@ -127,14 +118,11 @@ function NewMessage({
           { value: 'ticker', label: t('messages.style.ticker') },
         ]}
       />
-      <div className="flex justify-end gap-1.5">
-        <Button size="xs" variant="ghost" type="button" onClick={onCancel}>
-          {t('song.cancel')}
-        </Button>
-        <Button size="xs" variant="primary" type="submit" disabled={!template.trim()}>
-          {t('messages.create')}
-        </Button>
-      </div>
+      <FormActions
+        onCancel={onCancel}
+        submitLabel={t('messages.create')}
+        disabled={!template.trim()}
+      />
     </form>
   );
 }
@@ -196,7 +184,7 @@ export function MessagesBin() {
   const [messages, save] = useSettingsList('messages');
   const [adding, setAdding] = useState(false);
   return (
-    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
+    <BinRow>
       {messages.map((m) => (
         <MessageCard
           key={m.id}
@@ -226,6 +214,6 @@ export function MessagesBin() {
       <div className="ml-auto flex">
         <StageMessage />
       </div>
-    </div>
+    </BinRow>
   );
 }

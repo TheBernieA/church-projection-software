@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Film, Pause, Play, RotateCcw, Trash2 } from 'lucide-react';
+import { Film, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
-import { Button, IconButton, Segmented } from '@lampstand/ui';
+import { Button, Segmented } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
-import { AddCard, BIN_CARD } from '../cards';
+import { AddCard, BIN_CARD, BinRow, CardTitle, FormActions } from '../cards';
 import { SoonFeature } from '../Soon';
 
 type Kind = TimerDef['kind'];
@@ -40,18 +40,12 @@ function TimerCard({
       className={`${BIN_CARD} group w-[190px]`}
       style={run?.running ? { boxShadow: '0 0 0 1px var(--accent-line)' } : undefined}
     >
-      <div className="flex items-center gap-1.5">
-        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold">{def.name}</span>
-        <span className="text-[10px] text-[var(--text-3)]">{t(`timers.kind.${def.kind}`)}</span>
-        <IconButton
-          size="xs"
-          aria-label={t('timers.delete', { name: def.name })}
-          className="opacity-0 group-hover:opacity-100"
-          onClick={onDelete}
-        >
-          <Trash2 size={13} />
-        </IconButton>
-      </div>
+      <CardTitle
+        name={def.name}
+        badge={t(`timers.kind.${def.kind}`)}
+        deleteLabel={t('timers.delete', { name: def.name })}
+        onDelete={onDelete}
+      />
       <div
         className={`tnum text-[26px] font-bold leading-none ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
         data-testid={`timer-${def.id}`}
@@ -164,14 +158,7 @@ function NewTimer({
           onChange={(e) => setTime(e.target.value)}
         />
       )}
-      <div className="flex justify-end gap-1.5">
-        <Button size="xs" variant="ghost" type="button" onClick={onCancel}>
-          {t('song.cancel')}
-        </Button>
-        <Button size="xs" variant="primary" type="submit" disabled={!ready}>
-          {t('timers.create')}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={t('timers.create')} disabled={!ready} />
     </form>
   );
 }
@@ -190,7 +177,7 @@ export function TimersBin() {
   const send = (type: string, payload: unknown): void =>
     void attempt(() => cmd(type, payload), 'errors.action');
   return (
-    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
+    <BinRow>
       {timers.map((d) => (
         <TimerCard
           key={d.id}
@@ -223,6 +210,6 @@ export function TimersBin() {
       <p className="ml-auto max-w-[220px] self-end text-[11px] leading-snug text-[var(--text-3)]">
         {t('timers.stageHint')}
       </p>
-    </div>
+    </BinRow>
   );
 }

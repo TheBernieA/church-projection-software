@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SlideObject } from '@lampstand/core';
@@ -7,17 +6,10 @@ import { usePictures } from '../../lib/hooks';
 import { patchObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { Select } from '../Select';
+import { Checkbox, ColorInput, Field, NumberInput, RangeField } from '../form';
 import { type TextItem } from '../../types';
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1 text-[12px] text-[var(--text-2)]">
-      <span className="font-medium">{label}</span>
-      {children}
-    </label>
-  );
-}
-
+/** A whole-number canvas field. */
 function Num({
   label,
   value,
@@ -33,17 +25,7 @@ function Num({
 }) {
   return (
     <Field label={label}>
-      <input
-        type="number"
-        className="field !h-8"
-        value={Math.round(value)}
-        min={min}
-        max={max}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          if (Number.isFinite(v)) onChange(v);
-        }}
-      />
+      <NumberInput className="!h-8" round value={value} min={min} max={max} onChange={onChange} />
     </Field>
   );
 }
@@ -59,12 +41,7 @@ function Colour({
 }) {
   return (
     <Field label={label}>
-      <input
-        type="color"
-        className="h-8 w-full cursor-pointer rounded border-0 bg-transparent p-0"
-        value={/^#[0-9a-f]{6}$/i.test(value) ? value : '#ffffff'}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <ColorInput className="!h-8" value={value} onChange={onChange} />
     </Field>
   );
 }
@@ -133,22 +110,16 @@ export function ObjectInspector({
             ]}
           />
           <div className="flex gap-4 text-[12px]">
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!o.bold}
-                onChange={(e) => set({ bold: e.target.checked }, false)}
-              />
-              {t('canvas.bold')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!o.italic}
-                onChange={(e) => set({ italic: e.target.checked }, false)}
-              />
-              {t('canvas.italic')}
-            </label>
+            <Checkbox
+              label={t('canvas.bold')}
+              checked={!!o.bold}
+              onChange={(bold) => set({ bold }, false)}
+            />
+            <Checkbox
+              label={t('canvas.italic')}
+              checked={!!o.italic}
+              onChange={(italic) => set({ italic }, false)}
+            />
           </div>
         </>
       )}
@@ -161,14 +132,12 @@ export function ObjectInspector({
               value={o.fill ?? '#ffffff'}
               onChange={(fill) => set({ fill }, false)}
             />
-            <label className="flex items-end gap-1.5 pb-2 text-[12px]">
-              <input
-                type="checkbox"
-                checked={!o.fill}
-                onChange={(e) => set({ fill: e.target.checked ? undefined : '#f0a73a' }, false)}
-              />
-              {t('canvas.noFill')}
-            </label>
+            <Checkbox
+              className="self-end pb-2 text-[12px]"
+              label={t('canvas.noFill')}
+              checked={!o.fill}
+              onChange={(none) => set({ fill: none ? undefined : '#f0a73a' }, false)}
+            />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Num
@@ -252,17 +221,15 @@ export function ObjectInspector({
           onChange={(h) => set({ h: Math.max(1, h) })}
         />
       </div>
-      <Field label={`${t('canvas.opacity')} · ${Math.round((o.opacity ?? 1) * 100)}%`}>
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.05}
-          value={o.opacity ?? 1}
-          onChange={(e) => set({ opacity: Number(e.target.value) })}
-          className="h-1.5 accent-[var(--accent)]"
-        />
-      </Field>
+      <RangeField
+        label={t('canvas.opacity')}
+        value={o.opacity ?? 1}
+        min={0}
+        max={1}
+        step={0.05}
+        format={(v) => `${Math.round(v * 100)}%`}
+        onChange={(opacity) => set({ opacity })}
+      />
     </div>
   );
 }

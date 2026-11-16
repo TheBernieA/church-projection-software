@@ -9,6 +9,7 @@ import {} from './MediaPanel';
 import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
 import { ThemeEffects } from './ThemeEffects';
+import { Checkbox, ColorInput, Field, NumberInput } from './form';
 import { sampleScene } from './ThemesPanel';
 import { BUILT_IN_BACKGROUNDS, BUNDLED_FONTS } from '../constants';
 import { swatchCss } from '../lib/utils';
@@ -58,21 +59,15 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
     >
       <div className="grid grid-cols-[300px_1fr] gap-5">
         <div className="space-y-3">
-          <div>
-            <label className="label" htmlFor="th-name">
-              {t('theme.name')}
-            </label>
+          <Field label={t('theme.name')} htmlFor="th-name">
             <input
               id="th-name"
               className="field"
               value={draft.name}
               onChange={(e) => set({ name: e.target.value })}
             />
-          </div>
-          <div>
-            <label className="label" htmlFor="th-font">
-              {t('theme.font')}
-            </label>
+          </Field>
+          <Field label={t('theme.font')} htmlFor="th-font">
             <Select
               id="th-font"
               value={draft.text.fontFamily}
@@ -84,42 +79,31 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 labelStyle: { fontFamily: `"${f.family}"`, fontSize: 14 },
               }))}
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label" htmlFor="th-size">
-                {t('theme.size')}
-              </label>
-              <input
+            <Field label={t('theme.size')} htmlFor="th-size">
+              <NumberInput
                 id="th-size"
-                type="number"
                 min={20}
                 max={200}
-                className="field"
                 value={draft.autoFit.maxSize}
-                onChange={(e) =>
+                onChange={(size) =>
                   set({
-                    autoFit: { ...draft.autoFit, maxSize: Number(e.target.value) || 60 },
-                    text: { ...draft.text, fontSize: Number(e.target.value) || 60 },
+                    autoFit: { ...draft.autoFit, maxSize: size || 60 },
+                    text: { ...draft.text, fontSize: size || 60 },
                   })
                 }
               />
-            </div>
-            <div>
-              <label className="label" htmlFor="th-color">
-                {t('theme.color')}
-              </label>
-              <input
+            </Field>
+            <Field label={t('theme.color')} htmlFor="th-color">
+              <ColorInput
                 id="th-color"
-                type="color"
-                className="field p-1"
-                value={draft.text.color.startsWith('#') ? draft.text.color.slice(0, 7) : '#ffffff'}
-                onChange={(e) => setText({ color: e.target.value })}
+                value={draft.text.color}
+                onChange={(color) => setText({ color })}
               />
-            </div>
+            </Field>
           </div>
-          <div>
-            <span className="label">{t('theme.align')}</span>
+          <Field label={t('theme.align')} group>
             <Segmented
               label={t('theme.align')}
               value={draft.text.align}
@@ -130,9 +114,8 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 { value: 'right', label: 'Right' },
               ]}
             />
-          </div>
-          <div>
-            <span className="label">{t('theme.layout')}</span>
+          </Field>
+          <Field label={t('theme.layout')} group>
             <Segmented
               label={t('theme.layout')}
               value={
@@ -145,11 +128,8 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 { value: 'lower-third', label: 'Lower third' },
               ]}
             />
-          </div>
-          <div>
-            <label className="label" htmlFor="th-bg">
-              {t('theme.background')}
-            </label>
+          </Field>
+          <Field label={t('theme.background')} htmlFor="th-bg">
             <Select
               id="th-bg"
               value={bgName}
@@ -185,12 +165,9 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 })),
               ]}
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label" htmlFor="th-tr">
-                {t('theme.transition')}
-              </label>
+            <Field label={t('theme.transition')} htmlFor="th-tr">
               <Select
                 id="th-tr"
                 value={draft.transition.kind}
@@ -199,66 +176,47 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                   (k) => ({ value: k, label: t(`theme.transitions.${k}`) }),
                 )}
               />
-            </div>
-            <div>
-              <label className="label" htmlFor="th-dur">
-                {t('theme.duration')}
-              </label>
-              <input
+            </Field>
+            <Field label={t('theme.duration')} htmlFor="th-dur">
+              <NumberInput
                 id="th-dur"
-                type="number"
                 min={0}
                 max={3000}
                 step={50}
-                className="field"
                 value={draft.transition.durationMs}
-                onChange={(e) =>
-                  set({
-                    transition: { ...draft.transition, durationMs: Number(e.target.value) || 0 },
-                  })
-                }
+                onChange={(durationMs) => set({ transition: { ...draft.transition, durationMs } })}
               />
-            </div>
+            </Field>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!draft.text.backgroundBox}
-                onChange={(e) =>
-                  setText({
-                    backgroundBox: e.target.checked
-                      ? { color: 'rgba(10,12,20,0.72)', padding: 28, radius: 10 }
-                      : undefined,
-                  })
-                }
-              />
-              {t('theme.box')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={draft.showVerseNumbers}
-                onChange={(e) => set({ showVerseNumbers: e.target.checked })}
-              />
-              {t('theme.verseNumbers')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={draft.redLetters}
-                onChange={(e) => set({ redLetters: e.target.checked })}
-              />
-              {t('theme.redLetters')}
-            </label>
+            <Checkbox
+              label={t('theme.box')}
+              checked={!!draft.text.backgroundBox}
+              onChange={(on) =>
+                setText({
+                  backgroundBox: on
+                    ? { color: 'rgba(10,12,20,0.72)', padding: 28, radius: 10 }
+                    : undefined,
+                })
+              }
+            />
+            <Checkbox
+              label={t('theme.verseNumbers')}
+              checked={draft.showVerseNumbers}
+              onChange={(showVerseNumbers) => set({ showVerseNumbers })}
+            />
+            <Checkbox
+              label={t('theme.redLetters')}
+              checked={draft.redLetters}
+              onChange={(redLetters) => set({ redLetters })}
+            />
           </div>
           <ThemeEffects
             draft={draft}
             setText={setText}
             setAdjust={(p) => set({ backgroundAdjust: { ...draft.backgroundAdjust, ...p } })}
           />
-          <div>
-            <span className="label">{t('theme.refPosition')}</span>
+          <Field label={t('theme.refPosition')} group>
             <Segmented
               label={t('theme.refPosition')}
               value={draft.referencePosition}
@@ -269,7 +227,7 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 { value: 'none', label: 'Hidden' },
               ]}
             />
-          </div>
+          </Field>
         </div>
         <div className="space-y-3">
           {(Object.keys(SAMPLES) as (keyof typeof SAMPLES)[]).map((k) => (

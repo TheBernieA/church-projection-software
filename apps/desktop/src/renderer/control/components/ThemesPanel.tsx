@@ -12,6 +12,7 @@ import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
 import { attempt, openDialog, useStore } from '../lib/store';
 import { SceneView } from './SceneView';
+import { Badge } from './cards';
 import { EMPTY_RECORD } from '../constants';
 
 export const sampleScene = (theme: Theme, text: string, reference?: string): Scene =>
@@ -66,11 +67,7 @@ export function ThemesPanel() {
           />
           <div className="flex items-center gap-1 px-3 pt-2.5">
             <span className="truncate font-medium">{th.name}</span>
-            {th.builtIn && (
-              <span className="rounded bg-[var(--surface-3)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-3)]">
-                {t('theme.builtIn')}
-              </span>
-            )}
+            {th.builtIn && <Badge>{t('theme.builtIn')}</Badge>}
             <span className="ml-auto" />
             {th.builtIn ? (
               <Button

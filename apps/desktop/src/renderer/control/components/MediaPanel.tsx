@@ -7,6 +7,7 @@ import { cmd, q } from '../lib/api';
 import { addItemToService, attempt, toast, useStore } from '../lib/store';
 import { thumbUrl } from '../../shared/mediaUrl';
 import { BackgroundTile } from './BackgroundTile';
+import { REVEAL, Tile } from './cards';
 import { SoonFeature } from './Soon';
 import i18n from '../i18n';
 import { BUILT_IN_BACKGROUNDS } from '../constants';
@@ -22,11 +23,11 @@ function Thumb({ m }: { m: MediaItem }) {
     <img
       src={thumbUrl(m.id)}
       alt=""
-      className="aspect-video w-full bg-black object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+      className="h-full w-full object-cover transition-transform duration-200 group-hover/tile:scale-[1.02]"
       loading="lazy"
     />
   ) : (
-    <div className="flex aspect-video w-full items-center justify-center bg-black text-[var(--text-3)]">
+    <div className="flex h-full w-full items-center justify-center text-[var(--text-3)]">
       {m.kind}
     </div>
   );
@@ -65,26 +66,22 @@ export function MediaPanel() {
             asBackground: false,
           };
           return (
-            <div key={m.id} className="group">
-              <button
-                type="button"
-                className="block w-full overflow-hidden rounded-[8px] shadow-[var(--shadow-1)] hover:shadow-[var(--shadow-2)]"
+            <div key={m.id} className="group relative">
+              <Tile
+                label={m.name}
                 onClick={() => void openAdhoc(item, 'preview')}
                 onDoubleClick={() => addToService({ ...item, id: newId() })}
                 {...libraryDragSource(() => item)}
               >
                 <Thumb m={m} />
+              </Tile>
+              <button
+                type="button"
+                className={`absolute bottom-0 right-0 bg-[var(--surface-1)] pl-1.5 text-[12px] text-[var(--text-3)] hover:text-[var(--tally-program)] ${REVEAL}`}
+                onClick={() => void cmd('media.delete', { id: m.id })}
+              >
+                {t('media.delete')}
               </button>
-              <div className="flex items-center gap-1 pt-1.5">
-                <span className="truncate text-[12px] text-[var(--text-2)]">{m.name}</span>
-                <button
-                  type="button"
-                  className="ml-auto text-[12px] text-[var(--text-3)] opacity-0 transition-opacity hover:text-[var(--tally-program)] group-hover:opacity-100"
-                  onClick={() => void cmd('media.delete', { id: m.id })}
-                >
-                  {t('media.delete')}
-                </button>
-              </div>
             </div>
           );
         })}
@@ -126,11 +123,10 @@ export function BackgroundsPanel() {
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {media.map((m) => (
-          <button
+          <Tile
             key={m.id}
-            type="button"
+            label={m.name}
             title={t('media.setBackground')}
-            className="group text-left"
             {...libraryDragSource(() => ({
               id: newId(),
               kind: 'media',
@@ -148,8 +144,7 @@ export function BackgroundsPanel() {
             }
           >
             <Thumb m={m} />
-            <span className="mt-1.5 block truncate text-[12px] text-[var(--text-2)]">{m.name}</span>
-          </button>
+          </Tile>
         ))}
       </div>
     </div>

@@ -6,6 +6,7 @@ import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
 import { attempt, refresh, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
+import { Checkbox } from './form';
 import { Select } from './Select';
 import { EMPTY_LIST } from '../constants';
 
@@ -65,44 +66,31 @@ export function OutputsDialog() {
                   }))}
                 />
               </div>
-              <label className="flex items-center gap-1.5 text-[12px]">
-                <input
-                  type="checkbox"
-                  disabled={d.role === 'none' || windowMode}
-                  checked={testOn}
-                  onChange={(e) => void cmd('live.testPattern', { outputId, on: e.target.checked })}
-                />
-                {t('outputs.testPattern')}
-              </label>
+              <Checkbox
+                className="text-[12px]"
+                label={t('outputs.testPattern')}
+                disabled={d.role === 'none' || windowMode}
+                checked={testOn}
+                onChange={(on) => void cmd('live.testPattern', { outputId, on })}
+              />
             </li>
           );
         })}
       </ul>
-      <label className="mt-5 flex items-start gap-2">
-        <input
-          type="checkbox"
-          className="mt-1"
-          checked={windowMode}
-          onChange={(e) => void saveSettings({ windowMode: e.target.checked })}
-        />
-        <span>
-          <span className="font-medium">{t('outputs.windowMode')}</span>
-          <span className="block text-[12px] text-[var(--text-2)]">
-            {t('outputs.windowModeHelp')}
-          </span>
-        </span>
-      </label>
+      <Checkbox
+        className="mt-5"
+        label={t('outputs.windowMode')}
+        description={t('outputs.windowModeHelp')}
+        checked={windowMode}
+        onChange={(on) => void saveSettings({ windowMode: on })}
+      />
       {windowMode && (
-        <label className="mt-2 flex items-center gap-1.5 pl-6 text-[12px]">
-          <input
-            type="checkbox"
-            checked={patterns.includes('window-main')}
-            onChange={(e) =>
-              void cmd('live.testPattern', { outputId: 'window-main', on: e.target.checked })
-            }
-          />
-          {t('outputs.testPattern')}
-        </label>
+        <Checkbox
+          className="mt-2 pl-6 text-[12px]"
+          label={t('outputs.testPattern')}
+          checked={patterns.includes('window-main')}
+          onChange={(on) => void cmd('live.testPattern', { outputId: 'window-main', on })}
+        />
       )}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
         <summary className="cursor-pointer px-4 py-2.5 text-[12px] font-semibold text-[var(--text-2)]">

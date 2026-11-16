@@ -6,34 +6,13 @@ import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
 import { ObjectInspector } from './canvas/ObjectInspector';
+import { Field, NumberInput } from './form';
 import { type CountdownItem, type TextItem } from '../types';
 import { clamp } from '../lib/utils';
 
 /** Replace an item. `typing` groups keystrokes into one undo step; actions are one step each. */
 function replaceItem(next: ServiceItem, typing = false): void {
   updateItem(next.id, () => next, { typing });
-}
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="label" htmlFor={htmlFor}>
-        {label}
-      </label>
-      {children}
-      {hint && <p className="mt-1.5 text-[12px] text-[var(--text-3)]">{hint}</p>}
-    </div>
-  );
 }
 
 /**
@@ -125,22 +104,13 @@ function TextInspector({ item }: { item: TextItem }) {
             hint={t('inspector.advanceHelp')}
           >
             <div className="flex items-center gap-2">
-              <input
+              <NumberInput
                 id="insp-advance"
-                type="number"
                 min={2}
                 max={600}
-                className="field w-24"
+                className="w-24"
                 value={item.loopIntervalSec}
-                onChange={(e) =>
-                  replaceItem(
-                    {
-                      ...item,
-                      loopIntervalSec: clamp(Number(e.target.value) || 8, 2, 600),
-                    },
-                    true,
-                  )
-                }
+                onChange={(v) => replaceItem({ ...item, loopIntervalSec: clamp(v, 2, 600) }, true)}
               />
               <span className="text-[13px] text-[var(--text-2)]">{t('inspector.seconds')}</span>
             </div>

@@ -15,7 +15,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
-import { Button, PanelHeader } from '@lampstand/ui';
+import { Button, IconButton, PanelHeader } from '@lampstand/ui';
 import { importSlides } from '../lib/importSlides';
 import { itemTitle } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
@@ -391,8 +391,8 @@ function ItemMenu({
       const copy = xs.slice(start, end).map((x) => ({ ...x, id: newId() }));
       return [...xs.slice(0, end), ...copy, ...xs.slice(end)];
     });
-  const cls =
-    'flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-4)] hover:text-[var(--text-1)] disabled:cursor-not-allowed disabled:opacity-30';
+  // A step lighter than the row's own hover/selected fill, so the hovered button stands out.
+  const cls = 'hover:!bg-[var(--surface-4)]';
   return (
     <div
       className={`pointer-events-none absolute inset-y-0 right-1 flex items-center bg-gradient-to-l pl-8 opacity-0 transition-opacity duration-100 group-hover:opacity-100 group-focus-within:opacity-100 [&>button]:pointer-events-auto ${
@@ -403,39 +403,35 @@ function ItemMenu({
             : 'from-[var(--surface-1)] via-[var(--surface-1)]'
       } to-transparent`}
     >
-      <button
-        type="button"
+      <IconButton
+        size="xs"
         className={cls}
         disabled={!can.up}
-        title={isSection ? t('service.moveSectionUp') : t('service.moveUp')}
         aria-label={isSection ? t('service.moveSectionUp') : t('service.moveUp')}
         onClick={() => shift(-1)}
       >
         <ChevronUp size={15} />
-      </button>
-      <button
-        type="button"
+      </IconButton>
+      <IconButton
+        size="xs"
         className={cls}
         disabled={!can.down}
-        title={isSection ? t('service.moveSectionDown') : t('service.moveDown')}
         aria-label={isSection ? t('service.moveSectionDown') : t('service.moveDown')}
         onClick={() => shift(1)}
       >
         <ChevronDown size={15} />
-      </button>
-      <button
-        type="button"
+      </IconButton>
+      <IconButton
+        size="xs"
         className={cls}
-        title={isSection ? t('service.duplicateSection') : t('service.duplicate')}
         aria-label={isSection ? t('service.duplicateSection') : t('service.duplicate')}
         onClick={duplicate}
       >
         <Copy size={14} />
-      </button>
-      <button
-        type="button"
-        className={`${cls} hover:!text-[var(--tally-program)]`}
-        title={isSection ? t('service.removeHeading') : t('service.remove')}
+      </IconButton>
+      <IconButton
+        size="xs"
+        variant="danger"
         aria-label={isSection ? t('service.removeHeading') : t('service.remove')}
         onClick={() => {
           update((xs) => xs.filter((x) => x.id !== item.id));
@@ -444,7 +440,7 @@ function ItemMenu({
         }}
       >
         <Trash2 size={14} />
-      </button>
+      </IconButton>
     </div>
   );
 }

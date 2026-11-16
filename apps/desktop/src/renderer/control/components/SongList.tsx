@@ -9,6 +9,7 @@ import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { addItemToService, openDialog, useStore } from '../lib/store';
 import { SoonFeature } from './Soon';
+import { REVEAL } from './cards';
 
 function haystack(s: Song): string {
   return [
@@ -135,7 +136,7 @@ export function SongList({ hymns }: { hymns: boolean }) {
                 </button>
                 <IconButton
                   size="xs"
-                  className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className={REVEAL}
                   aria-label={t('library.addToService')}
                   onClick={() => addToService({ ...item, id: newId() })}
                 >

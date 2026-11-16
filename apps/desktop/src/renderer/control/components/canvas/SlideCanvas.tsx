@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, type SlideObject } from '@lampstand/core';
 import { objectBoxStyle } from '@lampstand/renderer';
-import { useItemSlides } from '../../lib/hooks';
+import { useCanvasScale, useItemSlides } from '../../lib/hooks';
 import { editObjects, patchObject, snap } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { mediaUrl } from '../../../shared/mediaUrl';
@@ -72,8 +72,7 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
   const { t } = useTranslation();
   const { slides } = useItemSlides(item);
   const selected = useStore((s) => s.editObjectId);
-  const host = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.4);
+  const [host, scale] = useCanvasScale();
   const [drag, setDrag] = useState<Drag | null>(null);
   const objects = item.slides[index]?.objects ?? [];
   const shown = drag ? objects.map((o) => (o.id === drag.id ? drag.current : o)) : objects;
@@ -87,14 +86,6 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
     delete content.objects;
     return { background: makeScene({ background: a.background }), text: makeScene({ content }) };
   }, [slides, index]);
-
-  useEffect(() => {
-    const el = host.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setScale(el.clientWidth / CANVAS.width));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
 
   const select = (id: string | null): void => useStore.setState({ editObjectId: id });
   const start = (e: PointerEvent, o: SlideObject, handle: Handle): void => {

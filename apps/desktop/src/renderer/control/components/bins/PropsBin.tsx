@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Overlay, type PropPosition } from '@lampstand/core';
-import { Button, IconButton, TallyTag } from '@lampstand/ui';
+import { IconButton, TallyTag } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import {
   isPicture,
@@ -13,7 +13,7 @@ import {
 } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
 import { thumbUrl } from '../../../shared/mediaUrl';
-import { AddCard, BIN_CARD } from '../cards';
+import { AddCard, BIN_CARD, BinRow, FormActions, REVEAL } from '../cards';
 import { Select } from '../Select';
 import { type Prop } from '../../types';
 import { PROP_POSITIONS } from '../../constants';
@@ -73,7 +73,7 @@ function PropCard({
         <IconButton
           size="xs"
           aria-label={t('props.delete', { name: prop.name })}
-          className="opacity-0 group-hover:opacity-100"
+          className={REVEAL}
           onClick={() => {
             void hideOverlay(overlayId(prop));
             onDelete();
@@ -152,14 +152,7 @@ function NewProp({ onCreate, onCancel }: { onCreate: (p: Prop) => void; onCancel
         maxLength={60}
         onChange={(e) => setName(e.target.value)}
       />
-      <div className="flex justify-end gap-1.5">
-        <Button size="xs" variant="ghost" type="button" onClick={onCancel}>
-          {t('song.cancel')}
-        </Button>
-        <Button size="xs" variant="primary" type="submit" disabled={!ready}>
-          {t('props.create')}
-        </Button>
-      </div>
+      <FormActions onCancel={onCancel} submitLabel={t('props.create')} disabled={!ready} />
     </form>
   );
 }
@@ -170,7 +163,7 @@ export function PropsBin() {
   const [props, save] = useSettingsList('props');
   const [adding, setAdding] = useState(false);
   return (
-    <div className="flex min-h-0 flex-1 items-start gap-3 overflow-x-auto p-3">
+    <BinRow>
       {props.map((p) => (
         <PropCard
           key={p.id}
@@ -194,6 +187,6 @@ export function PropsBin() {
           className="aspect-video w-[168px]"
         />
       )}
-    </div>
+    </BinRow>
   );
 }

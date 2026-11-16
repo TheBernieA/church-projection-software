@@ -1,44 +1,9 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundAdjust, Theme } from '@lampstand/core';
+import { Checkbox, ColorInput, RangeField } from './form';
 
 type TextStyle = Theme['text'];
-
-/** A labelled range slider with its value shown; updates the draft as it moves (live preview). */
-function Range({
-  label,
-  value,
-  min,
-  max,
-  step,
-  format = (v) => String(v),
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  format?: (v: number) => string;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className="grid grid-cols-[96px_1fr_44px] items-center gap-2 text-[12px] text-[var(--text-2)]">
-      <span>{label}</span>
-      <input
-        type="range"
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 cursor-pointer accent-[var(--accent)]"
-      />
-      <span className="tnum text-right text-[var(--text-3)]">{format(value)}</span>
-    </label>
-  );
-}
 
 /** Colour well (hex). Effects store plain hex; transparency comes from their own sliders. */
 function Colour({
@@ -50,15 +15,13 @@ function Colour({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const hex = /^#[0-9a-f]{6}$/i.test(value) ? value : '#000000';
   return (
-    <input
-      type="color"
+    <ColorInput
+      variant="swatch"
       aria-label={label}
-      title={label}
-      value={hex}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-6 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
+      value={value}
+      fallback="#000000"
+      onChange={onChange}
     />
   );
 }
@@ -80,10 +43,12 @@ function Effect({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <label className="flex flex-1 items-center gap-1.5 text-[12px] font-medium">
-          <input type="checkbox" checked={on} onChange={(e) => onToggle(e.target.checked)} />
-          {label}
-        </label>
+        <Checkbox
+          className="flex-1 text-[12px] font-medium"
+          label={label}
+          checked={on}
+          onChange={onToggle}
+        />
         {on && colour}
       </div>
       {on && <div className="space-y-1.5 pl-5">{children}</div>}
@@ -130,7 +95,7 @@ export function ThemeEffects({
           }
         >
           {text.shadow && (
-            <Range
+            <RangeField
               label={t('theme.effects.softness')}
               value={text.shadow.blur}
               min={0}
@@ -157,7 +122,7 @@ export function ThemeEffects({
           }
         >
           {text.outline && (
-            <Range
+            <RangeField
               label={t('theme.effects.width')}
               value={text.outline.width}
               min={0}
@@ -182,7 +147,7 @@ export function ThemeEffects({
           }
         >
           {text.glow && (
-            <Range
+            <RangeField
               label={t('theme.effects.size')}
               value={text.glow.blur}
               min={0}
@@ -197,7 +162,7 @@ export function ThemeEffects({
           on={text.textTransform === 'uppercase'}
           onToggle={(on) => setText({ textTransform: on ? 'uppercase' : 'none' })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.lineHeight')}
           value={text.lineHeight}
           min={0.9}
@@ -206,7 +171,7 @@ export function ThemeEffects({
           format={(v) => v.toFixed(2)}
           onChange={(lineHeight) => setText({ lineHeight })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.letterSpacing')}
           value={text.letterSpacing}
           min={-2}
@@ -217,7 +182,7 @@ export function ThemeEffects({
       </div>
       <div className="space-y-2">
         <h4 className="section-label">{t('theme.effects.background')}</h4>
-        <Range
+        <RangeField
           label={t('theme.effects.dim')}
           value={adj.dim ?? 0}
           min={0}
@@ -226,7 +191,7 @@ export function ThemeEffects({
           format={pct}
           onChange={(dim) => setAdjust({ dim })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.blur')}
           value={adj.blur ?? 0}
           min={0}
@@ -234,7 +199,7 @@ export function ThemeEffects({
           step={1}
           onChange={(blur) => setAdjust({ blur })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.brightness')}
           value={adj.brightness ?? 1}
           min={0.2}
@@ -243,7 +208,7 @@ export function ThemeEffects({
           format={pct}
           onChange={(brightness) => setAdjust({ brightness })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.contrast')}
           value={adj.contrast ?? 1}
           min={0.2}
@@ -252,7 +217,7 @@ export function ThemeEffects({
           format={pct}
           onChange={(contrast) => setAdjust({ contrast })}
         />
-        <Range
+        <RangeField
           label={t('theme.effects.saturation')}
           value={adj.saturate ?? 1}
           min={0}
@@ -278,7 +243,7 @@ export function ThemeEffects({
           }
         >
           {adj.tint && (
-            <Range
+            <RangeField
               label={t('theme.effects.strength')}
               value={adj.tint.opacity}
               min={0}

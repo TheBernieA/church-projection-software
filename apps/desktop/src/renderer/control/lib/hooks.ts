@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   defaultSettings,
   resolveLogo,
@@ -13,6 +13,7 @@ import { findItem, loadMissingChapters, saveSettings } from './actions';
 import { buildItemSlides } from './slides';
 import { useStore } from './store';
 import { type ItemSlides } from '../types';
+import { CANVAS } from '../constants';
 
 export function useSelectedItem(): ServiceItem | null {
   const id = useStore((s) => s.selectedItemId);
@@ -120,4 +121,23 @@ export function useSettingsList<K extends ListKey>(
 ): [Settings[K], (next: Settings[K]) => void] {
   const list = useStore((s) => s.settings?.[key] ?? DEFAULTS[key]);
   return [list, (next) => void saveSettings({ [key]: next })];
+}
+
+/**
+ * Scale that fits the 1920×1080 slide canvas into an element's width, kept up to date as it
+ * resizes. Draw at canvas size inside it with `transform: scale(scale)`.
+ */
+export function useCanvasScale<T extends HTMLElement = HTMLDivElement>(
+  initial = 0.4,
+): [RefObject<T | null>, number] {
+  const ref = useRef<T>(null);
+  const [scale, setScale] = useState(initial);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setScale(el.clientWidth / CANVAS.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, scale];
 }
