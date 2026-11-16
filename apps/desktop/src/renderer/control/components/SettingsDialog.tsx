@@ -13,6 +13,7 @@ import {
   type LucideIcon,
   Video,
   Volume2,
+  Radio,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Settings } from '@lampstand/core';
@@ -33,6 +34,7 @@ import { GuidePage, type SettingsPageId } from './settings/guide';
 import { ScreensPage } from './settings/screens';
 import { VideoPage } from './settings/video';
 import { AudioPage } from './settings/audio';
+import { StreamingPage } from './settings/streaming';
 import { Typography, NavItem } from '@lampstand/ui';
 
 type PageId = SettingsPageId;
@@ -45,6 +47,7 @@ const NAV: { id: PageId; icon: LucideIcon }[] = [
   { id: 'screens', icon: SquareDashed },
   { id: 'video', icon: Video },
   { id: 'audio', icon: Volume2 },
+  { id: 'streaming', icon: Radio },
   { id: 'packages', icon: Package },
   { id: 'library', icon: Archive },
   { id: 'connections', icon: Plug },
@@ -116,6 +119,7 @@ export function SettingsDialog() {
         {page === 'screens' && <ScreensPage s={s} update={update} />}
         {page === 'video' && <VideoPage s={s} update={update} />}
         {page === 'audio' && <AudioPage s={s} update={update} />}
+        {page === 'streaming' && <StreamingPage s={s} update={update} />}
         {page === 'packages' && <PackagesPage />}
         {page === 'library' && <LibraryPage />}
         {page === 'about' && <AboutPage />}

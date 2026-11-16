@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Segmented, SoonBadge, Typography } from '@lampstand/ui';
+import { Button, Segmented, SoonBadge, Typography } from '@lampstand/ui';
+import { openDialog } from '../../lib/store';
 import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { SoonList } from '../Soon';
 import { Group, SettingsPage } from './parts';
@@ -92,6 +93,20 @@ export function ConnectionsPage() {
       title={t('settings.pages.connections')}
       description={t('settings.pagesHelp.connections')}
     >
+      <Group title={t('connections.streamingTitle')}>
+        <div className="flex items-center gap-4 px-4 py-3.5">
+          <Typography size={13} tone="secondary" className="flex-1">
+            {t('connections.streaming')}
+          </Typography>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => openDialog('settings', { settingsPage: 'streaming' })}
+          >
+            {t('connections.streamingOpen')}
+          </Button>
+        </div>
+      </Group>
       <Group title={t('connections.control')}>
         <SoonList ids={['remote', 'stage-app', 'stream-deck', 'midi-dmx', 'timecode']} />
       </Group>

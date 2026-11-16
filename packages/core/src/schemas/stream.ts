@@ -57,3 +57,7 @@ export const StreamSettingsSchema = z.object({
     .default({ folder: null, recordWhileStreaming: true }),
 });
 export type StreamSettings = z.infer<typeof StreamSettingsSchema>;
+
+/** Recommended video bitrate for a size and frame rate, in kb/s (YouTube's guidance, rounded). */
+export const recommendedKbps = (height: number, fps: number): number =>
+  height >= 1080 ? (fps > 30 ? 9000 : 6000) : fps > 30 ? 5000 : 3500;

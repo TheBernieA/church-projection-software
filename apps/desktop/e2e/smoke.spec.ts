@@ -5,7 +5,7 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -1884,6 +1884,70 @@ test('recording: Lampstand records the stream picture and sound to a file', asyn
   ]);
   const mean = gray.reduce((a, b) => a + b, 0) / gray.length;
   expect(mean).toBeGreaterThan(8);
+});
+
+test('livestream: set up a destination, go live from the Live panel, end it', async () => {
+  // A local RTMP server stands in for YouTube: it saves what it receives.
+  const got = join(dir, 'got.flv');
+  const server = spawn('ffmpeg', [
+    '-v',
+    'error',
+    '-listen',
+    '1',
+    '-i',
+    'rtmp://127.0.0.1:19350/live/test',
+    '-c',
+    'copy',
+    '-y',
+    got,
+  ]);
+  await control.waitForTimeout(800);
+  // Settings › Streaming: add a custom RTMP destination.
+  await control.getByTitle('Settings', { exact: true }).click();
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'Streaming' })
+    .click();
+  await expect(control.getByRole('heading', { name: 'Streaming', exact: true })).toBeVisible();
+  await control.getByRole('button', { name: 'Custom RTMP', exact: true }).click();
+  const url = control.getByRole('textbox', { name: 'Server address (RTMP)' });
+  await url.fill('rtmp://127.0.0.1:19350/live/test');
+  await url.press('Tab');
+  // The key field never shows a saved key back.
+  const key = control.getByLabel(/^Stream key for/);
+  await expect(key).toHaveAttribute('type', 'password');
+  await control.waitForTimeout(600);
+  await control.screenshot({ path: 'test-results/40-settings-streaming.png' });
+  await control.keyboard.press('Escape');
+  // The Live panel: Go live (confirmed), then it reports the destination as live.
+  const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
+  control.on('dialog', accept);
+  await control.getByRole('button', { name: 'Livestream and recording' }).click();
+  const panel = control.getByRole('group', { name: 'Livestream & recording' });
+  await panel.getByRole('button', { name: 'Go live' }).click();
+  await expect(panel.getByText('Live', { exact: true }).last()).toBeVisible({ timeout: 20_000 });
+  await control.waitForTimeout(3_000);
+  await control.screenshot({ path: 'test-results/41-live-panel.png' });
+  await panel.getByRole('button', { name: 'End stream' }).click();
+  await expect(panel.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
+  control.off('dialog', accept);
+  await control.keyboard.press('Escape');
+  await new Promise<void>((resolve) => {
+    server.once('exit', () => resolve());
+    setTimeout(() => {
+      server.kill();
+      resolve();
+    }, 5_000);
+  });
+  const probe = execFileSync(
+    'ffprobe',
+    ['-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', got],
+    {
+      encoding: 'utf8',
+    },
+  );
+  expect(probe).toContain('h264');
+  expect(probe).toContain('aac');
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

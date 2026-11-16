@@ -11,7 +11,6 @@ import {
   Palette,
   Pencil,
   Play,
-  Radio,
   Rows3,
   Search,
   Settings,
@@ -35,6 +34,7 @@ import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { ScreensMenu } from './ScreensMenu';
+import { LiveMenu } from './LiveMenu';
 import { type Mode } from '../../types';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 
@@ -329,13 +329,7 @@ export function Toolbar() {
         onClick={() => useStore.setState({ binOpen: !binOpen })}
       />
       <LooksMenu />
-      <ToolbarButton
-        icon={<Radio size={20} />}
-        label={t('toolbar.live')}
-        soon
-        // Live covers both planned capture features: recording and streaming.
-        title={`${soonTitle('record')}\n${soonTitle('stream')}`}
-      />
+      <LiveMenu />
 
       <span
         aria-hidden

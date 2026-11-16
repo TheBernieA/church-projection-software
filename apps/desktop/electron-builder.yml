@@ -14,6 +14,11 @@ extraResources:
   - from: ../../resources/hymns
     to: resources/hymns
     filter: ['*.json']
+  # The video encoder for livestreaming and recording (docs/streaming.md): put the platform's
+  # ffmpeg binary here before packaging (signed with the app on macOS).
+  - from: ../../resources/ffmpeg/${platform}-${arch}
+    to: resources/ffmpeg
+    filter: ['ffmpeg', 'ffmpeg.exe', 'LICENSE*']
 asar: true
 # Electron Fuses (§17.1): no RunAsNode, no NODE_OPTIONS / --inspect, asar-only with integrity checks.
 electronFuses:

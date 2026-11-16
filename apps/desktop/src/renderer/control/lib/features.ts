@@ -378,13 +378,12 @@ export const FEATURES: Feature[] = [
   ),
 
   // Capture & streaming
-  f('record', 'capture', 'Record', 'Record the output to a video file.', 'soon'),
+  f('record', 'capture', 'Record', 'Record the service (picture and sound) to a video file.'),
   f(
     'stream',
     'capture',
     'Stream',
     'Stream the output straight to YouTube, Facebook, Resi or any RTMP service.',
-    'soon',
   ),
 
   // Remote & integrations

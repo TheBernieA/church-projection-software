@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import type { Writable } from 'node:stream';
 import { app, BrowserWindow, ipcMain, type IpcMainEvent, type NativeImage } from 'electron';
 import type { LiveState, ScreenVisual, Settings, Standby } from '@lampstand/core';
@@ -153,7 +153,7 @@ export class StreamController {
       this.d.notice({
         level: 'info',
         key: 'recordingSaved',
-        params: { file: this.status.recordingPath },
+        params: { file: basename(this.status.recordingPath) },
       });
     if (!this.want.stream && !this.want.record) {
       this.setStatus({ state: 'stopping' });

@@ -15,7 +15,7 @@ import type {
   WebLayer,
   MediaPlaylist,
 } from '@lampstand/core';
-import type { DisplayInfo, Notice, ServiceSummary } from '@lampstand/ipc-contract';
+import type { DisplayInfo, Notice, ServiceSummary, StreamStatus } from '@lampstand/ipc-contract';
 
 /** Types shared across the control window. */
 
@@ -40,6 +40,7 @@ export type SettingsPageId =
   | 'screens'
   | 'video'
   | 'audio'
+  | 'streaming'
   | 'packages'
   | 'library'
   | 'about'
@@ -105,6 +106,8 @@ export interface ControlState {
   services: ServiceSummary[];
   service: ServicePlan | null;
   displays: DisplayInfo[];
+  /** Livestream / recording status (from main). */
+  stream: StreamStatus | null;
   /** Item shown in the slide grid: from the service, or ad-hoc from the library/quick bar. */
   selectedItemId: string | null;
   adhoc: ServiceItem | null;

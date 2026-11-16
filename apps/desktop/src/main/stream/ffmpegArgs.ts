@@ -220,7 +220,3 @@ export function recordingName(at: Date, part = 1): string {
   const stamp = `${at.getFullYear()}-${p(at.getMonth() + 1)}-${p(at.getDate())} ${p(at.getHours())}-${p(at.getMinutes())}`;
   return `Lampstand ${stamp}${part > 1 ? ` part ${part}` : ''}.mp4`;
 }
-
-/** Recommended video bitrate for a size and frame rate (YouTube's guidance, rounded). */
-export const recommendedKbps = (height: number, fps: number): number =>
-  height >= 1080 ? (fps > 30 ? 9000 : 6000) : fps > 30 ? 5000 : 3500;

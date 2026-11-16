@@ -379,7 +379,8 @@
       "connections": "Connections",
       "screens": "Screens",
       "video": "Video",
-      "audio": "Audio"
+      "audio": "Audio",
+      "streaming": "Streaming"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -392,7 +393,8 @@
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
       "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
       "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen.",
-      "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input."
+      "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input.",
+      "streaming": "Livestream the service to YouTube, Facebook or any RTMP service, and record it — straight from Lampstand."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -506,7 +508,14 @@
   "notice": {
     "quarantined": "A damaged file ({{file}}) was moved to quarantine and skipped.",
     "newDisplay": "New display connected: {{label}}. Assign it in Outputs.",
-    "loadFailed": "Lampstand could not load your library. Try restarting the app; if it keeps happening, check the logs."
+    "loadFailed": "Lampstand could not load your library. Try restarting the app; if it keeps happening, check the logs.",
+    "streamStarting": "Starting the livestream…",
+    "streamLive": "You’re live.",
+    "streamEnded": "The livestream has ended.",
+    "recordingSaved": "Recording saved: {{file}} (Live › Recordings opens the folder).",
+    "streamReconnecting": "The stream dropped: reconnecting…",
+    "streamDestinationFailed": "One stream destination stopped. The others carry on.",
+    "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again."
   },
   "perf": {
     "fps": "Control FPS",
@@ -578,7 +587,8 @@
     "setting": "Could not save that setting.",
     "install": "Could not install that package.",
     "audio": "Could not change the audio.",
-    "input": "Could not use that input."
+    "input": "Could not use that input.",
+    "stream": "Couldn’t start or stop the stream."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -879,7 +889,10 @@
   "connections": {
     "control": "Control from other devices",
     "network": "Network",
-    "services": "Services"
+    "services": "Services",
+    "streamingTitle": "Livestream",
+    "streaming": "Stream to YouTube, Facebook or any RTMP service, and record — set it up in Streaming.",
+    "streamingOpen": "Open Streaming"
   },
   "canvas": {
     "label": "Slide canvas",
@@ -1444,5 +1457,116 @@
       "chords": "Chords",
       "text": "Text"
     }
+  },
+  "live": {
+    "title": "Livestream & recording",
+    "open": "Livestream and recording",
+    "onAir": "Livestreaming now",
+    "recording": "Recording now",
+    "badgeLive": "Live",
+    "badgeRec": "Rec",
+    "preview": "What the stream shows",
+    "previewIdle": "The stream’s picture shows here while you stream or record.",
+    "starting": "Starting…",
+    "noFfmpeg": "Lampstand needs its video encoder (ffmpeg) to stream and record, and couldn’t find it on this computer.",
+    "goLive": "Go live",
+    "end": "End stream",
+    "record": "Record",
+    "stopRecording": "Stop recording",
+    "confirmStart": "Start the livestream to {{names}}? Everyone watching will see what the stream shows.",
+    "confirmEnd": "End the livestream (and its recording)?",
+    "noDestinations": "Add where to stream (YouTube, Facebook…) in Stream settings first.",
+    "openRecordings": "Recordings",
+    "settings": "Stream settings…",
+    "stats": "{{fps}} fps · {{kbps}} kb/s · {{speed}}×",
+    "dropped_one": "{{count}} frame dropped",
+    "dropped_other": "{{count}} frames dropped",
+    "struggling": "The computer can’t keep up: try 720p or a lower bitrate.",
+    "dest": {
+      "connecting": "Connecting…",
+      "ok": "Live",
+      "failed": "Stopped"
+    },
+    "errors": {
+      "noFfmpeg": "The video encoder (ffmpeg) is missing.",
+      "noDestinations": "No destination could start: check each one has its stream key.",
+      "destinationFailed": "A destination stopped (check its key and the internet connection).",
+      "reconnecting": "Reconnecting…",
+      "encoderStopped": "The encoder stopped and couldn’t restart."
+    },
+    "statsShort": "{{fps}} fps · {{speed}}× speed"
+  },
+  "streaming": {
+    "destinations": "Where it streams",
+    "destinationsHelp": "Add YouTube, Facebook or any RTMP service. Stream keys are stored encrypted on this computer and never shown again.",
+    "noDestinations": "No destinations yet. Add YouTube, Facebook or a custom RTMP service.",
+    "kinds": {
+      "youtube": "YouTube",
+      "facebook": "Facebook",
+      "custom": "Custom RTMP"
+    },
+    "destName": "Name",
+    "enabledOf": "Stream to {{name}}",
+    "remove": "Remove {{name}}",
+    "url": "Server address (RTMP)",
+    "keyOf": "Stream key for {{name}}",
+    "keyPlaceholder": "Paste the stream key",
+    "keyReplace": "Paste a new key to replace the saved one",
+    "saveKey": "Save key",
+    "forgetKey": "Forget key",
+    "keyStored": "A stream key is saved (encrypted). Paste a new one to replace it.",
+    "keySaved": "Stream key saved for {{name}}.",
+    "keyRemoved": "Stream key removed.",
+    "keyHelp": {
+      "youtube": "YouTube Studio › Go live › Stream: copy the “Stream key”.",
+      "facebook": "Facebook › Live video › Streaming software: copy the “Stream key”.",
+      "custom": "From your streaming service. Some services put the key in the address instead."
+    },
+    "picture": "What it shows",
+    "pictureHelp": "The stream can show something different from the projector: e.g. the camera with the lyrics as a lower third.",
+    "words": "The words",
+    "wordsHelp": "Lower third: smaller, along the bottom, over a soft band.",
+    "lowerThird": "Lower third",
+    "fullScreen": "Full screen",
+    "off": "Off",
+    "background": "Behind the words",
+    "backgroundHelp": "What the projector shows, a camera, or black.",
+    "bgProgram": "As the projector",
+    "bgCamera": "Camera",
+    "bgBlack": "Black",
+    "camera": "Camera",
+    "cameraHelp": "Used when “Behind the words” is Camera.",
+    "noCamera": "No camera",
+    "sound": "What it sounds like",
+    "soundHelp": "Speak or play into a microphone to see its level.",
+    "room": "Room audio",
+    "roomHelp": "Tracks from the Audio tab and the sound of videos.",
+    "roomLevel": "Room audio level",
+    "micOf": "Include {{name}}",
+    "micLevel": "{{name}} level",
+    "quality": "Quality",
+    "qualityHelp": "720p at 30 fps suits most church internet connections.",
+    "qualityLive": "Changes apply the next time you go live or record.",
+    "resolution": "Resolution",
+    "fps": "Frame rate",
+    "bitrate": "Video bitrate",
+    "bitrateHelp": "Recommended: {{kbps}} kb/s. Your upload speed should be at least 1.5× this.",
+    "encoder": "Encoder",
+    "encoderHelp": "Using: {{encoder}}.",
+    "encoders": {
+      "auto": "Automatic (best available)",
+      "h264_videotoolbox": "Apple hardware",
+      "h264_nvenc": "NVIDIA hardware",
+      "h264_qsv": "Intel hardware",
+      "h264_amf": "AMD hardware",
+      "libx264": "Software (x264)"
+    },
+    "recording": "Recording",
+    "folder": "Save recordings in",
+    "folderDefault": "Movies › Lampstand (Videos › Lampstand on Windows)",
+    "choose": "Choose…",
+    "open": "Open",
+    "recordWhile": "Record while streaming",
+    "recordWhileHelp": "Keep a copy of every livestream on this computer."
   }
 }
