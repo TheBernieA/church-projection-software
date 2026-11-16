@@ -364,7 +364,8 @@
       "about": "Privacy & about",
       "guide": "Guide",
       "features": "Features",
-      "connections": "Connections"
+      "connections": "Connections",
+      "screens": "Screens"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -374,7 +375,8 @@
       "library": "Your songs, services, themes and media live in one library folder. Keep it safe and move it between computers.",
       "about": "What Lampstand does with your data, and which version you are running.",
       "features": "Everything Lampstand does today, and what is coming.",
-      "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way."
+      "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
+      "screens": "Shape or hide parts of your screens with masks."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -1046,5 +1048,38 @@
       "messages": "Messages",
       "props": "Props"
     }
+  },
+  "masks": {
+    "menu": "Masks…",
+    "title": "Masks",
+    "help": "A mask shapes an output: bring the edges in, round the corners, use an oval, or use a picture (white shows, black hides). Everything outside the shape is black. The stage display is never masked.",
+    "use": "Use a mask on",
+    "none": "No mask",
+    "noOutputs": "No screens are connected yet; the Program monitor shows the audience mask.",
+    "role": {
+      "main": "Audience screens",
+      "secondary": "Secondary screens"
+    },
+    "roleHelp": {
+      "main": "Projectors and TVs the room sees. The Program monitor shows this shape too.",
+      "secondary": "Lobby or overflow screens."
+    },
+    "name": "Mask name",
+    "delete": "Delete {{name}}",
+    "shape": "Shape",
+    "rect": "Box",
+    "ellipse": "Oval",
+    "image": "Picture",
+    "picture": "Mask picture",
+    "pickPicture": "Pick a picture…",
+    "imageHelp": "White areas of the picture show, black areas hide. Grey fades in between.",
+    "top": "Top",
+    "right": "Right",
+    "bottom": "Bottom",
+    "left": "Left",
+    "radius": "Corners",
+    "add": "Add mask",
+    "newName": "Mask {{n}}",
+    "preview": "{{name}} preview"
   }
 }

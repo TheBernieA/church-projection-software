@@ -9,6 +9,7 @@ import {
   Plug,
   ShieldCheck,
   SlidersHorizontal,
+  SquareDashed,
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,7 @@ import {
 } from './settings/pages';
 import { ConnectionsPage, FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
+import { ScreensPage } from './settings/screens';
 import { Typography, NavItem } from '@lampstand/ui';
 
 type PageId = SettingsPageId;
@@ -36,6 +38,7 @@ const NAV: { id: PageId; icon: LucideIcon }[] = [
   { id: 'scripture', icon: BookOpen },
   { id: 'songs', icon: Music },
   { id: 'presenting', icon: MonitorPlay },
+  { id: 'screens', icon: SquareDashed },
   { id: 'packages', icon: Package },
   { id: 'library', icon: Archive },
   { id: 'connections', icon: Plug },
@@ -104,6 +107,7 @@ export function SettingsDialog() {
         {page === 'scripture' && <ScripturePage s={s} update={update} />}
         {page === 'songs' && <SongsPage s={s} update={update} />}
         {page === 'presenting' && <PresentingPage s={s} update={update} />}
+        {page === 'screens' && <ScreensPage s={s} update={update} />}
         {page === 'packages' && <PackagesPage />}
         {page === 'library' && <LibraryPage />}
         {page === 'about' && <AboutPage />}

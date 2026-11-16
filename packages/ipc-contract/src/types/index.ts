@@ -10,6 +10,7 @@ import type {
   Settings,
   Song,
   ScreenVisual,
+  ScreenMask,
   Standby,
   Theme,
 } from '@lampstand/core';
@@ -56,6 +57,8 @@ export interface OutputInfo {
   /** What the Logo mask shows, and what to show when nothing is live; re-sent on change. */
   logo: ScreenVisual;
   standby: Standby;
+  /** The screen mask this output uses (Settings › Screens), or null for the full screen. */
+  mask: ScreenMask | null;
 }
 
 export interface ServiceSummary {

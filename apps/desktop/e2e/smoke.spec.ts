@@ -1173,6 +1173,35 @@ test('clear groups: made in Settings, used from the layer strip', async () => {
   await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
 });
 
+test('screen masks: made in Settings › Screens, shape the audience output', async () => {
+  const out = await outputPage();
+  const stage = out.locator('.ls-stage');
+  await control.getByRole('banner').getByRole('button', { name: 'More' }).click();
+  await control.getByRole('menuitem', { name: 'Masks…' }).click();
+  await control.getByRole('button', { name: 'Add mask' }).click();
+  // Use it on the audience screens: the output is clipped, and so is the Program monitor.
+  await control.getByRole('combobox', { name: 'Audience screens' }).click();
+  await control.getByRole('option', { name: 'Mask 1' }).click();
+  await expect
+    .poll(() => stage.evaluate((e) => (e as HTMLElement).style.clipPath))
+    .toContain('inset(5%'); // Chromium writes equal insets once: inset(5% round 4vmin)
+  await control.getByRole('radio', { name: 'Oval' }).click();
+  await expect
+    .poll(() => stage.evaluate((e) => (e as HTMLElement).style.clipPath))
+    .toContain('ellipse(');
+  await expect(control.getByRole('radio', { name: 'Oval' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/29-screen-masks.png' });
+  // Back to the full screen.
+  await control.getByRole('combobox', { name: 'Audience screens' }).click();
+  await control.getByRole('option', { name: 'No mask' }).click();
+  await expect.poll(() => stage.evaluate((e) => (e as HTMLElement).style.clipPath)).toBe('');
+  await control.keyboard.press('Escape');
+});
+
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });

@@ -5,8 +5,10 @@ import {
   type ScreenVisual,
   type Standby,
   type TransitionSpec,
+  type ScreenMask,
 } from '@lampstand/core';
 import { buildBackground, buildMedia, mediaKey, syncMedia } from './background';
+import { maskStyle } from './mask';
 import { buildContent } from './content';
 import { animate, el, safePlay } from './dom';
 import { buildOverlay } from './overlays';
@@ -132,6 +134,14 @@ export class SceneRenderer {
   }
 
   /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
+  /** Shape the whole output with a screen mask (null: the full screen). */
+  setMask(mask: ScreenMask | null): void {
+    Object.assign(
+      this.stage.style,
+      maskStyle(mask, (id) => this.opts.mediaUrl(id)),
+    );
+  }
+
   setLogo(logo: ScreenVisual | null): void {
     this.logo.set(logo && this.opts.mode !== 'thumbnail' ? logo : null);
   }

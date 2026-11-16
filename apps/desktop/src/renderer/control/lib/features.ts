@@ -180,7 +180,6 @@ export const FEATURES: Feature[] = [
     'media',
     'Custom masks',
     'Hide parts of the screen or shape the output for creative stages.',
-    'soon',
   ),
 
   // Audio

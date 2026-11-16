@@ -330,6 +330,11 @@ export function RightColumn() {
     [live],
   );
 
+  // The Program monitor shows the audience screens' shape (Settings › Screens).
+  const audienceMask = useStore((s) => {
+    const id = s.settings?.maskFor.main;
+    return (id && s.settings?.screenMasks.find((m) => m.id === id)) || null;
+  });
   if (!live || !previewScene || !nextScene) return null;
   const p = live.program;
   const mediaName = p.media
@@ -390,6 +395,7 @@ export function RightColumn() {
                     label={t('monitor.live')}
                     standby={standby}
                     audio={!hasMainOutput}
+                    mask={audienceMask}
                   />
                 </div>
               ) : (

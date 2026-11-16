@@ -47,6 +47,7 @@ api.onInfo((i) => {
   // Info is re-sent whenever the logo or off-air screen changes.
   renderer.setLogo(i.logo);
   renderer.setStandby(i.standby);
+  renderer.setMask(i.mask);
   if (latest) draw(latest);
 });
 api.onLiveState(draw);

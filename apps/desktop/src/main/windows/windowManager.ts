@@ -1,5 +1,5 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
-import type { LiveState, OutputRole } from '@lampstand/core';
+import type { LiveState, OutputRole, ScreenMask } from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences } from '../security/hardening';
@@ -251,7 +251,16 @@ export class WindowManager {
       audio: o.role === 'main',
       logo: this.d.logo(),
       standby: this.d.standby(),
+      mask: this.maskFor(o.role),
     };
+  }
+
+  /** The screen mask for an output's role (the stage display is never masked). */
+  private maskFor(role: OutputWindow['role']): ScreenMask | null {
+    if (role !== 'main' && role !== 'secondary') return null;
+    const s = this.d.getSettings();
+    const id = s.maskFor[role];
+    return (id && s.screenMasks.find((m) => m.id === id)) || null;
   }
 
   /** Re-send output info (e.g. the logo or off-air screen changed) to every ready output. */

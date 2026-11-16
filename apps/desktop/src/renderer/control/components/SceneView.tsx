@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import type { Scene, Standby } from '@lampstand/core';
+import type { Scene, ScreenMask, Standby } from '@lampstand/core';
 import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
 import { mediaUrl } from '../../shared/mediaUrl';
 import { useLogo } from '../lib/hooks';
@@ -17,6 +17,7 @@ export const SceneView = memo(function SceneView({
   standby = null,
   audio = false,
   transparent = false,
+  mask = null,
 }: {
   scene: Scene;
   mode?: RenderMode;
@@ -28,6 +29,8 @@ export const SceneView = memo(function SceneView({
   audio?: boolean;
   /** No black backdrop: for layering (the canvas editor draws slide text over its objects). */
   transparent?: boolean;
+  /** Screen mask, so a monitor shows the output's shape (Settings › Screens). */
+  mask?: ScreenMask | null;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<SceneRenderer | null>(null);
@@ -59,9 +62,10 @@ export const SceneView = memo(function SceneView({
     renderer.current?.setLogo(logo);
     renderer.current?.setAudio(audio);
     renderer.current?.setStandby(standby);
+    renderer.current?.setMask(mask);
     renderer.current?.render(scene);
     // mode/transparent: a new renderer was just built and needs the scene drawn into it.
-  }, [scene, standby, audio, logo, visible, mode, transparent]);
+  }, [scene, standby, audio, logo, visible, mode, transparent, mask]);
 
   return (
     <div

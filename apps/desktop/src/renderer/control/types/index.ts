@@ -37,6 +37,7 @@ export type SettingsPageId =
   | 'scripture'
   | 'songs'
   | 'presenting'
+  | 'screens'
   | 'packages'
   | 'library'
   | 'about'

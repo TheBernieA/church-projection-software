@@ -25,6 +25,25 @@ export const LogoStyleSchema = z.enum([
 ]);
 export type LogoStyle = z.infer<typeof LogoStyleSchema>;
 
+/**
+ * A screen mask: shapes or hides part of an output (creative stages, a screen behind a pillar).
+ * Percentages are of the output's width/height. `image` uses a picture's brightness: white
+ * shows, black hides.
+ */
+export const ScreenMaskSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(40),
+  shape: z.enum(['rect', 'ellipse', 'image']),
+  top: z.number().min(0).max(45).default(0),
+  right: z.number().min(0).max(45).default(0),
+  bottom: z.number().min(0).max(45).default(0),
+  left: z.number().min(0).max(45).default(0),
+  /** Corner rounding for `rect`, as % of the shorter side. */
+  radius: z.number().min(0).max(50).default(0),
+  mediaId: z.string().max(64).optional(),
+});
+export type ScreenMask = z.infer<typeof ScreenMaskSchema>;
+
 export const SettingsSchema = z
   .object({
     schemaVersion: z.literal(1).default(1),
@@ -60,6 +79,11 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    screenMasks: z.array(ScreenMaskSchema).max(20).default([]),
+    /** Which mask each kind of screen uses (null: none). */
+    maskFor: z
+      .object({ main: z.string().max(64).nullable(), secondary: z.string().max(64).nullable() })
+      .default({ main: null, secondary: null }),
     /** Custom clear groups: one button that clears exactly these layers. */
     clearGroups: z
       .array(

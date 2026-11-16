@@ -68,10 +68,7 @@ function MoreMenu() {
   const { t } = useTranslation();
   const mode = useStore((s) => s.mode);
   const inMore = MORE_MODES.some((m) => m.mode === mode);
-  const soon: { id: string; icon: ReactNode }[] = [
-    { id: 'masks', icon: <SquareDashed size={15} /> },
-    { id: 'ccli', icon: <FileBadge size={15} /> },
-  ];
+  const soon: { id: string; icon: ReactNode }[] = [{ id: 'ccli', icon: <FileBadge size={15} /> }];
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -94,6 +91,13 @@ function MoreMenu() {
               {t(`modes.${m}`)}
             </DropdownMenu.Item>
           ))}
+          <DropdownMenu.Item
+            className={ITEM_CLASS}
+            onSelect={() => openDialog('settings', { settingsPage: 'screens' })}
+          >
+            <SquareDashed size={15} />
+            {t('masks.menu')}
+          </DropdownMenu.Item>
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => openDialog('shortcuts')}>
             <Keyboard size={15} />
             {t('toolbar.shortcuts')}
