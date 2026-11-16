@@ -147,7 +147,11 @@ export class SceneRenderer {
   setMask(mask: ScreenMask | null): void {
     Object.assign(
       this.stage.style,
-      maskStyle(mask, (id) => this.opts.mediaUrl(id)),
+      maskStyle(
+        mask,
+        (id) => this.opts.mediaUrl(id),
+        Math.min(this.canvas.width, this.canvas.height),
+      ),
     );
   }
 

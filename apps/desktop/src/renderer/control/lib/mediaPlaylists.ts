@@ -6,9 +6,19 @@ import i18n from '../i18n';
 const find = (id: string): MediaPlaylist | undefined =>
   useStore.getState().mediaPlaylists.find((p) => p.id === id);
 
-/** Save a media playlist (undoable, like every library edit). */
-const save = (entity: MediaPlaylist) =>
-  attempt(() => cmd('mediaPlaylist.save', { entity }), 'errors.save');
+/**
+ * Save a media playlist (undoable, like every library edit). The local copy updates at once,
+ * so quick edits in a row (two drops, add then reorder) each build on the last.
+ */
+function save(entity: MediaPlaylist): Promise<unknown> {
+  const list = useStore.getState().mediaPlaylists;
+  useStore.setState({
+    mediaPlaylists: list.some((p) => p.id === entity.id)
+      ? list.map((p) => (p.id === entity.id ? entity : p))
+      : [...list, entity],
+  });
+  return attempt(() => cmd('mediaPlaylist.save', { entity }), 'errors.save');
+}
 
 /** A name not used by another media playlist: "New playlist", "New playlist 2"… */
 function freshName(kind: MediaPlaylist['kind']): string {
@@ -44,9 +54,8 @@ export async function createMediaPlaylist(
     mediaIds: [...new Set(mediaIds)],
   };
   await save(entity);
-  const mediaPlaylists = [...useStore.getState().mediaPlaylists, entity];
-  if (kind === 'audio') useStore.setState({ mediaPlaylists, audioPlaylistId: entity.id });
-  else useStore.setState({ mediaPlaylists, binTab: 'playlist', binPlaylistId: entity.id });
+  if (kind === 'audio') useStore.setState({ audioPlaylistId: entity.id });
+  else useStore.setState({ binTab: 'playlist', binPlaylistId: entity.id });
   return entity.id;
 }
 

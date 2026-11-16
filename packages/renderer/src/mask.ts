@@ -4,6 +4,8 @@ import type { ScreenMask } from '@lampstand/core';
 export function maskStyle(
   mask: ScreenMask | null,
   mediaUrl: (id: string) => string,
+  /** The stage's shorter side in px (corner rounding is a % of it), e.g. 1080 for 1920×1080. */
+  shortSide = 1080,
 ): Partial<CSSStyleDeclaration> {
   const none = { clipPath: '', maskImage: '', maskSize: '', maskMode: '' };
   if (!mask) return none;
@@ -24,6 +26,8 @@ export function maskStyle(
     const ry = (100 - t - b) / 2;
     return { ...none, clipPath: `ellipse(${rx}% ${ry}% at ${l + rx}% ${t + ry}%)` };
   }
-  const round = mask.radius > 0 ? ` round ${mask.radius}vmin` : '';
+  // In stage pixels (the stage is scaled as a whole), so monitors, previews and projectors match.
+  const px = Math.round((mask.radius / 100) * shortSide);
+  const round = px > 0 ? ` round ${px}px` : '';
   return { ...none, clipPath: `inset(${t}% ${r}% ${b}% ${l}%${round})` };
 }

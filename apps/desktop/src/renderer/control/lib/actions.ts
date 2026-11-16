@@ -219,8 +219,9 @@ export const clearLayer = (layer: Layer): Promise<void> => {
     const cursor = get().liveCursor;
     if (cursor) clearedCursor = cursor;
     useStore.setState({ liveCursor: null });
+    // The slide's own announcement loop stops with the slide (not with other layers).
+    stopAnnouncements();
   }
-  stopAnnouncements();
   return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
 };
 
@@ -370,7 +371,10 @@ export const setLook = (look: Look | null): Promise<void> =>
 // ---------- Announcements layer ----------
 let announceTimer: ReturnType<typeof setTimeout> | null = null;
 
+let announceRun = 0;
+
 function stopAnnounceLoop(): void {
+  announceRun++;
   if (announceTimer) clearTimeout(announceTimer);
   announceTimer = null;
   if (get().announceItemId) useStore.setState({ announceItemId: null });
@@ -383,15 +387,18 @@ function stopAnnounceLoop(): void {
 export async function runOnAnnouncementsLayer(item: ServiceItem): Promise<void> {
   if (item.kind !== 'announcements' && item.kind !== 'presentation') return;
   stopAnnounceLoop();
+  // Each run gets a token: a step still waiting on the previous run can never revive it.
+  const run = ++announceRun;
   const slides = (await ensureItemReady(item)).filter((sl) => sl.action.kind === 'content');
-  if (!slides.length) return;
+  if (!slides.length || run !== announceRun) return;
   const every = (item.kind === 'announcements' ? item.loopIntervalSec : 8) * 1000;
   useStore.setState({ announceItemId: item.id });
   const show = async (i: number): Promise<void> => {
-    if (get().announceItemId !== item.id) return;
+    if (run !== announceRun || get().announceItemId !== item.id) return;
     const sl = slides[i % slides.length];
     if (sl?.action.kind === 'content')
       await safe(cmd('live.setAnnouncement', { content: sl.action.content }, 'ui'));
+    if (run !== announceRun) return;
     if (slides.length > 1) announceTimer = setTimeout(() => void show(i + 1), every);
   };
   await show(0);

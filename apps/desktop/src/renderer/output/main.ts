@@ -34,9 +34,14 @@ function draw(state: LiveState): void {
   audioIn?.sync(state.audioInput);
   if (!ready || !renderer) return;
   // The active Look decides which layers this kind of screen shows.
-  const layers =
-    state.look && (role === 'main' || role === 'secondary') ? state.look[role] : null;
-  renderer.render(applyLook(state.program, layers));
+  const layers = state.look && (role === 'main' || role === 'secondary') ? state.look[role] : null;
+  // The main output carries the room's sound: if its Look hides media while a video plays,
+  // it keeps playing the video, unseen, so the sound isn't lost.
+  const silentVideo =
+    info.audio && !!layers && !layers.includes('media') && state.program.media?.kind === 'video';
+  renderer.render(applyLook(state.program, silentVideo ? [...layers, 'media'] : layers));
+  const mediaLayer = host?.querySelector<HTMLElement>('.ls-layer-media');
+  if (mediaLayer) mediaLayer.style.visibility = silentVideo ? 'hidden' : '';
   const showPattern = state.testPatterns.includes(outputId) || state.testPatterns.includes('*');
   if (showPattern && !pattern) {
     pattern = buildTestPattern(document, info);

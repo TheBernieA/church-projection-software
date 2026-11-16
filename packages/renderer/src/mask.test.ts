@@ -20,9 +20,7 @@ describe('maskStyle', () => {
   });
   it('a box brings the edges in, with optional rounded corners', () => {
     expect(maskStyle(base, url).clipPath).toBe('inset(5% 10% 5% 10%)');
-    expect(maskStyle({ ...base, radius: 4 }, url).clipPath).toBe(
-      'inset(5% 10% 5% 10% round 4vmin)',
-    );
+    expect(maskStyle({ ...base, radius: 4 }, url).clipPath).toBe('inset(5% 10% 5% 10% round 43px)');
   });
   it('an oval fills the area inside the edges', () => {
     expect(maskStyle({ ...base, shape: 'ellipse' }, url).clipPath).toBe(

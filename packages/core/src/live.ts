@@ -91,6 +91,8 @@ export const ClearedLayersSchema = z.object({
   /** Paused-in-time copy: `position` is where the video was when it was cleared. */
   media: MediaLayerSchema.optional(),
   background: BackgroundLayerSchema.optional(),
+  /** A camera that was on the media layer when it was cleared. */
+  input: VideoInputLayerSchema.optional(),
   announcements: ContentLayerSchema.optional(),
   messages: z.array(OverlaySchema).max(10).optional(),
   props: z.array(OverlaySchema).max(10).optional(),
@@ -270,8 +272,12 @@ export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): Clea
       out.content = { content: p.content, web: p.web ?? null, next: s.next };
       taken.push(l);
     }
-    if (l === 'media' && p.media) {
-      out.media = { ...p.media, position: mediaPositionAt(p.media, nowMs) };
+    // The media layer holds a video or a camera: remember whichever was there (and only it).
+    if (l === 'media' && (p.media || p.input)) {
+      delete out.media;
+      delete out.input;
+      if (p.media) out.media = { ...p.media, position: mediaPositionAt(p.media, nowMs) };
+      if (p.input) out.input = p.input;
       taken.push(l);
     }
     if (l === 'announcements' && p.announcement) {
@@ -331,14 +337,27 @@ export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: strin
         next: c.content.next,
         program: { ...program, content: c.content.content, web: c.content.web, media: null },
       };
-    case 'media':
+    case 'media': {
+      const rest = Object.fromEntries(
+        Object.entries(cleared).filter(([k]) => k !== 'input'),
+      ) as ClearedLayers;
+      if (c.input)
+        // A camera comes back under the words, as it was.
+        return { ...s, cleared: rest, program: { ...program, input: c.input, media: null } };
       if (!c.media) return s;
       return {
         ...s,
-        cleared,
-        // It carries on from where it was cleared.
-        program: { ...program, media: { ...c.media, syncedAt: nowIso }, content: null, web: null },
+        cleared: rest,
+        // It carries on from where it was cleared, in place of any camera.
+        program: {
+          ...program,
+          media: { ...c.media, syncedAt: nowIso },
+          input: null,
+          content: null,
+          web: null,
+        },
       };
+    }
     case 'announcements':
       if (!c.announcements) return s;
       return { ...s, cleared, program: { ...program, announcement: c.announcements } };
@@ -514,8 +533,13 @@ export function registerLiveCommands(
               : p.action === 'toggle'
                 ? !a.playing
                 : a.playing;
+        // Play, pause or toggle during a fade-out means "changed my mind": cancel the fade.
+        const cancel = p.action === 'play' || p.action === 'pause' || p.action === 'toggle';
+        const kept = Object.fromEntries(
+          Object.entries(a).filter(([k]) => !(cancel && k === 'fade')),
+        ) as AudioCue;
         const next: AudioCue = {
-          ...a,
+          ...kept,
           playing,
           position: p.action === 'seek' ? (p.position ?? here) : here,
           syncedAt: nowIso,

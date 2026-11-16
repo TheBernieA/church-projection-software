@@ -496,8 +496,8 @@ export function RightColumn() {
                 hint={displayCombo(keys.clearMedia)}
                 on={!!p.media || !!p.web || !!p.input}
                 onClick={clear('media')}
-                restorable={!!cleared.media}
-                restoreWhat={clearedMedia}
+                restorable={!!cleared.media || !!cleared.input}
+                restoreWhat={clearedMedia ?? cleared.input?.label}
                 onRestore={back('media')}
               />
               <LayerButton

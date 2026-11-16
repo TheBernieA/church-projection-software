@@ -145,9 +145,13 @@ function watchPlayback(v: HTMLVideoElement, m: MediaLayer): void {
     }
     const duration = Number.isFinite(v.duration) ? v.duration : undefined;
     const end = mediaEnd(cur, duration);
-    if (end !== undefined && v.currentTime >= end - 0.02 && !v.paused) {
-      if (cur.loop) v.currentTime = mediaStart(cur);
-      else v.pause();
+    // Judged by the shared state, not the element: at the file's end the browser has already
+    // paused it (native loop is off for trimmed clips), and a loop must still jump back.
+    if (end !== undefined && cur.playing && v.currentTime >= end - 0.02) {
+      if (cur.loop) {
+        v.currentTime = mediaStart(cur);
+        safePlay(v);
+      } else if (!v.paused) v.pause();
     }
     const a = mediaFadeAt(cur, v.currentTime, duration);
     v.style.opacity = String(a);

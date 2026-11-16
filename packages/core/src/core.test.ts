@@ -242,6 +242,29 @@ describe('live commands', () => {
     expect(store.get().program.announcement?.key).toBe('welcome');
   });
 
+  it('a cleared camera comes back with the media layer', async () => {
+    const { store, run } = setup();
+    const cam = { deviceId: 'cam1', label: 'Camera', fit: 'cover' as const };
+    await run('live.setInput', { input: cam });
+    await run('live.clearLayer', { layer: 'media' });
+    expect(store.get().program.input).toBeNull();
+    expect(store.get().cleared.input?.deviceId).toBe('cam1');
+    await run('live.restoreLayer', { layer: 'media' });
+    expect(store.get().program.input?.deviceId).toBe('cam1');
+    expect(store.get().cleared.input).toBeUndefined();
+  });
+
+  it('play during a fade-out cancels the fade', async () => {
+    const { store, run } = setup();
+    await run('live.audio', { action: 'play', mediaId: 'song' });
+    await run('live.audio', { action: 'fadeOut', sec: 3 });
+    expect(store.get().audio?.fade).toBeDefined();
+    await run('live.audio', { action: 'pause' });
+    await run('live.audio', { action: 'play' });
+    expect(store.get().audio?.fade).toBeUndefined();
+    expect(store.get().audio?.playing).toBe(true);
+  });
+
   it('clearing an empty layer keeps what can still be brought back', async () => {
     const { store, run } = setup();
     await run('live.goLive', { content: content('a') });

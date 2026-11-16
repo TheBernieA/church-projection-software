@@ -37,7 +37,9 @@ export class AudioPlayer {
       const duration = Number.isFinite(a.duration) ? a.duration : undefined;
       const pos = cue.loop && duration ? target % duration : target;
       if (Math.abs(a.currentTime - pos) > 0.3) a.currentTime = pos;
-      if (cue.playing) safePlay(a);
+      // play() on an ended track would restart it from 0: a finished track stays finished.
+      const finished = !cue.loop && duration !== undefined && target >= duration - 0.05;
+      if (cue.playing && !finished) safePlay(a);
       else a.pause();
     };
     if (a.readyState >= 1) apply();

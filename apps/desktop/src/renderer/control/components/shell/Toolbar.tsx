@@ -75,13 +75,15 @@ function LooksMenu() {
   const { t } = useTranslation();
   const looks = useStore((s) => s.settings?.looks ?? NO_LOOKS);
   const active = useStore((s) => s.live?.look ?? null);
+  const loaded = useStore((s) => !!s.settings);
   // Keep the Look on screen in step with its saved version (renamed, layers changed, deleted).
+  // Not before settings load: an empty list then would wrongly turn a running Look off.
   useEffect(() => {
-    if (!active) return;
+    if (!active || !loaded) return;
     const saved = looks.find((l) => l.id === active.id);
     if (!saved) void setLook(null);
     else if (JSON.stringify(saved) !== JSON.stringify(active)) void setLook(saved);
-  }, [looks, active]);
+  }, [looks, active, loaded]);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
