@@ -20,6 +20,8 @@ import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
 import { SlideCard, SlideRow, type SlideState } from './slides/SlideCards';
 import { SongControls } from './SongControls';
+import { ItemBackground } from './ItemBackground';
+import { takesBackground } from '../lib/itemBackground';
 import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
 import { type PresentableSlide } from '../types';
@@ -111,6 +113,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
           </Typography>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          {takesBackground(item) && <ItemBackground item={item} />}
           {song && item?.kind === 'song' && (
             <>
               <SongControls item={item} song={song} />

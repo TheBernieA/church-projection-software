@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
-import { app, dialog, type BrowserWindow } from 'electron';
+import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
 import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
 import type { ModuleSummary, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { SearchService } from '../search/searchService';
@@ -153,6 +153,18 @@ export function createQueries({
       done: await dailyBackup(s.paths.library, s.paths.backups, true),
     }),
     'audit.recent': () => audit().slice(-200),
+    'devices.access': async ({ kind, action }) => {
+      const mac = process.platform === 'darwin';
+      if (!mac && process.platform !== 'win32') return { status: 'granted' };
+      if (action === 'open')
+        await shell.openExternal(
+          mac
+            ? `x-apple.systempreferences:com.apple.preference.security?Privacy_${kind === 'camera' ? 'Camera' : 'Microphone'}`
+            : `ms-settings:privacy-${kind === 'camera' ? 'webcam' : 'microphone'}`,
+        );
+      if (action === 'ask' && mac) await systemPreferences.askForMediaAccess(kind);
+      return { status: systemPreferences.getMediaAccessStatus(kind) };
+    },
     'modules.list': () => listModules(),
     'modules.install': async () => {
       const files = await openDialog({

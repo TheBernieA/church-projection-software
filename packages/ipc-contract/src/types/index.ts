@@ -112,7 +112,11 @@ export interface QueryResults {
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
   'slides.import': ImportedSlides;
   'media.importBytes': MediaItem | null;
+  'devices.access': { status: DeviceAccess };
 }
+
+/** The OS's camera/microphone permission for the app ('granted' where the OS doesn't ask). */
+export type DeviceAccess = 'granted' | 'denied' | 'restricted' | 'not-determined' | 'unknown';
 
 /** What "Import slides" read: PowerPoint text, or a PDF to render page by page. */
 export type ImportedSlides =

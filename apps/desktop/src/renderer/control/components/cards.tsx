@@ -140,10 +140,10 @@ export function Tile({
       {...rest}
     >
       <div
-        className={`relative aspect-video w-full overflow-hidden rounded-[8px] bg-black transition-[transform,box-shadow] duration-150 will-change-transform group-hover/tile:-translate-y-0.5 group-focus-visible/tile:shadow-[0_0_0_2px_var(--accent)] ${
+        className={`relative aspect-video w-full overflow-hidden rounded-[6px] bg-black transition-shadow duration-100 group-focus-visible/tile:shadow-[0_0_0_2px_var(--accent)] ${
           selected
             ? 'shadow-[0_0_0_2px_var(--accent)]'
-            : 'shadow-[var(--shadow-1)] group-hover/tile:shadow-[var(--shadow-2)]'
+            : 'shadow-[0_0_0_1px_var(--hairline)] group-hover/tile:shadow-[0_0_0_2px_color-mix(in_srgb,var(--text-1)_55%,transparent)]'
         }`}
       >
         {children}

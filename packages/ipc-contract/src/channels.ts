@@ -29,6 +29,7 @@ export const QUERY_NAMES = [
   'modules.install',
   'slides.import',
   'media.importBytes',
+  'devices.access',
 ] as const;
 export type QueryName = (typeof QUERY_NAMES)[number];
 

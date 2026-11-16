@@ -59,6 +59,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     slides: z.array(TextSlideSchema).max(500),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    background: BackgroundRefSchema.optional(),
   }),
   z.object({
     ...base,
@@ -68,6 +69,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     loopIntervalSec: z.number().int().min(2).max(600),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    background: BackgroundRefSchema.optional(),
   }),
   z.object({
     ...base,

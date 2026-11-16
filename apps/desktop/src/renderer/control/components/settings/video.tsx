@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { RotateCcw, Video } from 'lucide-react';
+import { RefreshCw, RotateCcw, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Settings } from '@lampstand/core';
 import { Button, Segmented, Switch, Typography } from '@lampstand/ui';
 import {
+  rescanDevices,
   CAMERA_FITS,
   CAMERA_RESOLUTIONS,
   DEFAULT_CAMERA,
@@ -19,6 +20,7 @@ import { useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 import { Select } from '../Select';
 import { Group, Row, SettingsPage } from './parts';
+import { CameraAccess } from '../media/CameraAccess';
 
 /** One setting in a camera's card: its name on the left, the control on the right. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -112,6 +114,13 @@ function CameraCard({ device }: { device: InputDevice }) {
             onChange={(mirror) => change({ mirror })}
           />
         </Field>
+        <Field label={t('inputs.offer')}>
+          <Switch
+            label={t('inputs.offerOf', { name })}
+            checked={!settings.hidden}
+            onChange={(on) => change({ hidden: !on })}
+          />
+        </Field>
         <Field label={t('inputs.resolutionLabel')}>
           <div className="w-40">
             <Select<CameraSettings['resolution']>
@@ -172,7 +181,17 @@ export function VideoPage({
           />
         </Row>
       </Group>
-      <Group title={t('inputs.camerasTitle')} footnote={t('inputs.camerasFootnote')}>
+      <CameraAccess />
+      <div className="-mb-3 flex items-center justify-between px-1">
+        <Typography as="h3" variant="overline">
+          {t('inputs.camerasTitle')}
+          {devices ? ` · ${devices.length}` : ''}
+        </Typography>
+        <Button size="xs" variant="ghost" icon={<RefreshCw size={13} />} onClick={rescanDevices}>
+          {t('inputs.lookAgain')}
+        </Button>
+      </div>
+      <Group footnote={t('inputs.camerasFootnote')}>
         {devices === null ? (
           <Typography as="p" size={12} tone="muted" className="px-4 py-4">
             {t('inputs.looking')}

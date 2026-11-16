@@ -1248,7 +1248,21 @@
     "resolutionOf": "Capture size for {{name}}",
     "previewOf": "{{name}} preview",
     "showShort": "Show on screen",
-    "takeOffShort": "Take off screen"
+    "takeOffShort": "Take off screen",
+    "lookAgain": "Look again",
+    "manage": "Camera settings",
+    "manageHidden_one": "Camera settings ({{count}} hidden)",
+    "manageHidden_other": "Camera settings ({{count}} hidden)",
+    "allHidden": "Every camera is switched off for Media. Turn one on in Settings › Video.",
+    "offer": "Offer in Media",
+    "offerOf": "Offer {{name}} in Media",
+    "access": {
+      "title": "Lampstand can’t use the cameras yet",
+      "ask": "Your computer asks once before an app can use its cameras and capture cards.",
+      "refused": "Camera access was turned off for Lampstand. Turn it on in your computer’s privacy settings, then look again.",
+      "allow": "Allow camera access",
+      "openSettings": "Open privacy settings"
+    }
   },
   "stock": {
     "category": "Stock category",
@@ -1261,7 +1275,7 @@
       "abstract": "Abstract",
       "nature": "Nature"
     },
-    "hint": "Drawn by Lampstand itself: works offline, free to use, sharp on any screen. Click one to show it behind the words.",
+    "hint": "Drawn by Lampstand itself: works offline, free to use, sharp on any screen. Click one to show it now; its … menu puts it behind the selected item’s slides.",
     "countdown_one": "{{count}} minute",
     "countdown_other": "{{count}} minutes",
     "addCountdown_one": "Add a {{count}}-minute countdown to the playlist",
@@ -1269,5 +1283,21 @@
     "countdownAdded_one": "Added a {{count}}-minute countdown to the playlist.",
     "countdownAdded_other": "Added a {{count}}-minute countdown to the playlist.",
     "countdownTitle": "Service begins in"
+  },
+  "itemBg": {
+    "button": "Background for these slides",
+    "title": "Behind these slides",
+    "own": "These slides have their own background (click to change)",
+    "theme": "These slides use their theme’s background (click to choose another)",
+    "useTheme": "The theme’s background",
+    "useOnScreen": "The one on screen now",
+    "stock": "Stock backgrounds",
+    "builtIn": "Built-in backgrounds",
+    "yours": "Your backgrounds",
+    "noneYet": "None yet: add some in Media › Backgrounds",
+    "tileMenu": "{{name}} options",
+    "useFor": "Use behind “{{name}}” slides",
+    "pickItemFirst": "Select an item to use it behind its slides",
+    "showNow": "Show now, behind what’s live"
   }
 }

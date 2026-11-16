@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import type { DeviceAccess } from '@lampstand/ipc-contract';
 import { RAW_AUDIO } from '@lampstand/renderer';
-import { cmd } from './api';
+import { cmd, q } from './api';
 import { attempt, useStore } from './store';
 
 export interface InputDevice {
@@ -19,6 +20,10 @@ async function unlock(kind: 'videoinput' | 'audioinput' | 'audiooutput'): Promis
     /* refused or no device: the list just stays empty */
   }
 }
+
+const RESCAN = 'lampstand:rescan-devices';
+/** Look for devices again (after access was granted, or a device was plugged in). */
+export const rescanDevices = (): void => void window.dispatchEvent(new Event(RESCAN));
 
 /**
  * The cameras/capture cards (`videoinput`) or microphones/mixer inputs (`audioinput`) this
@@ -45,6 +50,7 @@ export function useInputDevices(
       );
     };
     const onChange = (): void => void read();
+    window.addEventListener(RESCAN, onChange);
     // Ask for access only when devices come back nameless (not yet allowed this session).
     void navigator.mediaDevices
       .enumerateDevices()
@@ -55,6 +61,7 @@ export function useInputDevices(
     return () => {
       alive = false;
       navigator.mediaDevices.removeEventListener('devicechange', onChange);
+      window.removeEventListener(RESCAN, onChange);
     };
   }, [kind]);
   return devices;
@@ -150,6 +157,8 @@ export interface CameraSettings {
   fit: 'cover' | 'contain';
   mirror: boolean;
   resolution: 'auto' | '720' | '1080' | '2160';
+  /** Left out of Media › Video input (e.g. a virtual camera nobody uses). */
+  hidden: boolean;
 }
 export const CAMERA_FITS = ['cover', 'contain'] as const;
 export const CAMERA_RESOLUTIONS = ['auto', '720', '1080', '2160'] as const;
@@ -158,6 +167,7 @@ export const DEFAULT_CAMERA: CameraSettings = {
   fit: 'cover',
   mirror: false,
   resolution: 'auto',
+  hidden: false,
 };
 
 const CAMERAS_KEY = 'lampstand.cameras';
@@ -185,6 +195,15 @@ export function setCameraSettings(deviceId: string, patch: Partial<CameraSetting
   }
   for (const l of cameraListeners) l();
 }
+
+const subscribeCameras = (l: () => void): (() => void) => {
+  cameraListeners.add(l);
+  return () => cameraListeners.delete(l);
+};
+
+/** Re-render when any camera's settings change (lists that filter by them). */
+export const useCameraSettingsVersion = (): Record<string, CameraSettings> =>
+  useSyncExternalStore(subscribeCameras, () => cameras);
 
 /** One camera's settings, kept up to date. */
 export function useCameraSettings(deviceId: string): CameraSettings {
@@ -222,4 +241,41 @@ export function updateCamera(device: InputDevice, patch: Partial<CameraSettings>
   setCameraSettings(device.deviceId, patch);
   if (useStore.getState().live?.program.input?.deviceId === device.deviceId)
     void showCamera(device);
+}
+
+/**
+ * The OS's camera or microphone permission (macOS and Windows ask the user once), with ways to
+ * ask for it, open the privacy settings, and check again. 'granted' where the OS doesn't ask.
+ */
+export function useDeviceAccess(kind: 'camera' | 'microphone') {
+  const [status, setStatus] = useState<DeviceAccess>('unknown');
+  const run = async (action: 'status' | 'ask' | 'open'): Promise<void> => {
+    try {
+      const r = await q('devices.access', { kind, action });
+      setStatus(r.status);
+      if (r.status === 'granted') rescanDevices();
+    } catch {
+      setStatus('unknown');
+    }
+  };
+  useEffect(() => {
+    void q('devices.access', { kind, action: 'status' }).then(
+      (r) => setStatus(r.status),
+      () => setStatus('unknown'),
+    );
+    // Coming back from System Settings: check again.
+    const onFocus = (): void => void run('status');
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `run` is stable in behaviour
+  }, [kind]);
+  return {
+    status,
+    ask: () => void run('ask'),
+    openSettings: () => void run('open'),
+    recheck: () => {
+      void run('status');
+      rescanDevices();
+    },
+  };
 }

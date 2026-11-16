@@ -53,6 +53,11 @@ export const QuerySchemas = {
     name: z.string().min(1).max(200),
     data: z.instanceof(Uint8Array).refine((d) => d.byteLength <= 30 * 1024 * 1024, 'too large'),
   }),
+  /** Camera/microphone permission: read it, ask the OS for it, or open its privacy settings. */
+  'devices.access': z.object({
+    kind: z.enum(['camera', 'microphone']),
+    action: z.enum(['status', 'ask', 'open']).default('status'),
+  }),
 } as const satisfies Record<QueryName, z.ZodType>;
 
 export type QueryArgs<K extends QueryName> = z.input<(typeof QuerySchemas)[K]>;

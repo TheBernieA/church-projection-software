@@ -1374,6 +1374,7 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await expect(out.locator('.ls-layer-content .ls-text').last()).toContainText('For God so loved');
   // Its settings apply straight away while it's live: mirror it, fit the whole picture.
   await bin
+    .getByRole('listitem')
     .getByRole('button', { name: /settings$/ })
     .first()
     .click();
@@ -1390,6 +1391,7 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await control.screenshot({ path: 'test-results/33-video-input.png' });
   // Back to the defaults for the tests after this one.
   await bin
+    .getByRole('listitem')
     .getByRole('button', { name: /settings$/ })
     .first()
     .click();
@@ -1464,6 +1466,44 @@ test('stock media: a motion background goes live; a countdown joins the playlist
   await control.keyboard.type('jn 3 16');
   await expect(control.getByRole('option').first()).toContainText('John 3:16');
   await control.keyboard.press('Shift+Enter');
+});
+
+test("slide backgrounds: a stock background behind an item's slides, from the tile or the item", async () => {
+  const showVerse = async (): Promise<void> => {
+    await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+    await control.keyboard.type('jn 3 16');
+    await expect(control.getByRole('option').first()).toContainText('John 3:16');
+    await control.keyboard.press('Shift+Enter');
+  };
+  const bg = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    const ref = r.ok ? r.value.program.background?.ref : undefined;
+    return ref?.kind === 'generated' ? ref.colors[0] : null;
+  };
+  await showVerse();
+  await binTab('Media');
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'Stock media', exact: true })
+    .click();
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await bin.getByRole('radio', { name: 'Worship' }).click();
+  // From a stock tile's menu: behind the verse's slides (live now, so the screen follows).
+  await bin.getByRole('button', { name: 'Throne room', exact: true }).hover();
+  await bin.getByRole('button', { name: 'Throne room options' }).click();
+  await control.getByRole('menuitem', { name: /^Use behind/ }).click();
+  await expect.poll(bg).toBe('#F2D27A');
+  // From the item's own Background button: another stock background, then the theme's again.
+  const pickBg = control.getByRole('button', { name: 'Background for these slides' }).first();
+  await pickBg.click();
+  await control.getByRole('menuitem', { name: 'Stock backgrounds' }).click();
+  await control.getByRole('menuitem', { name: 'Glory', exact: true }).click();
+  await expect.poll(bg).toBe('#FFE7B0');
+  await control.screenshot({ path: 'test-results/35-slide-background.png' });
+  await pickBg.click();
+  // Back to the theme's background: the screen follows at once.
+  await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
+  await expect.poll(bg).not.toBe('#FFE7B0');
 });
 
 test('media playlists: create, drag media in, open, rename and delete', async () => {

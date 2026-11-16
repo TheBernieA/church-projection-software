@@ -70,6 +70,7 @@ export function StockMedia() {
                       bgRef={bg.ref}
                       title={t('stock.addCountdown', { count: n })}
                       onPick={() => addCountdown(n, bg.ref)}
+                      menu={false}
                     />
                   ))}
                 </div>

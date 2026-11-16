@@ -253,7 +253,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'presentation':
     case 'announcements': {
       const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
-      const background = themeBackground(theme);
+      const background = themeBackground(theme, item.background);
       return {
         missing: [],
         slides: item.slides.map((ts, i) => {

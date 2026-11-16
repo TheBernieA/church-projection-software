@@ -29,6 +29,8 @@ import { KindTile } from '../kindIcons';
 import { AddMenu } from '../ServicePanel';
 import { editable, thumbScene } from '../SlideGrid';
 import { SongControls } from '../SongControls';
+import { ItemBackground } from '../ItemBackground';
+import { takesBackground } from '../../lib/itemBackground';
 import { SlideCard, SlideRow, type SlideState } from '../slides/SlideCards';
 import { usePaneSize } from '../shell/Splitter';
 import { type PresentableSlide } from '../../types';
@@ -153,6 +155,7 @@ function ItemSection({
         </Button>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
+          {takesBackground(item) && <ItemBackground item={item} />}
           <SoonTool id="transitions" icon={<Shuffle size={14} />} />
           <SoonTool id="timeline" icon={<Clock3 size={14} />} />
           <SoonTool id="slide-actions" icon={<Repeat size={14} />} />

@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, Ellipsis, FlipHorizontal2, Pencil, RotateCcw, Video } from 'lucide-react';
+import {
+  Check,
+  Ellipsis,
+  FlipHorizontal2,
+  Pencil,
+  RefreshCw,
+  RotateCcw,
+  Settings2,
+  Video,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, IconButton, Typography } from '@lampstand/ui';
 import {
+  rescanDevices,
+  useCameraSettingsVersion,
   CAMERA_FITS,
   CAMERA_RESOLUTIONS,
   DEFAULT_CAMERA,
@@ -15,7 +26,8 @@ import {
   type CameraSettings,
   type InputDevice,
 } from '../../lib/inputs';
-import { useStore } from '../../lib/store';
+import { openDialog, useStore } from '../../lib/store';
+import { CameraAccess } from './CameraAccess';
 import { EmptyState } from '../EmptyState';
 import { REVEAL } from '../cards';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
@@ -274,7 +286,11 @@ function InputTile({ device }: { device: InputDevice }) {
  */
 export function VideoInputs() {
   const { t } = useTranslation();
-  const devices = useInputDevices('videoinput');
+  const all = useInputDevices('videoinput');
+  const saved = useCameraSettingsVersion();
+  // Cameras switched off in Settings › Video stay out of the way here.
+  const devices = all?.filter((d) => !saved[d.deviceId]?.hidden) ?? null;
+  const hiddenCount = (all?.length ?? 0) - (devices?.length ?? 0);
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
@@ -291,13 +307,35 @@ export function VideoInputs() {
             {devices.length}
           </Typography>
         )}
-        <Typography size={11} tone="muted" truncate className="ml-1 min-w-0">
+        <Typography size={11} tone="muted" truncate className="ml-1 min-w-0 flex-1">
           {t('inputs.videoHint')}
         </Typography>
+        <Button
+          size="xs"
+          variant="ghost"
+          icon={<RefreshCw size={13} />}
+          onClick={rescanDevices}
+          className="shrink-0"
+        >
+          {t('inputs.lookAgain')}
+        </Button>
+        <Button
+          size="xs"
+          variant="ghost"
+          icon={<Settings2 size={13} />}
+          onClick={() => openDialog('settings', { settingsPage: 'video' })}
+          className="shrink-0"
+        >
+          {hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')}
+        </Button>
       </div>
+      <CameraAccess className="mx-4 mt-3" />
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {devices && devices.length === 0 ? (
-          <EmptyState icon={<Video size={26} />} title={t('inputs.noCameras')} />
+          <EmptyState
+            icon={<Video size={26} />}
+            title={hiddenCount ? t('inputs.allHidden') : t('inputs.noCameras')}
+          />
         ) : (
           <ul
             className="grid gap-x-3 gap-y-4"

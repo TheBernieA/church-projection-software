@@ -4,7 +4,8 @@ import { Button, Typography } from '@lampstand/ui';
 import { libraryDragSource } from '../lib/libraryDrag';
 
 import { useStore } from '../lib/store';
-import { BackgroundTile } from './BackgroundTile';
+import { BackgroundTile, WithBackgroundMenu } from './BackgroundTile';
+import { mediaBackground } from '../lib/itemBackground';
 import { Tile } from './cards';
 import { BUILT_IN_BACKGROUNDS } from '../constants';
 import { Thumb } from './media/MediaBrowser';
@@ -47,28 +48,23 @@ export function BackgroundsPanel() {
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {media.map((m) => (
-          <Tile
-            key={m.id}
-            label={m.name}
-            title={t('media.setBackground')}
-            {...libraryDragSource(() => ({
-              id: newId(),
-              kind: 'media',
-              mediaId: m.id,
-              loop: true,
-              autoAdvance: false,
-              asBackground: true,
-            }))}
-            onClick={() =>
-              setBg(
-                m.kind === 'video'
-                  ? { kind: 'video', mediaId: m.id, loop: true }
-                  : { kind: 'image', mediaId: m.id },
-              )
-            }
-          >
-            <Thumb m={m} />
-          </Tile>
+          <WithBackgroundMenu key={m.id} bg={mediaBackground(m)} name={m.name}>
+            <Tile
+              label={m.name}
+              title={t('media.setBackground')}
+              {...libraryDragSource(() => ({
+                id: newId(),
+                kind: 'media',
+                mediaId: m.id,
+                loop: true,
+                autoAdvance: false,
+                asBackground: true,
+              }))}
+              onClick={() => setBg(mediaBackground(m))}
+            >
+              <Thumb m={m} />
+            </Tile>
+          </WithBackgroundMenu>
         ))}
       </div>
     </div>
