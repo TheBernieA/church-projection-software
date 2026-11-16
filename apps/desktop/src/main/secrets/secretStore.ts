@@ -4,7 +4,7 @@ import { writeJsonAtomic } from '../storage/atomic';
 
 /**
  * Secrets (stream keys, remote PIN hash) via OS keychain/DPAPI (§6.4, §17.5). Never in
- * settings.json, never logged. Used by streaming/remote in later phases.
+ * settings.json, never logged, never sent to a renderer. Stream keys live here.
  */
 export class SecretStore {
   constructor(private readonly file: string) {}
@@ -27,6 +27,19 @@ export class SecretStore {
     const all = await this.readAll();
     all[name] = (await safeStorage.encryptStringAsync(value)).toString('base64');
     await writeJsonAtomic(this.file, all);
+  }
+
+  async has(name: string): Promise<boolean> {
+    return (await this.readAll())[name] !== undefined;
+  }
+
+  async delete(name: string): Promise<void> {
+    const all = await this.readAll();
+    if (!(name in all)) return;
+    await writeJsonAtomic(
+      this.file,
+      Object.fromEntries(Object.entries(all).filter(([k]) => k !== name)),
+    );
   }
 
   async get(name: string): Promise<string | null> {

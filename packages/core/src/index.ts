@@ -20,4 +20,5 @@ export * from './schemas/service';
 export * from './schemas/settings';
 export * from './schemas/timers';
 export * from './schemas/stage';
+export * from './schemas/stream';
 export * from './stock';

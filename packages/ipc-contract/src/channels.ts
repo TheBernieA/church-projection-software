@@ -30,6 +30,10 @@ export const QUERY_NAMES = [
   'slides.import',
   'media.importBytes',
   'devices.access',
+  'stream.status',
+  'stream.keys',
+  'recording.chooseFolder',
+  'recording.reveal',
 ] as const;
 export type QueryName = (typeof QUERY_NAMES)[number];
 
@@ -41,6 +45,13 @@ export const Channels = {
   query: (name: QueryName) => `ctl:q:${name}` as const,
   // Output/stage window handshake (read-only windows).
   outputReady: 'out:ready',
+  // Stream window (the livestream picture): its handshake and its sound.
+  streamReady: 'stream:ready',
+  streamAudio: 'stream:audio',
+  /** main → stream window: what to draw and mix. */
+  evStreamConfig: 'ev:stream-config',
+  /** main → control: livestream / recording status. */
+  evStream: 'ev:stream',
   // main → renderer events
   evLive: 'ev:live',
   evRepo: 'ev:repo',

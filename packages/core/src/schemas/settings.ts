@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { StageLayoutSchema } from './stage';
+import { StreamSettingsSchema } from './stream';
 import { TimerDefSchema } from './timers';
 import { PropPositionSchema } from './scene';
 
@@ -107,6 +108,8 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** Livestream and recording (the toolbar's Live button). Stream keys are kept elsewhere. */
+    stream: StreamSettingsSchema.default(StreamSettingsSchema.parse({})),
     /** Custom stage screen layouts, and which one stage screens show (null: Classic). */
     stageLayouts: z.array(StageLayoutSchema).max(30).default([]),
     stageLayoutId: z.string().max(64).nullable().default(null),

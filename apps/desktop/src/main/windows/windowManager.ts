@@ -13,6 +13,8 @@ export class WindowManager {
   control: BrowserWindow | null = null;
   private outputs = new Map<string, OutputWindow>();
   private kinds = new Map<number, WindowKind>();
+  /** Other windows that follow the live state (the offscreen stream window). */
+  private followers = new Set<BrowserWindow>();
   private blockerId: number | null = null;
   private quitting = false;
   private knownDisplayIds = new Set<number>();
@@ -235,7 +237,18 @@ export class WindowManager {
    */
   mayUseMedia(wc: WebContents | null): boolean {
     const kind = wc ? this.kinds.get(wc.id) : undefined;
-    return kind === 'control' || kind === 'output';
+    return kind === 'control' || kind === 'output' || kind === 'stream';
+  }
+
+  /** A window that isn't an output but follows the live state (the stream window). */
+  attachFollower(win: BrowserWindow, kind: WindowKind): void {
+    const id = win.webContents.id;
+    this.kinds.set(id, kind);
+    this.followers.add(win);
+    win.on('closed', () => {
+      this.kinds.delete(id);
+      this.followers.delete(win);
+    });
   }
 
   /** Output handshake: send its info and the current state. */
@@ -286,6 +299,8 @@ export class WindowManager {
     for (const o of this.outputs.values())
       if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, state);
     this.control?.webContents.send(Channels.evLive, state);
+    for (const f of this.followers)
+      if (!f.isDestroyed()) f.webContents.send(Channels.evLive, state);
     this.syncWeb(state);
   }
 

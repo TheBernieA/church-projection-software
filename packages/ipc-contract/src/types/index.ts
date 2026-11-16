@@ -118,6 +118,10 @@ export interface QueryResults {
   'slides.import': ImportedSlides;
   'media.importBytes': MediaItem | null;
   'devices.access': { status: DeviceAccess };
+  'stream.status': StreamStatus;
+  'stream.keys': Record<string, boolean>;
+  'recording.chooseFolder': { folder: string | null };
+  'recording.reveal': { done: boolean };
 }
 
 /** The OS's camera/microphone permission for the app ('granted' where the OS doesn't ask). */
@@ -162,7 +166,67 @@ export interface ControlApi {
   onNotice(cb: (n: Notice) => void): () => void;
   /** Edit › Undo / Redo chosen from the application menu. */
   onMenu(cb: (action: MenuAction) => void): () => void;
+  /** Livestream / recording status changes. */
+  onStream(cb: (s: StreamStatus) => void): () => void;
   platform: string;
+}
+
+/** How one stream destination is doing. */
+export interface StreamDestinationStatus {
+  id: string;
+  name: string;
+  state: 'connecting' | 'ok' | 'failed';
+}
+
+/** The livestream / recording, as the control window sees it (sent on every change). */
+export interface StreamStatus {
+  state: 'idle' | 'starting' | 'live' | 'stopping';
+  streaming: boolean;
+  recording: boolean;
+  /** When it started (ISO), for the timer. */
+  since: string | null;
+  fps: number;
+  kbps: number;
+  /** Encoding speed: 1 = keeping up; below 0.95 the computer is struggling. */
+  speed: number;
+  /** Frames the encoder couldn't take in time. */
+  dropped: number;
+  destinations: StreamDestinationStatus[];
+  /** The file being written, if recording. */
+  recordingPath: string | null;
+  /** The last problem, as an i18n key under `stream.errors.*`. */
+  error: string | null;
+  /** A small JPEG of the stream picture (data URL), while running. */
+  preview: string | null;
+  /** How many times the encoder has been restarted this session. */
+  restarts: number;
+  /** Whether an ffmpeg was found (no ffmpeg: no streaming). */
+  available: boolean;
+  /** The encoder in use (or that would be used). */
+  encoder: string;
+}
+
+/** What the stream window draws and mixes (from Settings › Streaming). */
+export interface StreamConfig {
+  width: number;
+  height: number;
+  picture: {
+    camera: string | null;
+    words: 'full' | 'lowerThird' | 'none';
+    background: 'program' | 'camera' | 'black';
+  };
+  sound: { room: boolean; roomGain: number; mics: { deviceId: string; gain: number }[] };
+  logo: ScreenVisual;
+  standby: Standby;
+}
+
+/** API exposed to the (offscreen) stream window: it draws and sends its sound. */
+export interface StreamApi {
+  onLiveState(cb: (s: LiveState) => void): () => void;
+  onConfig(cb: (c: StreamConfig) => void): () => void;
+  ready(): void;
+  /** Interleaved stereo float32 PCM at 48 kHz. */
+  sendAudio(pcm: Float32Array): void;
 }
 
 /** API exposed to output and stage windows: read-only (§17.2 — outputs may only subscribe). */

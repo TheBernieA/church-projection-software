@@ -20,6 +20,11 @@ export class AudioPlayer {
     this.el.preload = 'auto';
   }
 
+  /** Its audio element (the stream window routes it into the stream's sound mix). */
+  get element(): HTMLAudioElement {
+    return this.el;
+  }
+
   /** Where it plays ('' = this window's default output); a device that's gone keeps the default. */
   setSink(sinkId: string): void {
     const sinkable = this.el as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };

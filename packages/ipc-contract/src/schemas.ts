@@ -58,6 +58,12 @@ export const QuerySchemas = {
     kind: z.enum(['camera', 'microphone']),
     action: z.enum(['status', 'ask', 'open']).default('status'),
   }),
+  'stream.status': z.undefined(),
+  /** Which destinations have a stream key saved (never the keys themselves). */
+  'stream.keys': z.undefined(),
+  'recording.chooseFolder': z.undefined(),
+  /** Show the recordings folder (or one recording) in Finder / Explorer. */
+  'recording.reveal': z.object({ path: z.string().max(2000).nullable() }),
 } as const satisfies Record<QueryName, z.ZodType>;
 
 export type QueryArgs<K extends QueryName> = z.input<(typeof QuerySchemas)[K]>;

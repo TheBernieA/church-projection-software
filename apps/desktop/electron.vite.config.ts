@@ -24,6 +24,7 @@ export default defineConfig({
         input: {
           control: resolve(__dirname, 'src/preload/control.ts'),
           output: resolve(__dirname, 'src/preload/output.ts'),
+          stream: resolve(__dirname, 'src/preload/stream.ts'),
         },
       },
     },
@@ -37,6 +38,7 @@ export default defineConfig({
           control: resolve(__dirname, 'src/renderer/control/index.html'),
           output: resolve(__dirname, 'src/renderer/output/index.html'),
           stage: resolve(__dirname, 'src/renderer/stage/index.html'),
+          stream: resolve(__dirname, 'src/renderer/stream/index.html'),
         },
       },
     },

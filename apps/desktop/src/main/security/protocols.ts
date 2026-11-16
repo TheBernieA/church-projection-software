@@ -57,7 +57,7 @@ export function handleMediaProtocol(
   });
 }
 
-export function rendererUrl(page: 'control' | 'output' | 'stage', query = ''): string {
+export function rendererUrl(page: 'control' | 'output' | 'stage' | 'stream', query = ''): string {
   const dev = process.env.ELECTRON_RENDERER_URL;
   const q = query ? `?${query}` : '';
   return dev ? `${dev}/${page}/index.html${q}` : `${APP_SCHEME}://bundle/${page}/index.html${q}`;

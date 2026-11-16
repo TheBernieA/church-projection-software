@@ -1,0 +1,59 @@
+import { z } from 'zod';
+import { IdSchema } from './common';
+
+/** A place the stream goes. Its key is stored encrypted on this computer, never here. */
+export const StreamDestinationSchema = z.object({
+  id: IdSchema,
+  kind: z.enum(['youtube', 'facebook', 'custom']),
+  name: z.string().min(1).max(60),
+  /** Custom destinations: the RTMP(S) ingest address (the key is added after it). */
+  url: z.string().max(500).default(''),
+  enabled: z.boolean().default(true),
+});
+export type StreamDestination = z.infer<typeof StreamDestinationSchema>;
+
+/** Livestream and recording settings (Settings › Streaming). */
+export const StreamSettingsSchema = z.object({
+  destinations: z.array(StreamDestinationSchema).max(8).default([]),
+  quality: z
+    .object({
+      height: z.union([z.literal(720), z.literal(1080)]).default(720),
+      fps: z.union([z.literal(30), z.literal(60)]).default(30),
+      videoKbps: z.number().int().min(800).max(20_000).default(3500),
+      audioKbps: z.union([z.literal(128), z.literal(160), z.literal(192)]).default(160),
+      /** 'auto' picks the best hardware encoder this computer has. */
+      encoder: z.string().max(40).default('auto'),
+    })
+    .default({ height: 720, fps: 30, videoKbps: 3500, audioKbps: 160, encoder: 'auto' }),
+  picture: z
+    .object({
+      /** A camera behind everything (the preacher, the band); null: none. */
+      camera: z.string().max(300).nullable().default(null),
+      /** The words: full screen as the theme draws them, a lower third, or not at all. */
+      words: z.enum(['full', 'lowerThird', 'none']).default('lowerThird'),
+      /** Behind the words: what the projector shows, the camera, or black. */
+      background: z.enum(['program', 'camera', 'black']).default('program'),
+    })
+    .default({ camera: null, words: 'lowerThird', background: 'program' }),
+  sound: z
+    .object({
+      /** Tracks from the Audio tab and the sound of videos. */
+      room: z.boolean().default(true),
+      roomGain: z.number().min(0).max(2).default(1),
+      mics: z
+        .array(
+          z.object({ deviceId: z.string().max(300), gain: z.number().min(0).max(2).default(1) }),
+        )
+        .max(8)
+        .default([]),
+    })
+    .default({ room: true, roomGain: 1, mics: [] }),
+  recording: z
+    .object({
+      /** Where recordings go (null: Movies/Videos › Lampstand). */
+      folder: z.string().max(1000).nullable().default(null),
+      recordWhileStreaming: z.boolean().default(true),
+    })
+    .default({ folder: null, recordWhileStreaming: true }),
+});
+export type StreamSettings = z.infer<typeof StreamSettingsSchema>;

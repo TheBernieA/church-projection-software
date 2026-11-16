@@ -69,7 +69,7 @@ export interface Services {
   hymnals: InstalledHymnal[];
 }
 
-export type WindowKind = 'control' | 'output' | 'stage';
+export type WindowKind = 'control' | 'output' | 'stage' | 'stream';
 
 export type ByteRange = { start: number; end: number } | 'invalid' | null;
 

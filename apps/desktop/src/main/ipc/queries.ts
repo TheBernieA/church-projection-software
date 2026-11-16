@@ -1,4 +1,4 @@
-import { readFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, stat } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
 import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
@@ -8,6 +8,8 @@ import type { WindowManager } from '../windows/windowManager';
 import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
 import { parsePptx } from '../library/pptx';
 import { type QueryHandlers, type Services } from '../types';
+import type { SecretStore } from '../secrets/secretStore';
+import { keyName, recordingsFolder, type StreamController } from '../stream/streamController';
 import { MAX_DECK_BYTES } from '../constants';
 
 interface QueryDeps {
@@ -18,6 +20,8 @@ interface QueryDeps {
   windows: WindowManager;
   audit: () => AuditEntry[];
   control: () => BrowserWindow | null;
+  stream: StreamController;
+  secrets: SecretStore;
 }
 
 /** Read-side handlers for the control window. Args are already Zod-validated by the router. */
@@ -29,6 +33,8 @@ export function createQueries({
   control,
   installModules,
   listModules,
+  stream,
+  secrets,
 }: QueryDeps): QueryHandlers {
   const parent = (): BrowserWindow | undefined => control() ?? undefined;
   const openDialog = async (opts: Electron.OpenDialogOptions): Promise<string[]> => {
@@ -153,6 +159,29 @@ export function createQueries({
       done: await dailyBackup(s.paths.library, s.paths.backups, true),
     }),
     'audit.recent': () => audit().slice(-200),
+    'stream.status': () => stream.getStatus(),
+    'stream.keys': async () => {
+      const out: Record<string, boolean> = {};
+      for (const d of s.settings.get().stream.destinations)
+        out[d.id] = await secrets.has(keyName(d.id));
+      return out;
+    },
+    'recording.chooseFolder': async () => {
+      const folders = await openDialog({
+        title: 'Recordings folder',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      return { folder: folders.at(0) ?? null };
+    },
+    'recording.reveal': async ({ path }: QueryArgs<'recording.reveal'>) => {
+      if (path) {
+        shell.showItemInFolder(path);
+        return { done: true };
+      }
+      const folder = recordingsFolder(s.settings.get().stream.recording.folder);
+      await mkdir(folder, { recursive: true });
+      return { done: (await shell.openPath(folder)) === '' };
+    },
     'devices.access': async ({ kind, action }) => {
       const mac = process.platform === 'darwin';
       if (!mac && process.platform !== 'win32') return { status: 'granted' };

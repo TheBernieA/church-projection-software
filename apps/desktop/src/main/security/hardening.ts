@@ -12,7 +12,7 @@ import { type Logger } from '../types';
 
 /** Hardened webPreferences applied to EVERY window (§17.1). */
 export function secureWebPreferences(
-  preload: 'control' | 'output',
+  preload: 'control' | 'output' | 'stream',
   extra: Partial<WebPreferences> = {},
 ): WebPreferences {
   return {

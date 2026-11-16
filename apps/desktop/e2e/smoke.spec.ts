@@ -5,7 +5,16 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
@@ -115,6 +124,7 @@ test.beforeAll(async () => {
     ...process.env,
     LAMPSTAND_USER_DATA: join(dir, 'user'),
     LAMPSTAND_LIBRARY: join(dir, 'library'),
+    LAMPSTAND_RECORDINGS: join(dir, 'recordings'),
     NODE_ENV: 'test',
   };
   delete env.ELECTRON_RUN_AS_NODE;
@@ -1804,6 +1814,76 @@ test('video countdown: a video timed to end on zero, made from the media bin', a
   await control.keyboard.type('jn 3 16');
   await expect(control.getByRole('option').first()).toContainText('John 3:16');
   await control.keyboard.press('Shift+Enter');
+});
+
+test('recording: Lampstand records the stream picture and sound to a file', async () => {
+  const cmd = (type: string, payload: unknown) =>
+    control.evaluate(([t, p]) => window.lampstand.command({ type: t, payload: p }), [
+      type,
+      payload,
+    ] as const);
+  const status = () =>
+    control.evaluate(async () => {
+      const r = await window.lampstand.query('stream.status');
+      return r.ok ? r.value : null;
+    });
+  // Something on screen, so the recording has a picture (the stream draws the program).
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
+  await cmd('stream.start', { record: true });
+  await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
+  await control.waitForTimeout(3_000);
+  const s = await status();
+  expect(s?.recording).toBe(true);
+  expect(s?.fps).toBeGreaterThan(10);
+  await cmd('stream.stop', { record: true });
+  await expect.poll(async () => (await status())?.state).toBe('idle');
+  const folder = join(dir, 'recordings');
+  const [file] = readdirSync(folder).filter((f) => f.endsWith('.mp4'));
+  expect(file).toMatch(/^Lampstand \d{4}-\d\d-\d\d \d\d-\d\d\.mp4$/);
+  const path = join(folder, file!);
+  expect(statSync(path).size).toBeGreaterThan(5_000);
+  const probe = execFileSync(
+    'ffprobe',
+    ['-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', path],
+    {
+      encoding: 'utf8',
+    },
+  );
+  expect(probe).toContain('h264');
+  expect(probe).toContain('aac');
+  const duration = Number(
+    execFileSync(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path],
+      {
+        encoding: 'utf8',
+      },
+    ),
+  );
+  expect(duration).toBeGreaterThan(2.5);
+  // A frame from the middle isn't black: the slide was drawn into the stream.
+  const gray = execFileSync('ffmpeg', [
+    '-v',
+    'error',
+    '-ss',
+    '2',
+    '-i',
+    path,
+    '-frames:v',
+    '1',
+    '-vf',
+    'scale=64:36',
+    '-f',
+    'rawvideo',
+    '-pix_fmt',
+    'gray',
+    '-',
+  ]);
+  const mean = gray.reduce((a, b) => a + b, 0) / gray.length;
+  expect(mean).toBeGreaterThan(8);
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

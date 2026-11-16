@@ -27,6 +27,9 @@ import { stripChords } from '@lampstand/lyrics';
 import { registerIpc } from '../ipc/router';
 import { installAppMenu } from './menu';
 import { createQueries } from '../ipc/queries';
+import { SecretStore } from '../secrets/secretStore';
+import { keyName, StreamController } from '../stream/streamController';
+import { isStreamKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
 import { MediaLibrary } from '../library/mediaLibrary';
@@ -74,6 +77,8 @@ export class AppController {
   private s!: Services;
   private windows!: WindowManager;
   private search!: SearchService;
+  private stream!: StreamController;
+  private secrets!: SecretStore;
   private auditLog: AuditEntry[] = [];
   private log!: Logger;
   private started = false;
@@ -154,6 +159,20 @@ export class AppController {
       onNewDisplay: (label) => this.notice({ level: 'info', key: 'newDisplay', params: { label } }),
     });
 
+    // Livestream and recording; stream keys encrypted on this computer (never in settings).
+    this.secrets = new SecretStore(join(paths.userData, 'secrets.json'));
+    this.stream = new StreamController({
+      log: log.child('stream'),
+      windows: this.windows,
+      secrets: this.secrets,
+      getSettings: () => settings.get(),
+      getLiveState: () => live.get(),
+      logo: () => this.logo,
+      standby: () => this.standby,
+      onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
+      notice: (n) => this.notice(n),
+    });
+
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
       const mediaDir = join(paths.library, 'media');
@@ -183,6 +202,8 @@ export class AppController {
         control: () => this.windows.control,
         installModules: (files) => this.installModules(files),
         listModules: () => this.listModules(),
+        stream: this.stream,
+        secrets: this.secrets,
       }),
       kindOf: (e) => this.windows.kindOf(e.sender),
       onOutputReady: (e) => this.windows.outputReady(e.sender),
@@ -239,6 +260,7 @@ export class AppController {
         this.windows.refreshOutputInfo();
       }
       this.windows.sendToControl(Channels.evRepo, 'settings');
+      this.stream.settingsChanged();
       const key = JSON.stringify([next.displays, next.windowMode]);
       if (key !== outputKey) {
         outputKey = key;
@@ -281,6 +303,44 @@ export class AppController {
       schema: z.object({ patch: z.record(z.string().max(60), z.unknown()) }),
       undoable: false,
       handle: ({ patch }) => ({ result: settings.update(patch) }),
+    });
+    // Livestream / recording (the toolbar's Live button).
+    bus.register({
+      type: 'stream.start',
+      schema: z.object({ stream: z.boolean().optional(), record: z.boolean().optional() }),
+      undoable: false,
+      handle: async (p) => {
+        await this.stream.start(p);
+        return { result: null };
+      },
+    });
+    bus.register({
+      type: 'stream.stop',
+      schema: z.object({ stream: z.boolean().optional(), record: z.boolean().optional() }),
+      undoable: false,
+      handle: async (p) => {
+        await this.stream.stop(p);
+        return { result: null };
+      },
+    });
+    bus.register({
+      type: 'stream.setKey',
+      // Write-only: keys go into the encrypted store and never come back to a window.
+      schema: z.object({
+        destinationId: z.string().min(1).max(64),
+        key: z.string().max(300).nullable(),
+      }),
+      undoable: false,
+      handle: async ({ destinationId, key }) => {
+        if (key === null || key.trim() === '') await this.secrets.delete(keyName(destinationId));
+        else {
+          const k = key.trim();
+          if (!isStreamKey(k))
+            throw new AppError('invalid-key', 'That stream key has spaces or slashes in it.');
+          await this.secrets.set(keyName(destinationId), k);
+        }
+        return { result: null };
+      },
     });
     bus.register({
       type: 'display.assign',
