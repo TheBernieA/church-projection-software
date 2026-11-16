@@ -46,7 +46,14 @@
     "removeHeading": "Remove heading (keeps its items)",
     "templateSaved": "Template saved.",
     "syncSoon": "Planning & sync",
-    "webTitle": "Web page"
+    "webTitle": "Web page",
+    "add": "Add",
+    "addHelp": {
+      "header": "A heading that groups the items under it.",
+      "presentation": "Your own slides: text, shapes and pictures.",
+      "countdown": "Counts down to the start, full screen.",
+      "web": "Show a secure web page on the outputs."
+    }
   },
   "library": {
     "title": "Library",
@@ -116,7 +123,10 @@
     "transpose": "Transpose",
     "transposeDown": "Transpose down a semitone",
     "transposeUp": "Transpose up a semitone",
-    "transposeHint": "Key of the chords on the stage display"
+    "transposeHint": "Key of the chords on the stage display",
+    "view": "Slide view",
+    "viewGrid": "Grid",
+    "viewEasy": "Easy"
   },
   "monitor": {
     "preview": "Preview",
@@ -149,7 +159,8 @@
       "videoInput": "Video input",
       "custom": "Custom group"
     },
-    "masksSoon": "Masks"
+    "masksSoon": "Masks",
+    "clearAllLayers": "Clear all"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",

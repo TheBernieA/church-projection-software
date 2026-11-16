@@ -61,12 +61,14 @@ export function ToggleChip({
   icon,
   label,
   hint,
+  className = '',
 }: {
   on: boolean;
   onClick: () => void;
   icon: ReactNode;
   label: string;
   hint?: string;
+  className?: string;
 }) {
   return (
     <button
@@ -78,10 +80,10 @@ export function ToggleChip({
         on
           ? 'bg-[var(--tally-program)] text-white shadow-[0_4px_16px_rgba(239,74,80,0.35)]'
           : 'bg-[var(--surface-2)] text-[var(--text-1)] shadow-[var(--shadow-1)] hover:bg-[var(--surface-3)]'
-      }`}
+      } ${className}`}
     >
       {icon}
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
       {hint && (
         <span className={`text-[11px] ${on ? 'text-white/75' : 'text-[var(--text-3)]'}`}>
           {hint}

@@ -1,20 +1,30 @@
 import { useMemo } from 'react';
-import { Keyboard, ListPlus, MousePointerClick, Pencil, Plus } from 'lucide-react';
+import {
+  AlignLeft,
+  Keyboard,
+  LayoutGrid,
+  ListPlus,
+  MousePointerClick,
+  Pencil,
+  Plus,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button, TallyTag } from '@lampstand/ui';
+import { Button, Segmented } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
-import { groupColor, itemTitle } from '../lib/slides';
+import { itemTitle } from '../lib/slides';
 import { addItemToService, updateItem, useStore } from '../lib/store';
 import { AddCard } from './cards';
 import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
-import { SceneView } from './SceneView';
+import { SlideCard, SlideRow, type SlideState } from './slides/SlideCards';
 import { SongControls } from './SongControls';
 import { SoonFeature } from './Soon';
 import { usePaneSize } from './shell/Splitter';
 import { type PresentableSlide } from '../types';
+
+type SlideView = 'grid' | 'easy';
 
 function thumbScene(slide: PresentableSlide): Scene {
   const a = slide.action;
@@ -53,6 +63,9 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const editCursor = useStore((s) => s.editCursor);
   const inService = useInService(item);
   const thumb = usePaneSize('thumbWidth', 200, 130, 360);
+  // Grid (thumbnails) or Easy (the words, large): remembered like the pane sizes.
+  const view = usePaneSize('slideView', 0, 0, 1);
+  const easy = view.size === 1;
 
   const isAdhoc = !!item && adhoc?.id === item.id;
   const song = item?.kind === 'song' ? songs.find((s) => s.id === item.songId) : undefined;
@@ -69,6 +82,16 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const quickEdit = (it: ServiceItem, i: number): void => {
     if (!editable(it)) return;
     useStore.setState({ editCursor: { itemId: it.id, index: i }, mode: 'edit' });
+  };
+  const stateOf = (slide: PresentableSlide, i: number): SlideState => {
+    if (!item) return 'idle';
+    const here = (c: { itemId: string; index: number } | null): boolean =>
+      c?.itemId === item.id && c.index === i;
+    if (here(liveCursor) && (slide.action.kind !== 'content' || liveKey === slide.key))
+      return 'live';
+    if (here(previewCursor)) return 'preview';
+    if ((purpose === 'edit' || editableText) && here(editCursor)) return 'editing';
+    return 'idle';
   };
   const onClick = (it: ServiceItem, i: number): void => {
     if (purpose === 'edit') useStore.setState({ editCursor: { itemId: it.id, index: i } });
@@ -114,19 +137,6 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
               {t('slides.addToService')}
             </Button>
           )}
-          <input
-            type="range"
-            aria-label={t('slides.size')}
-            title={t('slides.size')}
-            min={130}
-            max={360}
-            step={10}
-            value={thumb.size}
-            onChange={(e) => thumb.preview(Number(e.target.value))}
-            onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-            onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-            className="h-1.5 w-24 accent-[var(--accent)]"
-          />
         </div>
       </div>
       {/* Padding leaves room for tally rings and the focus outline. */}
@@ -143,92 +153,87 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
         {item && !loading && slides.length === 0 && (
           <p className="p-6 text-center text-[var(--text-3)]">{t('slides.noSlides')}</p>
         )}
-        <ol
-          aria-label={t('slides.list')}
-          className="grid gap-3"
-          style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${thumb.size}px, 1fr))` }}
-        >
-          {item &&
-            slides.map((slide, i) => {
-              const isLive =
-                liveCursor?.itemId === item.id &&
-                liveCursor.index === i &&
-                (slide.action.kind !== 'content' || liveKey === slide.key);
-              const isPreview =
-                !isLive && previewCursor?.itemId === item.id && previewCursor.index === i;
-              const isEditing =
-                (purpose === 'edit' || editableText) &&
-                editCursor?.itemId === item.id &&
-                editCursor.index === i;
-              const color = groupColor(slide.group);
-              return (
-                <li key={slide.key}>
-                  <button
-                    type="button"
-                    onClick={() => onClick(item, i)}
-                    onDoubleClick={() => void goLiveSlide(item, i)}
-                    onContextMenu={(e) => {
-                      if (purpose !== 'show' || !editable(item)) return;
-                      e.preventDefault();
-                      quickEdit(item, i);
-                    }}
-                    title={
-                      purpose === 'show' && editable(item) ? t('slides.quickEditHint') : undefined
-                    }
-                    aria-label={`${slide.label}${isLive ? ` — ${t('monitor.program')}` : ''}${isPreview ? ` — ${t('monitor.preview')}` : ''}`}
-                    style={
-                      isLive
-                        ? { boxShadow: 'var(--tally-program-glow)' }
-                        : isPreview
-                          ? { boxShadow: '0 0 0 2px var(--tally-preview)' }
-                          : isEditing
-                            ? { boxShadow: '0 0 0 2px var(--accent)' }
-                            : undefined
-                    }
-                    aria-current={isEditing || undefined}
-                    className={`group block w-full cursor-pointer overflow-hidden rounded-[4px] bg-[var(--surface-2)] text-left focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[var(--accent)] ${
-                      isLive || isPreview || isEditing
-                        ? ''
-                        : 'shadow-[0_0_0_1px_var(--hairline-strong)] hover:shadow-[0_0_0_1px_var(--text-3)]'
-                    }`}
-                  >
-                    <div className="relative">
-                      <SceneView scene={thumbScenes[i] ?? thumbScene(slide)} mode="thumbnail" />
-                      <span className="tnum absolute left-1.5 top-1.5 rounded-[3px] bg-black/55 px-1 text-[10px] font-semibold text-white/85">
-                        {i + 1}
-                      </span>
-                      {isLive && <TallyTag tone="program">LIVE</TallyTag>}
-                      {isPreview && (
-                        <TallyTag tone="preview">{t('monitor.preview').toUpperCase()}</TallyTag>
-                      )}
-                    </div>
-                    {/* Group strip: the colour IS the group, so you can find the chorus by eye. */}
-                    <div
-                      className="flex h-6 items-center px-2 text-[11px] font-semibold"
-                      style={
-                        color
-                          ? { background: color, color: '#fff' }
-                          : { background: 'var(--surface-3)', color: 'var(--text-2)' }
-                      }
-                    >
-                      <span className="truncate">{slide.label}</span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          {editableText && (
-            <li>
-              <AddCard
-                label={t('inspector.addSlide')}
-                onClick={addSlide}
-                className="aspect-[16/10.4] w-full rounded-[4px] text-[13px]"
-                icon={<Plus size={22} strokeWidth={1.75} />}
+        {item && easy && (
+          <ol aria-label={t('slides.list')} className="flex flex-col gap-1.5">
+            {slides.map((slide, i) => (
+              <SlideRow
+                key={slide.key}
+                slide={slide}
+                index={i}
+                state={stateOf(slide, i)}
+                onClick={() => onClick(item, i)}
+                onDoubleClick={() => void goLiveSlide(item, i)}
               />
-            </li>
-          )}
-        </ol>
+            ))}
+          </ol>
+        )}
+        {!easy && (
+          <ol
+            aria-label={t('slides.list')}
+            className="grid gap-3.5"
+            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${thumb.size}px, 1fr))` }}
+          >
+            {item &&
+              slides.map((slide, i) => (
+                <SlideCard
+                  key={slide.key}
+                  slide={slide}
+                  index={i}
+                  scene={thumbScenes[i] ?? thumbScene(slide)}
+                  state={stateOf(slide, i)}
+                  hint={
+                    purpose === 'show' && editable(item) ? t('slides.quickEditHint') : undefined
+                  }
+                  onClick={() => onClick(item, i)}
+                  onDoubleClick={() => void goLiveSlide(item, i)}
+                  onContextMenu={(e) => {
+                    if (purpose !== 'show' || !editable(item)) return;
+                    e.preventDefault();
+                    quickEdit(item, i);
+                  }}
+                />
+              ))}
+            {editableText && (
+              <li>
+                <AddCard
+                  label={t('inspector.addSlide')}
+                  onClick={addSlide}
+                  className="aspect-[16/10.4] w-full rounded-[6px] text-[13px]"
+                  icon={<Plus size={22} strokeWidth={1.75} />}
+                />
+              </li>
+            )}
+          </ol>
+        )}
       </div>
+      {item && slides.length > 0 && (
+        <div className="flex h-10 shrink-0 items-center justify-end gap-3 border-t border-[var(--hairline)] px-3">
+          <Segmented<SlideView>
+            label={t('slides.view')}
+            value={easy ? 'easy' : 'grid'}
+            onChange={(v) => view.commit(v === 'easy' ? 1 : 0)}
+            options={[
+              { value: 'grid', label: t('slides.viewGrid'), icon: <LayoutGrid size={13} /> },
+              { value: 'easy', label: t('slides.viewEasy'), icon: <AlignLeft size={13} /> },
+            ]}
+          />
+          {!easy && (
+            <input
+              type="range"
+              aria-label={t('slides.size')}
+              title={t('slides.size')}
+              min={130}
+              max={360}
+              step={10}
+              value={thumb.size}
+              onChange={(e) => thumb.preview(Number(e.target.value))}
+              onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
+              onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
+              className="h-1.5 w-28 accent-[var(--accent)]"
+            />
+          )}
+        </div>
+      )}
     </section>
   );
 }

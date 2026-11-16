@@ -39,6 +39,19 @@ export function Bin({ height }: { height: number }) {
   const tab = useStore((s) => s.binTab);
   const open = useStore((s) => s.binOpen);
   const current = TABS.find((x) => x.tab === tab) ?? { tab: 'media' as const, icon: Images };
+  // How many things each bin holds (primitives, so ticking live state doesn't re-render).
+  const mediaCount = useStore(
+    (s) => s.media.filter((m) => !m.isBackground && m.kind !== 'audio').length,
+  );
+  const propCount = useStore((s) => s.settings?.props.length ?? 0);
+  const messageCount = useStore((s) => s.settings?.messages.length ?? 0);
+  const timerCount = useStore((s) => s.settings?.timers.length ?? 0);
+  const counts: Partial<Record<BinTab, number>> = {
+    media: mediaCount,
+    props: propCount,
+    messages: messageCount,
+    timers: timerCount,
+  };
   return (
     <section
       aria-label={t('bin.label')}
@@ -54,6 +67,12 @@ export function Bin({ height }: { height: number }) {
             icon={<Icon size={13} />}
           >
             {t(`bin.tabs.${x}`)}
+            {/* Hidden from the accessible name: the tab is still just "Props". */}
+            {!soon && !!counts[x] && (
+              <span aria-hidden className="tnum text-[11px] text-[var(--text-3)]">
+                {counts[x]}
+              </span>
+            )}
             {soon && <SoonBadge label={t('soon.badge')} />}
           </PaneTab>
         ))}

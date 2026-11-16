@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from 'react';
 import {
   AudioLines,
   Church,
+  Eraser,
   Film,
   Image as ImageIcon,
   ListChecks,
@@ -132,6 +133,50 @@ function ClearRow({
 }
 
 /**
+ * One layer in the clear strip (in on-screen order). Lit red while its layer shows something;
+ * clicking clears just that layer. Dimmed and inert when the layer is empty.
+ */
+function LayerButton({
+  icon,
+  label,
+  hint,
+  on,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  hint?: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation();
+  const name = t('monitor.clearLayer', { name: label });
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!on}
+      aria-label={name}
+      title={hint ? `${name} (${hint})` : name}
+      className={`relative flex min-w-0 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-[6px] py-2 text-[10px] font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
+        on
+          ? 'bg-[var(--tally-program-soft)] text-[var(--text-1)] shadow-[inset_0_0_0_1px_rgba(239,74,80,0.35)] hover:bg-[rgba(239,74,80,0.24)] [&_svg]:text-[var(--tally-program)]'
+          : 'text-[var(--text-3)]'
+      }`}
+    >
+      {on && (
+        <span
+          aria-hidden
+          className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--tally-program)] shadow-[0_0_6px_var(--tally-program)]"
+        />
+      )}
+      {icon}
+      <span className="w-full truncate px-0.5 text-center">{label}</span>
+    </button>
+  );
+}
+
+/**
  * Right column: what the room sees (Live), the optional Preview monitor ("Preview first"),
  * video controls, then a clear button per layer and the screen masks.
  */
@@ -170,6 +215,7 @@ export function RightColumn() {
   );
   const has = (g: 'messages' | 'props'): boolean => p.overlays.some((o) => overlayGroup(o) === g);
   const clear = (layer: Layer) => () => void clearLayer(layer);
+  const anything = onAir || p.overlays.length > 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -210,85 +256,111 @@ export function RightColumn() {
       </div>
 
       <PaneHeader title={t('monitor.clear')} />
-      <div role="group" aria-label={t('monitor.clear')} className="grid grid-cols-2 gap-1 p-2">
-        <ClearRow
-          icon={<Type size={14} />}
-          label={t('monitor.layers.slide')}
-          hint={displayCombo(keys.clearContent)}
-          on={!!p.content}
-          onClick={clear('content')}
-        />
-        <ClearRow
-          icon={<Film size={14} />}
-          label={t('monitor.layers.media')}
-          hint={displayCombo(keys.clearMedia)}
-          on={!!p.media}
-          onClick={clear('media')}
-        />
-        <ClearRow
-          icon={<ImageIcon size={14} />}
-          label={t('monitor.layers.background')}
-          hint={displayCombo(keys.clearBackground)}
-          on={!!p.background}
-          onClick={clear('background')}
-        />
-        <ClearRow
-          icon={<MessageSquareText size={14} />}
-          label={t('monitor.layers.messages')}
-          on={has('messages')}
-          onClick={clear('messages')}
-        />
-        <ClearRow
-          icon={<Sparkle size={14} />}
-          label={t('monitor.layers.props')}
-          on={has('props')}
-          onClick={clear('props')}
-        />
-        <ClearRow
-          icon={<Megaphone size={14} />}
-          label={t('monitor.layers.announcements')}
-          soon="announcements-layer"
-        />
-        <ClearRow
-          icon={<AudioLines size={14} />}
-          label={t('monitor.layers.audio')}
-          soon="audio-bin"
-        />
-        <ClearRow
-          icon={<Video size={14} />}
-          label={t('monitor.layers.videoInput')}
-          soon="video-input"
-        />
-        <ClearRow
-          icon={<ListChecks size={14} />}
-          label={t('monitor.layers.custom')}
-          soon="custom-clear-groups"
-        />
+      <div className="flex flex-col gap-2 p-2.5">
+        {/* Layers in on-screen order, top to bottom (as ProPresenter stacks them). */}
+        <div
+          role="group"
+          aria-label={t('monitor.clear')}
+          className="flex gap-1 rounded-[8px] bg-[var(--surface-0)] p-1 shadow-[inset_0_0_0_1px_var(--hairline)]"
+        >
+          <LayerButton
+            icon={<MessageSquareText size={16} />}
+            label={t('monitor.layers.messages')}
+            on={has('messages')}
+            onClick={clear('messages')}
+          />
+          <LayerButton
+            icon={<Sparkle size={16} />}
+            label={t('monitor.layers.props')}
+            on={has('props')}
+            onClick={clear('props')}
+          />
+          <LayerButton
+            icon={<Type size={16} />}
+            label={t('monitor.layers.slide')}
+            hint={displayCombo(keys.clearContent)}
+            on={!!p.content}
+            onClick={clear('content')}
+          />
+          <LayerButton
+            icon={<Film size={16} />}
+            label={t('monitor.layers.media')}
+            hint={displayCombo(keys.clearMedia)}
+            on={!!p.media || !!p.web}
+            onClick={clear('media')}
+          />
+          <LayerButton
+            icon={<ImageIcon size={16} />}
+            label={t('monitor.layers.background')}
+            hint={displayCombo(keys.clearBackground)}
+            on={!!p.background}
+            onClick={clear('background')}
+          />
+        </div>
+        <Button
+          size="sm"
+          variant={anything ? 'danger' : 'ghost'}
+          className={`w-full ${anything ? 'shadow-[inset_0_0_0_1px_rgba(239,74,80,0.4)]' : ''}`}
+          disabled={!anything}
+          icon={<Eraser size={14} />}
+          onClick={() => void clearLayer('all')}
+        >
+          {t('monitor.clearAllLayers')}
+          <Kbd>{displayCombo(keys.clearAll)}</Kbd>
+        </Button>
+        {/* Planned layers keep their "Soon" markers. */}
+        <div className="grid grid-cols-2 gap-1">
+          <ClearRow
+            icon={<Megaphone size={14} />}
+            label={t('monitor.layers.announcements')}
+            soon="announcements-layer"
+          />
+          <ClearRow
+            icon={<AudioLines size={14} />}
+            label={t('monitor.layers.audio')}
+            soon="audio-bin"
+          />
+          <ClearRow
+            icon={<Video size={14} />}
+            label={t('monitor.layers.videoInput')}
+            soon="video-input"
+          />
+          <ClearRow
+            icon={<ListChecks size={14} />}
+            label={t('monitor.layers.custom')}
+            soon="custom-clear-groups"
+          />
+        </div>
       </div>
 
       <PaneHeader title={t('monitor.masks')} />
-      <div role="group" aria-label={t('monitor.masks')} className="flex flex-wrap gap-1.5 p-2">
-        <ToggleChip
-          on={p.masks.black}
-          onClick={() => void toggleMask('black')}
-          icon={<Square size={14} fill="currentColor" />}
-          label={t('monitor.black')}
-          hint={displayCombo(keys.black)}
-        />
-        <ToggleChip
-          on={p.masks.logo}
-          onClick={() => void toggleMask('logo')}
-          icon={<Church size={14} />}
-          label={t('monitor.logo')}
-          hint={displayCombo(keys.logo)}
-        />
-        <ToggleChip
-          on={p.masks.freeze}
-          onClick={() => void toggleMask('freeze')}
-          icon={<Snowflake size={14} />}
-          label={t('monitor.freeze')}
-          hint={displayCombo(keys.freeze)}
-        />
+      <div role="group" aria-label={t('monitor.masks')} className="flex flex-col gap-1.5 p-2.5">
+        <div className="grid grid-cols-[1.45fr_1fr_1fr] gap-1">
+          <ToggleChip
+            on={p.masks.black}
+            onClick={() => void toggleMask('black')}
+            icon={<Square size={14} fill="currentColor" />}
+            label={t('monitor.black')}
+            hint={displayCombo(keys.black)}
+            className="w-full justify-center !px-2"
+          />
+          <ToggleChip
+            on={p.masks.logo}
+            onClick={() => void toggleMask('logo')}
+            icon={<Church size={14} />}
+            label={t('monitor.logo')}
+            hint={displayCombo(keys.logo)}
+            className="w-full justify-center !px-2"
+          />
+          <ToggleChip
+            on={p.masks.freeze}
+            onClick={() => void toggleMask('freeze')}
+            icon={<Snowflake size={14} />}
+            label={t('monitor.freeze')}
+            hint={displayCombo(keys.freeze)}
+            className="w-full justify-center !px-2"
+          />
+        </div>
         <SoonFeature id="masks" icon={<SquareDashed size={14} />} label={t('monitor.masksSoon')} />
       </div>
     </div>

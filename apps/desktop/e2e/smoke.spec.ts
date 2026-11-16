@@ -136,6 +136,15 @@ const previewFirst = async (on: boolean) => {
   if ((await sw.getAttribute('aria-checked')) !== String(on)) await sw.click();
 };
 
+/** Add something to the service plan from its "+ Add" menu. */
+const addToPlan = async (name: string) => {
+  await control
+    .getByRole('region', { name: 'Service plan' })
+    .getByRole('button', { name: 'Add', exact: true })
+    .click();
+  await control.getByRole('menuitem', { name, exact: true }).click();
+};
+
 const outputPage = async (): Promise<Page> => {
   for (let i = 0; i < 50; i++) {
     const p = app.windows().find((w) => w.url().includes('/output/') && !w.isClosed());
@@ -380,7 +389,7 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
 });
 
 test('text slides: inspector edits the selected slide, add-slide card appends', async () => {
-  await control.getByRole('button', { name: 'Slides', exact: true }).click(); // "+ Slides" in the service plan
+  await addToPlan('Slides');
   await control.getByText('Text slides').last().click();
   await mode('Edit'); // the slide inspector lives in the Edit workspace
   await expect(control.getByText('Slide 1 of 1')).toBeVisible();
@@ -466,7 +475,7 @@ test('import slides: PowerPoint becomes text slides, a PDF becomes one picture p
   const pptx = join(dir, 'Deck.pptx');
   writeFileSync(pptx, deckPptx());
   await pick(pptx);
-  await plan.getByRole('button', { name: 'Import', exact: true }).click();
+  await addToPlan('Import');
   await expect(plan.getByText('Deck', { exact: true })).toBeVisible();
   await mode('Show');
   const list = control.getByRole('list', { name: 'Slide list' });
@@ -476,14 +485,13 @@ test('import slides: PowerPoint becomes text slides, a PDF becomes one picture p
   const pdf = join(dir, 'Handout.pdf');
   writeFileSync(pdf, HANDOUT_PDF);
   await pick(pdf);
-  await plan.getByRole('button', { name: 'Import', exact: true }).click();
+  await addToPlan('Import');
   await expect(plan.getByText('Handout', { exact: true })).toBeVisible({ timeout: 20_000 });
   await expect(list.locator('.ls-object-image img')).toHaveCount(2); // one picture per page
   await control.screenshot({ path: 'test-results/11c-import.png' });
 });
 
 test('web page: shown over the output in an isolated view; Black screen takes it down', async () => {
-  const plan = control.getByRole('region', { name: 'Service plan' });
   const views = () =>
     app.evaluate(({ BrowserWindow }) => {
       const out = BrowserWindow.getAllWindows().find((w) =>
@@ -493,7 +501,7 @@ test('web page: shown over the output in an isolated view; Black screen takes it
     });
   await outputPage();
   const before = await views();
-  await plan.getByRole('button', { name: 'Web page', exact: true }).click(); // opens its editor
+  await addToPlan('Web page'); // opens its editor
   const address = control.getByLabel('Web address');
   await address.fill('http://insecure.example');
   await expect(control.getByText('Use a full secure address')).toBeVisible(); // not saved
@@ -604,7 +612,7 @@ test('undo / redo: buttons and ⌘Z revert and re-apply service edits', async ()
   const undo = control.getByRole('button', { name: /^Undo/ });
   const redo = control.getByRole('button', { name: /^Redo/ });
   const before = await rows();
-  await plan.getByRole('button', { name: 'Section', exact: true }).click();
+  await addToPlan('Section');
   await expect.poll(rows).toBe(before + 1);
   await expect(undo).toBeEnabled();
   await undo.click();
@@ -954,6 +962,31 @@ test('Escape (panic) clears text but keeps the background', async () => {
   await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
   await expect(out.locator('.ls-bg')).toHaveCount(1);
   // Put the verse back for the crash test: quick bar, Shift+Enter = show now.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world', {
+    timeout: 10_000,
+  });
+});
+
+test('Easy view lists the words; Clear all takes everything off the screen', async () => {
+  await mode('Show');
+  const out = await outputPage();
+  // The verse from the previous test is in the grid; Easy view shows its words, large.
+  await control.getByRole('radio', { name: 'Easy' }).click();
+  const list = control.getByRole('list', { name: 'Slide list' });
+  await expect(list).toContainText('For God so loved the world');
+  await control.screenshot({ path: 'test-results/23-easy-view.png' });
+  await control.getByRole('radio', { name: 'Grid' }).click();
+  // Clear all: every layer comes off, and the button goes quiet once there's nothing left.
+  const clearAll = control.getByRole('button', { name: /^Clear all/ });
+  await expect(clearAll).toBeEnabled();
+  await clearAll.click();
+  await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
+  await expect(clearAll).toBeDisabled();
+  // Put the verse back for the crash test.
   await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
   await control.keyboard.type('jn 3 16');
   await expect(control.getByRole('option').first()).toContainText('John 3:16');

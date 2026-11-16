@@ -68,7 +68,7 @@ export const SceneView = memo(function SceneView({
       ref={host}
       role="img"
       aria-label={label}
-      className={`relative aspect-video w-full overflow-hidden ${transparent ? '' : 'bg-black'} ${className}`}
+      className={`relative aspect-video w-full overflow-hidden ${transparent ? '' : 'bg-black'} ${mode === 'thumbnail' && !visible ? 'ls-skeleton' : ''} ${className}`}
     />
   );
 });

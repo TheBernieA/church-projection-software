@@ -63,6 +63,17 @@ select:disabled {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+/* Placeholder while a thumbnail waits to scroll into view. */
+.ls-skeleton {
+  background: linear-gradient(
+      90deg,
+      var(--surface-2) 25%,
+      var(--surface-3) 50%,
+      var(--surface-2) 75%
+    )
+    0 0 / 200% 100%;
+  animation: ls-shimmer 1.4s linear infinite;
+}
 .tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -154,6 +165,36 @@ input[type='checkbox'] {
   height: 15px;
 }
 
+@keyframes ls-fade {
+  from {
+    opacity: 0;
+  }
+}
+/* Dialogs are centred with translateX(-50%), so the entrance keeps that offset. */
+@keyframes ls-dialog {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+@keyframes ls-toast {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ls-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
 @keyframes ls-pop {
   from {
     opacity: 0;

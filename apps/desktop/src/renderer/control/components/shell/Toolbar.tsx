@@ -144,7 +144,7 @@ export function Toolbar() {
           checked={!clickGoesLive}
           onChange={(on) => void saveSettings({ clickGoesLive: !on })}
         />
-        <span className="whitespace-nowrap">{t('top.previewFirst')}</span>
+        <span className="whitespace-nowrap max-[1600px]:sr-only">{t('top.previewFirst')}</span>
       </label>
 
       <div className="flex items-center">
@@ -176,7 +176,7 @@ export function Toolbar() {
           title={noOutput ? t('outputs.noneHelp') : t('top.outputs')}
         >
           {noOutput ? <TriangleAlert size={15} /> : <MonitorUp size={15} />}
-          <span className="tnum whitespace-nowrap">
+          <span className={`tnum whitespace-nowrap ${noOutput ? '' : 'max-[1600px]:sr-only'}`}>
             {noOutput
               ? t('outputs.none')
               : windowMode

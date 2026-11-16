@@ -4,9 +4,12 @@ import type { ReactNode } from 'react';
 import { closeDialog, useStore } from '../lib/store';
 import { type DialogName } from '../types';
 
-/** Dimmed, lightly blurred backdrop shared by every modal surface (dialogs, quick bar). */
-// Solid dim, no backdrop blur: blurring the animated monitors behind it cost a repaint every frame.
-export const OVERLAY_CLASS = 'fixed inset-0 z-40 bg-[rgba(5,6,10,0.66)]';
+/**
+ * Dimmed backdrop shared by every modal surface (dialogs, quick bar). Solid, no backdrop blur:
+ * blurring the animated monitors behind it cost a repaint every frame.
+ */
+export const OVERLAY_CLASS =
+  'fixed inset-0 z-40 bg-[rgba(5,6,10,0.66)] data-[state=open]:animate-[ls-fade_160ms_var(--ease-out)]';
 
 /** Accessible dialog bound to the store's `dialog` slot. */
 export function Dialog({
@@ -32,7 +35,7 @@ export function Dialog({
         <RD.Overlay className={OVERLAY_CLASS} />
         <RD.Content
           aria-describedby={undefined}
-          className={`fixed left-1/2 top-[7vh] z-50 flex max-h-[86vh] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-panel)] bg-[var(--surface-1)] shadow-[var(--shadow-3)] ${wide ? 'w-[min(1120px,94vw)]' : 'w-[min(580px,94vw)]'} ${bare ? 'h-[min(700px,86vh)]' : ''}`}
+          className={`fixed left-1/2 top-[7vh] z-50 flex max-h-[86vh] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-xl)] bg-[var(--surface-1)] shadow-[var(--shadow-3),var(--highlight-top)] data-[state=open]:animate-[ls-dialog_180ms_var(--ease-out)] ${wide ? 'w-[min(1120px,94vw)]' : 'w-[min(580px,94vw)]'} ${bare ? 'h-[min(700px,86vh)]' : ''}`}
         >
           {bare ? (
             <>
@@ -47,7 +50,7 @@ export function Dialog({
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between px-5 pb-2 pt-4">
+              <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--hairline)] px-5">
                 <RD.Title className="text-[16px] font-semibold tracking-[-0.01em]">
                   {title}
                 </RD.Title>
@@ -58,9 +61,9 @@ export function Dialog({
                   <X size={17} />
                 </RD.Close>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-2">{children}</div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
               {footer && (
-                <div className="flex justify-end gap-2 bg-[var(--surface-0)]/40 px-5 py-3 shadow-[0_-1px_0_var(--hairline)]">
+                <div className="flex h-14 shrink-0 items-center justify-end gap-2 border-t border-[var(--hairline)] bg-[var(--surface-0)]/40 px-5">
                   {footer}
                 </div>
               )}

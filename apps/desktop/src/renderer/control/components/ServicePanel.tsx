@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   ChevronDown,
   ChevronUp,
@@ -204,10 +205,14 @@ export function ServicePanel() {
                     type="button"
                     onDoubleClick={() => setEditing(item.id)}
                     title={t('service.renameHint')}
-                    className="section-label flex-1 truncate text-left !text-[var(--accent)]"
+                    className="section-label max-w-[70%] shrink-0 truncate text-left !text-[var(--accent)]"
                   >
                     {item.label}
                   </button>
+                )}
+                {/* A hairline runs from the section name to the edge. */}
+                {editing !== item.id && (
+                  <span aria-hidden className="ml-2 h-px flex-1 bg-[var(--hairline-strong)]" />
                 )}
                 <ItemMenu index={i} items={items} update={update} item={item} />
               </li>
@@ -219,12 +224,22 @@ export function ServicePanel() {
           return (
             <li key={item.id} {...dnd(i)} className={`group relative ${dropLine} ${dimmed}`}>
               <div
-                className={`flex items-center gap-1 rounded-[var(--radius-card)] pr-1 transition-colors duration-100 ${
+                className={`relative flex items-center gap-1 rounded-[var(--radius-card)] pr-1 transition-colors duration-100 ${
                   isSel
                     ? 'bg-[var(--surface-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]'
                     : 'hover:bg-[var(--surface-2)]'
                 }`}
               >
+                {/* Edge bar: red while live, accent while selected. */}
+                {(isLive || isSel) && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-1.5 left-0 w-[3px] rounded-full"
+                    style={{
+                      background: isLive ? 'var(--tally-program)' : 'var(--accent)',
+                    }}
+                  />
+                )}
                 <GripVertical
                   size={14}
                   aria-hidden
@@ -284,81 +299,106 @@ export function ServicePanel() {
   );
 }
 
+/**
+ * "+ Add" at the foot of the service plan: one button, a menu of what can be added (section,
+ * text slides, countdown, web page, import), each with a line saying what it is.
+ */
 function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void }) {
   const { t } = useTranslation();
-  return (
-    <div className="flex flex-wrap items-center gap-1 px-3 py-2.5 shadow-[0_-1px_0_var(--hairline)]">
-      <Plus size={14} className="mr-0.5 text-[var(--text-3)]" aria-hidden />
-      <Button
-        size="xs"
-        variant="ghost"
-        icon={<Heading size={14} />}
-        onClick={() =>
-          update((xs) => [...xs, { id: newId(), kind: 'header', label: t('service.newHeader') }])
-        }
-      >
-        {t('service.kind.header')}
-      </Button>
-      <Button
-        size="xs"
-        variant="ghost"
-        icon={<Presentation size={14} />}
-        onClick={() =>
-          update((xs) => [
-            ...xs,
-            {
-              id: newId(),
-              kind: 'presentation',
-              title: t('service.textSlideTitle'),
-              slides: [{ id: newId(), title: '', body: 'Type your text here' }],
-            },
-          ])
-        }
-      >
-        {t('service.kind.presentation')}
-      </Button>
-      <Button
-        size="xs"
-        variant="ghost"
-        icon={<Timer size={14} />}
-        onClick={() =>
-          update((xs) => [
-            ...xs,
-            {
-              id: newId(),
-              kind: 'countdown',
-              title: t('service.countdownTitle'),
-              target: { durationSec: 300 },
-            },
-          ])
-        }
-      >
-        {t('service.kind.countdown')}
-      </Button>
-      <Button
-        size="xs"
-        variant="ghost"
-        icon={<Globe size={14} />}
-        onClick={() => {
+  const add = (item: ServiceItem): void => update((xs) => [...xs, item]);
+  const entries: { key: string; icon: ReactNode; label: string; help: string; run: () => void }[] =
+    [
+      {
+        key: 'header',
+        icon: <Heading size={15} />,
+        label: t('service.kind.header'),
+        help: t('service.addHelp.header'),
+        run: () => add({ id: newId(), kind: 'header', label: t('service.newHeader') }),
+      },
+      {
+        key: 'presentation',
+        icon: <Presentation size={15} />,
+        label: t('service.kind.presentation'),
+        help: t('service.addHelp.presentation'),
+        run: () =>
+          add({
+            id: newId(),
+            kind: 'presentation',
+            title: t('service.textSlideTitle'),
+            slides: [{ id: newId(), title: '', body: 'Type your text here' }],
+          }),
+      },
+      {
+        key: 'countdown',
+        icon: <Timer size={15} />,
+        label: t('service.kind.countdown'),
+        help: t('service.addHelp.countdown'),
+        run: () =>
+          add({
+            id: newId(),
+            kind: 'countdown',
+            title: t('service.countdownTitle'),
+            target: { durationSec: 300 },
+          }),
+      },
+      {
+        key: 'web',
+        icon: <Globe size={15} />,
+        label: t('service.kind.web'),
+        help: t('service.addHelp.web'),
+        run: () => {
           const id = newId();
-          update((xs) => [
-            ...xs,
-            { id, kind: 'web', title: t('service.webTitle'), url: 'https://example.com' },
-          ]);
+          add({ id, kind: 'web', title: t('service.webTitle'), url: 'https://example.com' });
           useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
-        }}
-      >
-        {t('service.kind.web')}
-      </Button>
-      <Button
-        size="xs"
-        variant="ghost"
-        icon={<FileUp size={14} />}
-        title={t('import.hint')}
-        onClick={() => void importSlides()}
-      >
-        {t('import.button')}
-      </Button>
+        },
+      },
+      {
+        key: 'import',
+        icon: <FileUp size={15} />,
+        label: t('import.button'),
+        help: t('import.hint'),
+        run: () => void importSlides(),
+      },
+    ];
+  return (
+    <div className="px-2.5 py-2.5 shadow-[0_-1px_0_var(--hairline)]">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <Button size="sm" variant="subtle" className="w-full" icon={<Plus size={15} />}>
+            {t('service.add')}
+          </Button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            side="top"
+            align="start"
+            sideOffset={6}
+            collisionPadding={12}
+            className="z-[60] w-[min(320px,var(--radix-dropdown-menu-trigger-width))] min-w-[260px] rounded-[12px] bg-[var(--surface-2)] p-1.5 shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
+          >
+            {entries.map((e) => (
+              <DropdownMenu.Item
+                key={e.key}
+                aria-label={e.label}
+                onSelect={e.run}
+                className="flex cursor-pointer items-start gap-2.5 rounded-[8px] px-2.5 py-2 outline-none data-[highlighted]:bg-[var(--surface-3)]"
+              >
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-3)] text-[var(--text-2)]">
+                  {e.icon}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-medium text-[var(--text-1)]">
+                    {e.label}
+                  </span>
+                  <span className="block text-[11px] leading-snug text-[var(--text-3)]">
+                    {e.help}
+                  </span>
+                </span>
+              </DropdownMenu.Item>
+            ))}
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
     </div>
   );
 }
