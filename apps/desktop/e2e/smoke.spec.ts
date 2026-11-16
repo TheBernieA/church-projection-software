@@ -846,6 +846,7 @@ test('click goes live: a video from the bin plays on every output; Turn off live
   await expect
     .poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.currentTime), { timeout: 5000 })
     .toBeGreaterThan(0.5);
+  await transport.screenshot({ path: 'test-results/28-video-transport.png' });
   // Pause from the transport → the output pauses.
   await transport.getByRole('button', { name: 'Pause' }).click();
   await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
