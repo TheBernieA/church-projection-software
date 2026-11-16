@@ -610,7 +610,8 @@
     "install": "Could not install that package.",
     "audio": "Could not change the audio.",
     "input": "Could not use that input.",
-    "stream": "Couldn’t start or stop the stream."
+    "stream": "Couldn’t start or stop the stream.",
+    "benchmark": "The computer check couldn't run."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -804,7 +805,8 @@
     "resizeLeft": "Resize sidebar",
     "resizeBin": "Resize bin",
     "resizeRight": "Resize output column",
-    "resizeMixer": "Resize the mixer"
+    "resizeMixer": "Resize the mixer",
+    "resizeLive": "Resize the Live console"
   },
   "bin": {
     "label": "Bin",
@@ -1605,7 +1607,27 @@
       "video": "The sound of videos",
       "input": "A microphone or live input"
     },
-    "delayHelp": "Hold the stream's sound back so it lines up with a camera that runs late."
+    "delayHelp": "Hold the stream's sound back so it lines up with a camera that runs late.",
+    "performance": "Performance",
+    "performanceHelp": "How hard streaming works this computer. Older or busy computers stream smoothly in Light.",
+    "performanceMode": "Mode",
+    "recommended": "Recommended",
+    "performanceNow": "Now: {{mode}} · {{size}} · {{rate}} Mb/s · {{encoder}}",
+    "modes": {
+      "auto": "Auto",
+      "light": "Light",
+      "balanced": "Balanced",
+      "quality": "Quality",
+      "custom": "Custom"
+    },
+    "modeHelpTitle": "What it does",
+    "modeHelp": {
+      "auto": "Picks Light, Balanced or Quality for this computer (from “Check this computer” when it has been run).",
+      "light": "960×540 at 30 fps, 2 Mb/s, the lightest encoder settings and a slower preview. For older laptops and slow internet.",
+      "balanced": "1280×720 at 30 fps, 3.5 Mb/s. Good for most churches.",
+      "quality": "1920×1080 at 30 fps, 6 Mb/s. Needs a recent computer (ideally with a hardware encoder) and a good upload.",
+      "custom": "The size, frame rate and bitrate below, exactly as set."
+    }
   },
   "mixer": {
     "title": "Mixer",
@@ -1742,5 +1764,51 @@
     "howKey": "Lyrics over cameras",
     "howKeyHelp": "Add a “Words (alpha)” feed and put it on top of your camera in the receiving software: the background is see-through.",
     "trademark": "NDI® is a registered trademark of Vizrt NDI AB. Lampstand uses the NDI runtime installed on this computer and doesn't include it."
+  },
+  "console": {
+    "title": "Live",
+    "popOut": "Open the Live console in its own window",
+    "popOutShort": "Own window",
+    "dock": "Back into the main window",
+    "close": "Close the Live console",
+    "state": {
+      "offAir": "Off air",
+      "ready": "Ready",
+      "starting": "Starting",
+      "live": "Live",
+      "recording": "Recording",
+      "reconnecting": "Reconnecting"
+    },
+    "showBefore": "Show the stream picture before going live",
+    "previewOff": "Turn on “Show the stream picture before going live” to check what the stream will show.",
+    "previewLight": "The picture shows here once you go live or record (Light mode saves the computer's effort before then).",
+    "picture": "What the stream shows",
+    "behind": "Behind",
+    "sound": "What the stream hears",
+    "channels": "Channels sent to the stream",
+    "destinations": "Destinations",
+    "retry": "Retry",
+    "health": "How it's going",
+    "profile": "{{mode}} · {{size}} · {{encoder}}",
+    "healthIdle": "Frame rate, bitrate, encoder speed and the computer's load show here while you stream or record.",
+    "fps": "Frame rate",
+    "noDrops": "No frames dropped",
+    "bitrate": "Bitrate",
+    "target": "Target {{rate}} Mb/s",
+    "speed": "Encoder speed",
+    "speedHelp": "1.00× keeps up with real time",
+    "cpu": "Computer load",
+    "cpuSplit": "Lampstand {{app}}% · encoder {{encoder}}% · {{mem}}",
+    "advice": "This computer is struggling to keep up. Light mode streams smoothly with a smaller picture (a two-second pause, and the recording carries on).",
+    "switchLight": "Switch to Light",
+    "recordingTitle": "Recording"
+  },
+  "benchmark": {
+    "button": "Check this computer",
+    "running": "Checking…",
+    "help": "A 10-second test that finds the streaming mode this computer handles smoothly. Auto uses the answer.",
+    "whileLive": "Not while streaming or recording.",
+    "done": "This computer streams smoothly in {{mode}} (encoder: {{encoder}}). Auto will use it.",
+    "last": "Last check: {{mode}}"
   }
 }

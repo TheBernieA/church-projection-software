@@ -17,7 +17,7 @@ export const StreamSettingsSchema = z.object({
   destinations: z.array(StreamDestinationSchema).max(8).default([]),
   quality: z
     .object({
-      height: z.union([z.literal(720), z.literal(1080)]).default(720),
+      height: z.union([z.literal(540), z.literal(720), z.literal(1080)]).default(720),
       fps: z.union([z.literal(30), z.literal(60)]).default(30),
       videoKbps: z.number().int().min(800).max(20_000).default(3500),
       audioKbps: z.union([z.literal(128), z.literal(160), z.literal(192)]).default(160),
@@ -48,6 +48,20 @@ export const StreamSettingsSchema = z.object({
         .default([]),
     })
     .default({ room: true, roomGain: 1, mics: [] }),
+  /**
+   * How hard the stream works the computer. Auto picks Light, Balanced or Quality for this
+   * computer (or from "Check this computer"); Custom uses the Quality values as set.
+   */
+  performance: z.enum(['auto', 'light', 'balanced', 'quality', 'custom']).default('auto'),
+  /** The last "Check this computer" result: the best mode it managed, and when. */
+  benchmark: z
+    .object({
+      at: z.string().max(40),
+      mode: z.enum(['light', 'balanced', 'quality']),
+      encoder: z.string().max(40),
+    })
+    .nullable()
+    .default(null),
   recording: z
     .object({
       /** Where recordings go (null: Movies/Videos › Lampstand). */

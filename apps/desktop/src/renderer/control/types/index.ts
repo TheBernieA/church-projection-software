@@ -140,6 +140,8 @@ export interface ControlState {
   binOpen: boolean;
   /** The Mixer, docked along the bottom (toolbar's Mixer button). */
   mixerOpen: boolean;
+  /** The Live console: hidden, docked beside the output, or in its own window. */
+  liveConsole: 'closed' | 'docked' | 'window';
   /** The toolbar's Text bar (formatting for the selected item) is showing. */
   textBarOpen: boolean;
   /** Open page of the Settings window (remembered between openings). */

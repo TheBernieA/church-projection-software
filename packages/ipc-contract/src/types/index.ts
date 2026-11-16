@@ -13,7 +13,9 @@ import type {
   ScreenMask,
   StageLayout,
   Standby,
+  StreamProfile,
   Theme,
+  VideoInputLayer,
 } from '@lampstand/core';
 import type { QueryName } from '../channels';
 import type { CommandEnvelope, MeterReport, QueryArgs } from '../schemas';
@@ -171,6 +173,15 @@ export interface ControlApi {
   onStream(cb: (s: StreamStatus) => void): () => void;
   /** Mix levels from the room and the stream (about 15 a second each, while they run). */
   onMeters(cb: (m: MeterReport) => void): () => void;
+  /**
+   * This window watches the stream: preview frames at `fps` (0: none), and the stream picture
+   * ready before going live when `ready`. Repeat every few seconds while watching.
+   */
+  streamWatch(fps: number, ready: boolean): void;
+  /** The stream picture as a small JPEG, while this window watches (`streamWatch`). */
+  onStreamPreview(cb: (jpeg: Uint8Array) => void): () => void;
+  /** The Live console window opened (true) or closed (false). */
+  onLiveConsole(cb: (open: boolean) => void): () => void;
   /** NDI status changes (runtime found, receivers per feed). */
   onNdi(cb: (s: NdiStatus) => void): () => void;
   platform: string;
@@ -201,14 +212,37 @@ export interface StreamStatus {
   recordingPath: string | null;
   /** The last problem, as an i18n key under `stream.errors.*`. */
   error: string | null;
-  /** A small JPEG of the stream picture (data URL), while running. */
-  preview: string | null;
+  /** The stream window is open (live, recording, or getting ready to go live). */
+  ready: boolean;
+  /** Size, rate and effort in use (or that the next start will use). */
+  profile: StreamProfile;
+  /** Frames Lampstand couldn't hand to the encoder in time (in `dropped` too). */
+  droppedLocal: number;
+  /** The computer can't keep up: suggest Light. */
+  advice: 'lighter' | null;
+  /** CPU and memory while running (every 2 s), with recent history for sparklines. */
+  health: StreamHealth | null;
+  /** The recording's size so far, in bytes. */
+  recordingBytes: number;
   /** How many times the encoder has been restarted this session. */
   restarts: number;
   /** Whether an ffmpeg was found (no ffmpeg: no streaming). */
   available: boolean;
   /** The encoder in use (or that would be used). */
   encoder: string;
+}
+
+/** CPU (% of one core) and memory (MB) while streaming or recording. */
+export interface StreamHealth {
+  /** All of Lampstand, and the stream window on its own. */
+  appCpu: number;
+  appMemMB: number;
+  windowCpu: number;
+  /** The encoder (null where it can't be measured). */
+  encoderCpu: number | null;
+  encoderMemMB: number | null;
+  /** The last 60 samples (2 minutes), oldest first. */
+  history: { fps: number[]; kbps: number[]; speed: number[]; cpu: number[] };
 }
 
 /** What the stream window draws and mixes (from Settings › Streaming). */
@@ -221,6 +255,10 @@ export interface StreamConfig {
     /** 'none': nothing behind the words (a transparent NDI key feed). */
     background: 'program' | 'camera' | 'black' | 'none';
   };
+  /** The stream's own camera, with its saved settings (capture size capped at the stream's). */
+  cameraLayer: VideoInputLayer | null;
+  /** Make the sound mix (off while just getting ready: no microphones open). */
+  mix: boolean;
   /** A see-through picture (alpha), for the NDI words feed. */
   transparent: boolean;
   /** Report the stream mix's levels (the livestream window only, not NDI feeds). */

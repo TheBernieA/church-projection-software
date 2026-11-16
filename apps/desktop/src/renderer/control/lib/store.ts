@@ -36,6 +36,7 @@ export const useStore = create<ControlState>((set) => ({
   controlsTab: 'audio',
   binOpen: true,
   mixerOpen: false,
+  liveConsole: 'closed',
   textBarOpen: false,
   settingsPage: 'general',
   dialog: null,
@@ -279,13 +280,18 @@ export async function bootstrap(attempt = 0): Promise<void> {
 }
 
 /** Wire main → renderer events. */
-export function connect(): void {
+export function connect(opts: { lean?: boolean } = {}): void {
   api.onLiveState((live) => patch({ live }));
-  api.onRepoChanged((kind) => void refresh(kind));
+  // The Live console window only needs settings (not songs, media or services).
+  api.onRepoChanged((kind) => {
+    if (!opts.lean || kind === 'settings') void refresh(kind);
+  });
   api.onDisplaysChanged(() => void refresh('displays'));
   api.onHistoryChanged((history) => patch({ history }));
   api.onStream((stream) => patch({ stream }));
   api.onNdi((ndi) => patch({ ndi }));
+  // The console's own window opened, or closed (the console docks back in the main window).
+  api.onLiveConsole((open) => patch({ liveConsole: open ? 'window' : 'docked' }));
   api.onMeters(publishMeters);
   void q('history.state').then((history) => patch({ history }));
   void q('stream.status').then((stream) => patch({ stream }));

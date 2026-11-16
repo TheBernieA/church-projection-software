@@ -205,6 +205,18 @@ export const VideoInputLayerSchema = z.object({
 });
 export type VideoInputLayer = z.infer<typeof VideoInputLayerSchema>;
 
+/** How one camera goes on screen (Settings › Video), the same in every window and the stream. */
+export const CameraSettingsSchema = z.object({
+  /** Shown instead of the device's own name ('' = the device's name). */
+  name: z.string().max(200).default(''),
+  fit: z.enum(['cover', 'contain']).default('cover'),
+  mirror: z.boolean().default(false),
+  resolution: z.enum(['auto', '720', '1080', '2160']).default('auto'),
+  /** Left out of Media › Video input (e.g. a virtual camera nobody uses). */
+  hidden: z.boolean().default(false),
+});
+export type CameraSettings = z.infer<typeof CameraSettingsSchema>;
+
 /** How the switcher changes from one camera to the next. */
 export const InputTransitionSchema = z.object({
   /** cut: at once; fade: cross-fade; dip: through black; wipe: left to right. */

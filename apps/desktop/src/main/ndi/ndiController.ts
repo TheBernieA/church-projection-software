@@ -9,6 +9,7 @@ import { secureWebPreferences } from '../security/hardening';
 import type { WindowManager } from '../windows/windowManager';
 import { type Logger } from '../types';
 import { findNdiRuntime } from './ndiRuntime';
+import { streamCameraLayer } from '../stream/streamController';
 import type { NdiWorkerIn, NdiWorkerOut } from './ndiWorker';
 
 export interface NdiDeps {
@@ -230,7 +231,10 @@ export class NdiController {
       width: f.width,
       height: f.height,
       ...pictureOf(f.feed, this.d.getSettings()),
+      cameraLayer:
+        f.feed.content === 'stream' ? streamCameraLayer(this.d.getSettings(), f.height) : null,
       meters: false,
+      mix: f.feed.sound,
       logo: this.d.logo(),
       standby: this.d.standby(),
     };

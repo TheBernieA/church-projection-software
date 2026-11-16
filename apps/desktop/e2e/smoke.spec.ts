@@ -1459,6 +1459,13 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
         .evaluate((v) => [getComputedStyle(v).transform, getComputedStyle(v).objectFit]),
     )
     .toEqual(['matrix(-1, 0, 0, 1, 0, 0)', 'contain']);
+  // Saved with the app's settings (so every window, the stream and NDI agree), not per window.
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? Object.values(r.value.cameras).map((c) => [c.mirror, c.fit]) : null;
+    })
+    .toEqual([[true, 'contain']]);
   // Picture-in-picture: the same camera in a corner box.
   await switcher.getByRole('combobox', { name: 'Picture-in-picture camera' }).click();
   await control.getByRole('option').nth(1).click();
@@ -1998,7 +2005,7 @@ test('recording: Lampstand records the stream picture and sound to a file', asyn
   expect(mean).toBeGreaterThan(8);
 });
 
-test('livestream: set up a destination, go live from the Live panel, end it', async () => {
+test('livestream: set up a destination, go live from the Live console, end it', async () => {
   // A local RTMP server stands in for YouTube: it saves what it receives.
   const got = join(dir, 'got.flv');
   const server = spawn('ffmpeg', [
@@ -2031,19 +2038,35 @@ test('livestream: set up a destination, go live from the Live panel, end it', as
   await control.waitForTimeout(600);
   await control.screenshot({ path: 'test-results/40-settings-streaming.png' });
   await control.keyboard.press('Escape');
-  // The Live panel: Go live (confirmed), then it reports the destination as live.
+  // The Live console, docked beside the output: the real stream picture shows before going
+  // live (the stream window is ready, nothing is encoding yet).
   const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
   control.on('dialog', accept);
   await control.getByRole('button', { name: 'Livestream and recording' }).click();
-  const panel = control.getByRole('group', { name: 'Livestream & recording' });
-  await panel.getByRole('button', { name: 'Go live' }).click();
-  await expect(panel.getByText('Live', { exact: true }).last()).toBeVisible({ timeout: 20_000 });
-  await control.waitForTimeout(3_000);
-  await control.screenshot({ path: 'test-results/41-live-panel.png' });
-  await panel.getByRole('button', { name: 'End stream' }).click();
-  await expect(panel.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
+  const live = control.getByRole('region', { name: 'Live', exact: true });
+  await expect(live).toBeVisible();
+  await expect(live.getByRole('img', { name: 'What the stream shows' })).toBeVisible({
+    timeout: 15_000,
+  });
+  const stream = () =>
+    control.evaluate(async () => {
+      const r = await window.lampstand.query('stream.status');
+      return r.ok ? r.value : null;
+    });
+  expect((await stream())?.state).toBe('idle');
+  expect((await stream())?.ready).toBe(true);
+  // Go live (confirmed): the destination goes live, and the health panel fills in.
+  await live.getByRole('button', { name: 'Go live' }).click();
+  await expect(live.getByRole('status')).toHaveText(/Live/, { timeout: 20_000 });
+  await expect(live.getByText('Frame rate')).toBeVisible();
+  await expect
+    .poll(async () => (await stream())?.health?.history.fps.length ?? 0, { timeout: 10_000 })
+    .toBeGreaterThan(1);
+  await control.waitForTimeout(1_500);
+  await control.screenshot({ path: 'test-results/41-live-console.png' });
+  await live.getByRole('button', { name: 'End stream' }).click();
+  await expect(live.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
   control.off('dialog', accept);
-  await control.keyboard.press('Escape');
   await new Promise<void>((resolve) => {
     server.once('exit', () => resolve());
     setTimeout(() => {
@@ -2060,6 +2083,81 @@ test('livestream: set up a destination, go live from the Live panel, end it', as
   );
   expect(probe).toContain('h264');
   expect(probe).toContain('aac');
+});
+
+test('Live console: pops out into its own window, records from there, docks back', async () => {
+  const live = control.getByRole('region', { name: 'Live', exact: true });
+  await expect(live).toBeVisible();
+  const opened = app.waitForEvent('window');
+  await live.getByRole('button', { name: 'Open the Live console in its own window' }).click();
+  const win = await opened;
+  await win.waitForLoadState('domcontentloaded');
+  expect(win.url()).toContain('view=live');
+  // Docked console gives way to the window.
+  await expect(live).toHaveCount(0);
+  const own = win.getByRole('region', { name: 'Live', exact: true });
+  await expect(own).toBeVisible();
+  await own.getByRole('button', { name: 'Record', exact: true }).click();
+  await expect(own.getByRole('status')).toHaveText(/Recording/, { timeout: 20_000 });
+  await win.waitForTimeout(1_500);
+  await win.screenshot({ path: 'test-results/42-live-window.png' });
+  await own.getByRole('button', { name: 'Stop recording' }).click();
+  await expect(own.getByRole('button', { name: 'Record', exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
+  // Back into the main window.
+  await own.getByRole('button', { name: 'Back into the main window' }).click();
+  await expect(control.getByRole('region', { name: 'Live', exact: true })).toBeVisible();
+  await control.getByRole('button', { name: 'Close the Live console' }).click();
+});
+
+test('Light mode: a smaller picture for modest computers', async () => {
+  const set = (performance: string) =>
+    control.evaluate(async (p) => {
+      const r = await window.lampstand.query('settings.get');
+      if (r.ok)
+        await window.lampstand.command({
+          type: 'settings.update',
+          payload: { patch: { stream: { ...r.value.stream, performance: p } } },
+        });
+    }, performance);
+  const status = () =>
+    control.evaluate(async () => {
+      const r = await window.lampstand.query('stream.status');
+      return r.ok ? r.value : null;
+    });
+  await set('light');
+  const folder = join(dir, 'recordings');
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.start', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
+  expect((await status())?.profile).toMatchObject({ mode: 'light', height: 540 });
+  await control.waitForTimeout(2_500);
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.stop', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state).toBe('idle');
+  const [file] = readdirSync(folder)
+    .filter((f) => f.endsWith('.mp4'))
+    .sort((a, b) => statSync(join(folder, b)).mtimeMs - statSync(join(folder, a)).mtimeMs);
+  const size = execFileSync(
+    'ffprobe',
+    [
+      '-v',
+      'error',
+      '-select_streams',
+      'v',
+      '-show_entries',
+      'stream=width,height',
+      '-of',
+      'csv=p=0',
+      join(folder, file!),
+    ],
+    { encoding: 'utf8' },
+  ).trim();
+  expect(size).toBe('960,540');
+  await set('auto');
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

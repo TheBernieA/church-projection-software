@@ -1,7 +1,9 @@
 /**
  * Pure helpers for the stream encoder: ffmpeg's command line, its progress lines, destination
- * URLs and recording names. No I/O here, so it is all unit-tested.
+ * URLs and recording names. No I/O here (beyond checking a name is free), so it is all
+ * unit-tested.
  */
+import { existsSync } from 'node:fs';
 
 export type DestinationKind = 'youtube' | 'facebook' | 'custom';
 
@@ -62,14 +64,22 @@ export interface EncodeOptions {
   videoKbps: number;
   audioKbps: number;
   encoder: Encoder;
+  /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
+  x264Preset?: 'ultrafast' | 'superfast' | 'veryfast' | 'faster';
   /** Full ingest URLs (keys included). */
   streams: string[];
   /** Recording file path, or null. */
   record: string | null;
 }
 
+/** VideoToolbox, NVENC and Quick Sync work in NV12. */
+const takesNv12 = (e: Encoder): boolean =>
+  e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv';
+
 /** Encoder settings: constant bitrate-ish, a keyframe every 2 s, no B-frame surprises. */
-function videoCodecArgs(o: EncodeOptions): string[] {
+export function videoCodecArgs(
+  o: Pick<EncodeOptions, 'encoder' | 'fps' | 'videoKbps' | 'x264Preset'>,
+): string[] {
   const rate = [
     `-b:v`,
     `${o.videoKbps}k`,
@@ -104,7 +114,7 @@ function videoCodecArgs(o: EncodeOptions): string[] {
         '-c:v',
         'libx264',
         '-preset',
-        'veryfast',
+        o.x264Preset ?? 'veryfast',
         '-tune',
         'zerolatency',
         '-profile:v',
@@ -165,8 +175,9 @@ export function buildArgs(o: EncodeOptions): string[] {
     '0:v',
     '-map',
     '1:a',
+    // Hardware encoders take NV12 natively (no second conversion inside the encoder).
     '-pix_fmt',
-    'yuv420p',
+    takesNv12(o.encoder) ? 'nv12' : 'yuv420p',
     '-r',
     String(o.fps),
     '-fps_mode',
@@ -219,4 +230,14 @@ export function recordingName(at: Date, part = 1): string {
   const p = (n: number): string => String(n).padStart(2, '0');
   const stamp = `${at.getFullYear()}-${p(at.getMonth() + 1)}-${p(at.getDate())} ${p(at.getHours())}-${p(at.getMinutes())}`;
   return `Lampstand ${stamp}${part > 1 ? ` part ${part}` : ''}.mp4`;
+}
+
+/** A file name nothing else is using: "x.mp4", else "x (2).mp4", "x (3).mp4"… */
+export function freeName(path: string, exists: (p: string) => boolean = existsSync): string {
+  if (!exists(path)) return path;
+  const dot = path.lastIndexOf('.');
+  for (let n = 2; ; n++) {
+    const next = `${path.slice(0, dot)} (${n})${path.slice(dot)}`;
+    if (!exists(next)) return next;
+  }
 }

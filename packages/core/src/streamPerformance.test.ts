@@ -1,0 +1,44 @@
+import { describe, expect, it } from 'vitest';
+import { StreamSettingsSchema } from './schemas/stream';
+import { autoMode, resolvePerformance } from './streamPerformance';
+
+const settings = (patch: object = {}) => ({ ...StreamSettingsSchema.parse({}), ...patch });
+const machine = (cores: number, memoryGB: number, hardwareEncoder: boolean) => ({
+  cores,
+  memoryGB,
+  hardwareEncoder,
+});
+
+describe('stream performance', () => {
+  it('Auto suits the computer', () => {
+    expect(autoMode(machine(4, 8, true), null)).toBe('light');
+    expect(autoMode(machine(4, 16, false), null)).toBe('light');
+    expect(autoMode(machine(6, 16, false), null)).toBe('balanced');
+    expect(autoMode(machine(8, 16, true), null)).toBe('quality');
+    expect(autoMode(machine(10, 32, false), null)).toBe('balanced');
+  });
+
+  it('a benchmark result beats guessing', () => {
+    const bench = { at: '2026-11-17', mode: 'quality' as const, encoder: 'libx264' };
+    expect(autoMode(machine(4, 8, false), bench)).toBe('quality');
+  });
+
+  it('Light is small and cheap; Custom uses the values as set', () => {
+    const light = resolvePerformance(settings({ performance: 'light' }), machine(16, 64, true));
+    expect(light).toMatchObject({ height: 540, x264Preset: 'superfast', previewFps: 1 });
+    expect(light.allowReady).toBe(false);
+    const custom = resolvePerformance(
+      settings({
+        performance: 'custom',
+        quality: { height: 1080, fps: 60, videoKbps: 9000, audioKbps: 192, encoder: 'auto' },
+      }),
+      machine(4, 8, false),
+    );
+    expect(custom).toMatchObject({ mode: 'custom', height: 1080, fps: 60, videoKbps: 9000 });
+  });
+
+  it('defaults to Auto', () => {
+    expect(settings().performance).toBe('auto');
+    expect(resolvePerformance(settings(), machine(6, 16, true)).mode).toBe('balanced');
+  });
+});

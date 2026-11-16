@@ -1,4 +1,7 @@
 import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
+import { z } from 'zod';
+
+const StreamWatchSchema = z.object({ fps: z.number().min(0).max(10), ready: z.boolean() });
 import type { CommandBus, Result } from '@lampstand/core';
 import { toErrorShape } from '@lampstand/core';
 import {
@@ -21,6 +24,8 @@ interface RouterDeps {
   onOutputReady: (e: IpcMainEvent) => void;
   /** Mix levels from an output or the stream window, for the control window's meters. */
   onMeters: (m: MeterReport) => void;
+  /** A control window watches the stream picture (Live console). */
+  onStreamWatch: (sender: number, fps: number, ready: boolean) => void;
   log: Logger;
 }
 
@@ -82,6 +87,12 @@ export function registerIpc(d: RouterDeps): void {
     if (!trusted(e)) return;
     const kind = d.kindOf(e);
     if (kind === 'output' || kind === 'stage') d.onOutputReady(e);
+  });
+
+  ipcMain.on(Channels.streamWatch, (e, raw: unknown) => {
+    if (!trusted(e) || d.kindOf(e) !== 'control') return;
+    const w = StreamWatchSchema.safeParse(raw);
+    if (w.success) d.onStreamWatch(e.sender.id, w.data.fps, w.data.ready);
   });
 
   ipcMain.on(Channels.meters, (e, raw: unknown) => {

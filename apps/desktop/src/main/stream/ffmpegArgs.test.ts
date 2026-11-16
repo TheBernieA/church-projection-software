@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildArgs,
   destinationUrl,
+  freeName,
   isStreamKey,
   isStreamUrl,
   parseProgress,
@@ -47,8 +48,25 @@ describe('stream encoder arguments', () => {
     expect(buildArgs({ ...base, encoder: 'h264_nvenc' })).toContain('h264_nvenc');
   });
 
+  it('feeds hardware encoders NV12 and software yuv420p; the preset follows the mode', () => {
+    const vt = buildArgs({ ...base, encoder: 'h264_videotoolbox' });
+    expect(vt[vt.lastIndexOf('-pix_fmt') + 1]).toBe('nv12');
+    const sw = buildArgs({ ...base, encoder: 'libx264', x264Preset: 'superfast' });
+    expect(sw[sw.lastIndexOf('-pix_fmt') + 1]).toBe('yuv420p');
+    expect(sw[sw.indexOf('-preset') + 1]).toBe('superfast');
+    expect(buildArgs({ ...base, width: 960, height: 540 }).join(' ')).toContain('-s 960x540');
+  });
+
   it('escapes tee specials', () => {
     expect(teeEscape('a|b[c]\\d')).toBe('a\\|b\\[c\\]\\\\d');
+  });
+});
+
+describe('recording names', () => {
+  it('never overwrites an earlier recording from the same minute', () => {
+    const taken = new Set(['/r/a.mp4', '/r/a (2).mp4']);
+    expect(freeName('/r/b.mp4', (p) => taken.has(p))).toBe('/r/b.mp4');
+    expect(freeName('/r/a.mp4', (p) => taken.has(p))).toBe('/r/a (3).mp4');
   });
 });
 

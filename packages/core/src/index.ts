@@ -23,4 +23,5 @@ export * from './schemas/timers';
 export * from './schemas/stage';
 export * from './schemas/stream';
 export * from './schemas/mixer';
+export * from './streamPerformance';
 export * from './stock';

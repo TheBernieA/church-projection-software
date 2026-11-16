@@ -165,6 +165,7 @@ export class AppController {
     };
 
     this.registerCommands();
+    let consoleSave: ReturnType<typeof setTimeout> | null = null;
     this.windows = new WindowManager({
       log: log.child('windows'),
       getSettings: () => settings.get(),
@@ -173,6 +174,22 @@ export class AppController {
       standby: () => this.standby,
       onDisplaysChanged: () => this.windows.sendToControl(Channels.evDisplays),
       onNewDisplay: (label) => this.notice({ level: 'info', key: 'newDisplay', params: { label } }),
+      onLiveConsoleBounds: (b) => {
+        if (consoleSave) clearTimeout(consoleSave);
+        consoleSave = setTimeout(() => {
+          const layout = settings.get().layout;
+          settings.update({
+            layout: {
+              ...layout,
+              liveConsoleX: b.x,
+              liveConsoleY: b.y,
+              liveConsoleW: b.width,
+              liveConsoleH: b.height,
+            },
+          });
+        }, 800);
+      },
+      onLiveConsoleClosed: () => this.windows.sendToControl(Channels.evLiveConsole, false),
     });
 
     // Livestream and recording; stream keys encrypted on this computer (never in settings).
@@ -182,6 +199,10 @@ export class AppController {
       windows: this.windows,
       secrets: this.secrets,
       getSettings: () => settings.get(),
+      updateSettings: (patch) => {
+        settings.update(patch);
+        this.windows.sendToControl(Channels.evRepo, 'settings');
+      },
       getLiveState: () => live.get(),
       logo: () => this.logo,
       standby: () => this.standby,
@@ -237,6 +258,7 @@ export class AppController {
       kindOf: (e) => this.windows.kindOf(e.sender),
       onOutputReady: (e) => this.windows.outputReady(e.sender),
       onMeters: (m) => this.windows.sendToControl(Channels.evMeters, m),
+      onStreamWatch: (sender, fps, ready) => this.stream.watch(sender, fps, ready),
       log,
     });
 
@@ -351,6 +373,55 @@ export class AppController {
       undoable: false,
       handle: async (p) => {
         await this.stream.stop(p);
+        return { result: null };
+      },
+    });
+    // The Live console in its own window (another display), or back in the main window.
+    bus.register({
+      type: 'liveConsole.open',
+      schema: z.object({ open: z.boolean() }),
+      undoable: false,
+      handle: ({ open }) => {
+        const l = settings.get().layout;
+        this.windows.openLiveConsole(
+          open,
+          l.liveConsoleW
+            ? {
+                x: l.liveConsoleX,
+                y: l.liveConsoleY,
+                width: l.liveConsoleW,
+                height: l.liveConsoleH,
+              }
+            : null,
+        );
+        this.windows.sendToControl(Channels.evLiveConsole, open);
+        return { result: null };
+      },
+    });
+    // The computer can't keep up: switch the stream to Light now (it carries on).
+    bus.register({
+      type: 'stream.lighter',
+      schema: z.object({}),
+      undoable: false,
+      handle: async () => {
+        await this.stream.lighter();
+        return { result: null };
+      },
+    });
+    // "Check this computer": what streaming mode suits it (Auto then uses the answer).
+    bus.register({
+      type: 'stream.benchmark',
+      schema: z.object({}),
+      undoable: false,
+      handle: async () => ({ result: await this.stream.benchmark() }),
+    });
+    // Try failed destinations again.
+    bus.register({
+      type: 'stream.retry',
+      schema: z.object({}),
+      undoable: false,
+      handle: async () => {
+        await this.stream.retryDestinations();
         return { result: null };
       },
     });

@@ -1,5 +1,6 @@
-import type { VideoInputLayer } from '@lampstand/core';
-import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
+import type { CameraSettings, VideoInputLayer } from '@lampstand/core';
+import { saveSettings } from './actions';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { DeviceAccess } from '@lampstand/ipc-contract';
 import { RAW_AUDIO } from '@lampstand/renderer';
 import { cmd, q } from './api';
@@ -151,16 +152,8 @@ export function useLevelMeter(stream: MediaStream | null): {
   return { track, bar };
 }
 
-/** How a camera goes on screen: kept per device on this computer. */
-export interface CameraSettings {
-  /** Shown instead of the device's own name ('' = the device's name). */
-  name: string;
-  fit: 'cover' | 'contain';
-  mirror: boolean;
-  resolution: 'auto' | '720' | '1080' | '2160';
-  /** Left out of Media › Video input (e.g. a virtual camera nobody uses). */
-  hidden: boolean;
-}
+/** How a camera goes on screen: kept per device in the app's settings. */
+export type { CameraSettings };
 export const CAMERA_FITS = ['cover', 'contain'] as const;
 export const CAMERA_RESOLUTIONS = ['auto', '720', '1080', '2160'] as const;
 export const DEFAULT_CAMERA: CameraSettings = {
@@ -171,51 +164,68 @@ export const DEFAULT_CAMERA: CameraSettings = {
   hidden: false,
 };
 
-const CAMERAS_KEY = 'lampstand.cameras';
-let cameras: Record<string, CameraSettings> = (() => {
-  try {
-    const raw: unknown = JSON.parse(localStorage.getItem(CAMERAS_KEY) ?? '{}');
-    return raw && typeof raw === 'object' ? (raw as Record<string, CameraSettings>) : {};
-  } catch {
-    return {};
-  }
-})();
-const cameraListeners = new Set<() => void>();
+const NO_CAMERAS: Record<string, CameraSettings> = {};
+const allCameras = (): Record<string, CameraSettings> =>
+  useStore.getState().settings?.cameras ?? NO_CAMERAS;
 
 export const cameraSettings = (deviceId: string): CameraSettings => ({
   ...DEFAULT_CAMERA,
-  ...cameras[deviceId],
+  ...allCameras()[deviceId],
 });
 
+/**
+ * Change a camera's settings: shown at once, then saved. Back to the defaults removes its entry.
+ */
 export function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
-  cameras = { ...cameras, [deviceId]: { ...cameraSettings(deviceId), ...patch } };
-  try {
-    localStorage.setItem(CAMERAS_KEY, JSON.stringify(cameras));
-  } catch {
-    /* private window: just for this session */
-  }
-  for (const l of cameraListeners) l();
+  const next = { ...cameraSettings(deviceId), ...patch };
+  const isDefault = JSON.stringify(next) === JSON.stringify(DEFAULT_CAMERA);
+  const cameras = Object.fromEntries(
+    Object.entries(allCameras()).filter(([id]) => id !== deviceId),
+  );
+  if (!isDefault) cameras[deviceId] = next;
+  const s = useStore.getState().settings;
+  if (s) useStore.setState({ settings: { ...s, cameras } });
+  void saveSettings({ cameras });
 }
 
-const subscribeCameras = (l: () => void): (() => void) => {
-  cameraListeners.add(l);
-  return () => cameraListeners.delete(l);
-};
+/**
+ * Before camera settings were saved with the app they lived in this computer's local storage:
+ * move them over once.
+ */
+export function migrateLocalCameras(
+  saved: Record<string, CameraSettings>,
+  storage: Pick<Storage, 'getItem' | 'removeItem'> | null = (() => {
+    try {
+      return localStorage;
+    } catch {
+      return null;
+    }
+  })(),
+): Record<string, CameraSettings> | null {
+  const raw = storage?.getItem('lampstand.cameras');
+  if (!raw) return null;
+  storage?.removeItem('lampstand.cameras');
+  if (Object.keys(saved).length) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    const out: Record<string, CameraSettings> = {};
+    for (const [id, v] of Object.entries(parsed as Record<string, Partial<CameraSettings>>))
+      out[id] = { ...DEFAULT_CAMERA, ...v };
+    return Object.keys(out).length ? out : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Re-render when any camera's settings change (lists that filter by them). */
 export const useCameraSettingsVersion = (): Record<string, CameraSettings> =>
-  useSyncExternalStore(subscribeCameras, () => cameras);
+  useStore((s) => s.settings?.cameras ?? NO_CAMERAS);
 
 /** One camera's settings, kept up to date. */
 export function useCameraSettings(deviceId: string): CameraSettings {
-  const all = useSyncExternalStore(
-    (l) => {
-      cameraListeners.add(l);
-      return () => cameraListeners.delete(l);
-    },
-    () => cameras,
-  );
-  return { ...DEFAULT_CAMERA, ...all[deviceId] };
+  const saved = useStore((s) => s.settings?.cameras[deviceId]);
+  return { ...DEFAULT_CAMERA, ...saved };
 }
 
 /** A camera as the screen layer: the device and how it's set to show (name, fit, mirror…). */

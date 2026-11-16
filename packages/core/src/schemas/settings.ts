@@ -3,7 +3,7 @@ import { StageLayoutSchema } from './stage';
 import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
 import { TimerDefSchema } from './timers';
-import { InputTransitionSchema, PropPositionSchema } from './scene';
+import { CameraSettingsSchema, InputTransitionSchema, PropPositionSchema } from './scene';
 
 export const OutputRoleSchema = z.enum(['main', 'stage', 'secondary', 'none']);
 export type OutputRole = z.infer<typeof OutputRoleSchema>;
@@ -127,6 +127,8 @@ export const SettingsSchema = z
         transition: { kind: 'fade', durationMs: 600 },
         pip: { corner: 'br', size: 0.3 },
       }),
+    /** Each camera's settings, by device id (Settings › Video, the camera's "…" menu). */
+    cameras: z.record(z.string().max(300), CameraSettingsSchema).default({}),
     /** NDI feeds (Settings › NDI). */
     ndi: z.object({ feeds: z.array(NdiFeedSchema).max(4).default([]) }).default({ feeds: [] }),
     /** The sound desk (channels, buses). Absent in older settings: made from `stream.sound`. */

@@ -193,4 +193,8 @@ export interface WindowManagerDeps {
   standby: () => Standby;
   onDisplaysChanged: () => void;
   onNewDisplay: (label: string) => void;
+  /** The Live console window moved or was resized (to reopen it there). */
+  onLiveConsoleBounds: (b: { x: number; y: number; width: number; height: number }) => void;
+  /** The Live console window closed (the console docks back in the main window). */
+  onLiveConsoleClosed: () => void;
 }

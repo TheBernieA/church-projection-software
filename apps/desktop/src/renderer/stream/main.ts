@@ -1,4 +1,11 @@
-import { applyLook, lookLayersFor, type LiveState, type Scene } from '@lampstand/core';
+import {
+  applyLook,
+  lookLayersFor,
+  type LiveState,
+  type Mixer,
+  type Scene,
+  type VideoInputLayer,
+} from '@lampstand/core';
 import type { StreamApi, StreamConfig } from '@lampstand/ipc-contract';
 import { AudioPlayer, buildVideoInput, MixerEngine, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
@@ -30,33 +37,40 @@ let latest: LiveState | null = null;
 
 // ---------- Picture ----------
 
-let camera: { id: string; dispose: () => void } | null = null;
-function syncCamera(id: string | null): void {
-  if ((camera?.id ?? null) === id) return;
+/** The stream's own camera, with its saved settings (fit, mirror, capture size). */
+let camera: { key: string; dispose: () => void } | null = null;
+function syncCamera(layer: VideoInputLayer | null): void {
+  const key = layer ? `${layer.deviceId}|${layer.fit}|${layer.mirror}|${layer.resolution}` : '';
+  if ((camera?.key ?? '') === key) return;
   camera?.dispose();
   $('camera').replaceChildren();
   camera = null;
-  if (!id) return;
-  const built = buildVideoInput(
-    document,
-    { deviceId: id, label: '', fit: 'cover', mirror: false, resolution: 'auto' },
-    true,
-  );
+  if (!layer) return;
+  const built = buildVideoInput(document, layer, true);
   $('camera').append(built.node);
-  camera = { id, dispose: built.dispose };
+  camera = { key, dispose: built.dispose };
 }
+
+/**
+ * What was last drawn: live updates the stream doesn't show (timers, stage messages, Preview)
+ * change nothing here, so they don't redraw anything.
+ */
+let drawn: unknown[] = [];
 
 const NO_MASKS = { black: false, logo: false, freeze: false };
 
 function draw(): void {
   if (!latest || !config) return;
+  const inputs = [config, latest.program, latest.look, latest.audio, latest.mixer];
+  if (inputs.length === drawn.length && inputs.every((x, i) => x === drawn[i])) return;
+  drawn = inputs;
   const pic = config.picture;
   // What the audience screens show under the active Look.
   const program: Scene = applyLook(latest.program, lookLayersFor(latest.look, 'main'));
-  const onCamera = pic.background === 'camera' && !!pic.camera;
+  const onCamera = pic.background === 'camera' && !!config.cameraLayer;
   // 'none': only the words, over transparency (the NDI key feed).
   const bare = pic.background === 'none';
-  syncCamera(onCamera ? pic.camera : null);
+  syncCamera(onCamera ? config.cameraLayer : null);
   back.render(
     {
       ...program,
@@ -87,11 +101,23 @@ function draw(): void {
   });
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
-  room.sync(latest.audio);
-  mix.sync(latest.mixer);
+  // Getting ready (not live yet): no sound, and no microphones open.
+  room.sync(config.mix ? latest.audio : null);
+  mix.sync(config.mix ? latest.mixer : silent(latest.mixer));
 }
 
 // ---------- Sound ----------
+
+/** The mixer with nothing sent to the stream (inputs close). */
+const silentCache = new WeakMap<Mixer, Mixer>();
+function silent(m: Mixer): Mixer {
+  let s = silentCache.get(m);
+  if (!s) {
+    s = { ...m, channels: m.channels.map((c) => ({ ...c, stream: false })) };
+    silentCache.set(m, s);
+  }
+  return s;
+}
 
 // The stream mix: the same desk as the room (Mixer), each channel sent to the stream or not,
 // with the stream bus's own level, limiter and lip-sync delay. It never plays here.

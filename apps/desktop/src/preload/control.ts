@@ -31,6 +31,9 @@ const api: ControlApi = {
   onStream: (cb) => listen(Channels.evStream, cb),
   onMeters: (cb) => listen(Channels.evMeters, cb),
   onNdi: (cb) => listen(Channels.evNdi, cb),
+  onLiveConsole: (cb) => listen(Channels.evLiveConsole, cb),
+  onStreamPreview: (cb) => listen(Channels.evStreamPreview, cb),
+  streamWatch: (fps, ready) => ipcRenderer.send(Channels.streamWatch, { fps, ready }),
   platform: process.platform,
 } as ControlApi;
 

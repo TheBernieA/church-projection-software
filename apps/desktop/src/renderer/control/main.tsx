@@ -7,15 +7,13 @@ import './i18n';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { bootstrap, connect } from './lib/store';
+import { LiveWindow } from './LiveWindow';
+import { bootstrap, connect, refresh } from './lib/store';
 
-connect();
-void bootstrap();
+// The Live console's own window loads only what the console needs.
+const liveOnly = new URLSearchParams(location.search).get('view') === 'live';
+connect({ lean: liveOnly });
+void (liveOnly ? refresh('settings') : bootstrap());
 
 const root = document.getElementById('root');
-if (root)
-  createRoot(root).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+if (root) createRoot(root).render(<StrictMode>{liveOnly ? <LiveWindow /> : <App />}</StrictMode>);

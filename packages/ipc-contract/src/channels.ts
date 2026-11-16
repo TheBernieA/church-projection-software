@@ -41,6 +41,8 @@ export type QueryName = (typeof QUERY_NAMES)[number];
 /** Channel names. Prefixes make the window-type permission check simple in main. */
 export const Channels = {
   command: 'ctl:command',
+  /** control → main: a Live console is watching the stream picture ({fps, ready}). */
+  streamWatch: 'ctl:stream-watch',
   undo: 'ctl:undo',
   redo: 'ctl:redo',
   query: (name: QueryName) => `ctl:q:${name}` as const,
@@ -57,6 +59,10 @@ export const Channels = {
   evMeters: 'ev:meters',
   /** main → control: NDI status (runtime, receivers per feed). */
   evNdi: 'ev:ndi',
+  /** main → control: the Live console window opened or closed. */
+  evLiveConsole: 'ev:live-console',
+  /** main → control: the stream picture (JPEG bytes) while a Live console watches. */
+  evStreamPreview: 'ev:stream-preview',
   /** main → control: livestream / recording status. */
   evStream: 'ev:stream',
   // main → renderer events

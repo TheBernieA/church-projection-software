@@ -35,7 +35,7 @@ import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { ScreensMenu } from './ScreensMenu';
-import { LiveMenu } from './LiveMenu';
+import { LiveButton } from './LiveButton';
 import { type Mode } from '../../types';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 
@@ -338,7 +338,7 @@ export function Toolbar() {
         onClick={() => useStore.setState({ mixerOpen: !mixerOpen })}
       />
       <LooksMenu />
-      <LiveMenu />
+      <LiveButton />
 
       <span
         aria-hidden

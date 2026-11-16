@@ -21,9 +21,11 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   the stream size (720p or 1080p). It draws with the same `SceneRenderer` as the outputs, in two
   layers so lower-third words can sit over a soft band: the background and video behind, the words,
   props, messages and the Black / Logo masks in front. A camera can sit at the back.
-- **Frames.** Main receives `paint` events and writes the latest frame to ffmpeg at a **steady**
-  frame rate (offscreen windows only paint on change, so the last frame repeats). If ffmpeg can't
-  take a frame in time it is dropped and counted.
+- **Frames.** Main keeps only the latest painted frame (one BGRA buffer) and a **frame clock**
+  (`framePump.ts`) writes frames on wall-clock time: after a late tick it writes the frames that
+  were due (the same buffer, no copies), and aims the next tick at the next frame's time, so the
+  picture never falls behind the sound. If ffmpeg's input is backed up the frame is dropped and
+  counted (never queued). ffmpeg runs at above-normal priority.
 - **Sound.** The stream window runs the Mixer's **stream bus** (see below): tracks, video sound and
   inputs whose Stream send is on. An `AudioWorklet` sends ~21 ms batches of stereo float32 to main,
   which writes them to ffmpeg's fd 3. Main tops up with silence whenever the mix falls behind the
@@ -36,6 +38,28 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries); a recording carries on as "part 2". Quitting the app finishes the recording first.
+
+## Performance modes
+
+`stream.performance`: Auto, Light (960×540, x264 superfast, 1 fps preview), Balanced (720p),
+Quality (1080p), or Custom (the Quality values as set). Auto uses "Check this computer"
+(`benchmark.ts`: a 4-second test encode per mode, needing 1.7–2.2× real time) or else cores,
+memory and whether there's a hardware encoder (`resolvePerformance` in core). Hardware
+encoders get NV12. While running, health (CPU, memory, fps, bitrate, speed) is sampled every
+2 s; if it can't keep up for 15 s the Live console offers "Switch to Light".
+
+Measured on an M-series Mac, 30 s of a playing video with a camera PiP (VideoToolbox), before
+→ after: 28.6 → 30 fps, 16 → 0 frames dropped, A/V drift +1.17 s → −0.1 s; ffmpeg CPU 9.6% in
+Balanced, 5.3% in Light. Run it with `LAMPSTAND_PERF=1 pnpm exec playwright test e2e/perf.spec.ts`.
+
+## Live console
+
+The toolbar's Live button docks the console beside the output; "Own window" moves it to a
+window of its own (any display; size and place remembered), which is a second control window
+(`?view=live`, settings only). The preview is the real outgoing picture, sent as small JPEGs
+only while a console watches (`ctl:stream-watch`, renewed every 4 s); "Show the stream picture
+before going live" keeps the stream window ready (no encoder, no microphones), so going live is
+instant.
 
 ## The mixer
 

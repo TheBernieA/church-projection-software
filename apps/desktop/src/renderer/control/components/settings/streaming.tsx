@@ -16,7 +16,8 @@ import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
-import { Group, Notice, Row, SettingsPage } from './parts';
+import { Group, Notice, Row, SettingsPage, Tag } from './parts';
+import { CheckComputer } from '../live/CheckComputer';
 
 type Update = (patch: Partial<Settings>) => void;
 const NONE = 'none';
@@ -148,10 +149,19 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   const loadKeys = (): void => void q('stream.keys').then(setKeys, () => undefined);
   useEffect(loadKeys, [st.destinations.length]);
   const [kbpsDraft, setKbpsDraft] = useState<number | null>(null);
-  const kbps = kbpsDraft ?? st.quality.videoKbps;
-  const recommended = recommendedKbps(st.quality.height, st.quality.fps);
   const setQuality = (patch: Partial<StreamSettings['quality']>): void =>
     set({ quality: { ...st.quality, ...patch } });
+  // What the stream uses now (the mode's values, or Custom's).
+  const profile = status?.profile;
+  const shown =
+    st.performance === 'custom' || !profile
+      ? st.quality
+      : { ...st.quality, height: profile.height, fps: profile.fps, videoKbps: profile.videoKbps };
+  const kbps = kbpsDraft ?? shown.videoKbps;
+  const recommended = recommendedKbps(shown.height, shown.fps);
+  /** Changing size, rate or bitrate by hand makes the mode Custom (starting from what it was). */
+  const setCustom = (patch: Partial<StreamSettings['quality']>): void =>
+    set({ performance: 'custom', quality: { ...shown, ...patch } });
   const setDest = (id: string, patch: Partial<StreamDestination>): void =>
     set({ destinations: st.destinations.map((d) => (d.id === id ? { ...d, ...patch } : d)) });
   const addDest = (kind: StreamDestination['kind']): void =>
@@ -302,19 +312,60 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         )}
       </Group>
 
+      <Group title={t('streaming.performance')} description={t('streaming.performanceHelp')}>
+        <Row
+          label={t('streaming.performanceMode')}
+          description={
+            profile
+              ? t('streaming.performanceNow', {
+                  mode: t(`streaming.modes.${profile.mode}`),
+                  size: `${profile.height}p${profile.fps}`,
+                  rate: (profile.videoKbps / 1000).toFixed(1),
+                  encoder: status.encoder,
+                })
+              : undefined
+          }
+          badge={
+            st.performance === 'auto' ? (
+              <Tag tone="accent">{t('streaming.recommended')}</Tag>
+            ) : undefined
+          }
+        >
+          <Segmented<StreamSettings['performance']>
+            label={t('streaming.performanceMode')}
+            value={st.performance}
+            onChange={(performance) => set({ performance })}
+            options={(['auto', 'light', 'balanced', 'quality', 'custom'] as const).map((m) => ({
+              value: m,
+              label: t(`streaming.modes.${m}`),
+            }))}
+          />
+        </Row>
+        <Row label={t('benchmark.button')} description={t('benchmark.help')}>
+          <CheckComputer size="sm" />
+        </Row>
+        <Row
+          label={t(`streaming.modeHelpTitle`)}
+          description={t(`streaming.modeHelp.${st.performance}`)}
+        >
+          <span />
+        </Row>
+      </Group>
+
       <Group
         title={t('streaming.quality')}
         footnote={live ? t('streaming.qualityLive') : t('streaming.qualityHelp')}
       >
         <Row label={t('streaming.resolution')}>
-          <Segmented<'720' | '1080'>
+          <Segmented<'540' | '720' | '1080'>
             label={t('streaming.resolution')}
-            value={String(st.quality.height) as '720' | '1080'}
+            value={String(shown.height) as '540' | '720' | '1080'}
             onChange={(v) => {
-              const height = Number(v) as 720 | 1080;
-              setQuality({ height, videoKbps: recommendedKbps(height, st.quality.fps) });
+              const height = Number(v) as 540 | 720 | 1080;
+              setCustom({ height, videoKbps: recommendedKbps(height, shown.fps) });
             }}
             options={[
+              { value: '540', label: '540p' },
               { value: '720', label: '720p' },
               { value: '1080', label: '1080p' },
             ]}
@@ -323,10 +374,10 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         <Row label={t('streaming.fps')}>
           <Segmented<'30' | '60'>
             label={t('streaming.fps')}
-            value={String(st.quality.fps) as '30' | '60'}
+            value={String(shown.fps) as '30' | '60'}
             onChange={(v) => {
               const fps = Number(v) as 30 | 60;
-              setQuality({ fps, videoKbps: recommendedKbps(st.quality.height, fps) });
+              setCustom({ fps, videoKbps: recommendedKbps(shown.height, fps) });
             }}
             options={[
               { value: '30', label: '30 fps' },
@@ -347,11 +398,11 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             format={(v) => `${(v / 1000).toFixed(1)} Mb/s`}
             onChange={(e) => setKbpsDraft(Number(e.currentTarget.value))}
             onPointerUp={() => {
-              if (kbpsDraft !== null) setQuality({ videoKbps: kbpsDraft });
+              if (kbpsDraft !== null) setCustom({ videoKbps: kbpsDraft });
               setKbpsDraft(null);
             }}
             onKeyUp={() => {
-              if (kbpsDraft !== null) setQuality({ videoKbps: kbpsDraft });
+              if (kbpsDraft !== null) setCustom({ videoKbps: kbpsDraft });
               setKbpsDraft(null);
             }}
             className="w-60"

@@ -1,5 +1,8 @@
 import { useSwitcherSources } from './lib/switcher';
+import { migrateLocalCameras } from './lib/inputs';
+import { saveSettings } from './lib/actions';
 import { MixerPanel } from './components/mixer/MixerPanel';
+import { LiveConsole } from './components/live/LiveConsole';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lazyNamed, preloadLazyViews } from './lib/lazy';
@@ -47,12 +50,22 @@ export function App() {
   const bin = usePaneSize('binHeight', 236, 150, 520);
   const mixer = usePaneSize('mixerHeight', 300, 220, 560);
   const mixerOpen = useStore((s) => s.mixerOpen);
+  const liveConsole = useStore((s) => s.liveConsole);
+  const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
   useEffect(() => installShortcuts(), []);
   useEffect(() => installMediaWatch(), []);
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
   useEffect(() => installCueMix(), []);
   useSwitcherSources();
+  // Camera settings used to live in this computer's local storage: move them into settings once.
+  const settingsLoaded = useStore((s) => !!s.settings);
+  useEffect(() => {
+    const s = useStore.getState().settings;
+    if (!s) return;
+    const moved = migrateLocalCameras(s.cameras);
+    if (moved) void saveSettings({ cameras: moved });
+  }, [settingsLoaded]);
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => installNumberWheelGuard(), []);
   useEffect(() => {
@@ -89,6 +102,15 @@ export function App() {
         <aside className="pane flex shrink-0 flex-col" style={{ width: right.size }}>
           <RightColumn />
         </aside>
+        {/* The Live console, docked beside the output (or popped out into its own window). */}
+        {liveConsole === 'docked' && (
+          <>
+            <Splitter axis="x" pane={liveWidth} invert label={t('layout.resizeLive')} />
+            <aside className="pane flex shrink-0 flex-col" style={{ width: liveWidth.size }}>
+              <LiveConsole mode="docked" />
+            </aside>
+          </>
+        )}
       </div>
       {/* The Mixer docks along the bottom, under every pane, from the toolbar's Mixer button. */}
       {mixerOpen && (

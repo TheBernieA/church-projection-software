@@ -56,6 +56,7 @@ export class WindowManager {
       e.preventDefault();
       this.quitting = true;
       for (const o of this.outputs.values()) if (!o.win.isDestroyed()) o.win.destroy();
+      if (this.liveConsole && !this.liveConsole.isDestroyed()) this.liveConsole.destroy();
       win.destroy();
     });
     win.on('closed', () => {
@@ -299,6 +300,8 @@ export class WindowManager {
     for (const o of this.outputs.values())
       if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, state);
     this.control?.webContents.send(Channels.evLive, state);
+    if (this.liveConsole && !this.liveConsole.isDestroyed())
+      this.liveConsole.webContents.send(Channels.evLive, state);
     for (const f of this.followers)
       if (!f.isDestroyed()) f.webContents.send(Channels.evLive, state);
     this.syncWeb(state);
@@ -322,9 +325,67 @@ export class WindowManager {
     return this.webViews.count();
   }
 
+  /** To the control window, and the Live console window when it's open. */
   sendToControl(channel: string, payload?: unknown): void {
-    if (this.control && !this.control.isDestroyed())
-      this.control.webContents.send(channel, payload);
+    for (const w of [this.control, this.liveConsole])
+      if (w && !w.isDestroyed()) w.webContents.send(channel, payload);
+  }
+
+  // ---------- The Live console, in its own window ----------
+
+  private liveConsole: BrowserWindow | null = null;
+
+  /**
+   * Open (or bring forward) the Live console in its own window, where it was last (it can live
+   * on another display); `false` closes it, docking the console back in the main window.
+   */
+  openLiveConsole(open: boolean, bounds: Partial<Electron.Rectangle> | null): void {
+    if (!open) {
+      this.liveConsole?.close();
+      return;
+    }
+    if (this.liveConsole && !this.liveConsole.isDestroyed()) {
+      this.liveConsole.show();
+      this.liveConsole.focus();
+      return;
+    }
+    const { x, y } = bounds ?? {};
+    const onScreen =
+      x !== undefined &&
+      y !== undefined &&
+      screen.getAllDisplays().some((d) => {
+        const a = d.workArea;
+        return x >= a.x - 20 && y >= a.y - 20 && x < a.x + a.width && y < a.y + a.height;
+      });
+    const win = new BrowserWindow({
+      width: bounds?.width ?? 520,
+      height: bounds?.height ?? 860,
+      ...(onScreen ? { x, y } : {}),
+      minWidth: 380,
+      minHeight: 520,
+      show: false,
+      title: 'Lampstand Live',
+      backgroundColor: '#171A24',
+      webPreferences: secureWebPreferences('control'),
+    });
+    this.liveConsole = win;
+    this.kinds.set(win.webContents.id, 'control');
+    win.once('ready-to-show', () => win.show());
+    reloadOnFailedLoad(win, 'control', this.d.log);
+    const save = (): void => {
+      if (!win.isDestroyed()) this.d.onLiveConsoleBounds(win.getBounds());
+    };
+    win.on('moved', save);
+    win.on('resized', save);
+    win.on('closed', () => {
+      if (this.liveConsole === win) this.liveConsole = null;
+      this.d.onLiveConsoleClosed();
+    });
+    void win.loadURL(rendererUrl('control', 'view=live'));
+  }
+
+  get liveConsoleOpen(): boolean {
+    return !!this.liveConsole && !this.liveConsole.isDestroyed();
   }
 
   outputIds(): string[] {
