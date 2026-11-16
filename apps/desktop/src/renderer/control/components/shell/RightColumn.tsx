@@ -13,7 +13,7 @@ import {
   Type,
   ListChecks,
   Video,
-  X,
+  Power,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -81,10 +81,10 @@ function MonitorCard({
 
 /** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
 const PLANNED_LAYERS = [
-  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={15} /> },
-  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={15} /> },
-  { id: 'video-input', label: 'videoInput', icon: <Video size={15} /> },
-  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={15} /> },
+  { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={13} /> },
+  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={13} /> },
+  { id: 'video-input', label: 'videoInput', icon: <Video size={13} /> },
+  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={13} /> },
 ];
 
 /**
@@ -113,7 +113,7 @@ function LayerButton({
       disabled={!on}
       aria-label={name}
       title={hint ? `${name} (${hint})` : name}
-      className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-[5px] transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
+      className={`flex h-6 w-6 cursor-pointer items-center justify-center rounded-[5px] transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
         on
           ? 'bg-[var(--tally-program)] text-white shadow-[0_0_8px_rgba(239,74,80,0.45)] hover:brightness-110'
           : 'text-[var(--text-3)]'
@@ -269,7 +269,7 @@ export function RightColumn() {
             <div
               role="group"
               aria-label={t('monitor.clear')}
-              className="flex w-8 shrink-0 flex-col items-center gap-1"
+              className="flex w-7 shrink-0 flex-col items-center gap-[3px]"
             >
               {anything ? (
                 <button
@@ -277,62 +277,68 @@ export function RightColumn() {
                   aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
                   title={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
                   onClick={() => void clearLayer('all')}
-                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-[var(--tally-program)] text-white shadow-[0_2px_10px_rgba(239,74,80,0.45)] hover:brightness-110"
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-[var(--tally-program)] text-white shadow-[0_2px_10px_rgba(239,74,80,0.45)] hover:brightness-110"
                 >
-                  <X size={15} strokeWidth={2.5} />
+                  <Power size={13} strokeWidth={2.5} />
                 </button>
               ) : (
                 <span
                   aria-hidden
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--text-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
                 >
-                  <X size={14} />
+                  <Power size={12} />
                 </span>
               )}
               <LayerButton
-                icon={<MessageSquareText size={15} />}
+                icon={<MessageSquareText size={14} />}
                 label={t('monitor.layers.messages')}
                 on={has('messages')}
                 onClick={clear('messages')}
               />
               <LayerButton
-                icon={<Sparkle size={15} />}
+                icon={<Sparkle size={14} />}
                 label={t('monitor.layers.props')}
                 on={has('props')}
                 onClick={clear('props')}
               />
               <LayerButton
-                icon={<Type size={15} />}
+                icon={<Type size={14} />}
                 label={t('monitor.layers.slide')}
                 hint={displayCombo(keys.clearContent)}
                 on={!!p.content}
                 onClick={clear('content')}
               />
               <LayerButton
-                icon={<Film size={15} />}
+                icon={<Film size={14} />}
                 label={t('monitor.layers.media')}
                 hint={displayCombo(keys.clearMedia)}
                 on={!!p.media || !!p.web}
                 onClick={clear('media')}
               />
               <LayerButton
-                icon={<ImageIcon size={15} />}
+                icon={<ImageIcon size={14} />}
                 label={t('monitor.layers.background')}
                 hint={displayCombo(keys.clearBackground)}
                 on={!!p.background}
                 onClick={clear('background')}
               />
-              {PLANNED_LAYERS.map((l) => (
-                <span
-                  key={l.id}
-                  aria-hidden
-                  title={t('soon.tooltip', { name: t(`monitor.layers.${l.label}`) })}
-                  className="flex h-7 w-7 items-center justify-center text-[var(--text-3)] opacity-50"
-                >
-                  {l.icon}
-                </span>
-              ))}
             </div>
+          </div>
+          {/* Layers still to come: a quiet row, so the strip stays as tall as the monitor. */}
+          <div className="flex items-center gap-2 px-0.5 text-[var(--text-3)]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.06em] opacity-70">
+              {t('soon.badge')}
+            </span>
+            {PLANNED_LAYERS.map((l) => (
+              <span
+                key={l.id}
+                aria-hidden
+                title={t('soon.tooltip', { name: t(`monitor.layers.${l.label}`) })}
+                className="flex opacity-60"
+              >
+                {l.icon}
+              </span>
+            ))}
           </div>
         </figure>
         <div className="flex items-center gap-1.5">
