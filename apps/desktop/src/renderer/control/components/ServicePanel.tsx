@@ -374,7 +374,7 @@ function AddBar({ update }: { update: (fn: (xs: ServiceItem[]) => ServiceItem[])
             align="start"
             sideOffset={6}
             collisionPadding={12}
-            className="z-[60] w-[min(320px,var(--radix-dropdown-menu-trigger-width))] min-w-[260px] rounded-[12px] bg-[var(--surface-2)] p-1.5 shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
+            className="z-[60] w-[min(320px,var(--radix-dropdown-menu-trigger-width))] min-w-[260px] rounded-[12px] bg-[var(--surface-2)] p-1.5 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
           >
             {entries.map((e) => (
               <DropdownMenu.Item

@@ -530,6 +530,9 @@ test('hovering service plan rows never shifts the layout', async () => {
         return [Math.round(r.top), Math.round(r.height)];
       }),
     );
+  // Bring both rows into view first: hover() scrolls to its target, which would move every row.
+  await plan.getByText('John 3:16–17').scrollIntoViewIfNeeded();
+  await plan.getByText('Word', { exact: true }).scrollIntoViewIfNeeded();
   const before = await boxes();
   await plan.getByText('Word', { exact: true }).hover();
   await control.waitForTimeout(250);

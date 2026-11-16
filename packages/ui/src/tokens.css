@@ -69,7 +69,7 @@
   --border: rgba(15, 20, 35, 0.1);
   --text-1: #141720;
   --text-2: #4f566b;
-  --text-3: #818899;
+  --text-3: #686e7d; /* ≥4.5:1 on surface-1 */
   --accent: #b47a12;
   --accent-ink: #ffffff;
   --accent-soft: rgba(180, 122, 18, 0.1);

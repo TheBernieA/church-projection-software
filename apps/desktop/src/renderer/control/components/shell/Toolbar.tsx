@@ -100,7 +100,7 @@ export function Toolbar() {
   const hot = onAir && !masked;
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 bg-[var(--surface-0)] px-3">
+    <header className="flex h-12 shrink-0 items-center gap-3 bg-[var(--surface-0)] px-3 max-[1440px]:gap-2">
       <div
         aria-hidden
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-gradient-to-br from-[#ffd28a] via-[#f0a73a] to-[#c27414] text-[#1c1306]"
@@ -110,7 +110,7 @@ export function Toolbar() {
       <button
         type="button"
         onClick={() => openDialog('services')}
-        className="-ml-1.5 flex h-8 min-w-[110px] max-w-[220px] shrink-0 cursor-pointer items-center gap-1 rounded-[var(--radius-control)] px-2 text-left transition-colors hover:bg-[var(--surface-2)]"
+        className="-ml-1.5 flex h-8 min-w-[110px] max-w-[220px] shrink-0 max-[1440px]:max-w-[160px] cursor-pointer items-center gap-1 rounded-[var(--radius-control)] px-2 text-left transition-colors hover:bg-[var(--surface-2)]"
         title={`${t('top.services')}: ${service?.name ?? ''}`}
       >
         <span className="sr-only">{t('top.services')}</span>
@@ -126,10 +126,12 @@ export function Toolbar() {
         type="button"
         onClick={() => openDialog('quick')}
         aria-label={t('top.search')}
-        className="flex h-8 w-[clamp(150px,16vw,280px)] shrink-0 cursor-pointer items-center gap-2 rounded-[8px] bg-[var(--surface-1)] px-2.5 text-left text-[var(--text-3)] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)] transition-[color,box-shadow] duration-[var(--dur-fast)] hover:text-[var(--text-2)] hover:shadow-[0_0_0_1px_var(--hairline-strong),var(--highlight-top)]"
+        className="flex h-8 w-[clamp(150px,16vw,280px)] shrink-0 max-[1440px]:w-auto cursor-pointer items-center gap-2 rounded-[8px] bg-[var(--surface-1)] px-2.5 text-left text-[var(--text-3)] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)] transition-[color,box-shadow] duration-[var(--dur-fast)] hover:text-[var(--text-2)] hover:shadow-[0_0_0_1px_var(--hairline-strong),var(--highlight-top)]"
       >
         <Search size={14} strokeWidth={2} className="shrink-0" />
-        <span className="min-w-0 flex-1 truncate text-[12px]">{t('top.search')}</span>
+        <span className="min-w-0 flex-1 truncate text-[12px] max-[1440px]:sr-only">
+          {t('top.search')}
+        </span>
         <span className="shrink-0 max-lg:hidden">
           <Kbd>{displayCombo(keys.quickBar)}</Kbd>
         </span>
