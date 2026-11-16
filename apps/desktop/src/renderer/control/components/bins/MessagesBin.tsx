@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Clock, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Text } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { fillMessage, messageTokens } from '../../lib/messages';
@@ -42,7 +42,9 @@ function MessageCard({ m, onDelete }: { m: Message; onDelete: () => void }) {
         deleteLabel={t('messages.delete', { name: m.name })}
         onDelete={onDelete}
       />
-      <p className="line-clamp-2 text-ui-12 leading-snug text-[var(--text-2)]">{text}</p>
+      <Text as="p" size={12} tone="secondary" leading="snug" className="line-clamp-2">
+        {text}
+      </Text>
       {tokens.map((k) => (
         <input
           key={k}
@@ -140,12 +142,9 @@ export function StageMessage() {
         void attempt(() => cmd('stage.message', { text: msg, flash: true }), 'errors.action');
       }}
     >
-      <label
-        className="flex items-center gap-1.5 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]"
-        htmlFor="stage-msg"
-      >
+      <Text as="label" variant="overline" className="flex items-center gap-1.5" htmlFor="stage-msg">
         <MessageSquare size={13} /> {t('monitor.stageMessage')}
-      </label>
+      </Text>
       <div className="flex gap-1.5">
         <input
           id="stage-msg"

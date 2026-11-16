@@ -25,7 +25,7 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, secondsSince } from '@lampstand/core';
-import { SoonBadge, Switch } from '@lampstand/ui';
+import { SoonBadge, Switch, Text } from '@lampstand/ui';
 import i18n from '../../i18n';
 import { saveSettings } from '../../lib/actions';
 import { feature } from '../../lib/features';
@@ -148,9 +148,9 @@ function StatusMenu() {
               {onAir && since ? formatClock(secondsSince(since, now), { hours: 'always' }) : ''}
             </span>
           </p>
-          <p className="mt-2 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          <Text as="p" variant="overline" className="mt-2">
             {t('toolbar.outputs')}
-          </p>
+          </Text>
           <ul className="mt-1 space-y-1">
             {windowMode ? (
               <li>{t('toolbar.window')}</li>
@@ -307,7 +307,9 @@ export function Toolbar() {
             onChange={(on) => void saveSettings({ clickGoesLive: !on })}
           />
         </span>
-        <span className="text-ui-11 leading-none">{t('toolbar.preview')}</span>
+        <Text size={11} leading="none">
+          {t('toolbar.preview')}
+        </Text>
       </label>
       <ToolbarButton
         icon={<Settings size={20} />}

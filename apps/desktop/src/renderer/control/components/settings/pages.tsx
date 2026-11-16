@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch } from '@lampstand/ui';
+import { Button, Segmented, Switch, Text } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
@@ -114,9 +114,9 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         >
           <Type size={17} />
         </button>
-        <span className="tnum w-12 text-right text-ui-13 text-[var(--text-2)]">
+        <Text size={13} tone="secondary" tabular className="w-12 text-right">
           {Math.round(shown * 100)}%
-        </span>
+        </Text>
         {Math.abs(shown - 1) > 0.001 && (
           <Button size="xs" variant="ghost" onClick={() => commit(1)}>
             {t('settings.textReset')}
@@ -130,9 +130,9 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         className="m-0 flex max-w-[460px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--divider)] bg-[var(--surface-1)]"
       >
         <div className="w-[190px] shrink-0 border-r border-[var(--divider)] py-2">
-          <p className="px-3 pb-1 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+          <Text as="p" variant="overline" className="px-3 pb-1">
             {t('sidebar.playlists')}
-          </p>
+          </Text>
           {rows.map((r, i) => (
             <p
               key={r}
@@ -147,16 +147,21 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
           <div>
-            <p className="truncate text-ui-13 font-semibold text-[var(--text-1)]">
+            <Text as="p" size={13} tone="primary" weight="semibold" truncate>
               {t('settings.textPreviewHeading')}
-            </p>
-            <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">
+            </Text>
+            <Text as="p" variant="caption" leading="snug" className="mt-0.5">
               {t('settings.textPreviewNote')}
-            </p>
+            </Text>
           </div>
-          <span className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5 text-ui-11 font-medium text-white">
+          <Text
+            size={11}
+            tone="white"
+            weight="medium"
+            className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5"
+          >
             1 Verse 1
-          </span>
+          </Text>
         </div>
       </figure>
     </div>
@@ -297,7 +302,7 @@ function PictureRow({
           }))}
         />
       ) : (
-        <span className="text-ui-12 text-[var(--text-3)]">{t('settings.picture.none')}</span>
+        <Text variant="caption">{t('settings.picture.none')}</Text>
       )}
     </Row>
   );
@@ -510,20 +515,29 @@ export function PackagesPage() {
       {groups.map(({ kind, items }) => (
         <Group key={kind} title={t(`modules.groups.${kind}`)}>
           {items.length === 0 ? (
-            <p className="px-4 py-4 text-ui-13 text-[var(--text-3)]">
+            <Text as="p" size={13} tone="muted" className="px-4 py-4">
               {t(`modules.empty.${kind}`)}
-            </p>
+            </Text>
           ) : (
             items.map((m) => (
               <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <IconTile icon={kind === 'bible' ? BookOpen : ListMusic} size={36} />
                 <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="truncate text-ui-13 font-medium">{m.name}</span>
-                  <span className="truncate text-ui-12 text-[var(--text-3)]">{m.detail}</span>
+                  <Text variant="label" truncate>
+                    {m.name}
+                  </Text>
+                  <Text variant="caption" truncate>
+                    {m.detail}
+                  </Text>
                 </span>
-                <span className="rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-ui-11 font-medium text-[var(--text-2)]">
+                <Text
+                  size={11}
+                  tone="secondary"
+                  weight="medium"
+                  className="rounded-full bg-[var(--surface-3)] px-2 py-0.5"
+                >
                   {t(`modules.source.${m.source}`)}
-                </span>
+                </Text>
                 {m.removable && (
                   <Button
                     size="xs"
@@ -613,17 +627,19 @@ export function AboutPage() {
       <div className="flex gap-3 rounded-[var(--radius-card)] bg-[var(--surface-2)] p-4 shadow-[var(--shadow-1)]">
         <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" />
         <div className="space-y-1.5">
-          <p className="text-ui-13 font-medium">{t('settings.privacyTitle')}</p>
-          <p className="text-ui-12 leading-relaxed text-[var(--text-2)]">
+          <Text as="p" variant="label">
+            {t('settings.privacyTitle')}
+          </Text>
+          <Text as="p" size={12} tone="secondary" leading="relaxed">
             {t('settings.privacyText')}
-          </p>
+          </Text>
         </div>
       </div>
       <Group title={t('settings.version')}>
         <Row label="Lampstand">
-          <span className="tnum text-ui-13 text-[var(--text-2)]">
+          <Text size={13} tone="secondary" tabular>
             {info ? `${info.version} · Electron ${info.electron} · ${info.platform}` : '…'}
-          </span>
+          </Text>
         </Row>
       </Group>
     </SettingsPage>

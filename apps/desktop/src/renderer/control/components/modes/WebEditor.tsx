@@ -5,6 +5,7 @@ import { makeScene, WebUrlSchema } from '@lampstand/core';
 import { updateItem } from '../../lib/store';
 import { SceneView } from '../SceneView';
 import { type WebItem } from '../../types';
+import { Text } from '@lampstand/ui';
 
 /**
  * Edit a web page item: its name and https address. The address is only saved once it's valid,
@@ -18,10 +19,18 @@ export function WebEditor({ item }: { item: WebItem }) {
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
       <div className="flex items-center gap-2">
         <Globe size={18} className="text-[var(--text-3)]" />
-        <h2 className="text-ui-15 font-semibold">{t('web.title')}</h2>
+        <Text as="h2" size={15} weight="semibold">
+          {t('web.title')}
+        </Text>
       </div>
       <div className="grid max-w-xl gap-4">
-        <label className="flex flex-col gap-1.5 text-ui-12 font-medium text-[var(--text-2)]">
+        <Text
+          as="label"
+          size={12}
+          tone="secondary"
+          weight="medium"
+          className="flex flex-col gap-1.5"
+        >
           {t('web.name')}
           <input
             className="field"
@@ -33,8 +42,14 @@ export function WebEditor({ item }: { item: WebItem }) {
               })
             }
           />
-        </label>
-        <label className="flex flex-col gap-1.5 text-ui-12 font-medium text-[var(--text-2)]">
+        </Text>
+        <Text
+          as="label"
+          size={12}
+          tone="secondary"
+          weight="medium"
+          className="flex flex-col gap-1.5"
+        >
           {t('web.address')}
           <input
             className="field"
@@ -54,7 +69,7 @@ export function WebEditor({ item }: { item: WebItem }) {
           >
             {valid ? t('web.help') : t('web.invalid')}
           </span>
-        </label>
+        </Text>
       </div>
       <div className="w-full max-w-xl overflow-hidden rounded-[4px] shadow-[0_0_0_1px_var(--hairline-strong)]">
         <SceneView scene={makeScene({ web: { key: item.id, url: item.url } })} />

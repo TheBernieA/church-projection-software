@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, IconButton } from '@lampstand/ui';
+import { Button, IconButton, Text } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
 import { editObjects, newObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
@@ -111,7 +111,9 @@ export function CanvasToolbar({
       >
         <Trash2 size={15} />
       </IconButton>
-      <span className="ml-auto text-ui-11 text-[var(--text-3)]">{t('canvas.hint')}</span>
+      <Text size={11} tone="muted" className="ml-auto">
+        {t('canvas.hint')}
+      </Text>
       {trailing}
     </div>
   );

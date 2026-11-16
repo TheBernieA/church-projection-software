@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, IconButton } from '@lampstand/ui';
+import { Button, IconButton, Text } from '@lampstand/ui';
 
 /** Card style shared by bin items (messages, timers) and their "new" forms. */
 export const BIN_CARD =
@@ -50,9 +50,14 @@ export function BinRow({ children }: { children: ReactNode }) {
 /** Small grey label: "Built-in", a message style, a timer kind. */
 export function Badge({ children }: { children: ReactNode }) {
   return (
-    <span className="shrink-0 rounded-[4px] bg-[var(--surface-3)] px-1.5 py-px text-ui-10 font-medium text-[var(--text-3)]">
+    <Text
+      size={10}
+      tone="muted"
+      weight="medium"
+      className="shrink-0 rounded-[4px] bg-[var(--surface-3)] px-1.5 py-px"
+    >
       {children}
-    </span>
+    </Text>
   );
 }
 
@@ -70,7 +75,9 @@ export function CardTitle({
 }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="min-w-0 flex-1 truncate text-ui-12 font-semibold">{name}</span>
+      <Text size={12} weight="semibold" truncate className="min-w-0 flex-1">
+        {name}
+      </Text>
       {badge && <Badge>{badge}</Badge>}
       <IconButton
         size="xs"
@@ -139,11 +146,15 @@ export function Tile({
       >
         {children}
       </div>
-      <span
-        className={`mt-1.5 block truncate text-ui-12 ${selected ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+      <Text
+        size={12}
+        tone={selected ? 'primary' : 'secondary'}
+        weight={selected ? 'medium' : 'regular'}
+        truncate
+        className="mt-1.5 block"
       >
         {label}
-      </span>
+      </Text>
     </button>
   );
 }

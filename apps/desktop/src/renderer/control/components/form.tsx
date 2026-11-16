@@ -1,4 +1,5 @@
 import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { Text } from '@lampstand/ui';
 
 /**
  * Shared form controls for editors and inspectors, so every label, colour well, number box,
@@ -26,7 +27,11 @@ export function Field({
   children: ReactNode;
   className?: string;
 }) {
-  const hintNode = hint && <p className="mt-1.5 text-ui-12 text-[var(--text-3)]">{hint}</p>;
+  const hintNode = hint && (
+    <Text as="p" variant="caption" className="mt-1.5">
+      {hint}
+    </Text>
+  );
   if (htmlFor || group)
     return (
       <div className={className}>
@@ -140,7 +145,12 @@ export function RangeField({
   onChange: (v: number) => void;
 }) {
   return (
-    <label className="grid grid-cols-[96px_minmax(0,1fr)_minmax(44px,auto)] items-center gap-2 text-ui-12 text-[var(--text-2)]">
+    <Text
+      as="label"
+      size={12}
+      tone="secondary"
+      className="grid grid-cols-[96px_minmax(0,1fr)_minmax(44px,auto)] items-center gap-2"
+    >
       <span>{label}</span>
       <input
         type="range"
@@ -153,7 +163,7 @@ export function RangeField({
         className="h-1.5 cursor-pointer accent-[var(--accent)]"
       />
       <span className="tnum text-right text-[var(--text-3)]">{format(value)}</span>
-    </label>
+    </Text>
   );
 }
 
@@ -192,7 +202,9 @@ export function Checkbox({
       {box}
       <span>
         <span className="font-medium">{label}</span>
-        <span className="block text-ui-12 text-[var(--text-2)]">{description}</span>
+        <Text size={12} tone="secondary" className="block">
+          {description}
+        </Text>
       </span>
     </label>
   );

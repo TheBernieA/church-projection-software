@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem, type TextSlide } from '@lampstand/core';
-import { Button, IconButton } from '@lampstand/ui';
+import { Button, IconButton, Text } from '@lampstand/ui';
 import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
@@ -112,7 +112,9 @@ function TextInspector({ item }: { item: TextItem }) {
                 value={item.loopIntervalSec}
                 onChange={(v) => replaceItem({ ...item, loopIntervalSec: clamp(v, 2, 600) }, true)}
               />
-              <span className="text-ui-13 text-[var(--text-2)]">{t('inspector.seconds')}</span>
+              <Text size={13} tone="secondary">
+                {t('inspector.seconds')}
+              </Text>
             </div>
           </Field>
         )}
@@ -172,10 +174,16 @@ function TextInspector({ item }: { item: TextItem }) {
             />
           </Field>
           {isLive && (
-            <p className="flex items-start gap-2 rounded-[var(--radius-control)] bg-[var(--surface-2)] px-3 py-2.5 text-ui-12 leading-snug text-[var(--text-2)]">
+            <Text
+              as="p"
+              size={12}
+              tone="secondary"
+              leading="snug"
+              className="flex items-start gap-2 rounded-[var(--radius-control)] bg-[var(--surface-2)] px-3 py-2.5"
+            >
               <Info size={14} className="mt-px shrink-0" />
               {t('inspector.liveHint')}
-            </p>
+            </Text>
           )}
           <div className="flex items-center gap-1 pt-1">
             <IconButton
@@ -226,7 +234,9 @@ function TextInspector({ item }: { item: TextItem }) {
           </div>
         </section>
       ) : (
-        <p className="text-ui-13 text-[var(--text-3)]">{t('inspector.noSlide')}</p>
+        <Text as="p" size={13} tone="muted">
+          {t('inspector.noSlide')}
+        </Text>
       )}
     </div>
   );

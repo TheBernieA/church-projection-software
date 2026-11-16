@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Text } from './Text';
 
 /** Panel header: sentence-case title (13px semibold), optional icon, actions on the right. */
 export function PanelHeader({
@@ -16,8 +17,14 @@ export function PanelHeader({
     <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[var(--hairline)] px-4">
       <div className="flex min-w-0 items-center gap-2">
         {icon && <span className="text-[var(--text-3)]">{icon}</span>}
-        <h2 className="truncate text-ui-13 font-semibold text-[var(--text-1)]">{title}</h2>
-        {subtitle && <span className="truncate text-ui-12 text-[var(--text-3)]">{subtitle}</span>}
+        <Text as="h2" size={13} tone="primary" weight="semibold" truncate>
+          {title}
+        </Text>
+        {subtitle && (
+          <Text variant="caption" truncate>
+            {subtitle}
+          </Text>
+        )}
       </div>
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
     </div>
@@ -36,8 +43,10 @@ export function TallyLabel({
 }) {
   const c = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-ui-12 font-semibold"
+    <Text
+      size={12}
+      weight="semibold"
+      className="inline-flex items-center gap-1.5"
       style={{ color: active ? c : 'var(--text-3)' }}
     >
       {/* Static glow, no pulsing: the control UI has no ambient animation (§15.3). */}
@@ -50,7 +59,7 @@ export function TallyLabel({
         }}
       />
       {children}
-    </span>
+    </Text>
   );
 }
 
@@ -85,9 +94,9 @@ export function ToggleChip({
       {icon}
       <span className="truncate">{label}</span>
       {hint && (
-        <span className={`text-ui-11 ${on ? 'text-white/75' : 'text-[var(--text-3)]'}`}>
+        <Text size={11} tone={on ? 'inherit' : 'muted'} className={on ? 'text-white/75' : ''}>
           {hint}
-        </span>
+        </Text>
       )}
     </button>
   );

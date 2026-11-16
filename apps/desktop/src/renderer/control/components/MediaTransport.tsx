@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Pause, Play, Repeat, RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, mediaPositionAt, type MediaLayer } from '@lampstand/core';
-import { IconButton } from '@lampstand/ui';
+import { IconButton, Text } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
@@ -143,9 +143,9 @@ export function MediaTransport({ media }: { media: MediaLayer }) {
       aria-label={t('media.transport')}
     >
       <div className="flex items-center gap-2">
-        <span className="tnum w-10 text-right text-ui-11 text-[var(--text-2)]">
+        <Text size={11} tone="secondary" tabular className="w-10 text-right">
           {formatClock(shown)}
-        </span>
+        </Text>
         <input
           type="range"
           aria-label={t('media.position')}
@@ -157,9 +157,9 @@ export function MediaTransport({ media }: { media: MediaLayer }) {
           {...scrub.props}
           className="h-1.5 min-w-0 flex-1 accent-[var(--tally-program)]"
         />
-        <span className="tnum w-10 text-ui-11 text-[var(--text-3)]">
+        <Text size={11} tone="muted" tabular className="w-10">
           {duration ? formatClock(duration) : '--:--'}
-        </span>
+        </Text>
       </div>
       <div className="flex items-center gap-1">
         {playPause}

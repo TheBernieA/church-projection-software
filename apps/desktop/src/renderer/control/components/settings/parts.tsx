@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { DeferredInput } from '../DeferredControls';
+import { Text } from '@lampstand/ui';
 
 /** One settings page: title, one-line intro, optional header action, then groups. */
 export function SettingsPage({
@@ -18,8 +19,12 @@ export function SettingsPage({
     <div className="mx-auto w-full max-w-[640px] px-8 pb-10 pt-7">
       <header className="mb-6 flex items-start justify-between gap-4 pr-8">
         <div>
-          <h2 className="text-ui-20 font-semibold tracking-[-0.015em]">{title}</h2>
-          <p className="mt-1 text-ui-13 leading-relaxed text-[var(--text-2)]">{description}</p>
+          <Text as="h2" size={20} weight="semibold" className="tracking-[-0.015em]">
+            {title}
+          </Text>
+          <Text as="p" size={13} tone="secondary" leading="relaxed" className="mt-1">
+            {description}
+          </Text>
         </div>
         {action && <div className="shrink-0 pt-1">{action}</div>}
       </header>
@@ -45,7 +50,9 @@ export function Group({
         {children}
       </div>
       {footnote && (
-        <p className="mt-2 px-1 text-ui-12 leading-relaxed text-[var(--text-3)]">{footnote}</p>
+        <Text as="p" variant="caption" leading="relaxed" className="mt-2 px-1">
+          {footnote}
+        </Text>
       )}
     </section>
   );
@@ -65,20 +72,24 @@ export function Row({
   children: ReactNode;
   stack?: boolean;
 }) {
-  const Label = htmlFor ? 'label' : 'span';
   return (
     <div
       className={`flex gap-6 px-4 py-3.5 ${stack ? 'flex-col gap-3' : 'items-center justify-between'}`}
     >
       <div className="min-w-0">
-        <Label
+        <Text
+          as={htmlFor ? 'label' : 'span'}
+          variant="label"
+          tone="primary"
+          className="block"
           {...(htmlFor ? { htmlFor } : {})}
-          className="block text-ui-13 font-medium text-[var(--text-1)]"
         >
           {label}
-        </Label>
+        </Text>
         {description && (
-          <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">{description}</p>
+          <Text as="p" variant="caption" leading="snug" className="mt-0.5">
+            {description}
+          </Text>
         )}
       </div>
       <div className={stack ? '' : 'shrink-0'}>{children}</div>
@@ -117,7 +128,11 @@ export function UnitInput({
         className={`field !h-8 ${wide ? '!w-40 text-left' : '!w-20 text-right'} tnum`}
         {...rest}
       />
-      {unit && <span className="text-ui-13 text-[var(--text-3)]">{unit}</span>}
+      {unit && (
+        <Text size={13} tone="muted">
+          {unit}
+        </Text>
+      )}
     </div>
   );
 }
@@ -174,11 +189,9 @@ export function ThemeTiles({
             </span>
           )}
         </span>
-        <span
-          className={`text-ui-12 ${on ? 'font-medium text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
-        >
+        <Text size={12} tone={on ? 'primary' : 'secondary'} weight={on ? 'medium' : 'regular'}>
           {labels[mode]}
-        </span>
+        </Text>
       </button>
     );
   };

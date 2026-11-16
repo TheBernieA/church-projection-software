@@ -9,6 +9,7 @@ import { clearLayer, openAdhoc, toggleMask } from '../lib/actions';
 import { q } from '../lib/api';
 import { addItemToService, closeDialog, openDialog, useStore } from '../lib/store';
 import { OVERLAY_CLASS } from './Dialog';
+import { Text } from '@lampstand/ui';
 
 interface Row {
   id: string;
@@ -231,11 +232,13 @@ function QuickBarBody() {
                         className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 ${i === active ? 'bg-[var(--surface-3)] shadow-[inset_2px_0_0_var(--accent)]' : ''}`}
                       >
                         <RowIcon group={r.group} />
-                        <span className="shrink-0 text-ui-14 font-medium">{r.title}</span>
+                        <Text size={14} weight="medium" className="shrink-0">
+                          {r.title}
+                        </Text>
                         {r.subtitle && (
-                          <span className="truncate text-ui-13 text-[var(--text-3)]">
+                          <Text size={13} tone="muted" truncate>
                             {r.subtitle}
-                          </span>
+                          </Text>
                         )}
                       </div>
                     );

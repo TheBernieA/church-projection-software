@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge } from '@lampstand/ui';
+import { SoonBadge, Text } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { openDialog } from '../../lib/store';
 
@@ -22,11 +22,19 @@ export function SoonPanel({ ids, icon }: { ids: string[]; icon: ReactNode }) {
         </div>
         {items.map((f) => (
           <div key={f.id} className="flex flex-col items-center gap-1">
-            <h3 className="flex items-center gap-2 text-ui-14 font-semibold text-[var(--text-1)]">
+            <Text
+              as="h3"
+              size={14}
+              tone="primary"
+              weight="semibold"
+              className="flex items-center gap-2"
+            >
               {f.name}
               <SoonBadge label={t('soon.badge')} />
-            </h3>
-            <p className="text-ui-12 leading-relaxed text-[var(--text-2)]">{f.description}</p>
+            </Text>
+            <Text as="p" size={12} tone="secondary" leading="relaxed">
+              {f.description}
+            </Text>
           </div>
         ))}
         <button

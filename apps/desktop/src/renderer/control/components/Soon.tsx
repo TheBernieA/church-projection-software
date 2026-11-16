@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ComingSoonButton, SoonBadge } from '@lampstand/ui';
+import { ComingSoonButton, SoonBadge, Text } from '@lampstand/ui';
 import { feature } from '../lib/features';
 
 /**
@@ -44,11 +44,19 @@ export function SoonList({ ids }: { ids: string[] }) {
         <li key={f.id} className="flex items-start gap-3 px-4 py-3" data-feature={f.id}>
           <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--soon)]" />
           <div className="min-w-0 flex-1">
-            <p className="flex items-center gap-2 text-ui-13 font-medium text-[var(--text-2)]">
+            <Text
+              as="p"
+              size={13}
+              tone="secondary"
+              weight="medium"
+              className="flex items-center gap-2"
+            >
               {f.name}
               <SoonBadge label={t('soon.badge')} />
-            </p>
-            <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">{f.description}</p>
+            </Text>
+            <Text as="p" variant="caption" leading="snug" className="mt-0.5">
+              {f.description}
+            </Text>
           </div>
         </li>
       ))}

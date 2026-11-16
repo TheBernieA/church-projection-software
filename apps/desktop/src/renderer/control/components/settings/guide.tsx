@@ -18,7 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, Kbd } from '@lampstand/ui';
+import { Button, Kbd, Text } from '@lampstand/ui';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { openDialog, useStore } from '../../lib/store';
@@ -54,12 +54,14 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
         {step.done ? <Check size={14} strokeWidth={3} /> : n}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2 text-ui-13 font-medium">
+        <Text as="p" variant="label" className="flex items-center gap-2">
           <span className="text-[var(--text-3)]">{step.icon}</span>
           {title}
           {step.done && <span className="sr-only"> (done)</span>}
-        </p>
-        <p className="mt-1 text-ui-12 leading-relaxed text-[var(--text-2)]">{body}</p>
+        </Text>
+        <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-1">
+          {body}
+        </Text>
       </div>
       {step.action && (
         <Button
@@ -139,7 +141,9 @@ function FeatureIndex() {
         />
       </div>
       {groups.length === 0 && (
-        <p className="py-2 text-ui-12 text-[var(--text-3)]">{t('guide.everything.none')}</p>
+        <Text as="p" variant="caption" className="py-2">
+          {t('guide.everything.none')}
+        </Text>
       )}
       {groups.map((g) => (
         <section key={g.id} className="mb-3 last:mb-0">
@@ -147,10 +151,12 @@ function FeatureIndex() {
           <ul className="divide-y divide-[var(--hairline)] rounded-[6px] bg-[var(--surface-1)] shadow-[inset_0_0_0_1px_var(--hairline)]">
             {g.items.map((f) => (
               <li key={f.id} className="px-3 py-2" data-feature={f.id}>
-                <p className="text-ui-13 font-medium">{f.name}</p>
-                <p className="mt-0.5 text-ui-12 leading-snug text-[var(--text-3)]">
+                <Text as="p" variant="label">
+                  {f.name}
+                </Text>
+                <Text as="p" variant="caption" leading="snug" className="mt-0.5">
                   {f.description}
-                </p>
+                </Text>
               </li>
             ))}
           </ul>
@@ -247,10 +253,12 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
           <div key={r.id} className="flex gap-3 px-4 py-3" data-tour={r.id}>
             <span className="mt-0.5 shrink-0 text-[var(--accent)]">{r.icon}</span>
             <div className="min-w-0">
-              <p className="text-ui-13 font-medium">{t(`guide.tour.${r.id}.title`)}</p>
-              <p className="mt-0.5 text-ui-12 leading-relaxed text-[var(--text-2)]">
+              <Text as="p" variant="label">
+                {t(`guide.tour.${r.id}.title`)}
+              </Text>
+              <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-0.5">
                 {t(`guide.tour.${r.id}.body`, keyNames)}
-              </p>
+              </Text>
             </div>
           </div>
         ))}
@@ -259,17 +267,21 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       <Group title={t('guide.howto.title')} footnote={t('guide.howto.help')}>
         {HOWTO.map((id) => (
           <details key={id} className="group px-4 py-2.5" data-howto={id}>
-            <summary className="flex cursor-pointer list-none items-center gap-2 text-ui-13 font-medium [&::-webkit-details-marker]:hidden">
+            <Text
+              as="summary"
+              variant="label"
+              className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden"
+            >
               <ChevronRight
                 size={14}
                 aria-hidden
                 className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
               />
               {t(`guide.howto.items.${id}.q`)}
-            </summary>
-            <p className="mt-1.5 pl-[22px] text-ui-12 leading-relaxed text-[var(--text-2)]">
+            </Text>
+            <Text as="p" size={12} tone="secondary" leading="relaxed" className="mt-1.5 pl-[22px]">
               {t(`guide.howto.items.${id}.a`, keyNames)}
-            </p>
+            </Text>
           </details>
         ))}
       </Group>
@@ -321,8 +333,8 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
                       : 'var(--accent)',
               }}
             />
-            <span className="text-ui-13 font-medium">{t(`guide.colour.${c}.title`)}</span>
-            <span className="text-ui-12 text-[var(--text-3)]">{t(`guide.colour.${c}.body`)}</span>
+            <Text variant="label">{t(`guide.colour.${c}.title`)}</Text>
+            <Text variant="caption">{t(`guide.colour.${c}.body`)}</Text>
           </div>
         ))}
       </Group>

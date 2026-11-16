@@ -9,6 +9,7 @@ import { Dialog } from './Dialog';
 import { Checkbox } from './form';
 import { Select } from './Select';
 import { EMPTY_LIST } from '../constants';
+import { Text } from '@lampstand/ui';
 
 const ROLES: OutputRole[] = ['main', 'stage', 'secondary', 'none'];
 
@@ -93,9 +94,15 @@ export function OutputsDialog() {
         />
       )}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <summary className="cursor-pointer px-4 py-2.5 text-ui-12 font-semibold text-[var(--text-2)]">
+        <Text
+          as="summary"
+          size={12}
+          tone="secondary"
+          weight="semibold"
+          className="cursor-pointer px-4 py-2.5"
+        >
           {t('outputs.more')}
-        </summary>
+        </Text>
         <SoonList
           ids={['ndi', 'sdi', 'alpha-key', 'syphon', 'edge-blend', 'output-adjust', 'multiview']}
         />

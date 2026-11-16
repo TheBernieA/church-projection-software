@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AlignLeft, Clock3, LayoutGrid, ListPlus, Plus, Repeat, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Text } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../../lib/actions';
 import { feature } from '../../lib/features';
 import { useItemSlides } from '../../lib/hooks';
@@ -126,10 +126,12 @@ function ItemSection({
           className="flex min-w-0 cursor-pointer items-center gap-2 text-left"
         >
           <KindTile kind={item.kind} size={20} />
-          <span className="truncate text-ui-13 font-semibold">{title}</span>
-          <span className="shrink-0 text-ui-12 text-[var(--text-3)]">
+          <Text size={13} weight="semibold" truncate>
+            {title}
+          </Text>
+          <Text variant="caption" className="shrink-0">
             {t('slides.count', { count: slides.length })}
-          </span>
+          </Text>
         </button>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}

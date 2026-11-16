@@ -1,14 +1,17 @@
 import type { ReactNode } from 'react';
+import { Text } from './Text';
 
 /** Small "Soon" pill marking a feature that is planned but not built yet. */
 export function SoonBadge({ label = 'Soon' }: { label?: string }) {
   return (
-    <span
-      className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--soon-soft)] px-1.5 text-ui-10 font-semibold uppercase tracking-[0.04em] text-[var(--soon)]"
+    <Text
+      size={10}
+      weight="semibold"
+      className="inline-flex h-4 shrink-0 items-center rounded-full bg-[var(--soon-soft)] px-1.5 uppercase tracking-[0.04em] text-[var(--soon)]"
       data-soon
     >
       {label}
-    </span>
+    </Text>
   );
 }
 

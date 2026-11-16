@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { Film, Globe, Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Scene } from '@lampstand/core';
-import { TallyTag } from '@lampstand/ui';
+import { TallyTag, Text } from '@lampstand/ui';
 import { groupColor } from '../../lib/slides';
 import { SceneView } from '../SceneView';
 import { type PresentableSlide } from '../../types';
@@ -165,20 +165,33 @@ export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardPr
           className="w-1 shrink-0 rounded-l-[6px]"
           style={{ background: color ?? 'var(--surface-4)' }}
         />
-        <span className="tnum w-6 shrink-0 self-center text-right text-ui-12 font-semibold text-[var(--text-3)]">
+        <Text
+          size={12}
+          tone="muted"
+          weight="semibold"
+          tabular
+          className="w-6 shrink-0 self-center text-right"
+        >
           {index + 1}
-        </span>
+        </Text>
         <span className="min-w-0 flex-1 py-2">
-          <span
-            className="block text-ui-10 font-semibold uppercase tracking-[0.08em]"
+          <Text
+            size={10}
+            weight="semibold"
+            className="block uppercase tracking-[0.08em]"
             style={{ color: color ?? 'var(--text-3)' }}
           >
             {slide.label}
-          </span>
+          </Text>
           {text && (
-            <span className="mt-0.5 line-clamp-3 block whitespace-pre-line text-ui-15 leading-snug text-[var(--text-1)]">
+            <Text
+              size={15}
+              tone="primary"
+              leading="snug"
+              className="mt-0.5 line-clamp-3 block whitespace-pre-line"
+            >
               {text}
-            </span>
+            </Text>
           )}
         </span>
         <Tags state={state} inline />

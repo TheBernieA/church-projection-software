@@ -9,7 +9,7 @@ import {
   parseSongText,
   songSectionsToText,
 } from '@lampstand/lyrics';
-import { Button } from '@lampstand/ui';
+import { Button, Text } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, toast, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -156,7 +156,9 @@ function SongEditorBody({
   const body = (
     <>
       {readOnly && (
-        <p className="mb-3 rounded bg-[var(--accent-soft)] p-2 text-ui-12">{t('song.readOnly')}</p>
+        <Text as="p" size={12} className="mb-3 rounded bg-[var(--accent-soft)] p-2">
+          {t('song.readOnly')}
+        </Text>
       )}
       <fieldset disabled={readOnly} className="grid grid-cols-[1fr_320px] gap-4">
         <div className="space-y-3">
@@ -219,7 +221,9 @@ function SongEditorBody({
               onChange={(e) => setText(e.target.value)}
               spellCheck
             />
-            <p className="mt-1 text-ui-11 text-[var(--text-3)]">{t('song.lyricsHelp')}</p>
+            <Text as="p" size={11} tone="muted" className="mt-1">
+              {t('song.lyricsHelp')}
+            </Text>
           </div>
           <section aria-label={t('song.arrangements')}>
             <span className="label">{t('song.arrangements')}</span>
@@ -280,7 +284,9 @@ function SongEditorBody({
             >
               + {t('song.addArrangement')}
             </Button>
-            <p className="mt-1 text-ui-11 text-[var(--text-3)]">{t('song.arrangementHelp')}</p>
+            <Text as="p" size={11} tone="muted" className="mt-1">
+              {t('song.arrangementHelp')}
+            </Text>
           </section>
           <section aria-label={t('song.translationSection')}>
             <div className="flex items-end gap-2">
@@ -297,7 +303,9 @@ function SongEditorBody({
                   onChange={(e) => setTransLang(e.target.value)}
                 />
               </div>
-              <p className="pb-1.5 text-ui-11 text-[var(--text-3)]">{t('song.translationHelp')}</p>
+              <Text as="p" size={11} tone="muted" className="pb-1.5">
+                {t('song.translationHelp')}
+              </Text>
             </div>
             <label className="label mt-2" htmlFor="s-trans">
               {t('song.translation')}
@@ -319,9 +327,13 @@ function SongEditorBody({
           </span>
           <ol className="max-h-[60vh] space-y-1.5 overflow-y-auto">
             {slides.map((s, i) => (
-              <li
+              <Text
+                as="li"
+                size={12}
+                tone="white"
+                leading="snug"
                 key={s.key}
-                className="rounded bg-black p-2 text-center text-ui-12 leading-snug text-white"
+                className="rounded bg-black p-2 text-center"
               >
                 <div className="mb-1 text-left text-ui-10 text-[var(--text-3)]">
                   {i + 1} · {s.label}
@@ -329,7 +341,7 @@ function SongEditorBody({
                 {s.lines.map((l, j) => (
                   <div key={j}>{l}</div>
                 ))}
-              </li>
+              </Text>
             ))}
           </ol>
         </div>
@@ -340,7 +352,9 @@ function SongEditorBody({
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
-          <h2 className="min-w-0 flex-1 truncate text-ui-14 font-semibold">{draft.title}</h2>
+          <Text as="h2" variant="title" truncate className="min-w-0 flex-1">
+            {draft.title}
+          </Text>
           {actions}
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">{body}</div>

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, RotateCcw, Type, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem, TextFormat, Theme } from '@lampstand/core';
-import { Button } from '@lampstand/ui';
+import { Button, Text } from '@lampstand/ui';
 import { BUNDLED_FONTS } from '../../constants';
 import { useItemSlides, useSelectedItem } from '../../lib/hooks';
 import { itemTitle } from '../../lib/slides';
@@ -153,15 +153,21 @@ export function TextBar() {
     >
       <Type size={15} className="shrink-0 text-[var(--text-3)]" />
       {!target || !theme ? (
-        <p className="truncate text-ui-12 text-[var(--text-3)]">{t('textBar.pick')}</p>
+        <Text as="p" variant="caption" truncate>
+          {t('textBar.pick')}
+        </Text>
       ) : (
         <>
-          <span
-            className="mr-1 max-w-[180px] truncate text-ui-12 font-medium text-[var(--text-2)]"
+          <Text
+            size={12}
+            tone="secondary"
+            weight="medium"
+            truncate
+            className="mr-1 max-w-[180px]"
             title={itemTitle(target, { songs, media })}
           >
             {itemTitle(target, { songs, media })}
-          </span>
+          </Text>
           <div className="w-48">
             <Select
               size="sm"

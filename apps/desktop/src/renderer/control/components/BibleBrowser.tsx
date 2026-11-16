@@ -7,6 +7,7 @@ import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
+import { Text } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -145,9 +146,9 @@ export function BibleBrowser() {
                 </button>
               ))}
             </div>
-            <p className="pb-2 pt-2 text-ui-12 leading-snug text-[var(--text-3)]">
+            <Text as="p" variant="caption" leading="snug" className="pb-2 pt-2">
               {t('bible.hint')}
-            </p>
+            </Text>
           </div>
           <ol className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
             {(verses ?? []).map((text, i) => {
@@ -173,9 +174,14 @@ export function BibleBrowser() {
                     })}
                     className={`flex w-full gap-2.5 rounded-[8px] px-2.5 py-2 text-left text-ui-13 leading-relaxed transition-colors ${isSel ? 'bg-[var(--accent-soft)] shadow-[inset_2px_0_0_var(--accent)]' : 'hover:bg-[var(--surface-2)]'}`}
                   >
-                    <span className="tnum w-5 shrink-0 pt-px text-right text-ui-11 font-semibold text-[var(--accent)]">
+                    <Text
+                      size={11}
+                      weight="semibold"
+                      tabular
+                      className="w-5 shrink-0 pt-px text-right text-[var(--accent)]"
+                    >
                       {v}
-                    </span>
+                    </Text>
                     <span className="text-[var(--text-1)]">
                       {parseBibleMarkup(text)
                         .map((s) => s.text)

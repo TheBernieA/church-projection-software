@@ -26,7 +26,7 @@ import {
   type Scene,
   type Standby,
 } from '@lampstand/core';
-import { Button, Kbd, SoonBadge, TallyLabel } from '@lampstand/ui';
+import { Button, Kbd, SoonBadge, TallyLabel, Text } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { clearLayer, goLive, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
@@ -72,7 +72,11 @@ function MonitorCard({
         <TallyLabel tone={tone} active={active}>
           {label}
         </TallyLabel>
-        {caption && <span className="truncate text-ui-11 text-[var(--text-3)]">{caption}</span>}
+        {caption && (
+          <Text size={11} tone="muted" truncate>
+            {caption}
+          </Text>
+        )}
       </figcaption>
       <div className={`overflow-hidden rounded-[4px] ${ring}`}>
         <SceneView scene={scene} label={label} standby={standby} audio={audio} />
@@ -269,9 +273,9 @@ export function RightColumn() {
             <TallyLabel tone="program" active={onAir}>
               {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
             </TallyLabel>
-            <span className="truncate text-ui-11 text-[var(--text-3)]">
+            <Text size={11} tone="muted" truncate>
               {p.content?.label ?? mediaName ?? ''}
-            </span>
+            </Text>
           </div>
           <div className="flex gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-2">

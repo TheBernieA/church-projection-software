@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { newId, type BackgroundRef, type MediaItem } from '@lampstand/core';
-import { Button } from '@lampstand/ui';
+import { Button, Text } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { cmd, q } from '../lib/api';
@@ -49,9 +49,9 @@ export function MediaPanel() {
         <SoonFeature id="playback-markers" label={t('media.soon.markers')} />
       </div>
       {media.length === 0 && (
-        <p className="px-5 py-3 text-ui-13 leading-relaxed text-[var(--text-3)]">
+        <Text as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
           {t('media.empty')}
-        </p>
+        </Text>
       )}
       <div className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 overflow-y-auto px-4 pb-4">
         {media.map((m) => {

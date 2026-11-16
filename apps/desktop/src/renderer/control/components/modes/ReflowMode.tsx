@@ -3,7 +3,7 @@ import { MousePointerClick, Rows3, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { nowIso, type Song } from '@lampstand/core';
 import { buildSongSlides, parseSongText, songSectionsToText } from '@lampstand/lyrics';
-import { Button } from '@lampstand/ui';
+import { Button, Text } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { reflowToSlides, slidesToReflow } from '../../lib/reflow';
@@ -40,10 +40,10 @@ function ReflowEditor({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
         <Rows3 size={16} className="text-[var(--text-3)]" />
-        <h2 className="min-w-0 flex-1 truncate text-ui-14 font-semibold">{title}</h2>
-        <span className="text-ui-12 text-[var(--text-3)]">
-          {t('slides.count', { count: slides.length })}
-        </span>
+        <Text as="h2" variant="title" truncate className="min-w-0 flex-1">
+          {title}
+        </Text>
+        <Text variant="caption">{t('slides.count', { count: slides.length })}</Text>
         <Button size="sm" variant="ghost" disabled={!dirty} onClick={() => setText(initial)}>
           {t('reflow.revert')}
         </Button>
@@ -67,7 +67,9 @@ function ReflowEditor({
             onChange={(e) => setText(e.target.value)}
             spellCheck
           />
-          <p className="mt-2 text-ui-11 text-[var(--text-3)]">{t('reflow.help')}</p>
+          <Text as="p" size={11} tone="muted" className="mt-2">
+            {t('reflow.help')}
+          </Text>
         </div>
         <ol className="min-h-0 space-y-1.5 overflow-y-auto border-l border-[var(--hairline)] p-3">
           {slides.map((s, i) => {
@@ -80,9 +82,15 @@ function ReflowEditor({
                 >
                   {i + 1} · {s.label}
                 </div>
-                <p className="whitespace-pre-line p-2 text-center text-ui-11 leading-snug text-white">
+                <Text
+                  as="p"
+                  size={11}
+                  tone="white"
+                  leading="snug"
+                  className="whitespace-pre-line p-2 text-center"
+                >
                   {s.text}
-                </p>
+                </Text>
               </li>
             );
           })}

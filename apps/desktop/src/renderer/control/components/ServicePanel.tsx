@@ -16,7 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
-import { IconButton } from '@lampstand/ui';
+import { IconButton, Text } from '@lampstand/ui';
 import { importSlides } from '../lib/importSlides';
 import { itemTitle, sectionColor } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
@@ -149,10 +149,10 @@ export function ServicePanel() {
     <section className="flex min-h-0 flex-1 flex-col" aria-label={t('service.title')}>
       {/* "11 ITEMS  +": the playlist's contents, with the add menu on the right. */}
       <div className="flex h-7 shrink-0 items-center justify-between border-b border-[var(--hairline)] pb-1 pl-3 pr-1.5">
-        <h2 className="text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+        <Text as="h2" variant="overline">
           <span className="sr-only">{t('service.title')} · </span>
           {t('sidebar.items', { count: items.filter((i) => i.kind !== 'header').length })}
-        </h2>
+        </Text>
         <AddMenu
           update={update}
           trigger={
@@ -267,18 +267,23 @@ export function ServicePanel() {
                   <KindTile kind={item.kind} size={20} />
                   {/* One line: the title, and its source (song, version…) in muted text on the right. */}
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                    <span className="min-w-0 flex-1 truncate text-ui-13">
+                    <Text variant="body" truncate className="min-w-0 flex-1">
                       {itemTitle(item, { songs, media })}
-                    </span>
-                    <span className="ls-sub max-w-[45%] shrink-0 truncate text-ui-12 text-[var(--text-3)]">
+                    </Text>
+                    <Text variant="caption" truncate className="ls-sub max-w-[45%] shrink-0">
                       {subtitle(item)}
-                    </span>
+                    </Text>
                   </span>
                 </button>
                 {isLive && (
-                  <span className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 text-ui-10 font-bold tracking-wide text-white">
+                  <Text
+                    size={10}
+                    tone="white"
+                    weight="bold"
+                    className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 tracking-wide"
+                  >
                     LIVE
-                  </span>
+                  </Text>
                 )}
                 {isPrev && (
                   <span
@@ -401,12 +406,12 @@ export function AddMenu({
                   {e.icon}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-ui-13 font-medium text-[var(--text-1)]">
+                  <Text size={13} tone="primary" weight="medium" className="block">
                     {e.label}
-                  </span>
-                  <span className="block text-ui-11 leading-snug text-[var(--text-3)]">
+                  </Text>
+                  <Text size={11} tone="muted" leading="snug" className="block">
                     {e.help}
-                  </span>
+                  </Text>
                 </span>
               </DropdownMenu.Item>
             ))}

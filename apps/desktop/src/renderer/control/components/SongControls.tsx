@@ -2,7 +2,7 @@ import { Languages, Minus, Music2, Plus, Shuffle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Song } from '@lampstand/core';
 import { hasChords, transposeChord } from '@lampstand/lyrics';
-import { IconButton } from '@lampstand/ui';
+import { IconButton, Text } from '@lampstand/ui';
 import { groupColor } from '../lib/slides';
 import { refreshLiveSlide } from '../lib/actions';
 import { patchItem } from '../lib/store';
@@ -57,14 +57,18 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           const section = song.sections.find((s) => s.id === id);
           if (!section) return null;
           return (
-            <li
+            <Text
+              as="li"
+              size={10}
+              tone="white"
+              weight="bold"
               key={`${id}-${i}`}
               title={section.label}
-              className="shrink-0 rounded-[3px] px-1 text-ui-10 font-bold text-white"
+              className="shrink-0 rounded-[3px] px-1"
               style={{ background: groupColor(section.label) }}
             >
               {shortLabel(section.label)}
-            </li>
+            </Text>
           );
         })}
       </ol>
@@ -78,8 +82,11 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           <IconButton size="xs" aria-label={t('slides.transposeDown')} onClick={() => shift(-1)}>
             <Minus size={13} />
           </IconButton>
-          <span
-            className="tnum flex min-w-12 items-center justify-center gap-1 px-1 text-ui-12 font-semibold"
+          <Text
+            size={12}
+            weight="semibold"
+            tabular
+            className="flex min-w-12 items-center justify-center gap-1 px-1"
             title={t('slides.transposeHint')}
             data-testid="transpose-value"
           >
@@ -89,7 +96,7 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
               : transpose > 0
                 ? `+${transpose}`
                 : transpose}
-          </span>
+          </Text>
           <IconButton size="xs" aria-label={t('slides.transposeUp')} onClick={() => shift(1)}>
             <Plus size={13} />
           </IconButton>

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SoonList } from './Soon';
-import { Button } from '@lampstand/ui';
+import { Button, Text } from '@lampstand/ui';
 import { q } from '../lib/api';
 import { closeDialog, editService, openService, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
@@ -66,9 +66,9 @@ export function ServicesDialog() {
                   >
                     {s.name}
                   </span>
-                  <span className="text-ui-11 text-[var(--text-3)]">
+                  <Text size={11} tone="muted">
                     {s.itemCount} · {s.updatedAt.slice(0, 10)}
-                  </span>
+                  </Text>
                   {group === 'templates' ? (
                     <Button
                       size="sm"
@@ -99,9 +99,15 @@ export function ServicesDialog() {
         );
       })}
       <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
-        <summary className="cursor-pointer px-4 py-2.5 text-ui-12 font-semibold text-[var(--text-2)]">
+        <Text
+          as="summary"
+          size={12}
+          tone="secondary"
+          weight="semibold"
+          className="cursor-pointer px-4 py-2.5"
+        >
           {t('service.syncSoon')}
-        </summary>
+        </Text>
         <SoonList ids={['planning-center', 'calendar', 'cloud']} />
       </details>
     </Dialog>

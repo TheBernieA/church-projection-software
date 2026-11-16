@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Overlay, type PropPosition } from '@lampstand/core';
-import { IconButton, TallyTag } from '@lampstand/ui';
+import { IconButton, TallyTag, Text } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import {
   isPicture,
@@ -62,14 +62,16 @@ function PropCard({
         {m?.hasThumbnail ? (
           <img src={thumbUrl(m.id)} alt="" className="max-h-full max-w-full object-contain" />
         ) : (
-          <span className="px-2 text-center text-ui-13 font-bold text-white">
+          <Text size={13} tone="white" weight="bold" className="px-2 text-center">
             {prop.text || m?.name || prop.name}
-          </span>
+          </Text>
         )}
         {on && <TallyTag tone="program">LIVE</TallyTag>}
       </button>
       <div className="flex items-center gap-1">
-        <span className="min-w-0 flex-1 truncate text-ui-12 font-medium">{prop.name}</span>
+        <Text size={12} weight="medium" truncate className="min-w-0 flex-1">
+          {prop.name}
+        </Text>
         <IconButton
           size="xs"
           aria-label={t('props.delete', { name: prop.name })}

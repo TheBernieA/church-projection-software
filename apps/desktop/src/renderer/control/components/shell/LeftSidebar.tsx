@@ -6,6 +6,7 @@ import { openDialog, openService, useStore } from '../../lib/store';
 import { ServicePanel } from '../ServicePanel';
 import { SongList } from '../SongList';
 import { Splitter, usePaneSize } from './Splitter';
+import { Text } from '@lampstand/ui';
 
 /** Small-caps outline heading with an optional "+" on the right. */
 function OutlineHeading({
@@ -19,9 +20,9 @@ function OutlineHeading({
 }) {
   return (
     <div className="flex h-7 items-center justify-between pl-3 pr-1.5 pt-1">
-      <h2 className="text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+      <Text as="h2" variant="overline">
         {title}
-      </h2>
+      </Text>
       {onAdd && (
         <button
           type="button"
@@ -111,7 +112,9 @@ export function LeftSidebar() {
           }
         />
         {playlists.length === 0 && (
-          <p className="px-4 py-1 text-ui-12 text-[var(--text-3)]">{t('sidebar.noPlaylists')}</p>
+          <Text as="p" variant="caption" className="px-4 py-1">
+            {t('sidebar.noPlaylists')}
+          </Text>
         )}
         {playlists.map((p) => (
           <OutlineRow

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Film, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Text } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
@@ -136,7 +136,7 @@ function NewTimer({
         ]}
       />
       {kind === 'countdown' && (
-        <label className="flex items-center gap-2 text-ui-12 text-[var(--text-2)]">
+        <Text as="label" size={12} tone="secondary" className="flex items-center gap-2">
           <input
             className="field !h-8 !w-20"
             type="number"
@@ -147,7 +147,7 @@ function NewTimer({
             onChange={(e) => setMinutes(e.target.value)}
           />
           {t('timers.minutes')}
-        </label>
+        </Text>
       )}
       {kind === 'to-time' && (
         <input
@@ -207,9 +207,9 @@ export function TimersBin() {
         />
       )}
       <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
-      <p className="ml-auto max-w-[220px] self-end text-ui-11 leading-snug text-[var(--text-3)]">
+      <Text as="p" size={11} tone="muted" leading="snug" className="ml-auto max-w-[220px] self-end">
         {t('timers.stageHint')}
-      </p>
+      </Text>
     </BinRow>
   );
 }

@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge } from '@lampstand/ui';
+import { SoonBadge, Text } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel, MediaPanel } from '../MediaPanel';
@@ -40,9 +40,9 @@ export function Bin({ height }: { height: number }) {
         aria-label={t('bin.label')}
         className="flex w-[180px] shrink-0 flex-col gap-px overflow-y-auto border-r border-[var(--divider)] bg-[var(--surface-1)] py-1.5"
       >
-        <h2 className="px-3 pb-1 text-ui-11 font-semibold uppercase tracking-[0.06em] text-[var(--text-3)]">
+        <Text as="h2" variant="overline" className="px-3 pb-1">
           {t('bin.tabs.media')}
-        </h2>
+        </Text>
         {CATEGORIES.map(({ tab: x, icon: Icon, soon }) => {
           const on = x === tab;
           return (
@@ -63,9 +63,9 @@ export function Bin({ height }: { height: number }) {
               <Icon size={14} className={on ? '' : 'text-[var(--text-3)]'} />
               <span className="flex-1 truncate">{t(`bin.tabs.${x}`)}</span>
               {x === 'media' && mediaCount > 0 && (
-                <span aria-hidden className="tnum text-ui-11 opacity-70">
+                <Text size={11} tabular aria-hidden className="opacity-70">
                   {mediaCount}
-                </span>
+                </Text>
               )}
               {soon && <SoonBadge label={t('soon.badge')} />}
             </button>

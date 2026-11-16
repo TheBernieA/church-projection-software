@@ -1,6 +1,7 @@
 import * as RS from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
+import { Text } from '@lampstand/ui';
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -82,9 +83,9 @@ export function Select<T extends string>({
                     <span style={o.labelStyle}>{o.label}</span>
                   </RS.ItemText>
                   {o.description && (
-                    <span className="mt-0.5 truncate text-ui-12 font-normal text-[var(--text-3)]">
+                    <Text size={12} tone="muted" weight="regular" truncate className="mt-0.5">
                       {o.description}
-                    </span>
+                    </Text>
                   )}
                 </span>
                 <RS.ItemIndicator className="absolute right-2.5 text-[var(--accent)]">
