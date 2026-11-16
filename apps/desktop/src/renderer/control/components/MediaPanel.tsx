@@ -2,25 +2,19 @@ import { useTranslation } from 'react-i18next';
 import { newId, type BackgroundRef } from '@lampstand/core';
 import { Button, Typography } from '@lampstand/ui';
 import { libraryDragSource } from '../lib/libraryDrag';
-import { cmd, q } from '../lib/api';
-import { attempt, toast, useStore } from '../lib/store';
+
+import { useStore } from '../lib/store';
 import { BackgroundTile } from './BackgroundTile';
 import { Tile } from './cards';
-import i18n from '../i18n';
 import { BUILT_IN_BACKGROUNDS } from '../constants';
 import { Thumb } from './media/MediaBrowser';
-
-async function importMedia(asBackground: boolean): Promise<void> {
-  const r = await attempt(() => q('media.import', { asBackground }), 'errors.import');
-  if (r?.imported) toast(i18n.t('media.imported', { count: r.imported }));
-  if (r?.rejected) toast(i18n.t('media.rejected', { count: r.rejected }), 'warning');
-}
+import { setBackground } from '../lib/actions';
+import { importMedia } from '../lib/mediaPlaylists';
 
 export function BackgroundsPanel() {
   const { t } = useTranslation();
   const media = useStore((s) => s.media).filter((m) => m.isBackground && m.kind !== 'audio');
-  const setBg = (ref: BackgroundRef): void =>
-    void cmd('live.setBackground', { background: { ref } });
+  const setBg = (ref: BackgroundRef): void => void setBackground(ref);
   return (
     <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3">
       {(['motion', 'still'] as const).map((group) => (
@@ -47,7 +41,7 @@ export function BackgroundsPanel() {
         <Typography as="h3" variant="overline">
           {t('media.yours')}
         </Typography>
-        <Button size="sm" variant="ghost" onClick={() => void importMedia(true)}>
+        <Button size="sm" variant="ghost" onClick={() => void importMedia({ asBackground: true })}>
           + {t('media.addBackground')}
         </Button>
       </div>

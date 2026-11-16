@@ -1,7 +1,7 @@
 import { audioFadeAt, audioPositionAt, type AudioCue } from '@lampstand/core';
-import { AudioInputPlayer, AudioPlayer } from '@lampstand/renderer';
+import { RoomAudio } from '@lampstand/renderer';
 import { cmd } from './api';
-import { durations, knownDuration } from './mediaDurations';
+import { hasDuration, knownDuration, setDuration } from './mediaDurations';
 import { attempt, useStore } from './store';
 import { mediaUrl } from '../../shared/mediaUrl';
 
@@ -35,12 +35,12 @@ export function neighbourTrack(delta: 1 | -1): string | null {
 /** Read a track's length from its file once (metadata only) and cache it. */
 const probing = new Set<string>();
 export function probeDuration(id: string): void {
-  if (durations.has(id) || probing.has(id)) return;
+  if (hasDuration(id) || probing.has(id)) return;
   probing.add(id);
   const el = document.createElement('audio');
   el.preload = 'metadata';
   const done = (): void => {
-    if (Number.isFinite(el.duration) && el.duration > 0) durations.set(id, el.duration);
+    if (Number.isFinite(el.duration) && el.duration > 0) setDuration(id, el.duration);
     probing.delete(id);
     el.removeAttribute('src');
     el.load();
@@ -85,8 +85,7 @@ export function installAudioWatch(): () => void {
  * Program monitor does for video), so the operator still hears it.
  */
 export function installLocalAudio(): () => void {
-  let player: AudioPlayer | null = null;
-  let input: AudioInputPlayer | null = null;
+  let player: RoomAudio | null = null;
   let last: { cue: AudioCue | null; inCue: unknown; local: boolean } | null = null;
   const sync = (): void => {
     const s = get();
@@ -96,24 +95,17 @@ export function installLocalAudio(): () => void {
     const inCue = s.live?.audioInput ?? null;
     if (last?.cue === cue && last.inCue === inCue && last.local === local) return;
     last = { cue, inCue, local };
-    if (local && !player) {
-      player = new AudioPlayer(document, mediaUrl);
-      input = new AudioInputPlayer(window);
-    }
+    if (local && !player) player = new RoomAudio(window, mediaUrl);
     if (!local && player) {
       player.destroy();
       player = null;
-      input?.stop();
-      input = null;
     }
-    player?.sync(cue);
-    input?.sync(inCue);
+    player?.sync(cue, inCue);
   };
   sync();
   const off = useStore.subscribe(sync);
   return () => {
     off();
     player?.destroy();
-    input?.stop();
   };
 }

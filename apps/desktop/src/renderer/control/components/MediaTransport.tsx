@@ -1,11 +1,4 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Film, Pause, Play, Repeat, SkipBack, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, mediaEnd, mediaPositionAt, type MediaLayer } from '@lampstand/core';
@@ -14,7 +7,8 @@ import { cmd } from '../lib/api';
 import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
 import { mediaUrl, thumbUrl } from '../../shared/mediaUrl';
-import { durations } from '../lib/mediaDurations';
+import { hasDuration, setDuration, useKnownDuration } from '../lib/mediaDurations';
+import { pct, useDraft } from '../lib/slider';
 
 /**
  * Duration of a library clip: from the library record when known, else read once from the
@@ -25,10 +19,8 @@ function useMediaDuration(mediaId: string | undefined): number | undefined {
   const known = useStore((s) =>
     mediaId ? s.media.find((m) => m.id === mediaId)?.durationSec : undefined,
   );
-  // Bumped when a probe succeeds, to re-read the module-level cache.
-  const [, setVersion] = useState(0);
   useEffect(() => {
-    if (!mediaId || known || durations.has(mediaId)) return;
+    if (!mediaId || known || hasDuration(mediaId)) return;
     let cancelled = false;
     let stop = (): void => undefined;
     const attempt = (n: number): void => {
@@ -44,9 +36,8 @@ function useMediaDuration(mediaId: string | undefined): number | undefined {
       };
       const read = (): void => {
         if (settled || !Number.isFinite(probe.duration) || probe.duration <= 0) return;
-        durations.set(mediaId, probe.duration);
+        setDuration(mediaId, probe.duration);
         end();
-        if (!cancelled) setVersion((v) => v + 1);
       };
       const retry = (): void => {
         if (settled) return;
@@ -66,7 +57,7 @@ function useMediaDuration(mediaId: string | undefined): number | undefined {
       stop();
     };
   }, [mediaId, known]);
-  return known ?? (mediaId ? durations.get(mediaId) : undefined);
+  return useKnownDuration(mediaId, known);
 }
 
 /** Ticking playhead derived from the shared playback state (same maths as the outputs). */
@@ -75,41 +66,6 @@ function usePlayhead(media: MediaLayer | null, duration: number | undefined): nu
   // A tick older than the latest restart/seek counts as zero elapsed, so the new position
   // shows at once rather than waiting for the next tick.
   return media ? mediaPositionAt(media, now, duration) : 0;
-}
-
-/**
- * A slider value held locally while the operator drags, committed exactly once when they let
- * go: on the native `change` event, which the browser fires once per drag (on release, even
- * off the slider) and once per arrow key. React's `onChange` is really `input`, so it only
- * updates the draft.
- *
- * The draft is tagged with the playback state it was made against. It keeps showing the
- * dropped position until the commit comes back as new shared state, then gives way to the
- * real playhead; no snap back to the old position, and never stuck.
- */
-function useDraft(resetKey: unknown, commit: (value: number) => void) {
-  const [held, setHeld] = useState<{ key: unknown; value: number } | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const latest = useRef(commit);
-  useEffect(() => {
-    latest.current = commit;
-  });
-  useEffect(() => {
-    const el = input.current;
-    if (!el) return;
-    const onCommit = (): void => latest.current(Number(el.value));
-    el.addEventListener('change', onCommit);
-    return () => el.removeEventListener('change', onCommit);
-  }, []);
-  const draft = held && held.key === resetKey ? held.value : null;
-  return {
-    draft,
-    props: {
-      ref: input,
-      onChange: (e: ChangeEvent<HTMLInputElement>) =>
-        setHeld({ key: resetKey, value: Number(e.target.value) }),
-    },
-  };
 }
 
 const sendMedia = (payload: Record<string, unknown>): void =>
@@ -195,9 +151,6 @@ function TransportButton({
     </IconButton>
   );
 }
-
-const pct = (value: number, max: number): CSSProperties =>
-  ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties;
 
 const SKIP = 15;
 const LAST = 10;

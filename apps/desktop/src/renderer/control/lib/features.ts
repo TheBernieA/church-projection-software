@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { type Feature, type FeatureCategory, type FeatureStatus } from '../types';
 export const FEATURE_CATEGORIES: { id: FeatureCategory; name: string }[] = [
   { id: 'presentations', name: 'Presentations & editing' },
@@ -530,4 +531,10 @@ export function feature(id: string): Feature {
   const x = byId.get(id);
   if (!x) throw new Error(`Unknown feature: ${id}`);
   return x;
+}
+
+/** Tooltip for a planned item: what it will do (from this catalogue). */
+export function soonTitle(id: string): string {
+  const f = feature(id);
+  return `${i18n.t('soon.tooltip', { name: f.name })}. ${f.description}`;
 }

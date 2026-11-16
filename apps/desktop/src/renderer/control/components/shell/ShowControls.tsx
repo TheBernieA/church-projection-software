@@ -31,7 +31,7 @@ const TABS: { tab: Tab; icon: LucideIcon; soon?: string[] }[] = [
 
 /**
  * Show controls, under the output monitor: icon tabs for audio, the stage message, timers,
- * messages and props (macros and audio are planned). The panel below runs the selected one.
+ * messages and props (macros are planned). The panel below runs the selected one.
  */
 export function ShowControls() {
   const { t } = useTranslation();

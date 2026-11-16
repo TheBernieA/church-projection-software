@@ -1,4 +1,5 @@
-import { audioFadeAt, audioPositionAt, type AudioCue } from '@lampstand/core';
+import { audioFadeAt, audioPositionAt, type AudioCue, type AudioInputCue } from '@lampstand/core';
+import { AudioInputPlayer } from './inputs';
 import { safePlay } from './dom';
 
 /**
@@ -44,17 +45,20 @@ export class AudioPlayer {
     };
     if (a.readyState >= 1) apply();
     else a.addEventListener('loadedmetadata', apply, { once: true });
-    this.startRamp();
+    // Volume: set once; only a fade-out needs a per-frame ramp.
+    a.volume = cue.volume;
+    if (cue.fade) this.startRamp();
+    else this.stopRamp();
   }
 
-  /** Volume each frame: the cue's volume, times the fade-out when one runs. */
+  /** While a fade-out runs: volume each frame, the cue's volume times the fade. */
   private startRamp(): void {
     if (this.raf) return;
     const win = this.el.ownerDocument.defaultView;
     if (!win) return;
     const tick = (): void => {
       const cue = this.cue;
-      if (!cue) {
+      if (!cue?.fade) {
         this.raf = 0;
         return;
       }
@@ -71,5 +75,29 @@ export class AudioPlayer {
 
   destroy(): void {
     this.sync(null);
+  }
+}
+
+/**
+ * The room's sound in one window (the main output, or the control window with no output): the
+ * audio cue and a live audio input, together.
+ */
+export class RoomAudio {
+  private readonly player: AudioPlayer;
+  private readonly input: AudioInputPlayer;
+
+  constructor(win: Window, mediaUrl: (id: string) => string) {
+    this.player = new AudioPlayer(win.document, mediaUrl);
+    this.input = new AudioInputPlayer(win);
+  }
+
+  sync(audio: AudioCue | null, input: AudioInputCue | null): void {
+    this.player.sync(audio);
+    this.input.sync(input);
+  }
+
+  destroy(): void {
+    this.player.destroy();
+    this.input.stop();
   }
 }

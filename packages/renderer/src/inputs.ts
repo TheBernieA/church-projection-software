@@ -2,6 +2,13 @@ import type { AudioInputCue, VideoInputLayer } from '@lampstand/core';
 import { FILL } from './constants';
 import { el } from './dom';
 
+/** Microphone settings for the room: call processing (echo/noise/gain) would colour it. */
+export const RAW_AUDIO = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+} as const;
+
 /** Stop every track of a stream (releases the camera or microphone). */
 function release(stream: MediaStream | null): void {
   for (const t of stream?.getTracks() ?? []) t.stop();
@@ -80,12 +87,7 @@ export class AudioInputPlayer {
     const want = cue.deviceId;
     void this.win.navigator.mediaDevices
       .getUserMedia({
-        audio: {
-          deviceId: { exact: cue.deviceId },
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
+        audio: { deviceId: { exact: cue.deviceId }, ...RAW_AUDIO },
         video: false,
       })
       .then((s) => {

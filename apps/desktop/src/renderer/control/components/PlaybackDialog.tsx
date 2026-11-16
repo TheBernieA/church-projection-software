@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
 import { Button, Segmented, Typography } from '@lampstand/ui';
 import { useSelectedItem } from '../lib/hooks';
-import { knownDuration } from '../lib/mediaDurations';
+import { useKnownDuration } from '../lib/mediaDurations';
 import { closeDialog, patchItem, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
 import { Field } from './form';
@@ -74,8 +74,10 @@ export function PlaybackDialog() {
   const libraryDuration = useStore((s) =>
     item?.kind === 'media' ? s.media.find((m) => m.id === item.mediaId)?.durationSec : undefined,
   );
-  const duration =
-    item?.kind === 'media' ? knownDuration(item.mediaId, libraryDuration) : undefined;
+  const duration = useKnownDuration(
+    item?.kind === 'media' ? item.mediaId : undefined,
+    libraryDuration,
+  );
   if (item?.kind !== 'media') return null;
   const pb: Playback = item.playback ?? {};
   const set = (patch: { [K in keyof Playback]?: Playback[K] | undefined }): void =>

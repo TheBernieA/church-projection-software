@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Ellipsis,
@@ -17,18 +17,17 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MediaPlaylist } from '@lampstand/core';
-import { IconButton, NavItem, SoonBadge, Typography } from '@lampstand/ui';
-import { feature } from '../../lib/features';
+import { IconButton, NavItem, Typography } from '@lampstand/ui';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
 import {
   addToMediaPlaylist,
   createMediaPlaylist,
   deleteMediaPlaylist,
   renameMediaPlaylist,
+  usePlaylists,
 } from '../../lib/mediaPlaylists';
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel } from '../MediaPanel';
-import { SoonPanel } from '../bins/SoonPanel';
 import { inMediaBin, MediaBrowser } from '../media/MediaBrowser';
 import { VideoInputs } from '../media/VideoInputs';
 import { StockMedia } from '../media/StockMedia';
@@ -42,9 +41,9 @@ const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
   { tab: 'audio', icon: Music },
   { tab: 'backgrounds', icon: Wallpaper },
 ];
-const SOURCES: { tab: BinTab; icon: LucideIcon; id: string; soon?: boolean }[] = [
-  { tab: 'video-input', icon: Video, id: 'video-input' },
-  { tab: 'stock-media', icon: Store, id: 'stock-media' },
+const SOURCES: { tab: BinTab; icon: LucideIcon }[] = [
+  { tab: 'video-input', icon: Video },
+  { tab: 'stock-media', icon: Store },
 ];
 
 const Count = ({ n }: { n: number }) =>
@@ -69,13 +68,9 @@ function SectionHeading({ title, action }: { title: string; action?: ReactNode }
  * One media playlist in the sidebar: click to open, drop media on it to add, double-click (or
  * the "…" menu) to rename, and delete from the menu.
  */
-function PlaylistRow({ p }: { p: MediaPlaylist }) {
+function PlaylistRow({ p, count }: { p: MediaPlaylist; count: number }) {
   const { t } = useTranslation();
   const open = useStore((s) => s.binTab === 'playlist' && s.binPlaylistId === p.id);
-  // Same rule as the browser, so the count always matches what opening it shows.
-  const count = useStore(
-    (s) => p.mediaIds.filter((id) => s.media.some((m) => m.id === id && inMediaBin(m))).length,
-  );
   const [renaming, setRenaming] = useState(false);
   const [over, setOver] = useState(false);
 
@@ -159,15 +154,17 @@ function PlaylistRow({ p }: { p: MediaPlaylist }) {
 
 /**
  * The media sidebar, in the left column under the playlist (as in a media-library app): the
- * library views (all media, pictures, videos, backgrounds), the operator's media playlists, and
- * the planned sources. Its top lines up with the media browser's.
+ * library views (all media, pictures, videos, audio, backgrounds), the operator's media
+ * playlists, and the sources (cameras, stock media). Its top lines up with the media browser's.
  */
 export function BinNav() {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
-  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
+  const playlists = usePlaylists('media');
   const media = useStore((s) => s.media);
-  const library = media.filter(inMediaBin);
+  const library = useMemo(() => media.filter(inMediaBin), [media]);
+  // Same rule as the browser, so a playlist's count always matches what opening it shows.
+  const ids = useMemo(() => new Set(library.map((m) => m.id)), [library]);
   const counts: Partial<Record<BinTab, number>> = {
     media: library.length,
     images: library.filter((m) => m.kind === 'image').length,
@@ -214,21 +211,18 @@ export function BinNav() {
       {[...playlists]
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((p) => (
-          <PlaylistRow key={p.id} p={p} />
+          <PlaylistRow key={p.id} p={p} count={p.mediaIds.filter((id) => ids.has(id)).length} />
         ))}
 
       <SectionHeading title={t('mediaBin.sources')} />
-      {SOURCES.map(({ tab: x, icon: Icon, id, soon }) => (
+      {SOURCES.map(({ tab: x, icon: Icon }) => (
         <NavItem
           key={x}
           aria-pressed={tab === x}
           selected={tab === x}
-          dim={!!soon}
-          title={soon ? t('soon.tooltip', { name: feature(id).name }) : undefined}
           onClick={() => useStore.setState({ binTab: x })}
           icon={<Icon size={14} className="text-[var(--text-3)]" />}
           label={t(`bin.tabs.${x}`)}
-          trailing={soon ? <SoonBadge label={t('soon.badge')} /> : undefined}
           className="w-[calc(100%-12px)]"
         />
       ))}
@@ -244,8 +238,7 @@ export function Bin({ height }: { height: number }) {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
   const playlistId = useStore((s) => s.binPlaylistId);
-  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
-  const source = SOURCES.find((s) => s.tab === tab && s.soon);
+  const playlists = usePlaylists('media');
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
   const view =
     tab === 'images' || tab === 'videos' || tab === 'audio'
@@ -256,9 +249,7 @@ export function Bin({ height }: { height: number }) {
 
   return (
     <section aria-label={t('bin.label')} className="flex shrink-0 flex-col" style={{ height }}>
-      {source ? (
-        <SoonPanel ids={[source.id]} icon={<source.icon size={20} />} />
-      ) : tab === 'video-input' ? (
+      {tab === 'video-input' ? (
         <VideoInputs />
       ) : tab === 'stock-media' ? (
         <StockMedia />

@@ -1,10 +1,5 @@
-import { applyLook, type LiveState } from '@lampstand/core';
-import {
-  AudioInputPlayer,
-  AudioPlayer,
-  buildTestPattern,
-  SceneRenderer,
-} from '@lampstand/renderer';
+import { applyLook, lookLayersFor, type LiveState } from '@lampstand/core';
+import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 import '../shared/outputApi.d';
@@ -25,23 +20,20 @@ let pattern: HTMLElement | null = null;
 let latest: LiveState | null = null;
 let ready = false;
 /** Room audio plays from the main output only. */
-let audio: AudioPlayer | null = null;
-let audioIn: AudioInputPlayer | null = null;
+let audio: RoomAudio | null = null;
 
 function draw(state: LiveState): void {
   latest = state;
-  audio?.sync(state.audio);
-  audioIn?.sync(state.audioInput);
+  audio?.sync(state.audio, state.audioInput);
   if (!ready || !renderer) return;
   // The active Look decides which layers this kind of screen shows.
-  const layers = state.look && (role === 'main' || role === 'secondary') ? state.look[role] : null;
+  const layers = lookLayersFor(state.look, role);
   // The main output carries the room's sound: if its Look hides media while a video plays,
   // it keeps playing the video, unseen, so the sound isn't lost.
   const silentVideo =
     info.audio && !!layers && !layers.includes('media') && state.program.media?.kind === 'video';
   renderer.render(applyLook(state.program, silentVideo ? [...layers, 'media'] : layers));
-  const mediaLayer = host?.querySelector<HTMLElement>('.ls-layer-media');
-  if (mediaLayer) mediaLayer.style.visibility = silentVideo ? 'hidden' : '';
+  renderer.setMediaHidden(silentVideo);
   const showPattern = state.testPatterns.includes(outputId) || state.testPatterns.includes('*');
   if (showPattern && !pattern) {
     pattern = buildTestPattern(document, info);
@@ -64,15 +56,10 @@ api.onInfo((i) => {
       audio: i.audio,
     });
   }
-  if (i.audio && !audio) {
-    audio = new AudioPlayer(document, mediaUrl);
-    audioIn = new AudioInputPlayer(window);
-  }
+  if (i.audio && !audio) audio = new RoomAudio(window, mediaUrl);
   if (!i.audio && audio) {
     audio.destroy();
     audio = null;
-    audioIn?.stop();
-    audioIn = null;
   }
   // Info is re-sent whenever the logo or off-air screen changes.
   renderer.setLogo(i.logo);

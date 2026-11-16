@@ -1,5 +1,5 @@
 import type { Masks, Overlay, Scene } from '../schemas/scene';
-import type { LookLayer } from '../schemas/settings';
+import type { Look, LookLayer, ScreenMask, Settings } from '../schemas/settings';
 
 export const EMPTY_MASKS: Masks = { black: false, logo: false, freeze: false };
 export const EMPTY_SCENE: Scene = {
@@ -47,4 +47,16 @@ export function applyLook(scene: Scene, layers: readonly LookLayer[] | null | un
     announcement: on('announcements') ? (scene.announcement ?? null) : null,
     overlays: scene.overlays.filter((o) => on(overlayGroup(o))),
   };
+}
+
+/** The layers a Look shows on a kind of screen (null: no Look applies, everything shows). */
+export function lookLayersFor(look: Look | null | undefined, role: string): LookLayer[] | null {
+  return look && (role === 'main' || role === 'secondary') ? look[role] : null;
+}
+
+/** The screen mask a kind of screen uses (the stage display is never masked). */
+export function maskForRole(settings: Settings, role: string): ScreenMask | null {
+  if (role !== 'main' && role !== 'secondary') return null;
+  const id = settings.maskFor[role];
+  return (id && settings.screenMasks.find((m) => m.id === id)) || null;
 }

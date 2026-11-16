@@ -29,7 +29,7 @@ import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
 import { LogoLooks } from './LogoLooks';
-import { Group, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
+import { Group, LayerChips, NameRow, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
 import { LIVE_KINDS } from '../../constants';
 import { clamp } from '../../lib/utils';
 
@@ -446,7 +446,6 @@ function OffAirGroup({ s, update }: PageProps) {
   );
 }
 
-const CLEARABLE = ['content', 'media', 'background', 'announcements', 'messages', 'props'] as const;
 type ClearGroup = Settings['clearGroups'][number];
 
 /**
@@ -463,49 +462,20 @@ function ClearGroupsGroup({ s, update }: PageProps) {
     <Group title={t('clearGroups.title')} footnote={t('clearGroups.help')}>
       {groups.map((g) => (
         <div key={g.id} className="flex flex-col gap-2.5 px-4 py-3.5">
-          <div className="flex items-center gap-2">
-            <DeferredInput
-              aria-label={t('clearGroups.name')}
-              value={g.name}
-              maxLength={40}
-              onCommit={(name) => name.trim() && edit(g.id, { name: name.trim() })}
-              className="field !h-8 flex-1"
-            />
-            <IconButton
-              size="xs"
-              variant="danger"
-              aria-label={t('clearGroups.delete', { name: g.name })}
-              onClick={() => save(groups.filter((x) => x.id !== g.id))}
-            >
-              <Trash2 size={14} />
-            </IconButton>
-          </div>
-          <div
-            role="group"
-            aria-label={t('clearGroups.layersLabel', { name: g.name })}
-            className="flex flex-wrap gap-1.5"
-          >
-            {CLEARABLE.map((l) => {
-              const on = g.layers.includes(l);
-              return (
-                <Button
-                  key={l}
-                  size="2xs"
-                  variant={on ? 'primary' : 'subtle'}
-                  aria-pressed={on}
-                  // A group always clears at least one layer.
-                  disabled={on && g.layers.length === 1}
-                  onClick={() =>
-                    edit(g.id, {
-                      layers: on ? g.layers.filter((x) => x !== l) : [...g.layers, l],
-                    })
-                  }
-                >
-                  {t(`clearGroups.layers.${l}`)}
-                </Button>
-              );
-            })}
-          </div>
+          <NameRow
+            value={g.name}
+            label={t('clearGroups.name')}
+            deleteLabel={t('clearGroups.delete', { name: g.name })}
+            onRename={(name) => edit(g.id, { name })}
+            onDelete={() => save(groups.filter((x) => x.id !== g.id))}
+          />
+          <LayerChips
+            label={t('clearGroups.layersLabel', { name: g.name })}
+            value={g.layers}
+            onChange={(layers) => edit(g.id, { layers })}
+            names={(l) => t(`clearGroups.layers.${l}`)}
+            minOne
+          />
         </div>
       ))}
       <div className="px-4 py-3">

@@ -24,6 +24,8 @@ interface Slot<T> {
   key: string;
   node: HTMLElement;
   extra?: T;
+  /** The layer drawn here, to skip re-keying when the same object comes round again. */
+  source?: unknown;
 }
 
 /**
@@ -75,6 +77,9 @@ export class SceneRenderer {
       height: '100%',
       overflow: 'hidden',
       background: opts.transparent ? 'transparent' : '#000',
+      // A picture of the screen: never the target of a click, so a preview rebuilding under
+      // the pointer (hover to animate) can't swallow the click meant for its tile.
+      pointerEvents: 'none',
     });
     this.stage = el(this.doc, 'div', 'ls-stage', {
       position: 'absolute',
@@ -143,6 +148,14 @@ export class SceneRenderer {
   }
 
   /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
+  /**
+   * Keep the media layer playing but unseen: the main output carries the room's sound, so a
+   * Look that hides media there must not silence a video.
+   */
+  setMediaHidden(hidden: boolean): void {
+    this.mediaLayer.style.visibility = hidden ? 'hidden' : '';
+  }
+
   /** Shape the whole output with a screen mask (null: the full screen). */
   setMask(mask: ScreenMask | null): void {
     Object.assign(
@@ -332,8 +345,13 @@ export class SceneRenderer {
     const layer = channel === 'content' ? this.contentLayer : this.announceLayer;
     // Stage-only fields (notes, chords, label) never change what the room sees, so they don't
     // re-run the transition.
+    // The same object as last time: nothing changed (most renders, e.g. a timer tick).
+    if (this[channel] ? this[channel].source === content : content === null) return;
     const key = content ? JSON.stringify({ ...content, notes: 0, chords: 0, label: 0 }) : 'none';
-    if ((this[channel]?.key ?? 'none') === key) return;
+    if ((this[channel]?.key ?? 'none') === key) {
+      if (this[channel]) this[channel].source = content;
+      return;
+    }
     const t = transition ?? content?.theme.transition ?? DEFAULT_TRANSITION;
     const duration = instant || t.kind === 'cut' ? 0 : t.durationMs;
     const frames = transitionFrames(t.kind);
@@ -351,7 +369,7 @@ export class SceneRenderer {
       built.fit();
       built.root.style.opacity = duration ? '0' : '1';
       if (duration) void animate(built.root, frames.enter, { duration, easing: t.easing });
-      this[channel] = { key, node: built.root, extra: built };
+      this[channel] = { key, node: built.root, extra: built, source: content };
     }
     if (old) {
       if (duration)

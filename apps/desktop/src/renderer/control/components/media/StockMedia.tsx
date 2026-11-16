@@ -9,15 +9,12 @@ import {
   type StockCategory,
 } from '@lampstand/core';
 import { Segmented, Typography } from '@lampstand/ui';
-import { cmd } from '../../lib/api';
-import { addItemToService, attempt, toast } from '../../lib/store';
+import { setBackground } from '../../lib/actions';
+import { addItemToService, toast } from '../../lib/store';
 import { BackgroundTile } from '../BackgroundTile';
 
 type View = StockCategory | 'all' | 'countdowns';
 const CATEGORIES: StockCategory[] = ['worship', 'calm', 'seasons', 'abstract', 'nature'];
-
-const setBackground = (ref: BackgroundRef): void =>
-  void attempt(() => cmd('live.setBackground', { background: { ref } }), 'errors.setting');
 
 /**
  * Stock media (media bin › Sources): ready-made motion backgrounds by occasion, and countdowns
@@ -91,7 +88,7 @@ export function StockMedia() {
                   name={b.name}
                   bgRef={b.ref}
                   title={t('media.setBackground')}
-                  onPick={() => setBackground(b.ref)}
+                  onPick={() => void setBackground(b.ref)}
                 />
               ))}
             </div>

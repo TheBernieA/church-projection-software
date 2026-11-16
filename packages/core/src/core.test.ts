@@ -195,7 +195,7 @@ describe('live commands', () => {
     await run('live.goLive', { content: content('verse'), background: bg });
     await run('live.setOverlays', { overlays: [msg] });
     await run('live.clearLayer', { layer: 'all' });
-    expect(store.get().cleared.off?.layers).toEqual(['content', 'background', 'messages']);
+    expect(store.get().cleared.off?.layers).toEqual(['background', 'content', 'messages']);
     await run('live.restoreAll', {});
     const p = store.get().program;
     expect(p.content?.key).toBe('verse');

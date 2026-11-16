@@ -19,6 +19,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import {
   applyLook,
+  lookLayersFor,
+  maskForRole,
   makeScene,
   overlayGroup,
   sceneIsVisible,
@@ -49,7 +51,7 @@ import {
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
-import { ITEM_CLASS, MENU_CLASS } from '../menu';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { ShowControls } from './ShowControls';
@@ -104,8 +106,6 @@ function MonitorCard({
   );
 }
 
-/** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
-
 /**
  * "…" at the foot of the layer strip: the operator's clear groups (one click clears exactly
  * those layers) and a way to edit them.
@@ -122,7 +122,9 @@ function LayersMenu() {
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content side="left" align="end" sideOffset={6} className={MENU_CLASS}>
-          <DropdownMenu.Label className={MENU_LABEL}>{t('clearGroups.title')}</DropdownMenu.Label>
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+            {t('clearGroups.title')}
+          </DropdownMenu.Label>
           {groups.map((g) => (
             <DropdownMenu.Item
               key={g.id}
@@ -150,7 +152,6 @@ function LayersMenu() {
 }
 
 const EMPTY_GROUPS: NonNullable<Settings['clearGroups']> = [];
-const MENU_LABEL = `px-2.5 pb-1 pt-1.5 ${typographyClass({ size: 11, tone: 'muted', weight: 'semibold', caps: true })}`;
 
 /**
  * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
@@ -304,13 +305,10 @@ export function RightColumn() {
   );
 
   // The Program monitor shows the audience screens' shape (Settings › Screens).
-  const audienceMask = useStore((s) => {
-    const id = s.settings?.maskFor.main;
-    return (id && s.settings?.screenMasks.find((m) => m.id === id)) || null;
-  });
+  const audienceMask = useStore((s) => (s.settings ? maskForRole(s.settings, 'main') : null));
   // The Program monitor shows what the audience screens show under the active Look.
   const audienceScene = useMemo(
-    () => (live ? applyLook(live.program, live.look?.main) : null),
+    () => (live ? applyLook(live.program, lookLayersFor(live.look, 'main')) : null),
     [live],
   );
   if (!live || !previewScene || !nextScene || !audienceScene) return null;

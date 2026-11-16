@@ -1,5 +1,6 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
 import type { LiveState, OutputRole, ScreenMask } from '@lampstand/core';
+import { lookLayersFor, maskForRole } from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences } from '../security/hardening';
@@ -266,10 +267,7 @@ export class WindowManager {
 
   /** The screen mask for an output's role (the stage display is never masked). */
   private maskFor(role: OutputWindow['role']): ScreenMask | null {
-    if (role !== 'main' && role !== 'secondary') return null;
-    const s = this.d.getSettings();
-    const id = s.maskFor[role];
-    return (id && s.screenMasks.find((m) => m.id === id)) || null;
+    return maskForRole(this.d.getSettings(), role);
   }
 
   /** Re-send output info (e.g. the logo or off-air screen changed) to every ready output. */
@@ -292,8 +290,7 @@ export class WindowManager {
     const url = p.web && !p.masks.black && !p.masks.logo ? p.web.url : null;
     // A Look can leave the slide (and so the page) off a kind of screen.
     const shows = (role: OutputWindow['role']): boolean =>
-      !state.look ||
-      (role === 'main' || role === 'secondary' ? state.look[role].includes('content') : true);
+      lookLayersFor(state.look, role)?.includes('content') ?? true;
     const targets = [...this.outputs.values()]
       .filter((o) => o.role !== 'stage' && shows(o.role))
       .map((o) => ({ win: o.win, audio: o.role === 'main' }));

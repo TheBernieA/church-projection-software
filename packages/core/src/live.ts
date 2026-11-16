@@ -14,10 +14,11 @@ import {
   type Scene,
 } from './schemas/scene';
 import { TransitionSpecSchema } from './schemas/theme';
-import { LookSchema } from './schemas/settings';
+import { LookLayerSchema, LookSchema } from './schemas/settings';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
 import { mediaPositionAt, mediaStart, startMedia } from './utils/mediaPlayback';
+import { omit } from './utils/object';
 import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
@@ -103,23 +104,17 @@ export const ClearedLayersSchema = z.object({
   off: z
     .object({
       at: z.string().max(40),
-      layers: z
-        .array(z.enum(['content', 'media', 'background', 'announcements', 'messages', 'props']))
-        .max(6),
+      layers: z.array(LookLayerSchema).max(LookLayerSchema.options.length),
     })
     .optional(),
 });
 export type ClearedLayers = z.infer<typeof ClearedLayersSchema>;
 
-export const RestorableLayerSchema = z.enum([
-  'content',
-  'media',
-  'background',
-  'announcements',
-  'messages',
-  'props',
-]);
+/** Layers that clear and come back on their own: the same list as Looks use. */
+export const RestorableLayerSchema = LookLayerSchema;
 export type RestorableLayer = z.infer<typeof RestorableLayerSchema>;
+/** Every restorable layer, bottom first (so bringing them all back never flashes words on black). */
+export const RESTORABLE_LAYERS = RestorableLayerSchema.options;
 
 export const LiveStateSchema = z.object({
   revision: z.number().int(),
@@ -255,9 +250,12 @@ const CLEARS: Record<Layer, RestorableLayer[]> = {
   overlays: ['messages', 'props'],
   messages: ['messages'],
   props: ['props'],
-  all: ['content', 'media', 'background', 'announcements', 'messages', 'props'],
+  all: [...RESTORABLE_LAYERS],
   panic: ['content', 'media', 'announcements', 'messages', 'props'],
 };
+
+/** The restorable layers a clear empties (e.g. `all`: every one; `panic`: all but the background). */
+export const layersClearedBy = (layer: Layer): readonly RestorableLayer[] => CLEARS[layer];
 
 /**
  * Remember what a clear is about to remove. Only layers that have something are remembered, so
@@ -265,7 +263,8 @@ const CLEARS: Record<Layer, RestorableLayer[]> = {
  */
 export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): ClearedLayers {
   const p = s.program;
-  const out = withoutOff(s.cleared);
+  // A fresh copy: the previous live state must never change under its readers.
+  const out: ClearedLayers = { ...withoutOff(s.cleared) };
   const taken: RestorableLayer[] = [];
   for (const l of CLEARS[layer]) {
     if (l === 'content' && (p.content || p.web)) {
@@ -305,17 +304,15 @@ export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): Clea
 
 /** The cleared layers without the Turn-off-live marker (something new is on screen). */
 export function withoutOff(c: ClearedLayers): ClearedLayers {
-  if (!c.off) return c;
-  return Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'off'));
+  return c.off ? omit(c, 'off') : c;
 }
 
 /** Power button after Turn off live: put back every layer it took off, in one step. */
 export function restoreAll(s: LiveState, nowIso: string): LiveState {
   const layers = s.cleared.off?.layers ?? [];
   let next: LiveState = { ...s, cleared: withoutOff(s.cleared) };
-  // Background first, so the words never flash up on black.
-  for (const l of ['background', 'media', 'content', 'announcements', 'messages', 'props'] as const)
-    if (layers.includes(l)) next = restoreLayer(next, l, nowIso);
+  // Bottom layer first, so the words never flash up on black.
+  for (const l of RESTORABLE_LAYERS) if (layers.includes(l)) next = restoreLayer(next, l, nowIso);
   return next;
 }
 
@@ -323,9 +320,7 @@ export function restoreAll(s: LiveState, nowIso: string): LiveState {
 export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: string): LiveState {
   const c = s.cleared;
   // Forget the layer once it's back; the screen isn't "off" any more either.
-  const cleared = Object.fromEntries(
-    Object.entries(c).filter(([k]) => k !== layer && k !== 'off'),
-  ) as ClearedLayers;
+  const cleared: ClearedLayers = omit(c, layer, 'off');
   const program = s.program;
   switch (layer) {
     case 'content':
@@ -338,9 +333,7 @@ export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: strin
         program: { ...program, content: c.content.content, web: c.content.web, media: null },
       };
     case 'media': {
-      const rest = Object.fromEntries(
-        Object.entries(cleared).filter(([k]) => k !== 'input'),
-      ) as ClearedLayers;
+      const rest: ClearedLayers = omit(cleared, 'input');
       if (c.input)
         // A camera comes back under the words, as it was.
         return { ...s, cleared: rest, program: { ...program, input: c.input, media: null } };
@@ -535,11 +528,8 @@ export function registerLiveCommands(
                 : a.playing;
         // Play, pause or toggle during a fade-out means "changed my mind": cancel the fade.
         const cancel = p.action === 'play' || p.action === 'pause' || p.action === 'toggle';
-        const kept = Object.fromEntries(
-          Object.entries(a).filter(([k]) => !(cancel && k === 'fade')),
-        ) as AudioCue;
         const next: AudioCue = {
-          ...kept,
+          ...(cancel ? omit(a, 'fade') : a),
           playing,
           position: p.action === 'seek' ? (p.position ?? here) : here,
           syncedAt: nowIso,
@@ -603,7 +593,9 @@ export function registerLiveCommands(
 
   bus.register({
     type: 'live.clearLayers',
-    schema: z.object({ layers: z.array(RestorableLayerSchema).min(1).max(6) }),
+    schema: z.object({
+      layers: z.array(RestorableLayerSchema).min(1).max(RESTORABLE_LAYERS.length),
+    }),
     undoable: false,
     handle: (p) => {
       // One step for the room: every chosen layer goes at once, each remembered for "bring back".

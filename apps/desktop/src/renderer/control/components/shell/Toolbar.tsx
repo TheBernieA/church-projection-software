@@ -28,15 +28,14 @@ import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, secondsSince, type Look } from '@lampstand/core';
 import { SoonBadge, Switch, Typography, typographyClass } from '@lampstand/ui';
-import i18n from '../../i18n';
 import { saveSettings, setLook } from '../../lib/actions';
-import { feature } from '../../lib/features';
+import { feature, soonTitle } from '../../lib/features';
 import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { type Mode } from '../../types';
-import { ITEM_CLASS, MENU_CLASS } from '../menu';
+import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 
 /** The four everyday workspaces sit in the toolbar; Themes is Theme, and Stage is under More. */
 const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
@@ -47,12 +46,6 @@ const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
 ];
 // Themes has its own toolbar button (Theme), so More only holds the Stage workspace.
 const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: SquareUser }];
-
-/** Tooltip for a planned item: what it will do (from the feature catalogue). */
-const soonTitle = (id: string): string => {
-  const f = feature(id);
-  return `${i18n.t('soon.tooltip', { name: f.name })}. ${f.description}`;
-};
 
 /** A small status light on a toolbar icon. */
 function Dot({ color }: { color: string }) {
@@ -122,7 +115,7 @@ function LooksMenu() {
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>
-          <DropdownMenu.Separator className="my-1 h-px bg-[var(--hairline-strong)]" />
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <DropdownMenu.Item
             className={ITEM_CLASS}
             onSelect={() => openDialog('settings', { settingsPage: 'screens' })}
@@ -175,7 +168,7 @@ function MoreMenu() {
             <Keyboard size={15} />
             {t('toolbar.shortcuts')}
           </DropdownMenu.Item>
-          <DropdownMenu.Separator className="my-1 h-px bg-[var(--hairline-strong)]" />
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           {soon.map((s) => (
             <DropdownMenu.Item key={s.id} disabled className={ITEM_CLASS} title={soonTitle(s.id)}>
               {s.icon}

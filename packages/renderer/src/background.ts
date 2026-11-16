@@ -139,7 +139,10 @@ function watchPlayback(v: HTMLVideoElement, m: MediaLayer): void {
   state.lsWatching = true;
   const tick = (): void => {
     const cur = state.lsPlayback;
-    if (!cur || !v.isConnected) {
+    const still =
+      cur && (cur.fadeIn || cur.fadeOut || cur.start !== undefined || cur.end !== undefined);
+    // Stop when the element is gone, or when a newer state no longer trims or fades.
+    if (!cur || !still || !v.isConnected) {
       state.lsWatching = false;
       return;
     }

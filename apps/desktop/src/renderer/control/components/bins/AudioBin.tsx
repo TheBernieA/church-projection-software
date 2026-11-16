@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Ellipsis,
@@ -21,31 +21,22 @@ import { useTranslation } from 'react-i18next';
 import { audioPositionAt, formatClock, type MediaItem } from '@lampstand/core';
 import { Button, IconButton, Typography } from '@lampstand/ui';
 import { audioCmd, neighbourTrack, playAudio, probeDuration } from '../../lib/audio';
-import { q } from '../../lib/api';
+
 import { useNow } from '../../lib/hooks';
-import { knownDuration } from '../../lib/mediaDurations';
+import { pct, useDraft } from '../../lib/slider';
+import { useKnownDuration } from '../../lib/mediaDurations';
 import {
   addToMediaPlaylist,
   createMediaPlaylist,
   deleteMediaPlaylist,
+  importMedia,
   removeFromMediaPlaylist,
+  usePlaylists,
 } from '../../lib/mediaPlaylists';
-import { attempt, toast, useStore } from '../../lib/store';
+import { useStore } from '../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import { Select } from '../Select';
 import { AudioInputs } from './AudioInputs';
-import i18n from '../../i18n';
-
-const pct = (v: number, max: number): CSSProperties =>
-  ({ '--pct': `${max > 0 ? Math.min(100, (v / max) * 100) : 0}%` }) as CSSProperties;
-
-/** Import audio files into the library (and into the open audio playlist). */
-async function importAudio(playlistId: string | null): Promise<void> {
-  const r = await attempt(() => q('media.import', { asBackground: false }), 'errors.import');
-  if (!r) return;
-  if (r.imported) toast(i18n.t('media.imported', { count: r.imported }));
-  if (playlistId && r.ids.length) await addToMediaPlaylist(playlistId, r.ids);
-}
 
 /** What's playing through the room, with its transport, fade out and volume. */
 function NowPlaying() {
@@ -56,15 +47,16 @@ function NowPlaying() {
     a ? s.media.find((m) => m.id === a.mediaId)?.durationSec : undefined,
   );
   const now = useNow(250, !!a?.playing);
-  const [, bump] = useState(0);
   useEffect(() => {
-    if (!a) return;
-    probeDuration(a.mediaId);
-    const id = setTimeout(() => bump((n) => n + 1), 600); // re-read once the probe lands
-    return () => clearTimeout(id);
+    if (a) probeDuration(a.mediaId);
   }, [a?.mediaId]); // eslint-disable-line react-hooks/exhaustive-deps
-  const duration = a ? knownDuration(a.mediaId, lib) : undefined;
-  const pos = a ? Math.min(audioPositionAt(a, now), duration ?? Infinity) : 0;
+  const duration = useKnownDuration(a?.mediaId, lib);
+  const playhead = a ? Math.min(audioPositionAt(a, now), duration ?? Infinity) : 0;
+  // Drags stay local and send one command on release (not one per pixel).
+  const seek = useDraft(a?.syncedAt, (position) => void audioCmd({ action: 'seek', position }));
+  const volume = useDraft(a?.volume, (v) => void audioCmd({ action: 'set', volume: v }));
+  const pos = seek.draft ?? playhead;
+  const vol = volume.draft ?? a?.volume ?? 1;
   const idle = !a;
   return (
     <div
@@ -102,9 +94,9 @@ function NowPlaying() {
           max={1}
           step={0.05}
           disabled={idle}
-          value={a?.volume ?? 1}
-          onChange={(e) => void audioCmd({ action: 'set', volume: Number(e.target.value) })}
-          style={pct(a?.volume ?? 1, 1)}
+          value={vol}
+          {...volume.props}
+          style={pct(vol, 1)}
           className="ls-range w-16 shrink-0"
         />
       </div>
@@ -117,7 +109,7 @@ function NowPlaying() {
           step={0.1}
           disabled={!duration}
           value={pos}
-          onChange={(e) => void audioCmd({ action: 'seek', position: Number(e.target.value) })}
+          {...seek.props}
           style={pct(pos, duration ?? 0)}
           className="ls-range block w-full"
         />
@@ -213,8 +205,8 @@ function NowPlaying() {
 function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
   const playing = useStore((s) => s.live?.audio?.mediaId === m.id);
-  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind === 'audio');
-  const length = knownDuration(m.id, m.durationSec);
+  const playlists = usePlaylists('audio');
+  const length = useKnownDuration(m.id, m.durationSec);
   useEffect(() => probeDuration(m.id), [m.id]);
   return (
     <li className="group relative">
@@ -297,7 +289,7 @@ function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }
 export function AudioBin() {
   const { t } = useTranslation();
   const all = useStore((s) => s.media);
-  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind === 'audio');
+  const playlists = usePlaylists('audio');
   const selected = useStore((s) => s.audioPlaylistId);
   const playlist = playlists.find((p) => p.id === selected) ?? null;
   const audio = all.filter((m) => m.kind === 'audio');
@@ -344,7 +336,7 @@ export function AudioBin() {
           size="sm"
           variant="quiet"
           aria-label={t('audio.import')}
-          onClick={() => void importAudio(playlist?.id ?? null)}
+          onClick={() => void importMedia({ playlistId: playlist?.id ?? null })}
         >
           <Upload size={14} />
         </IconButton>

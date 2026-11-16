@@ -1,7 +1,8 @@
+import { LookLayerSchema, type LookLayer } from '@lampstand/core';
 import type { ReactNode } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Trash2 } from 'lucide-react';
 import { DeferredInput } from '../DeferredControls';
-import { Typography, Button } from '@lampstand/ui';
+import { Button, IconButton, Typography } from '@lampstand/ui';
 
 /** One settings page: title, one-line intro, optional header action, then groups. */
 export function SettingsPage({
@@ -207,6 +208,73 @@ export function ThemeTiles({
     <div role="radiogroup" aria-label={labels.dark + ' / ' + labels.light} className="flex gap-3">
       {tile('dark')}
       {tile('light')}
+    </div>
+  );
+}
+
+/** A named entry in a list editor (clear group, Look, mask): its name and a delete button. */
+export function NameRow({
+  value,
+  label,
+  deleteLabel,
+  onRename,
+  onDelete,
+}: {
+  value: string;
+  label: string;
+  deleteLabel: string;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <DeferredInput
+        aria-label={label}
+        value={value}
+        maxLength={40}
+        onCommit={(name) => name.trim() && onRename(name.trim())}
+        className="field !h-8 flex-1"
+      />
+      <IconButton size="xs" variant="danger" aria-label={deleteLabel} onClick={onDelete}>
+        <Trash2 size={14} />
+      </IconButton>
+    </div>
+  );
+}
+
+/** Toggle chips picking which screen layers apply (Looks, clear groups). */
+export function LayerChips({
+  label,
+  value,
+  onChange,
+  names,
+  minOne = false,
+}: {
+  label: string;
+  value: readonly LookLayer[];
+  onChange: (layers: LookLayer[]) => void;
+  /** The chip label for each layer. */
+  names: (layer: LookLayer) => string;
+  /** At least one layer stays on (a clear group must clear something). */
+  minOne?: boolean;
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
+      {LookLayerSchema.options.map((l) => {
+        const on = value.includes(l);
+        return (
+          <Button
+            key={l}
+            size="2xs"
+            variant={on ? 'primary' : 'subtle'}
+            aria-pressed={on}
+            disabled={minOne && on && value.length === 1}
+            onClick={() => onChange(on ? value.filter((x) => x !== l) : [...value, l])}
+          >
+            {names(l)}
+          </Button>
+        );
+      })}
     </div>
   );
 }

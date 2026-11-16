@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { makeScene, newId, type Look, type ScreenMask, type Settings } from '@lampstand/core';
+import {
+  makeScene,
+  newId,
+  type Look,
+  type ScreenMask,
+  type Settings,
+  LookLayerSchema,
+} from '@lampstand/core';
 import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
 import { BUILT_IN_BACKGROUNDS } from '../../constants';
 import { usePictures } from '../../lib/hooks';
@@ -9,7 +16,7 @@ import { useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { Group, Row, SettingsPage } from './parts';
+import { Group, LayerChips, NameRow, Row, SettingsPage } from './parts';
 
 type Update = (patch: Partial<Settings>) => void;
 type Shape = ScreenMask['shape'];
@@ -154,15 +161,6 @@ function MaskEditor({
   );
 }
 
-const LOOK_LAYERS = [
-  'background',
-  'media',
-  'content',
-  'announcements',
-  'messages',
-  'props',
-] as const;
-
 /**
  * Looks: named combinations of which layers the audience and secondary screens show. Switched
  * from the toolbar's Looks button.
@@ -177,57 +175,24 @@ function LooksGroup({ s, update }: { s: Settings; update: Update }) {
     <Group title={t('looks.title')} footnote={t('looks.help')}>
       {looks.map((l) => (
         <div key={l.id} className="flex flex-col gap-2.5 px-4 py-3.5">
-          <div className="flex items-center gap-2">
-            <DeferredInput
-              aria-label={t('looks.name')}
-              value={l.name}
-              maxLength={40}
-              onCommit={(name) => name.trim() && edit(l.id, { name: name.trim() })}
-              className="field !h-8 flex-1"
-            />
-            <IconButton
-              size="xs"
-              variant="danger"
-              aria-label={t('looks.delete', { name: l.name })}
-              onClick={() => save(looks.filter((x) => x.id !== l.id))}
-            >
-              <Trash2 size={14} />
-            </IconButton>
-          </div>
+          <NameRow
+            value={l.name}
+            label={t('looks.name')}
+            deleteLabel={t('looks.delete', { name: l.name })}
+            onRename={(name) => edit(l.id, { name })}
+            onDelete={() => save(looks.filter((x) => x.id !== l.id))}
+          />
           {(['main', 'secondary'] as const).map((screen) => (
             <div key={screen} className="flex items-center gap-3">
               <Typography size={12} tone="secondary" className="w-20 shrink-0">
                 {t(`looks.screens.${screen}`)}
               </Typography>
-              <div
-                role="group"
-                aria-label={t('looks.layersOn', {
-                  screen: t(`looks.screens.${screen}`),
-                  name: l.name,
-                })}
-                className="flex flex-wrap gap-1.5"
-              >
-                {LOOK_LAYERS.map((layer) => {
-                  const on = l[screen].includes(layer);
-                  return (
-                    <Button
-                      key={layer}
-                      size="2xs"
-                      variant={on ? 'primary' : 'subtle'}
-                      aria-pressed={on}
-                      onClick={() =>
-                        edit(l.id, {
-                          [screen]: on
-                            ? l[screen].filter((x) => x !== layer)
-                            : [...l[screen], layer],
-                        })
-                      }
-                    >
-                      {t(`looks.layers.${layer}`)}
-                    </Button>
-                  );
-                })}
-              </div>
+              <LayerChips
+                label={t('looks.layersOn', { screen: t(`looks.screens.${screen}`), name: l.name })}
+                value={l[screen]}
+                onChange={(layers) => edit(l.id, { [screen]: layers })}
+                names={(layer) => t(`looks.layers.${layer}`)}
+              />
             </div>
           ))}
         </div>
@@ -244,7 +209,7 @@ function LooksGroup({ s, update }: { s: Settings; update: Update }) {
               {
                 id: newId(),
                 name: t('looks.newName', { n: looks.length + 1 }),
-                main: [...LOOK_LAYERS],
+                main: [...LookLayerSchema.options],
                 secondary: ['background'],
               },
             ])

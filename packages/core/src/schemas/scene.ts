@@ -107,20 +107,8 @@ export const BackgroundLayerSchema = z.object({
 });
 export type BackgroundLayer = z.infer<typeof BackgroundLayerSchema>;
 
-export const MediaLayerSchema = z.object({
-  mediaId: IdSchema,
-  kind: z.enum(['image', 'video']),
-  loop: z.boolean(),
-  muted: z.boolean().default(false),
-  fit: z.enum(['contain', 'cover']).default('contain'),
-  /**
-   * Playback, shared by every output so they stay in sync: the video is at `position` seconds at
-   * time `syncedAt`, and advances from there while `playing`.
-   */
-  playing: z.boolean().default(true),
-  position: z.number().min(0).max(86_400).default(0),
-  syncedAt: z.string().max(40).optional(),
-  volume: z.number().min(0).max(1).default(1),
+/** Trim and fades for a clip: shared by a playlist cue's playback options and the live layer. */
+export const MediaTrimSchema = z.object({
   /** In-point (s): playback starts here and loops back here. */
   start: z.number().min(0).max(86_400).optional(),
   /** Out-point (s): playback stops (or loops, or moves on) here instead of the file's end. */
@@ -130,6 +118,25 @@ export const MediaLayerSchema = z.object({
   /** Fade down to black/silence over this many seconds before the out-point. */
   fadeOut: z.number().min(0).max(30).optional(),
 });
+export type MediaTrim = z.infer<typeof MediaTrimSchema>;
+
+export const MediaLayerSchema = z
+  .object({
+    mediaId: IdSchema,
+    kind: z.enum(['image', 'video']),
+    loop: z.boolean(),
+    muted: z.boolean().default(false),
+    fit: z.enum(['contain', 'cover']).default('contain'),
+    /**
+     * Playback, shared by every output so they stay in sync: the video is at `position` seconds at
+     * time `syncedAt`, and advances from there while `playing`.
+     */
+    playing: z.boolean().default(true),
+    position: z.number().min(0).max(86_400).default(0),
+    syncedAt: z.string().max(40).optional(),
+    volume: z.number().min(0).max(1).default(1),
+  })
+  .extend(MediaTrimSchema.shape);
 export type MediaLayer = z.infer<typeof MediaLayerSchema>;
 
 /** Where a prop sits on screen. */

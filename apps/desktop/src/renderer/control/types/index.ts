@@ -51,7 +51,6 @@ export type LibraryTab = 'songs' | 'hymns';
 /** The workspace in the centre pane (toolbar mode tabs). */
 export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
 
-/** Bottom bin tabs. Audio, video input and macros are "Coming soon". */
 /** Media bin (under the slides) categories. */
 /** What the media bin shows: a library view, a media playlist (see binPlaylistId), or a planned source. */
 export type BinTab =

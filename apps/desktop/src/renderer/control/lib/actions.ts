@@ -1,6 +1,8 @@
 import {
+  layersClearedBy,
   mediaEnd,
   mediaPositionAt,
+  type BackgroundRef,
   type Layer,
   type Look,
   type Overlay,
@@ -213,21 +215,11 @@ export async function step(delta: 1 | -1): Promise<void> {
 /** Which slide was live when the slide layer was last cleared, so bringing it back re-marks it. */
 let clearedCursor: Cursor | null = null;
 
-export const clearLayer = (layer: Layer): Promise<void> => {
-  if (layer === 'announcements' || layer === 'all' || layer === 'panic') stopAnnounceLoop();
-  if (layer === 'content' || layer === 'all' || layer === 'panic') {
-    const cursor = get().liveCursor;
-    if (cursor) clearedCursor = cursor;
-    useStore.setState({ liveCursor: null });
-    // The slide's own announcement loop stops with the slide (not with other layers).
-    stopAnnouncements();
-  }
-  return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
-};
-
-/** A custom clear group: clear exactly these layers, in one step. */
-export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
-  if (!layers.length) return Promise.resolve();
+/**
+ * What the control window does when layers come off: the slide takes its live highlight (kept
+ * for "bring back") and its own announcement loop with it; the announcements layer stops looping.
+ */
+function beforeClear(layers: readonly RestorableLayer[]): void {
   if (layers.includes('announcements')) stopAnnounceLoop();
   if (layers.includes('content')) {
     const cursor = get().liveCursor;
@@ -235,6 +227,17 @@ export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
     useStore.setState({ liveCursor: null });
     stopAnnouncements();
   }
+}
+
+export const clearLayer = (layer: Layer): Promise<void> => {
+  beforeClear(layersClearedBy(layer));
+  return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
+};
+
+/** A custom clear group: clear exactly these layers, in one step. */
+export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
+  if (!layers.length) return Promise.resolve();
+  beforeClear(layers);
   return safe(cmd('live.clearLayers', { layers }, 'ui'));
 };
 
@@ -409,3 +412,7 @@ export async function stopAnnouncementsLayer(): Promise<void> {
   stopAnnounceLoop();
   await clearLayer('announcements');
 }
+
+/** Put a background behind the words on screen. */
+export const setBackground = (ref: BackgroundRef): Promise<void> =>
+  safe(cmd('live.setBackground', { background: { ref } }, 'ui'));

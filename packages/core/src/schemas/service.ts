@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
-import { SlideObjectSchema, WebUrlSchema } from './scene';
+import { MediaTrimSchema, SlideObjectSchema, WebUrlSchema } from './scene';
 import { BackgroundRefSchema, TextFormatSchema } from './theme';
 
 const TextSlideSchema = z.object({
@@ -47,16 +47,10 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     autoAdvance: z.boolean(),
     asBackground: z.boolean().default(false),
     /** Playback options for this cue (trim, fades, play on go live). */
-    playback: z
-      .object({
-        start: z.number().min(0).max(86_400).optional(),
-        end: z.number().min(0).max(86_400).optional(),
-        fadeIn: z.number().min(0).max(30).optional(),
-        fadeOut: z.number().min(0).max(30).optional(),
-        /** Unset: Settings › Presenting decides. */
-        autoplay: z.boolean().optional(),
-      })
-      .optional(),
+    playback: MediaTrimSchema.extend({
+      /** Unset: Settings › Presenting decides. */
+      autoplay: z.boolean().optional(),
+    }).optional(),
   }),
   z.object({
     ...base,

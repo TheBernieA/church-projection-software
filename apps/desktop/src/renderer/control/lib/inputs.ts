@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { RAW_AUDIO } from '@lampstand/renderer';
 
 export interface InputDevice {
   deviceId: string;
@@ -38,7 +39,12 @@ export function useInputDevices(kind: 'videoinput' | 'audioinput'): InputDevice[
       );
     };
     const onChange = (): void => void read();
-    void unlock(kind).then(read);
+    // Ask for access only when devices come back nameless (not yet allowed this session).
+    void navigator.mediaDevices
+      .enumerateDevices()
+      .then((all) => all.some((d) => d.kind === kind && !d.label))
+      .then((nameless) => (nameless ? unlock(kind) : undefined))
+      .then(read);
     navigator.mediaDevices.addEventListener('devicechange', onChange);
     return () => {
       alive = false;
@@ -62,12 +68,7 @@ export function useDeviceStream(
         kind === 'videoinput'
           ? { video: { deviceId: { exact: deviceId } } }
           : {
-              audio: {
-                deviceId: { exact: deviceId },
-                echoCancellation: false,
-                noiseSuppression: false,
-                autoGainControl: false,
-              },
+              audio: { deviceId: { exact: deviceId }, ...RAW_AUDIO },
             },
       )
       .then((got) => {
@@ -87,29 +88,51 @@ export function useDeviceStream(
   return stream;
 }
 
-/** How loud an audio stream is right now, 0–1 (peak), for a level meter. */
-export function useLevel(stream: MediaStream | null): number {
-  const [level, setLevel] = useState(0);
+/** One AudioContext for every level meter (each row only adds an analyser). */
+let meterCtx: AudioContext | null = null;
+
+/**
+ * A level meter for an audio stream: the loudness (peak, quick attack, gentle fall) is written
+ * straight to the bar each frame, so a moving meter never re-renders its row.
+ */
+export function useLevelMeter(stream: MediaStream | null): {
+  track: RefObject<HTMLDivElement | null>;
+  bar: RefObject<HTMLDivElement | null>;
+} {
+  const track = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!stream) return;
-    const ctx = new AudioContext();
-    const analyser = ctx.createAnalyser();
+    meterCtx ??= new AudioContext();
+    const analyser = meterCtx.createAnalyser();
     analyser.fftSize = 512;
-    ctx.createMediaStreamSource(stream).connect(analyser);
+    const source = meterCtx.createMediaStreamSource(stream);
+    source.connect(analyser);
     const buf = new Float32Array(analyser.fftSize);
+    let level = 0;
+    let shown = -1;
     let raf = 0;
     const tick = (): void => {
       analyser.getFloatTimeDomainData(buf);
       let peak = 0;
       for (const v of buf) peak = Math.max(peak, Math.abs(v));
-      setLevel((prev) => Math.max(peak, prev * 0.85)); // quick attack, gentle fall
+      level = Math.max(peak, level * 0.85);
+      const pctNow = Math.min(100, Math.round(level * 140));
+      if (pctNow !== shown) {
+        shown = pctNow;
+        if (bar.current) bar.current.style.width = `${pctNow}%`;
+        track.current?.setAttribute(
+          'aria-valuenow',
+          String(Math.min(100, Math.round(level * 100))),
+        );
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
-      void ctx.close();
+      source.disconnect();
     };
   }, [stream]);
-  return level;
+  return { track, bar };
 }

@@ -7,3 +7,4 @@ export * from './scene';
 export * from './standby';
 export * from './time';
 export * from './timers';
+export * from './object';

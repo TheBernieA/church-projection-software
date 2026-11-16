@@ -16,18 +16,20 @@ import {
 import { useTranslation } from 'react-i18next';
 import { formatClock, newId, type MediaItem, type ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Segmented, SoonBadge, Typography } from '@lampstand/ui';
-import { feature } from '../../lib/features';
+import { feature, soonTitle } from '../../lib/features';
 import { openAdhoc } from '../../lib/actions';
 import { playAudio } from '../../lib/audio';
-import { cmd, q } from '../../lib/api';
+import { cmd } from '../../lib/api';
 import { isLibraryDrag, libraryDragSource, readLibraryDrop } from '../../lib/libraryDrag';
 import {
   addToMediaPlaylist,
   createMediaPlaylist,
-  moveInMediaPlaylist,
+  importMedia,
+  placeInMediaPlaylist,
+  usePlaylists,
   removeFromMediaPlaylist,
 } from '../../lib/mediaPlaylists';
-import { addItemToService, attempt, toast, useStore } from '../../lib/store';
+import { addItemToService, attempt, useStore } from '../../lib/store';
 import { thumbUrl, mediaUrl } from '../../../shared/mediaUrl';
 import { usePaneSize } from '../shell/Splitter';
 import { EmptyState } from '../EmptyState';
@@ -45,20 +47,6 @@ const KIND_OF: Record<'images' | 'videos' | 'audio', MediaItem['kind']> = {
   images: 'image',
   videos: 'video',
   audio: 'audio',
-};
-
-/** Import pictures and videos; when a playlist is open they're added to it too. */
-export async function importMedia(playlistId: string | null): Promise<void> {
-  const r = await attempt(() => q('media.import', { asBackground: false }), 'errors.import');
-  if (!r) return;
-  if (r.imported) toast(i18n.t('media.imported', { count: r.imported }));
-  if (r.rejected) toast(i18n.t('media.rejected', { count: r.rejected }), 'warning');
-  if (playlistId && r.ids.length) await addToMediaPlaylist(playlistId, r.ids);
-}
-
-const soonTitle = (id: string): string => {
-  const f = feature(id);
-  return `${i18n.t('soon.tooltip', { name: f.name })}. ${f.description}`;
 };
 
 /** A playlist item for showing media, or adding it to the service plan. */
@@ -116,7 +104,7 @@ export function Thumb({ m }: { m: MediaItem }) {
 /** The "…" menu on a tile: add to a playlist, take it out of this one, delete it. */
 function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
-  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
+  const playlists = usePlaylists('media');
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -177,12 +165,10 @@ function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }
             </DropdownMenu.Portal>
           </DropdownMenu.Sub>
           {/* Planned per-clip settings. */}
-          {(['playback-markers'] as const).map((id) => (
-            <DropdownMenu.Item key={id} disabled className={ITEM_CLASS} title={soonTitle(id)}>
-              <span className="flex-1">{feature(id).name}</span>
-              <SoonBadge label={t('soon.badge')} />
-            </DropdownMenu.Item>
-          ))}
+          <DropdownMenu.Item disabled className={ITEM_CLASS} title={soonTitle('playback-markers')}>
+            <Typography className="flex-1">{feature('playback-markers').name}</Typography>
+            <SoonBadge label={t('soon.badge')} />
+          </DropdownMenu.Item>
           {playlistId && (
             <DropdownMenu.Item
               className={ITEM_CLASS}
@@ -239,10 +225,7 @@ function MediaTile({
         const dropped = readLibraryDrop(e);
         if (dropped?.kind !== 'media') return;
         const id = dropped.mediaId;
-        void (async () => {
-          await addToMediaPlaylist(playlistId, [id]);
-          await moveInMediaPlaylist(playlistId, id, index);
-        })();
+        void placeInMediaPlaylist(playlistId, id, index);
       }}
     >
       {dropping && (
@@ -374,7 +357,6 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
   }, [items, sort, view]);
 
   const crumb = view === 'playlist' ? (playlist?.name ?? '') : t(`mediaBin.views.${view}`);
-  const pid = view === 'playlist' ? playlistId : null;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
@@ -434,7 +416,7 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
           size="xs"
           variant="primary"
           icon={<Plus size={13} />}
-          onClick={() => void importMedia(pid)}
+          onClick={() => void importMedia({ playlistId })}
         >
           {t('media.add')}
         </Button>
@@ -461,7 +443,7 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
               )}
               <Grid size={size.size}>
                 {g.items.map((m, i) => (
-                  <MediaTile key={m.id} m={m} playlistId={pid} index={i} />
+                  <MediaTile key={m.id} m={m} playlistId={playlistId} index={i} />
                 ))}
               </Grid>
             </section>

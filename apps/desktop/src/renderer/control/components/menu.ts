@@ -9,3 +9,6 @@ export const ITEM_CLASS = `flex cursor-pointer items-center gap-2.5 rounded-[5px
 
 /** Thin line between groups of menu entries. */
 export const SEPARATOR_CLASS = 'mx-1 my-1 h-px bg-[var(--hairline-strong)]';
+
+/** A small all-caps heading inside a menu. */
+export const MENU_LABEL_CLASS = `px-2.5 pb-1 pt-1.5 ${typographyClass({ size: 11, tone: 'muted', weight: 'semibold', caps: true })}`;
