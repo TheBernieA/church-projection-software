@@ -50,6 +50,10 @@ export const Channels = {
   streamAudio: 'stream:audio',
   /** main → stream window: what to draw and mix. */
   evStreamConfig: 'ev:stream-config',
+  /** output / stream window → main: its mix's levels (about 15 a second). */
+  meters: 'mix:meters',
+  /** main → control: mix levels, for the mixer's meters. */
+  evMeters: 'ev:meters',
   /** main → control: livestream / recording status. */
   evStream: 'ev:stream',
   // main → renderer events

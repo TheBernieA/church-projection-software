@@ -64,6 +64,8 @@ export class SceneRenderer {
   private last: Scene | null = null;
   private audio: boolean;
   private audioSink = '';
+  /** Where a playing video's sound goes (a mixer), instead of straight to the speakers. */
+  private tap: ((v: HTMLMediaElement) => void) | undefined;
 
   constructor(
     private readonly host: HTMLElement,
@@ -71,6 +73,7 @@ export class SceneRenderer {
   ) {
     this.doc = host.ownerDocument;
     this.audio = opts.audio ?? false;
+    this.tap = opts.audioTap;
     this.canvas = opts.canvas ?? { width: 1920, height: 1080 };
     this.root = el(this.doc, 'div', 'ls-scene-root', {
       position: 'relative',
@@ -145,7 +148,14 @@ export class SceneRenderer {
     if (this.audioSink === sinkId) return;
     this.audioSink = sinkId;
     if (this.media && this.last?.media)
-      syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, sinkId);
+      syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, sinkId, this.tap);
+  }
+
+  /** Send video sound through a mixer from now on (videos already playing join it too). */
+  setAudioTap(tap: ((v: HTMLMediaElement) => void) | undefined): void {
+    this.tap = tap;
+    if (this.media && this.last?.media)
+      syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, this.audioSink, tap);
   }
 
   /** Hand the sound to / take it from this renderer (e.g. a projector was plugged in). */
@@ -153,7 +163,7 @@ export class SceneRenderer {
     if (this.audio === on) return;
     this.audio = on;
     if (this.media && this.last?.media)
-      syncMedia(this.media.node, this.last.media, this.opts.mode, on, this.audioSink);
+      syncMedia(this.media.node, this.last.media, this.opts.mode, on, this.audioSink, this.tap);
   }
 
   /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
@@ -326,7 +336,14 @@ export class SceneRenderer {
     if ((this.media?.key ?? 'none') === key) {
       // Same clip: apply play/pause/seek/volume in place.
       if (this.media && scene.media)
-        syncMedia(this.media.node, scene.media, this.opts.mode, this.audio, this.audioSink);
+        syncMedia(
+          this.media.node,
+          scene.media,
+          this.opts.mode,
+          this.audio,
+          this.audioSink,
+          this.tap,
+        );
       return;
     }
     const old = this.media;
@@ -339,6 +356,7 @@ export class SceneRenderer {
         this.opts.mode,
         this.audio,
         this.audioSink,
+        this.tap,
       );
       this.mediaLayer.append(node);
       this.media = { key, node };

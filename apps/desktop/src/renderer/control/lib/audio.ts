@@ -1,5 +1,7 @@
-import { audioFadeAt, audioPositionAt, type AudioCue } from '@lampstand/core';
-import { RoomAudio } from '@lampstand/renderer';
+import { audioFadeAt, audioPositionAt, type AudioCue, type Mixer } from '@lampstand/core';
+import { AudioPlayer, MixerEngine, RoomAudio } from '@lampstand/renderer';
+import { onPreviewChange, previewSink } from './audioPreview';
+import { publishMeters } from './meters';
 import { cmd } from './api';
 import { hasDuration, knownDuration, setDuration } from './mediaDurations';
 import { attempt, useStore } from './store';
@@ -99,35 +101,91 @@ export function installAudioWatch(): () => void {
   return () => clearInterval(timer);
 }
 
+let local: RoomAudio | null = null;
+
+/**
+ * Video sound for the Program monitor when it plays the room's sound (no output window): it
+ * goes through the room mix like on the main output.
+ */
+export const localVideoTap = (v: HTMLMediaElement): void => local?.tapVideo(v);
+
 /**
  * With no output window connected, the control window plays room audio itself (like the
- * Program monitor does for video), so the operator still hears it.
+ * Program monitor does for video), so the operator still hears it, through the room mix.
  */
 export function installLocalAudio(): () => void {
-  let player: RoomAudio | null = null;
-  let last: { cue: AudioCue | null; inCue: unknown; local: boolean; sink: string } | null = null;
+  let last: { cue: AudioCue | null; mixer: Mixer | null; on: boolean; sink: string } | null = null;
   const sync = (): void => {
     const s = get();
-    const local = !(s.settings?.windowMode || s.displays.some((d) => d.role === 'main'));
-    // Only when the cue or where it plays changes (the store changes for everything else too).
+    const on = !(s.settings?.windowMode || s.displays.some((d) => d.role === 'main'));
+    // Only when the cue, the mixer or where it plays changes (the store changes for everything).
     const cue = s.live?.audio ?? null;
-    const inCue = s.live?.audioInput ?? null;
+    const mixer = s.live?.mixer ?? null;
     const sink = s.settings?.audio.roomOutput ?? '';
-    if (last?.cue === cue && last.inCue === inCue && last.local === local && last.sink === sink)
-      return;
-    last = { cue, inCue, local, sink };
-    if (local && !player) player = new RoomAudio(window, mediaUrl);
-    if (!local && player) {
-      player.destroy();
-      player = null;
+    if (last?.cue === cue && last.mixer === mixer && last.on === on && last.sink === sink) return;
+    last = { cue, mixer, on, sink };
+    if (on && !local) {
+      local = new RoomAudio(window, mediaUrl);
+      local.mixer.startMeters((l) =>
+        publishMeters({ bus: 'room', channels: l.channels, level: l.bus }),
+      );
     }
-    player?.setSink(sink);
-    player?.sync(cue, inCue);
+    if (!on && local) {
+      local.destroy();
+      local = null;
+    }
+    local?.setSink(sink);
+    if (mixer) local?.sync(cue, mixer);
   };
   sync();
   const off = useStore.subscribe(sync);
   return () => {
     off();
+    local?.destroy();
+    local = null;
+  };
+}
+
+/**
+ * Solo: soloed channels play on the "Listen on" output (headphones) in this window, after their
+ * fader and EQ, so the operator can check a mic or a track without the room hearing anything new.
+ */
+export function installCueMix(): () => void {
+  let engine: MixerEngine | null = null;
+  let player: AudioPlayer | null = null;
+  let last: { cue: AudioCue | null; mixer: Mixer | null; sink: string } | null = null;
+  const sync = (): void => {
+    const s = get();
+    const mixer = s.live?.mixer ?? null;
+    const cue = s.live?.audio ?? null;
+    const sink = previewSink();
+    if (last?.cue === cue && last.mixer === mixer && last.sink === sink) return;
+    last = { cue, mixer, sink };
+    const soloed = mixer?.channels.filter((c) => c.solo) ?? [];
+    if (!soloed.length || !mixer) {
+      engine?.destroy();
+      player?.destroy();
+      engine = null;
+      player = null;
+      return;
+    }
+    if (!engine) {
+      engine = new MixerEngine(window, { bus: 'cue', speakers: true });
+      player = new AudioPlayer(document, mediaUrl);
+      engine.attach('tracks', player.element);
+    }
+    engine.setSink(sink);
+    // The track plays here only while its channel is soloed.
+    player?.sync(soloed.some((c) => c.kind === 'tracks') ? cue : null);
+    engine.sync(mixer);
+  };
+  sync();
+  const offStore = useStore.subscribe(sync);
+  const offSink = onPreviewChange(sync);
+  return () => {
+    offStore();
+    offSink();
+    engine?.destroy();
     player?.destroy();
   };
 }

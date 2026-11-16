@@ -14,6 +14,8 @@ export interface SceneRendererOptions extends MediaResolver {
   canvas?: { width: number; height: number };
   /** Whether this renderer may play media audio (exactly one should; see {@link setAudio}). */
   audio?: boolean;
+  /** With `audio`: video sound goes to this (a mixer's input), not straight to the speakers. */
+  audioTap?: (v: HTMLMediaElement) => void;
   /** Transparent stage (alpha/key output). */
   transparent?: boolean;
 }

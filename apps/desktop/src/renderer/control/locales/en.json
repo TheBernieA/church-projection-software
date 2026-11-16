@@ -335,6 +335,22 @@
   },
   "settings": {
     "title": "Settings",
+    "search": "Search settings",
+    "searchPlaceholder": "Search settings",
+    "searchClear": "Clear search",
+    "searchResults": "Search results",
+    "searchNone": "Nothing matches “{{query}}”.",
+    "onThisPage": "On this page",
+    "reset": "Reset",
+    "resetHelp": "Put this page's preferences back to how Lampstand started. Things you made (destinations, Looks, masks) are kept.",
+    "resetConfirm": "Reset {{page}} to its defaults? Things you made (destinations, Looks, masks) are kept.",
+    "sections": {
+      "workspace": "Workspace",
+      "screens": "Screens & video",
+      "sound": "Sound & live",
+      "system": "System",
+      "help": "Help"
+    },
     "appearance": "Appearance",
     "uiTheme": "Interface theme",
     "dark": "Dark",
@@ -502,7 +518,8 @@
       "redo": "Redo",
       "cheatSheet": "Show shortcuts",
       "perfHud": "Performance overlay",
-      "mediaToggle": "Play / pause the live video"
+      "mediaToggle": "Play / pause the live video",
+      "settings": "Open Settings"
     }
   },
   "notice": {
@@ -579,6 +596,7 @@
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
+    "mixer": "The mixer could not make that change.",
     "action": "That action did not work. Please try again.",
     "save": "Could not save your changes.",
     "saveService": "Could not save the service. Your changes are still on screen — try again.",
@@ -781,7 +799,8 @@
     "resizeLibrary": "Resize library",
     "resizeLeft": "Resize sidebar",
     "resizeBin": "Resize bin",
-    "resizeRight": "Resize output column"
+    "resizeRight": "Resize output column",
+    "resizeMixer": "Resize the mixer"
   },
   "bin": {
     "label": "Bin",
@@ -993,7 +1012,8 @@
     "offAir": "Off air",
     "window": "Window mode",
     "shortcuts": "Keyboard shortcuts",
-    "services": "Services"
+    "services": "Services",
+    "mixer": "Mixer"
   },
   "sidebar": {
     "library": "Library",
@@ -1403,7 +1423,13 @@
     "afterNext": "Play the next one",
     "afterStop": "Stop",
     "loop": "Loop the playlist",
-    "loopHelp": "After the last track, start again from the top."
+    "loopHelp": "After the last track, start again from the top.",
+    "onMixer": "On the mixer",
+    "addToMixer": "Add to mixer",
+    "mixerHelp": "Every source has a channel: level, mute, solo to your headphones, EQ, compressor, and whether the room and the stream hear it.",
+    "openMixer": "Open the mixer",
+    "openMixerHelp": "{{count}} channels. The mixer docks along the bottom of the window.",
+    "roomLimiter": "Room limiter"
   },
   "screensMenu": {
     "main": {
@@ -1567,6 +1593,72 @@
     "choose": "Choose…",
     "open": "Open",
     "recordWhile": "Record while streaming",
-    "recordWhileHelp": "Keep a copy of every livestream on this computer."
+    "recordWhileHelp": "Keep a copy of every livestream on this computer.",
+    "soundMixerHelp": "What the stream hears comes from the mixer: switch each channel on or off here, or set levels and EQ on the mixer.",
+    "openMixer": "Open mixer",
+    "channelKind": {
+      "tracks": "Tracks from the Audio tab",
+      "video": "The sound of videos",
+      "input": "A microphone or live input"
+    },
+    "delayHelp": "Hold the stream's sound back so it lines up with a camera that runs late."
+  },
+  "mixer": {
+    "title": "Mixer",
+    "toggle": "Show or hide the mixer",
+    "close": "Close the mixer",
+    "settings": "Audio settings",
+    "edit": "Edit {{name}}",
+    "editorOf": "{{name}} settings",
+    "closeEditor": "Close channel settings",
+    "processing": "High-pass, EQ and compressor (click to edit)",
+    "flat": "Flat",
+    "muteOf": "Mute {{name}}",
+    "soloOf": "Solo {{name}} in headphones",
+    "soloHelp": "Solo plays a channel on your “Listen on” output (headphones). The room and the stream don't change.",
+    "roomOf": "Send {{name}} to the room",
+    "streamOf": "Send {{name}} to the stream",
+    "roomShort": "Room",
+    "streamShort": "Stream",
+    "levelOf": "{{name}} level",
+    "meterOf": "{{name}} meter",
+    "bus": {
+      "room": "Room",
+      "stream": "Stream"
+    },
+    "streamIdle": "Not live",
+    "limiterOn": "Limiter on",
+    "delayShort": "Delay {{ms}} ms",
+    "limiterOf": "{{name}} limiter",
+    "limiterHelp": "Keeps the mix under −1 dBFS so a shout never clips.",
+    "name": "Channel name",
+    "remove": "Remove {{name}}",
+    "device": "Device",
+    "deviceMissing": "Device not connected",
+    "mono": "Mono",
+    "monoOf": "{{name}}: input 1 on both sides",
+    "pan": "Pan",
+    "panOf": "{{name}} pan",
+    "hpf": "High-pass",
+    "hpfOf": "{{name}}: cut rumble below 80 Hz",
+    "eq": {
+      "low": "Low",
+      "mid": "Mid",
+      "high": "High"
+    },
+    "eqOf": "{{name}} {{band}}",
+    "comp": "Compressor",
+    "compOf": "{{name}} compressor",
+    "threshold": "Threshold",
+    "ratio": "Ratio",
+    "makeup": "Make-up",
+    "delay": "Stream delay",
+    "delayOf": "Stream sound delay (line up with a late camera)",
+    "clearSolo": "Clear solo",
+    "addInput": "Add input",
+    "noMoreInputs": "Every input is on the mixer already.",
+    "addHint": "Add a microphone or the sound desk's feed with “Add input”.",
+    "reset": "Reset mixer levels",
+    "resetConfirm": "Put every level, EQ and compressor back to flat? Inputs and routing are kept."
   }
 }

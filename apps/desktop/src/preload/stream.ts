@@ -12,6 +12,7 @@ const api: StreamApi = {
   onConfig: (cb) => listen(Channels.evStreamConfig, cb),
   ready: () => ipcRenderer.send(Channels.streamReady),
   sendAudio: (pcm) => ipcRenderer.send(Channels.streamAudio, pcm),
+  sendMeters: (m) => ipcRenderer.send(Channels.meters, m),
 };
 
 contextBridge.exposeInMainWorld('lampstandStream', api);

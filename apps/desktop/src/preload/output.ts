@@ -8,6 +8,7 @@ const api: OutputApi = {
   onLiveState: (cb) => listen(Channels.evLive, cb),
   onInfo: (cb) => listen(Channels.evOutputInfo, cb),
   ready: () => ipcRenderer.send(Channels.outputReady),
+  sendMeters: (m) => ipcRenderer.send(Channels.meters, m),
 };
 
 contextBridge.exposeInMainWorld('lampstandOutput', api);

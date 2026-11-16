@@ -19,7 +19,9 @@ import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timer
 import type { CommandBus } from './commands';
 import { mediaPositionAt, mediaStart, startMedia } from './utils/mediaPlayback';
 import { omit } from './utils/object';
+import { applyMixerAction, defaultMixer, MixerActionSchema, MixerSchema } from './schemas/mixer';
 import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
+import { applySwitcherAction, SwitcherActionSchema } from './switcher';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
 export type DetectionMode = z.infer<typeof DetectionModeSchema>;
@@ -68,14 +70,6 @@ export function audioFadeAt(a: AudioCue, nowMs: number): number {
   const t = (nowMs - Date.parse(a.fade.at)) / 1000;
   return a.fade.sec > 0 ? Math.max(0, 1 - t / a.fade.sec) : 0;
 }
-
-/** A live audio input (microphone, mixer feed) played through the room. */
-export const AudioInputCueSchema = z.object({
-  deviceId: z.string().max(300),
-  label: z.string().max(200),
-  volume: z.number().min(0).max(1).default(1),
-});
-export type AudioInputCue = z.infer<typeof AudioInputCueSchema>;
 
 /**
  * What the last clear took off each layer, so the operator can bring it back with one click
@@ -134,8 +128,10 @@ export const LiveStateSchema = z.object({
   cleared: ClearedLayersSchema.default({}),
   /** Audio playing through the room, or null. */
   audio: AudioCueSchema.nullable().default(null),
-  /** A live audio input played through the room, or null. */
-  audioInput: AudioInputCueSchema.nullable().default(null),
+  /** The video switcher: the camera waiting on Preview (Cut / Auto take it to Program). */
+  switcher: z.object({ preview: VideoInputLayerSchema.nullable() }).default({ preview: null }),
+  /** The sound desk: every channel's level, EQ and routing, live in every window. */
+  mixer: MixerSchema.default(() => defaultMixer()),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
 });
@@ -155,7 +151,8 @@ export function initialLiveState(): LiveState {
     timers: [],
     cleared: {},
     audio: null,
-    audioInput: null,
+    switcher: { preview: null },
+    mixer: defaultMixer(),
     look: null,
   };
 }
@@ -214,7 +211,7 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
       // The web page counts as "the slide" too.
       return { ...scene, content: null, web: null };
     case 'media':
-      return { ...scene, media: null, input: null };
+      return { ...scene, media: null, input: null, inputNext: null, pip: null };
     case 'announcements':
       return { ...scene, announcement: null };
     case 'background':
@@ -235,6 +232,8 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
         web: null,
         announcement: null,
         input: null,
+        inputNext: null,
+        pip: null,
         overlays: [],
         masks: EMPTY_MASKS,
       };
@@ -557,7 +556,12 @@ export function registerLiveCommands(
       // A camera takes the media layer (a playing video gives way); slide text stays on top.
       store.update((s) => ({
         ...s,
-        program: { ...s.program, input: p.input, media: p.input ? null : s.program.media },
+        program: {
+          ...omit(s.program, 'inputTransition'),
+          input: p.input,
+          inputNext: null,
+          media: p.input ? null : s.program.media,
+        },
         cleared: p.input ? withoutOff(s.cleared) : s.cleared,
       }));
       return { result: null };
@@ -565,11 +569,21 @@ export function registerLiveCommands(
   });
 
   bus.register({
-    type: 'live.audioInput',
-    schema: z.object({ input: AudioInputCueSchema.nullable() }),
+    type: 'live.switcher',
+    schema: SwitcherActionSchema,
     undoable: false,
     handle: (p) => {
-      store.update((s) => ({ ...s, audioInput: p.input }));
+      store.update((s) => applySwitcherAction(s, p));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.mixer',
+    schema: MixerActionSchema,
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, mixer: applyMixerAction(s.mixer, p) }));
       return { result: null };
     },
   });

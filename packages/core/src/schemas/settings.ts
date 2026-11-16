@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { StageLayoutSchema } from './stage';
 import { StreamSettingsSchema } from './stream';
+import { MixerSchema } from './mixer';
 import { TimerDefSchema } from './timers';
-import { PropPositionSchema } from './scene';
+import { InputTransitionSchema, PropPositionSchema } from './scene';
 
 export const OutputRoleSchema = z.enum(['main', 'stage', 'secondary', 'none']);
 export type OutputRole = z.infer<typeof OutputRoleSchema>;
@@ -108,6 +109,26 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** The video switcher (Media › Video input): what a click does, the Auto transition, PiP. */
+    switcher: z
+      .object({
+        /** Clicking a camera: put it on Preview (then Cut / Auto), or straight on screen. */
+        click: z.enum(['preview', 'program']).default('preview'),
+        transition: InputTransitionSchema.default({ kind: 'fade', durationMs: 600 }),
+        pip: z
+          .object({
+            corner: z.enum(['tl', 'tr', 'bl', 'br']).default('br'),
+            size: z.number().min(0.15).max(0.5).default(0.3),
+          })
+          .default({ corner: 'br', size: 0.3 }),
+      })
+      .default({
+        click: 'preview',
+        transition: { kind: 'fade', durationMs: 600 },
+        pip: { corner: 'br', size: 0.3 },
+      }),
+    /** The sound desk (channels, buses). Absent in older settings: made from `stream.sound`. */
+    mixer: MixerSchema.optional(),
     /** Livestream and recording (the toolbar's Live button). Stream keys are kept elsewhere. */
     stream: StreamSettingsSchema.default(StreamSettingsSchema.parse({})),
     /** Custom stage screen layouts, and which one stage screens show (null: Classic). */
@@ -233,6 +254,7 @@ export const SettingsSchema = z
   .loose();
 export type Settings = z.infer<typeof SettingsSchema>;
 
+/** Fresh defaults (a copy: zod hands out the same default objects on every parse). */
 export function defaultSettings(): Settings {
-  return SettingsSchema.parse({});
+  return structuredClone(SettingsSchema.parse({}));
 }

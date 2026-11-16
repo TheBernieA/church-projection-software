@@ -6,6 +6,7 @@ import {
   Ellipsis,
   Flame,
   Images,
+  SlidersVertical,
   Keyboard,
   Layers3,
   Palette,
@@ -260,6 +261,7 @@ export function Toolbar() {
   const textBarOpen = useStore((s) => s.textBarOpen);
   const mode = useStore((s) => s.mode);
   const binOpen = useStore((s) => s.binOpen);
+  const mixerOpen = useStore((s) => s.mixerOpen);
   const clickGoesLive = useStore((s) => s.settings?.clickGoesLive ?? true);
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
   const hasMain = useStore((s) => s.displays.some((d) => d.role === 'main'));
@@ -327,6 +329,13 @@ export function Toolbar() {
         label={t('toolbar.media')}
         pressed={binOpen}
         onClick={() => useStore.setState({ binOpen: !binOpen })}
+      />
+      <ToolbarButton
+        icon={<SlidersVertical size={20} />}
+        label={t('toolbar.mixer')}
+        aria-label={t('mixer.toggle')}
+        pressed={mixerOpen}
+        onClick={() => useStore.setState({ mixerOpen: !mixerOpen })}
       />
       <LooksMenu />
       <LiveMenu />

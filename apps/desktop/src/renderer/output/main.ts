@@ -24,7 +24,7 @@ let audio: RoomAudio | null = null;
 
 function draw(state: LiveState): void {
   latest = state;
-  audio?.sync(state.audio, state.audioInput);
+  audio?.sync(state.audio, state.mixer);
   if (!ready || !renderer) return;
   // The active Look decides which layers this kind of screen shows.
   const layers = lookLayersFor(state.look, role);
@@ -56,10 +56,18 @@ api.onInfo((i) => {
       audio: i.audio,
     });
   }
-  if (i.audio && !audio) audio = new RoomAudio(window, mediaUrl);
+  if (i.audio && !audio) {
+    // The room mix lives here: video sound joins it, and its levels feed the Mixer's meters.
+    audio = new RoomAudio(window, mediaUrl);
+    renderer.setAudioTap(audio.tapVideo);
+    audio.mixer.startMeters((l) =>
+      api.sendMeters({ bus: 'room', channels: l.channels, level: l.bus }),
+    );
+  }
   audio?.setSink(i.audioSink);
   renderer.setAudioSink(i.audioSink);
   if (!i.audio && audio) {
+    renderer.setAudioTap(undefined);
     audio.destroy();
     audio = null;
   }

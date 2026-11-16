@@ -1,3 +1,4 @@
+import { publishMeters } from './meters';
 import { create } from 'zustand';
 import type { BookId, ServiceItem, ServicePlan } from '@lampstand/core';
 import { api, cmd, q } from './api';
@@ -33,6 +34,7 @@ export const useStore = create<ControlState>((set) => ({
   audioPlaylistId: null,
   controlsTab: 'audio',
   binOpen: true,
+  mixerOpen: false,
   textBarOpen: false,
   settingsPage: 'general',
   dialog: null,
@@ -282,6 +284,7 @@ export function connect(): void {
   api.onDisplaysChanged(() => void refresh('displays'));
   api.onHistoryChanged((history) => patch({ history }));
   api.onStream((stream) => patch({ stream }));
+  api.onMeters(publishMeters);
   void q('history.state').then((history) => patch({ history }));
   void q('stream.status').then((stream) => patch({ stream }));
   void q('live.get').then((live) => patch({ live }));

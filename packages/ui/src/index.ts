@@ -7,3 +7,5 @@ export * from './Soon';
 export * from './Typography';
 export * from './NavItem';
 export * from './Slider';
+export * from './Fader';
+export * from './Meter';

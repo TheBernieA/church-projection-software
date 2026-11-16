@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FolderOpen, KeyRound, Plus, Trash2 } from 'lucide-react';
+import { FolderOpen, KeyRound, Plus, SlidersVertical, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   newId,
@@ -11,12 +11,12 @@ import {
 import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
 import { cmd, q } from '../../lib/api';
 import { useInputDevices } from '../../lib/inputs';
-import { attempt, toast, useStore } from '../../lib/store';
-import { LevelMeter } from '../bins/AudioInputs';
+import { attempt, closeDialog, toast, useStore } from '../../lib/store';
+import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
-import { Group, Row, SettingsPage } from './parts';
+import { Group, Notice, Row, SettingsPage } from './parts';
 
 type Update = (patch: Partial<Settings>) => void;
 const NONE = 'none';
@@ -143,7 +143,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   const set = (patch: Partial<StreamSettings>): void => update({ stream: { ...st, ...patch } });
   const status = useStore((x) => x.stream);
   const cameras = useInputDevices('videoinput');
-  const mics = useInputDevices('audioinput');
+  const mixer = useStore((x) => x.live?.mixer ?? null);
   const [keys, setKeys] = useState<Record<string, boolean>>({});
   const loadKeys = (): void => void q('stream.keys').then(setKeys, () => undefined);
   useEffect(loadKeys, [st.destinations.length]);
@@ -172,16 +172,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
       title={t('settings.pages.streaming')}
       description={t('settings.pagesHelp.streaming')}
     >
-      {status && !status.available && (
-        <Typography
-          as="p"
-          size={12}
-          tone="secondary"
-          className="rounded-[8px] bg-[var(--surface-2)] px-4 py-3"
-        >
-          {t('live.noFfmpeg')}
-        </Typography>
-      )}
+      {status && !status.available && <Notice tone="warn">{t('live.noFfmpeg')}</Notice>}
       <Group
         title={t('streaming.destinations')}
         footnote={t('streaming.destinationsHelp')}
@@ -261,79 +252,55 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
       </Group>
       <CameraAccess />
 
-      <Group title={t('streaming.sound')} footnote={t('streaming.soundHelp')}>
-        <Row label={t('streaming.room')} description={t('streaming.roomHelp')}>
-          <div className="flex w-60 items-center gap-3">
+      <Group
+        title={t('streaming.sound')}
+        footnote={t('streaming.soundMixerHelp')}
+        action={
+          <Button
+            size="xs"
+            variant="ghost"
+            icon={<SlidersVertical size={13} />}
+            onClick={() => {
+              useStore.setState({ mixerOpen: true });
+              closeDialog();
+            }}
+          >
+            {t('streaming.openMixer')}
+          </Button>
+        }
+      >
+        {(mixer?.channels ?? []).map((c) => (
+          <Row key={c.id} label={c.name} description={t(`streaming.channelKind.${c.kind}`)}>
             <Switch
-              label={t('streaming.room')}
-              checked={st.sound.room}
-              onChange={(room) => set({ sound: { ...st.sound, room } })}
-            />
-            <Slider
-              aria-label={t('streaming.roomLevel')}
-              min={0}
-              max={2}
-              step={0.05}
-              value={st.sound.roomGain}
-              disabled={!st.sound.room}
-              onChange={(e) =>
-                set({ sound: { ...st.sound, roomGain: Number(e.currentTarget.value) } })
+              label={t('mixer.streamOf', { name: c.name })}
+              checked={c.stream}
+              onChange={(stream) =>
+                void mixerCmd({ action: 'channel', id: c.id, patch: { stream } })
               }
-              className="flex-1"
             />
-          </div>
-        </Row>
-        {(mics ?? []).map((m) => {
-          const on = st.sound.mics.find((x) => x.deviceId === m.deviceId);
-          return (
-            <div key={m.deviceId} className="flex flex-col gap-2 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <Switch
-                  label={t('streaming.micOf', { name: m.label })}
-                  checked={!!on}
-                  onChange={(yes) =>
-                    set({
-                      sound: {
-                        ...st.sound,
-                        mics: yes
-                          ? [...st.sound.mics, { deviceId: m.deviceId, gain: 1 }]
-                          : st.sound.mics.filter((x) => x.deviceId !== m.deviceId),
-                      },
-                    })
-                  }
-                />
-                <Typography size={13} truncate className="min-w-0 flex-1">
-                  {m.label}
-                </Typography>
-                {on && (
-                  <Slider
-                    aria-label={t('streaming.micLevel', { name: m.label })}
-                    min={0}
-                    max={2}
-                    step={0.05}
-                    value={on.gain}
-                    onChange={(e) =>
-                      set({
-                        sound: {
-                          ...st.sound,
-                          mics: st.sound.mics.map((x) =>
-                            x.deviceId === m.deviceId
-                              ? { ...x, gain: Number(e.currentTarget.value) }
-                              : x,
-                          ),
-                        },
-                      })
-                    }
-                    className="w-48"
-                  />
-                )}
-              </div>
-              <LevelMeter device={m} />
-            </div>
-          );
-        })}
+          </Row>
+        ))}
+        {mixer && (
+          <Row label={t('mixer.delay')} description={t('streaming.delayHelp')}>
+            <Slider
+              aria-label={t('mixer.delayOf')}
+              min={0}
+              max={500}
+              step={10}
+              value={mixer.stream.delayMs}
+              format={(v) => `${v} ms`}
+              className="w-56"
+              onChange={(e) =>
+                mixerLive({
+                  action: 'bus',
+                  bus: 'stream',
+                  patch: { delayMs: Number(e.currentTarget.value) },
+                })
+              }
+            />
+          </Row>
+        )}
       </Group>
-      <CameraAccess kind="microphone" />
 
       <Group
         title={t('streaming.quality')}

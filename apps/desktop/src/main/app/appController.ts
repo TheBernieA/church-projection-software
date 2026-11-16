@@ -6,7 +6,9 @@ import { z } from 'zod';
 import {
   AppError,
   CommandBus,
+  initialLiveState,
   LiveStateStore,
+  mixerFromSettings,
   registerLiveCommands,
   resolveLogo,
   resolveStandby,
@@ -129,7 +131,19 @@ export class AppController {
     await installBundledBibles(paths, bibles, log.child('bibles'));
     const { songs: hymnSongs, hymnals } = await loadHymnals(paths, log);
     const bus = new CommandBus();
-    const live = new LiveStateStore();
+    // The sound desk carries on where it was left (saved a moment after each change).
+    const live = new LiveStateStore({
+      ...initialLiveState(),
+      mixer: mixerFromSettings(settings.get()),
+    });
+    let savedMixer = live.get().mixer;
+    let mixerSave: ReturnType<typeof setTimeout> | null = null;
+    live.subscribe((state) => {
+      if (state.mixer === savedMixer) return;
+      savedMixer = state.mixer;
+      if (mixerSave) clearTimeout(mixerSave);
+      mixerSave = setTimeout(() => settings.update({ mixer: savedMixer }), 1000);
+    });
     const mediaLibrary = new MediaLibrary(
       join(paths.library, 'media'),
       repos.media,
@@ -207,6 +221,7 @@ export class AppController {
       }),
       kindOf: (e) => this.windows.kindOf(e.sender),
       onOutputReady: (e) => this.windows.outputReady(e.sender),
+      onMeters: (m) => this.windows.sendToControl(Channels.evMeters, m),
       log,
     });
 

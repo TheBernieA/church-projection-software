@@ -12,5 +12,6 @@ export * from './testPattern';
 export * from './types';
 export * from './mask';
 export * from './audioPlayer';
+export * from './mixer';
 export * from './inputs';
 export * from './stageView';

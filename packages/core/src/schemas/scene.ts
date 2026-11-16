@@ -205,6 +205,22 @@ export const VideoInputLayerSchema = z.object({
 });
 export type VideoInputLayer = z.infer<typeof VideoInputLayerSchema>;
 
+/** How the switcher changes from one camera to the next. */
+export const InputTransitionSchema = z.object({
+  /** cut: at once; fade: cross-fade; dip: through black; wipe: left to right. */
+  kind: z.enum(['cut', 'fade', 'dip', 'wipe']).default('fade'),
+  durationMs: z.number().int().min(0).max(5000).default(600),
+});
+export type InputTransition = z.infer<typeof InputTransitionSchema>;
+
+/** A second camera in a box over the picture (picture-in-picture). */
+export const PipLayerSchema = VideoInputLayerSchema.extend({
+  corner: z.enum(['tl', 'tr', 'bl', 'br']).default('br'),
+  /** Width as a share of the screen (0.15–0.5). */
+  size: z.number().min(0.15).max(0.5).default(0.3),
+});
+export type PipLayer = z.infer<typeof PipLayerSchema>;
+
 export const SceneSchema = z.object({
   background: BackgroundLayerSchema.nullable(),
   media: MediaLayerSchema.nullable(),
@@ -213,6 +229,15 @@ export const SceneSchema = z.object({
   web: WebLayerSchema.nullable().optional(),
   /** A live camera feed, full screen in the media layer (slide text stays on top). */
   input: VideoInputLayerSchema.nullable().optional(),
+  /** How the last camera change happened (the renderer plays it when the camera changes). */
+  inputTransition: InputTransitionSchema.optional(),
+  /** The T-bar part-way: this camera shows over `input` at `pos` (0…1). */
+  inputNext: z
+    .object({ input: VideoInputLayerSchema, pos: z.number().min(0).max(1) })
+    .nullable()
+    .optional(),
+  /** Picture-in-picture: a second camera in a corner, over the camera and media. */
+  pip: PipLayerSchema.nullable().optional(),
   /** Announcements layer: looping announcement slides above the slide, below messages and props. */
   announcement: ContentLayerSchema.nullable().optional(),
   overlays: z.array(OverlaySchema).max(10),

@@ -267,3 +267,14 @@ input[type='checkbox'] {
 input[type='range']:focus {
   outline: none;
 }
+
+/* A setting found by Settings search: a brief accent wash so the eye lands on it. */
+@keyframes ls-flash {
+  0%,
+  30% {
+    background-color: var(--accent-soft);
+  }
+}
+.ls-flash {
+  animation: ls-flash 1600ms var(--ease-out);
+}

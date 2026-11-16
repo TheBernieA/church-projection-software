@@ -1,5 +1,5 @@
-import { audioFadeAt, audioPositionAt, type AudioCue, type AudioInputCue } from '@lampstand/core';
-import { AudioInputPlayer } from './inputs';
+import { audioFadeAt, audioPositionAt, type AudioCue, type Mixer } from '@lampstand/core';
+import { MixerEngine } from './mixer';
 import { safePlay } from './dom';
 
 /**
@@ -93,30 +93,33 @@ export class AudioPlayer {
 
 /**
  * The room's sound in one window (the main output, or the control window with no output): the
- * audio cue and a live audio input, together.
+ * Audio tab's track, the sound of videos and the live inputs, through the room mix.
  */
 export class RoomAudio {
   private readonly player: AudioPlayer;
-  private readonly input: AudioInputPlayer;
+  readonly mixer: MixerEngine;
 
   constructor(win: Window, mediaUrl: (id: string) => string) {
     this.player = new AudioPlayer(win.document, mediaUrl);
-    this.input = new AudioInputPlayer(win);
+    this.mixer = new MixerEngine(win, { bus: 'room', speakers: true, openAllInputs: true });
+    this.mixer.attach('tracks', this.player.element);
   }
 
-  /** The speakers or mixer the room hears (Settings › Audio); '' = the default output. */
+  /** The speakers or desk the room hears (Settings › Audio); '' = the default output. */
   setSink(sinkId: string): void {
-    this.player.setSink(sinkId);
-    this.input.setSink(sinkId);
+    this.mixer.setSink(sinkId);
   }
 
-  sync(audio: AudioCue | null, input: AudioInputCue | null): void {
+  /** A video's sound joins the room mix (pass to SceneRenderer's `audioTap`). */
+  readonly tapVideo = (v: HTMLMediaElement): void => this.mixer.attach('video', v);
+
+  sync(audio: AudioCue | null, mixer: Mixer): void {
     this.player.sync(audio);
-    this.input.sync(input);
+    this.mixer.sync(mixer);
   }
 
   destroy(): void {
     this.player.destroy();
-    this.input.stop();
+    this.mixer.destroy();
   }
 }

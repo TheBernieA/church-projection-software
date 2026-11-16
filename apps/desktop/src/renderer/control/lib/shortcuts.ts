@@ -68,6 +68,7 @@ const RUN: Record<ShortcutAction, () => void> = {
   cheatSheet: () => openDialog('shortcuts'),
   perfHud: () =>
     useStore.setState({ dialog: useStore.getState().dialog === 'perf' ? null : 'perf' }),
+  settings: () => openDialog('settings'),
   mediaToggle: () => {
     if (useStore.getState().live?.program.media?.kind === 'video')
       void cmd('live.media', { action: 'toggle' }, 'shortcut');

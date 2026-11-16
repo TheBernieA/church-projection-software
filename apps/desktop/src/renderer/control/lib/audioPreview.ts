@@ -57,6 +57,13 @@ async function routeTo(a: HTMLAudioElement, sinkId: string): Promise<void> {
   }
 }
 
+/** Where "Listen on" plays (headphones), and a way to hear when it changes. */
+export const previewSink = (): string => state.sinkId;
+export function onPreviewChange(l: () => void): () => void {
+  listeners.add(l);
+  return () => listeners.delete(l);
+}
+
 /** Start listening to a track (from the start, or from `position`). */
 export function previewTrack(mediaId: string, position = 0): void {
   const a = audio();

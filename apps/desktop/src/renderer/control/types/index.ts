@@ -130,6 +130,8 @@ export interface ControlState {
   audioPlaylistId: string | null;
   controlsTab: ControlsTab;
   binOpen: boolean;
+  /** The Mixer, docked along the bottom (toolbar's Mixer button). */
+  mixerOpen: boolean;
   /** The toolbar's Text bar (formatting for the selected item) is showing. */
   textBarOpen: boolean;
   /** Open page of the Settings window (remembered between openings). */
@@ -239,6 +241,7 @@ export type ShortcutAction =
   | 'redo'
   | 'cheatSheet'
   | 'perfHud'
-  | 'mediaToggle';
+  | 'mediaToggle'
+  | 'settings';
 
 export type ObjectKind = SlideObject['kind'];

@@ -492,7 +492,27 @@ test('settings: category pages, installed Bible packages', async () => {
   await control.screenshot({ path: 'test-results/06-settings-guide.png' });
   await control.getByRole('button', { name: 'Bibles & hymnals' }).last().click();
   await expect(control.getByRole('heading', { name: 'Bibles & hymnals' })).toBeVisible();
+  // Search: "stream key" finds the destinations on Streaming; Enter opens it there.
+  const search = nav.getByRole('searchbox', { name: 'Search settings' });
+  await search.fill('stream key');
+  await expect(nav.getByRole('group', { name: 'Search results' })).toContainText(
+    'Where it streams',
+  );
+  await search.press('Enter');
+  await expect(control.getByRole('heading', { name: 'Streaming', exact: true })).toBeVisible();
+  await expect(search).toHaveValue('');
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/06-settings-streaming.png' });
+  // ↑/↓ walk the sidebar.
+  await nav.getByRole('button', { name: 'Streaming' }).focus();
+  await control.keyboard.press('ArrowUp');
+  await expect(control.getByRole('heading', { name: 'Audio', exact: true })).toBeVisible();
+  await control.screenshot({ path: 'test-results/06-settings-audio.png' });
   await nav.getByRole('button', { name: 'General' }).click();
+  await control.keyboard.press('Escape');
+  // ⌘, / Ctrl+, opens Settings.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+Comma' : 'Control+Comma');
+  await expect(control.getByRole('heading', { name: 'General' })).toBeVisible();
   await control.keyboard.press('Escape');
 });
 
@@ -1476,13 +1496,68 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
     .poll(async () => Number(await meter.getAttribute('aria-valuenow')), { timeout: 10_000 })
     .toBeGreaterThan(0);
   await panel.getByRole('switch').first().click();
-  const audioIn = async () => {
+  // It becomes a channel on the mixer, heard in the room.
+  const channel = async () => {
     const r = await control.evaluate(() => window.lampstand.query('live.get'));
-    return r.ok ? r.value.audioInput : null;
+    return r.ok ? (r.value.mixer.channels.find((c) => c.kind === 'input') ?? null) : null;
   };
-  await expect.poll(async () => (await audioIn())?.volume).toBe(1);
+  await expect.poll(async () => (await channel())?.room).toBe(true);
   await panel.getByRole('switch').first().click();
-  await expect.poll(async () => await audioIn()).toBeNull();
+  await expect.poll(async () => (await channel())?.room).toBe(false);
+});
+
+test('mixer: a desk along the bottom; faders, mute and routing change the live mix', async () => {
+  const live = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    if (!r.ok) throw new Error('live.get');
+    return r.value.mixer;
+  };
+  await control.getByRole('button', { name: 'Show or hide the mixer' }).click();
+  const mixer = control.getByRole('region', { name: 'Mixer' });
+  await expect(mixer).toBeVisible();
+  const tracks = mixer.getByRole('region', { name: 'Tracks', exact: true });
+  // Keys move a fader in dB; the room hears it.
+  const fader = tracks.getByRole('slider', { name: 'Tracks level' });
+  await fader.focus();
+  await control.keyboard.press('Shift+ArrowDown');
+  await expect
+    .poll(async () => (await live()).channels.find((c) => c.id === 'tracks')?.gainDb)
+    .toBe(-6);
+  await tracks.getByRole('button', { name: 'Mute Tracks' }).click();
+  await tracks.getByRole('button', { name: 'Send Tracks to the stream' }).click();
+  await expect
+    .poll(async () => {
+      const c = (await live()).channels.find((x) => x.id === 'tracks');
+      return [c?.mute, c?.stream];
+    })
+    .toEqual([true, false]);
+  // The channel editor: EQ and the compressor.
+  await tracks.getByRole('button', { name: 'Edit Tracks' }).click();
+  const editor = mixer.getByRole('complementary', { name: 'Tracks settings' });
+  await editor.getByRole('switch', { name: /cut rumble/ }).click();
+  await editor.getByRole('switch', { name: 'Tracks compressor' }).click();
+  await expect
+    .poll(async () => {
+      const c = (await live()).channels.find((x) => x.id === 'tracks');
+      return [c?.hpf, c?.comp.on];
+    })
+    .toEqual([true, true]);
+  await expect(mixer.getByRole('meter', { name: 'Room meter' })).toBeVisible();
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/40-mixer.png' });
+  // Back to how it was, for the tests after this one.
+  await control.evaluate(async () => {
+    await window.lampstand.command({ type: 'live.mixer', payload: { action: 'reset' } });
+    await window.lampstand.command({
+      type: 'live.mixer',
+      payload: { action: 'channel', id: 'tracks', patch: { stream: true } },
+    });
+  });
+  await expect
+    .poll(async () => (await live()).channels.find((c) => c.id === 'tracks')?.gainDb)
+    .toBe(0);
+  await mixer.getByRole('button', { name: 'Close the mixer' }).click();
+  await expect(mixer).toHaveCount(0);
 });
 
 test('stock media: a motion background goes live; a countdown joins the playlist', async () => {

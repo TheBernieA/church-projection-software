@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mic, RefreshCw } from 'lucide-react';
+import { Mic, Plus, RefreshCw, RotateCcw, SlidersVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Settings } from '@lampstand/core';
 import { Button, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
@@ -8,7 +8,9 @@ import { rescanDevices, useInputDevices } from '../../lib/inputs';
 import { LevelMeter } from '../bins/AudioInputs';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
-import { Group, Row, SettingsPage } from './parts';
+import { mixerCmd } from '../../lib/mixer';
+import { closeDialog, useStore } from '../../lib/store';
+import { Group, Row, SettingsPage, Tag } from './parts';
 
 const DEFAULT = 'default';
 
@@ -28,6 +30,8 @@ export function AudioPage({
   const outputs = useInputDevices('audiooutput');
   const inputs = useInputDevices('audioinput');
   const preview = useAudioPreview();
+  const mixer = useStore((x) => x.live?.mixer ?? null);
+  const onMixer = new Set(mixer?.channels.map((c) => c.deviceId) ?? []);
   // The fade slider saves once, when let go.
   const [fadeDraft, setFadeDraft] = useState<number | null>(null);
   const fade = fadeDraft ?? s.audio.fadeSec;
@@ -48,6 +52,47 @@ export function AudioPage({
   ];
   return (
     <SettingsPage title={t('settings.pages.audio')} description={t('settings.pagesHelp.audio')}>
+      <Group title={t('mixer.title')} footnote={t('audioSettings.mixerHelp')}>
+        <Row
+          label={t('audioSettings.openMixer')}
+          description={t('audioSettings.openMixerHelp', { count: mixer?.channels.length ?? 0 })}
+        >
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<SlidersVertical size={14} />}
+            onClick={() => {
+              useStore.setState({ mixerOpen: true });
+              closeDialog();
+            }}
+          >
+            {t('audioSettings.openMixer')}
+          </Button>
+        </Row>
+        {mixer && (
+          <Row label={t('audioSettings.roomLimiter')} description={t('mixer.limiterHelp')}>
+            <Switch
+              label={t('audioSettings.roomLimiter')}
+              checked={mixer.room.limiter}
+              onChange={(limiter) =>
+                void mixerCmd({ action: 'bus', bus: 'room', patch: { limiter } })
+              }
+            />
+          </Row>
+        )}
+        <Row label={t('mixer.reset')} description={t('mixer.resetConfirm')}>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon={<RotateCcw size={14} />}
+            onClick={() =>
+              window.confirm(t('mixer.resetConfirm')) && void mixerCmd({ action: 'reset' })
+            }
+          >
+            {t('settings.reset')}
+          </Button>
+        </Row>
+      </Group>
       <Group title={t('audioSettings.room')} footnote={t('audioSettings.roomHelp')}>
         <Row label={t('audioSettings.roomOutput')} description={t('audioSettings.roomOutputHelp')}>
           <div className="w-60">
@@ -183,6 +228,20 @@ export function AudioPage({
               <div className="min-w-0 flex-1">
                 <LevelMeter device={d} />
               </div>
+              {onMixer.has(d.deviceId) ? (
+                <Tag tone="ok">{t('audioSettings.onMixer')}</Tag>
+              ) : (
+                <Button
+                  size="2xs"
+                  variant="subtle"
+                  icon={<Plus size={12} />}
+                  onClick={() =>
+                    void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label })
+                  }
+                >
+                  {t('audioSettings.addToMixer')}
+                </Button>
+              )}
             </div>
           ))
         )}

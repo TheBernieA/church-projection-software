@@ -5,7 +5,9 @@ import {
   Channels,
   CommandEnvelopeSchema,
   QUERY_NAMES,
+  MeterReportSchema,
   QuerySchemas,
+  type MeterReport,
 } from '@lampstand/ipc-contract';
 import { type Logger, type QueryHandlers, type WindowKind } from '../types';
 import { APP_SCHEME } from '../constants';
@@ -17,6 +19,8 @@ interface RouterDeps {
   queries: QueryHandlers;
   kindOf: (e: IpcMainInvokeEvent | IpcMainEvent) => WindowKind | null;
   onOutputReady: (e: IpcMainEvent) => void;
+  /** Mix levels from an output or the stream window, for the control window's meters. */
+  onMeters: (m: MeterReport) => void;
   log: Logger;
 }
 
@@ -78,5 +82,13 @@ export function registerIpc(d: RouterDeps): void {
     if (!trusted(e)) return;
     const kind = d.kindOf(e);
     if (kind === 'output' || kind === 'stage') d.onOutputReady(e);
+  });
+
+  ipcMain.on(Channels.meters, (e, raw: unknown) => {
+    if (!trusted(e)) return;
+    const kind = d.kindOf(e);
+    if (kind !== 'output' && kind !== 'stream') return;
+    const m = MeterReportSchema.safeParse(raw);
+    if (m.success) d.onMeters(m.data);
   });
 }

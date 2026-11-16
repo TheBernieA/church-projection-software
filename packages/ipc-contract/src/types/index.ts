@@ -16,7 +16,7 @@ import type {
   Theme,
 } from '@lampstand/core';
 import type { QueryName } from '../channels';
-import type { CommandEnvelope, QueryArgs } from '../schemas';
+import type { CommandEnvelope, MeterReport, QueryArgs } from '../schemas';
 
 export interface SearchHit {
   kind: 'verse' | 'song' | 'hymn' | 'media' | 'reference' | 'command';
@@ -168,6 +168,8 @@ export interface ControlApi {
   onMenu(cb: (action: MenuAction) => void): () => void;
   /** Livestream / recording status changes. */
   onStream(cb: (s: StreamStatus) => void): () => void;
+  /** Mix levels from the room and the stream (about 15 a second each, while they run). */
+  onMeters(cb: (m: MeterReport) => void): () => void;
   platform: string;
 }
 
@@ -215,7 +217,6 @@ export interface StreamConfig {
     words: 'full' | 'lowerThird' | 'none';
     background: 'program' | 'camera' | 'black';
   };
-  sound: { room: boolean; roomGain: number; mics: { deviceId: string; gain: number }[] };
   logo: ScreenVisual;
   standby: Standby;
 }
@@ -227,6 +228,7 @@ export interface StreamApi {
   ready(): void;
   /** Interleaved stereo float32 PCM at 48 kHz. */
   sendAudio(pcm: Float32Array): void;
+  sendMeters(m: MeterReport): void;
 }
 
 /** API exposed to output and stage windows: read-only (§17.2 — outputs may only subscribe). */
@@ -234,4 +236,6 @@ export interface OutputApi {
   onLiveState(cb: (s: LiveState) => void): () => void;
   onInfo(cb: (info: OutputInfo) => void): () => void;
   ready(): void;
+  /** The main output's room mix levels (only the window that plays the room sends them). */
+  sendMeters(m: MeterReport): void;
 }

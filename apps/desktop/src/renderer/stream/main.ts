@@ -1,6 +1,6 @@
 import { applyLook, lookLayersFor, type LiveState, type Scene } from '@lampstand/core';
 import type { StreamApi, StreamConfig } from '@lampstand/ipc-contract';
-import { AudioPlayer, buildVideoInput, RAW_AUDIO, SceneRenderer } from '@lampstand/renderer';
+import { AudioPlayer, buildVideoInput, MixerEngine, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 import pcmTapUrl from './pcmTap.worklet.js?url';
@@ -9,7 +9,7 @@ import pcmTapUrl from './pcmTap.worklet.js?url';
  * The livestream picture and sound, drawn offscreen (main encodes what it paints). Layers, back
  * to front: a camera, the program's background and video, a soft band for lower-third words,
  * then the words, props and messages (and the Black / Logo masks, which cover everything).
- * The sound mixes the room audio (Audio tab tracks and video sound) with chosen microphones.
+ * The sound is the Mixer's stream bus: tracks, video sound and inputs sent to the stream.
  */
 const api = (window as unknown as { lampstandStream: StreamApi }).lampstandStream;
 const $ = (id: string): HTMLElement => {
@@ -81,52 +81,20 @@ function draw(): void {
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
   room.sync(latest.audio);
+  mix.sync(latest.mixer);
 }
 
 // ---------- Sound ----------
 
+// The stream mix: the same desk as the room (Mixer), each channel sent to the stream or not,
+// with the stream bus's own level, limiter and lip-sync delay. It never plays here.
 const ctx = new AudioContext({ sampleRate: 48_000 });
-const master = ctx.createGain();
-const roomGain = ctx.createGain();
-roomGain.connect(master);
+const mix = new MixerEngine(window, { bus: 'stream', ctx });
 const room = new AudioPlayer(document, mediaUrl);
-ctx.createMediaElementSource(room.element).connect(roomGain);
-
-// Every video the background draws: its sound into the room mix (not the speakers).
-const tapped = new WeakSet<HTMLMediaElement>();
-new MutationObserver(() => {
-  for (const v of $('back').querySelectorAll('video')) {
-    if (tapped.has(v)) continue;
-    tapped.add(v);
-    ctx.createMediaElementSource(v).connect(roomGain);
-  }
-}).observe($('back'), { childList: true, subtree: true });
-
-const mics = new Map<string, { stream: MediaStream; gain: GainNode }>();
-function syncMics(wanted: { deviceId: string; gain: number }[]): void {
-  for (const [id, m] of mics)
-    if (!wanted.some((w) => w.deviceId === id)) {
-      m.gain.disconnect();
-      for (const t of m.stream.getTracks()) t.stop();
-      mics.delete(id);
-    }
-  for (const w of wanted) {
-    const have = mics.get(w.deviceId);
-    if (have) {
-      have.gain.gain.value = w.gain;
-      continue;
-    }
-    void navigator.mediaDevices
-      .getUserMedia({ audio: { deviceId: { exact: w.deviceId }, ...RAW_AUDIO }, video: false })
-      .then((stream) => {
-        const gain = ctx.createGain();
-        gain.gain.value = w.gain;
-        ctx.createMediaStreamSource(stream).connect(gain).connect(master);
-        mics.set(w.deviceId, { stream, gain });
-      })
-      .catch(() => undefined);
-  }
-}
+mix.attach('tracks', room.element);
+back.setAudioTap((v) => mix.attach('video', v));
+mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus }));
+const master = mix.output;
 
 // The mix goes to main as interleaved stereo float32 (it never plays on this computer).
 const mute = ctx.createGain();
@@ -143,8 +111,6 @@ api.onConfig((c) => {
   // The Logo mask covers the stream too. (No off-air card: the words layer is often empty on
   // purpose, and the stream shows its camera or black when nothing is live.)
   words.setLogo(c.logo);
-  roomGain.gain.value = c.sound.room ? c.sound.roomGain : 0;
-  syncMics(c.sound.mics);
   draw();
 });
 api.onLiveState((s) => {

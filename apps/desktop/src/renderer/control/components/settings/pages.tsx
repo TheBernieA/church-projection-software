@@ -5,7 +5,6 @@ import {
   HardDriveDownload,
   ListMusic,
   PackagePlus,
-  ShieldCheck,
   Trash2,
   Type,
   Upload,
@@ -29,7 +28,16 @@ import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
 import { LogoLooks } from './LogoLooks';
-import { Group, LayerChips, NameRow, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
+import {
+  Group,
+  LayerChips,
+  NameRow,
+  Notice,
+  Row,
+  SettingsPage,
+  ThemeTiles,
+  UnitInput,
+} from './parts';
 import { LIVE_KINDS } from '../../constants';
 import { clamp } from '../../lib/utils';
 
@@ -683,17 +691,7 @@ export function AboutPage() {
   }, []);
   return (
     <SettingsPage title={t('settings.pages.about')} description={t('settings.pagesHelp.about')}>
-      <div className="flex gap-3 rounded-[var(--radius-card)] bg-[var(--surface-2)] p-4 shadow-[var(--shadow-1)]">
-        <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" />
-        <div className="space-y-1.5">
-          <Typography as="p" variant="label">
-            {t('settings.privacyTitle')}
-          </Typography>
-          <Typography as="p" size={12} tone="secondary" leading="relaxed">
-            {t('settings.privacyText')}
-          </Typography>
-        </div>
-      </div>
+      <Notice title={t('settings.privacyTitle')}>{t('settings.privacyText')}</Notice>
       <Group title={t('settings.version')}>
         <Row label="Lampstand">
           <Typography size={13} tone="secondary" tabular>

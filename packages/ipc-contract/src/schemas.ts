@@ -72,3 +72,12 @@ export const DisplayAssignSchema = z.object({
   displayId: z.string().max(64),
   role: OutputRoleSchema,
 });
+
+/** A mix's levels, sent by the window that makes it (peak and RMS, linear). */
+const Level = z.tuple([z.number().min(0).max(64), z.number().min(0).max(64)]);
+export const MeterReportSchema = z.object({
+  bus: z.enum(['room', 'stream']),
+  channels: z.record(z.string().max(64), Level),
+  level: Level,
+});
+export type MeterReport = z.infer<typeof MeterReportSchema>;

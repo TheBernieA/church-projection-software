@@ -36,7 +36,7 @@ export function Dialog({
         <RD.Overlay className={OVERLAY_CLASS} />
         <RD.Content
           aria-describedby={undefined}
-          className={`fixed left-1/2 top-[7vh] z-50 flex max-h-[86vh] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-xl)] bg-[var(--surface-1)] shadow-[var(--shadow-3),var(--highlight-top)] data-[state=open]:animate-[ls-dialog_180ms_var(--ease-out)] ${wide ? 'w-[min(1120px,94vw)]' : 'w-[min(580px,94vw)]'} ${bare ? 'h-[min(700px,86vh)]' : ''}`}
+          className={`fixed left-1/2 top-[7vh] z-50 flex max-h-[86vh] -translate-x-1/2 flex-col overflow-hidden rounded-[var(--radius-xl)] bg-[var(--surface-1)] shadow-[var(--shadow-3),var(--highlight-top)] data-[state=open]:animate-[ls-dialog_180ms_var(--ease-out)] ${wide ? 'w-[min(1240px,96vw)]' : 'w-[min(580px,94vw)]'} ${bare ? 'top-[5vh] h-[min(820px,90vh)] max-h-[90vh]' : ''}`}
         >
           {bare ? (
             <>

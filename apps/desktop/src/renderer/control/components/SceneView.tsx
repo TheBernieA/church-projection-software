@@ -4,6 +4,7 @@ import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
 import { mediaUrl } from '../../shared/mediaUrl';
 import { useLogo } from '../lib/hooks';
 import { useStore } from '../lib/store';
+import { localVideoTap } from '../lib/audio';
 
 /**
  * React wrapper around the shared output renderer — the operator sees exactly what the
@@ -64,6 +65,7 @@ export const SceneView = memo(function SceneView({
   useEffect(() => {
     renderer.current?.setLogo(logo);
     renderer.current?.setAudioSink(sink);
+    renderer.current?.setAudioTap(audio ? localVideoTap : undefined);
     renderer.current?.setAudio(audio);
     renderer.current?.setStandby(standby);
     renderer.current?.setMask(mask);

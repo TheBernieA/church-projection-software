@@ -1,4 +1,4 @@
-import type { AudioInputCue, VideoInputLayer } from '@lampstand/core';
+import type { VideoInputLayer } from '@lampstand/core';
 import { FILL } from './constants';
 import { el } from './dom';
 
@@ -18,12 +18,6 @@ export function videoConstraints(
     deviceId: { exact: input.deviceId },
     ...(h ? { height: { ideal: h }, width: { ideal: Math.round((h * 16) / 9) } } : {}),
   };
-}
-
-/** Send an AudioContext to an output device (Chromium's AudioContext.setSinkId). */
-function routeContext(ctx: AudioContext, sinkId: string): void {
-  const c = ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> };
-  void c.setSinkId?.(sinkId).catch(() => undefined);
 }
 
 /** Stop every track of a stream (releases the camera or microphone). */
@@ -84,61 +78,4 @@ export function buildVideoInput(
       release(stream);
     },
   };
-}
-
-/**
- * Plays a live audio input (microphone, mixer feed) through this window's speakers, with the
- * cue's volume. Processing meant for calls (echo cancellation, noise suppression, auto gain)
- * is off: it would colour music and speech in the room.
- */
-export class AudioInputPlayer {
-  private stream: MediaStream | null = null;
-  private ctx: AudioContext | null = null;
-  private gain: GainNode | null = null;
-  private deviceId: string | null = null;
-  private sinkId = '';
-
-  constructor(private readonly win: Window) {}
-
-  /** Where it plays ('' = this window's default output). */
-  setSink(sinkId: string): void {
-    this.sinkId = sinkId;
-    if (this.ctx) routeContext(this.ctx, sinkId);
-  }
-
-  sync(cue: AudioInputCue | null): void {
-    if (!cue) return this.stop();
-    if (this.gain) this.gain.gain.value = cue.volume;
-    if (cue.deviceId === this.deviceId) return;
-    this.stop();
-    this.deviceId = cue.deviceId;
-    const want = cue.deviceId;
-    void this.win.navigator.mediaDevices
-      .getUserMedia({
-        audio: { deviceId: { exact: cue.deviceId }, ...RAW_AUDIO },
-        video: false,
-      })
-      .then((s) => {
-        if (this.deviceId !== want) return release(s);
-        this.stream = s;
-        const Ctx = (this.win as Window & { AudioContext: typeof AudioContext }).AudioContext;
-        const ctx = new Ctx();
-        if (this.sinkId) routeContext(ctx, this.sinkId);
-        const gain = ctx.createGain();
-        gain.gain.value = cue.volume;
-        ctx.createMediaStreamSource(s).connect(gain).connect(ctx.destination);
-        this.ctx = ctx;
-        this.gain = gain;
-      })
-      .catch(() => undefined);
-  }
-
-  stop(): void {
-    release(this.stream);
-    this.stream = null;
-    void this.ctx?.close();
-    this.ctx = null;
-    this.gain = null;
-    this.deviceId = null;
-  }
 }

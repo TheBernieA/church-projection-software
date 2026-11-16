@@ -47,6 +47,7 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   cheatSheet: '?',
   perfHud: 'Mod+Alt+P',
   mediaToggle: 'P',
+  settings: 'Mod+,',
 };
 
 /**

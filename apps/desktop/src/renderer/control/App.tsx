@@ -1,3 +1,4 @@
+import { MixerPanel } from './components/mixer/MixerPanel';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { lazyNamed, preloadLazyViews } from './lib/lazy';
@@ -14,7 +15,7 @@ import { TextBar } from './components/shell/TextBar';
 import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
 import { installMediaWatch } from './lib/actions';
-import { installAudioWatch, installLocalAudio } from './lib/audio';
+import { installAudioWatch, installCueMix, installLocalAudio } from './lib/audio';
 
 // Opened on demand: loaded the first time they're needed, not at startup.
 const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
@@ -43,10 +44,13 @@ export function App() {
   const left = usePaneSize('leftWidth', 290, 220, 460);
   const right = usePaneSize('rightWidth', 340, 280, 560);
   const bin = usePaneSize('binHeight', 236, 150, 520);
+  const mixer = usePaneSize('mixerHeight', 300, 220, 560);
+  const mixerOpen = useStore((s) => s.mixerOpen);
   useEffect(() => installShortcuts(), []);
   useEffect(() => installMediaWatch(), []);
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
+  useEffect(() => installCueMix(), []);
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => installNumberWheelGuard(), []);
   useEffect(() => {
@@ -84,6 +88,15 @@ export function App() {
           <RightColumn />
         </aside>
       </div>
+      {/* The Mixer docks along the bottom, under every pane, from the toolbar's Mixer button. */}
+      {mixerOpen && (
+        <>
+          <Splitter axis="y" pane={mixer} invert label={t('layout.resizeMixer')} />
+          <div className="pane shrink-0">
+            <MixerPanel height={mixer.size} />
+          </div>
+        </>
+      )}
       <QuickBar />
       <Suspense fallback={null}>
         {dialog === 'song' && <SongEditor />}

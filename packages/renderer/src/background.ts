@@ -97,9 +97,12 @@ export function syncMedia(
   mode: RenderMode,
   audio: boolean,
   sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
 ): void {
   const v = node.querySelector('video');
   if (!v || mode === 'thumbnail') return;
+  // This renderer plays the sound: it goes through the mix (once tapped, it never plays direct).
+  if (audio && tap) tap(v);
   // The room hears a video's sound where Settings › Audio sends room audio.
   const routed = v as HTMLVideoElement & { lsSink?: string };
   if (audio && routed.lsSink !== sinkId) {
@@ -192,6 +195,7 @@ export function buildMedia(
   mode: RenderMode,
   audio: boolean,
   sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
 ): HTMLElement {
   const wrap = el(doc, 'div', 'ls-media', { ...FILL, background: '#000' });
   if (m.kind === 'image') {
@@ -206,7 +210,7 @@ export function buildMedia(
     v.preload = mode === 'thumbnail' ? 'metadata' : 'auto';
     v.muted = true; // syncMedia sets the real audio state once metadata is known
     wrap.append(v);
-    syncMedia(wrap, m, mode, audio, sinkId);
+    syncMedia(wrap, m, mode, audio, sinkId, tap);
   }
   return wrap;
 }
