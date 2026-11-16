@@ -73,7 +73,7 @@ export function BibleBrowser() {
             onClick={() => setBook(null)}
             className={`-ml-2 min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
           >
-            <span className="truncate">{bookName(book)}</span>
+            <Typography truncate>{bookName(book)}</Typography>
           </Button>
         ) : (
           <input
@@ -112,9 +112,9 @@ export function BibleBrowser() {
                 </Typography>
                 <div className="grid grid-cols-2 gap-px">
                   {list.map((b) => (
-                    <button
+                    <Button
+                      variant="bare"
                       key={b.id}
-                      type="button"
                       onClick={() => {
                         setBook(b.id);
                         setChapter(1);
@@ -123,7 +123,7 @@ export function BibleBrowser() {
                       className={`rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-[var(--surface-3)] ${typographyClass({ size: 13, tone: 'primary', truncate: true })}`}
                     >
                       {b.name}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -136,15 +136,15 @@ export function BibleBrowser() {
           <div className="px-4">
             <div className="grid max-h-28 grid-cols-[repeat(auto-fill,minmax(34px,1fr))] gap-1 overflow-y-auto pb-1">
               {Array.from({ length: chapters }, (_, i) => i + 1).map((c) => (
-                <button
+                <Button
+                  variant="bare"
                   key={c}
-                  type="button"
                   onClick={() => setChapter(c)}
                   aria-current={c === chapter}
                   className={`h-8 rounded-[7px] transition-colors ${typographyClass({ size: 12, weight: 'medium', tabular: true })} ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
                 >
                   {c}
-                </button>
+                </Button>
               ))}
             </div>
             <Typography as="p" variant="caption" leading="snug" className="pb-2 pt-2">
@@ -157,8 +157,9 @@ export function BibleBrowser() {
               const isSel = selected && v >= selected.from && v <= selected.to;
               return (
                 <li key={v}>
-                  <button
-                    type="button"
+                  <Button
+                    variant="bare"
+
                     onClick={(e) => pick(v, e, false)}
                     onDoubleClick={(e) => pick(v, e, true)}
                     {...libraryDragSource(() => {
@@ -183,12 +184,12 @@ export function BibleBrowser() {
                     >
                       {v}
                     </Typography>
-                    <span className="text-[var(--text-1)]">
+                    <Typography tone="primary">
                       {parseBibleMarkup(text)
                         .map((s) => s.text)
                         .join('')}
-                    </span>
-                  </button>
+                    </Typography>
+                  </Button>
                 </li>
               );
             })}

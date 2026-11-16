@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Typography, typographyClass } from './Typography';
+import { Button } from './Button';
 
 /** Small "Soon" pill marking a feature that is planned but not built yet. */
 export function SoonBadge({ label = 'Soon' }: { label?: string }) {
@@ -36,8 +37,9 @@ export function ComingSoonButton({
   compact?: boolean;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="bare"
+
       disabled
       aria-disabled
       title={title}
@@ -46,6 +48,6 @@ export function ComingSoonButton({
       {icon}
       <span className={compact ? 'sr-only' : ''}>{children}</span>
       <SoonBadge />
-    </button>
+    </Button>
   );
 }

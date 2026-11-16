@@ -133,7 +133,9 @@ function PlannedLayers() {
                 title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
                 className={`flex items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 outline-none ${typographyClass({ size: 13, tone: 'secondary' })}`}
               >
-                <span className="flex text-[var(--text-3)]">{l.icon}</span>
+                <Typography tone="muted" className="flex">
+                  {l.icon}
+                </Typography>
                 <span className="flex-1">{t(`monitor.layers.${l.label}`)}</span>
                 <SoonBadge label={t('soon.badge')} />
               </DropdownMenu.Item>
@@ -338,12 +340,13 @@ export function RightColumn() {
                   <Power size={13} strokeWidth={2.5} />
                 </IconButton>
               ) : (
-                <span
+                <Typography
+                  tone="muted"
                   aria-hidden
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--text-3)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
+                  className="flex h-6 w-6 items-center justify-center rounded-full shadow-[inset_0_0_0_1px_var(--hairline-strong)]"
                 >
                   <Power size={12} />
-                </span>
+                </Typography>
               )}
               <LayerButton
                 icon={<MessageSquareText size={14} />}

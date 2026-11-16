@@ -52,9 +52,9 @@ export function Select<T extends string>({
       >
         <span className="flex min-w-0 items-center gap-2">
           {current?.leading}
-          <span className="truncate" style={current?.labelStyle}>
+          <Typography truncate style={current?.labelStyle}>
             <RS.Value placeholder={placeholder}>{current?.label}</RS.Value>
-          </span>
+          </Typography>
         </span>
         <RS.Icon asChild>
           <ChevronDown
@@ -79,7 +79,7 @@ export function Select<T extends string>({
                 className={`relative flex cursor-pointer select-none items-center gap-2.5 rounded-[8px] py-2 pl-2.5 pr-8 outline-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[highlighted]:bg-[var(--surface-4)] data-[state=checked]:font-semibold ${typographyClass({ size: 13, tone: 'primary' })}`}
               >
                 {o.leading}
-                <span className="flex min-w-0 flex-col leading-tight">
+                <Typography leading="tight" className="flex min-w-0 flex-col">
                   <RS.ItemText>
                     <span style={o.labelStyle}>{o.label}</span>
                   </RS.ItemText>
@@ -88,7 +88,7 @@ export function Select<T extends string>({
                       {o.description}
                     </Typography>
                   )}
-                </span>
+                </Typography>
                 <RS.ItemIndicator className="absolute right-2.5 text-[var(--accent)]">
                   <Check size={15} strokeWidth={2.5} />
                 </RS.ItemIndicator>

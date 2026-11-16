@@ -112,6 +112,7 @@ interface OwnProps<E extends ElementType> {
   tabular?: boolean;
   /** Monospaced (code, timings). */
   mono?: boolean;
+  italic?: boolean;
   /** Make the size win over a component's own CSS (`.field` inputs set theirs). */
   important?: boolean;
   className?: string;
@@ -128,6 +129,7 @@ type StyleKey =
   | 'truncate'
   | 'tabular'
   | 'mono'
+  | 'italic'
   | 'important';
 /** Just the look of <Typography>, without the element. */
 export type TypographyStyleProps = { [K in StyleKey]?: OwnProps<'span'>[K] | undefined };
@@ -149,6 +151,7 @@ export function typographyClass({
   truncate,
   tabular,
   mono,
+  italic,
   important,
 }: TypographyStyleProps): string {
   const preset: Style = variant ? TYPOGRAPHY_VARIANTS[variant] : {};
@@ -164,6 +167,7 @@ export function typographyClass({
     truncate && 'truncate',
     tabular && 'tnum',
     mono && 'font-mono',
+    italic && 'italic',
     preset.extra,
   ]
     .filter(Boolean)
@@ -189,6 +193,7 @@ export function Typography<E extends ElementType = 'span'>({
   truncate,
   tabular,
   mono,
+  italic,
   important,
   className,
   ...rest
@@ -204,6 +209,7 @@ export function Typography<E extends ElementType = 'span'>({
     truncate,
     tabular,
     mono,
+    italic,
     important,
   });
   return <Tag className={className ? `${cls} ${className}` : cls} {...rest} />;

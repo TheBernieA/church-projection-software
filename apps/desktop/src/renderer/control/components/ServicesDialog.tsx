@@ -63,11 +63,12 @@ export function ServicesDialog() {
                   key={s.id}
                   className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-[var(--surface-2)]"
                 >
-                  <span
-                    className={`flex-1 truncate ${s.id === current?.id ? 'font-semibold text-[var(--accent)]' : ''}`}
+                  <Typography
+                    truncate
+                    className={`flex-1 ${s.id === current?.id ? 'font-semibold text-[var(--accent)]' : ''}`}
                   >
                     {s.name}
-                  </span>
+                  </Typography>
                   <Typography size={11} tone="muted">
                     {s.itemCount} · {s.updatedAt.slice(0, 10)}
                   </Typography>

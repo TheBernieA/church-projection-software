@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Check } from 'lucide-react';
 import { DeferredInput } from '../DeferredControls';
-import { Typography } from '@lampstand/ui';
+import { Typography, Button } from '@lampstand/ui';
 
 /** One settings page: title, one-line intro, optional header action, then groups. */
 export function SettingsPage({
@@ -158,9 +158,9 @@ export function ThemeTiles({
         ? { bg: '#0c0e13', panel: '#1a1e27', line: '#2c3242' }
         : { bg: '#e9ebf0', panel: '#ffffff', line: '#d9dde7' };
     return (
-      <button
+      <Button
+        variant="bare"
         key={mode}
-        type="button"
         role="radio"
         aria-checked={on}
         onClick={() => onChange(mode)}
@@ -200,7 +200,7 @@ export function ThemeTiles({
         >
           {labels[mode]}
         </Typography>
-      </button>
+      </Button>
     );
   };
   return (

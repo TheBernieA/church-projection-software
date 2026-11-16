@@ -13,7 +13,42 @@ const sources = (dir: string): string[] =>
 const control = join(__dirname, '..');
 const ui = join(__dirname, '..', '..', '..', '..', '..', '..', 'packages', 'ui', 'src');
 
+const files = (): { path: string; text: string }[] =>
+  [...sources(control), ...sources(ui)].map((path) => ({ path, text: readFileSync(path, 'utf8') }));
+const lineOf = (text: string, index: number): number => text.slice(0, index).split('\n').length;
+
+/** Text styling that belongs in Typography props, not hand-written classes. */
+const TYPO_CLASS =
+  /(?:^|\s)(?:font-(?:normal|medium|semibold|bold)|text-\[var\(--text-[123]\)\]|text-white|tnum|leading-(?:none|tight|snug|normal|relaxed)|uppercase|truncate|italic|font-mono)(?=\s|$)/;
+const TEXT_TAGS =
+  'p|span|h[1-6]|label|li|td|th|strong|small|em|code|summary|legend|figcaption|dt|dd';
+
+describe('one Button for every button', () => {
+  it('no raw <button> outside Button.tsx; use <Button> (variant="bare" for self-styled surfaces)', () => {
+    const offenders = files()
+      .filter(({ path }) => !path.endsWith('Button.tsx'))
+      .flatMap(({ path, text }) =>
+        [...text.matchAll(/<button[\s>]/g)].map((m) => `${path}:${lineOf(text, m.index)}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('typography has a single source of truth', () => {
+  it('text elements take their style from <Typography>, not hand-written classes', () => {
+    const tag = new RegExp(
+      `<(?:${TEXT_TAGS})\\s[^>]*?className=(?:"([^"]*)"|\\{\`([^\`]*)\`\\})`,
+      'g',
+    );
+    const offenders = files().flatMap(({ path, text }) =>
+      [...text.matchAll(tag)]
+        // Only the fixed part of the class list: conditional styling (`${…}`) may stay.
+        .filter((m) => TYPO_CLASS.test((m[1] ?? m[2] ?? '').replace(/\$\{[^}]*\}/g, ' ')))
+        .map((m) => `${path}:${lineOf(text, m.index)}`),
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it('only Typography.tsx spells out text sizes; everything else uses <Typography> or typographyClass()', () => {
     const offenders = [...sources(control), ...sources(ui)]
       .filter((p) => !p.endsWith('Typography.tsx'))

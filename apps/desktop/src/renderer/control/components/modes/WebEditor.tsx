@@ -64,11 +64,12 @@ export function WebEditor({ item }: { item: WebItem }) {
                 updateItem<WebItem>(item.id, (x) => ({ ...x, url: next }), { typing: true });
             }}
           />
-          <span
-            className={`font-normal ${valid ? 'text-[var(--text-3)]' : 'text-[var(--warning)]'}`}
+          <Typography
+            weight="regular"
+            className={valid ? 'text-[var(--text-3)]' : 'text-[var(--warning)]'}
           >
             {valid ? t('web.help') : t('web.invalid')}
-          </span>
+          </Typography>
         </Typography>
       </div>
       <div className="w-full max-w-xl overflow-hidden rounded-[4px] shadow-[0_0_0_1px_var(--hairline-strong)]">

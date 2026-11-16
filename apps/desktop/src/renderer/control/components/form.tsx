@@ -162,7 +162,9 @@ export function RangeField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="h-1.5 cursor-pointer accent-[var(--accent)]"
       />
-      <span className="tnum text-right text-[var(--text-3)]">{format(value)}</span>
+      <Typography tone="muted" tabular className="text-right">
+        {format(value)}
+      </Typography>
     </Typography>
   );
 }
@@ -201,7 +203,7 @@ export function Checkbox({
     <label className={`flex cursor-pointer items-start gap-2 ${className}`}>
       {box}
       <span>
-        <span className="font-medium">{label}</span>
+        <Typography weight="medium">{label}</Typography>
         <Typography size={12} tone="secondary" className="block">
           {description}
         </Typography>

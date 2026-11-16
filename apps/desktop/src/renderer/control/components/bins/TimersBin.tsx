@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Film, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
-import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
+import { Button, Segmented, Typography } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
@@ -46,12 +46,23 @@ function TimerCard({
         deleteLabel={t('timers.delete', { name: def.name })}
         onDelete={onDelete}
       />
-      <div
-        className={`${typographyClass({ size: 26, weight: 'bold', leading: 'none', tabular: true })} ${over ? 'text-[var(--tally-program)]' : run?.running ? 'text-[var(--text-1)]' : 'text-[var(--text-2)]'}`}
+      <Typography
+        as="div"
+        size={26}
+        weight="bold"
+        leading="none"
+        tabular
+        className={
+          over
+            ? 'text-[var(--tally-program)]'
+            : run?.running
+              ? 'text-[var(--text-1)]'
+              : 'text-[var(--text-2)]'
+        }
         data-testid={`timer-${def.id}`}
       >
         {formatTimer(secs, def.kind)}
-      </div>
+      </Typography>
       <div className="flex gap-1">
         {run?.running ? (
           <Button

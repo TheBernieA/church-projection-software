@@ -148,10 +148,14 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
           />
         )}
         {item && loading && (
-          <p className="p-6 text-center text-[var(--text-3)]">{t('slides.loading')}</p>
+          <Typography as="p" tone="muted" className="p-6 text-center">
+            {t('slides.loading')}
+          </Typography>
         )}
         {item && !loading && slides.length === 0 && (
-          <p className="p-6 text-center text-[var(--text-3)]">{t('slides.noSlides')}</p>
+          <Typography as="p" tone="muted" className="p-6 text-center">
+            {t('slides.noSlides')}
+          </Typography>
         )}
         {item && easy && (
           <ol aria-label={t('slides.list')} className="flex flex-col gap-1.5">

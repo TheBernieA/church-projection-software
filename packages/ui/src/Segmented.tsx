@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { typographyClass } from './Typography';
+import { Button } from './Button';
 
 export interface SegmentedProps<T extends string> {
   value: T;
@@ -22,9 +23,9 @@ export function Segmented<T extends string>({
       className="inline-flex rounded-[var(--radius-control)] bg-[var(--surface-1)] p-0.5 shadow-[inset_0_0_0_1px_var(--hairline)]"
     >
       {options.map((o) => (
-        <button
+        <Button
+          variant="bare"
           key={o.value}
-          type="button"
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
@@ -36,7 +37,7 @@ export function Segmented<T extends string>({
         >
           {o.icon && <span className="-ml-0.5 inline-flex">{o.icon}</span>}
           {o.label}
-        </button>
+        </Button>
       ))}
     </div>
   );

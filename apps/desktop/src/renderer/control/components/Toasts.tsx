@@ -33,7 +33,7 @@ export function Toasts() {
             className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
           >
             <Icon size={15} className="mt-px shrink-0" style={{ color: TONE[x.level] }} />
-            <span className="leading-snug">{x.text}</span>
+            <Typography leading="snug">{x.text}</Typography>
           </Typography>
         );
       })}

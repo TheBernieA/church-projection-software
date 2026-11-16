@@ -1,5 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { SoonBadge, Typography } from '@lampstand/ui';
+import { SoonBadge, Typography, Button } from '@lampstand/ui';
 
 /**
  * A toolbar item in the operator-console style: icon above a small label. `pressed` marks the
@@ -17,9 +17,9 @@ export const ToolbarButton = forwardRef<
   }
 >(function ToolbarButton({ icon, label, pressed, soon, badge, className = '', ...rest }, ref) {
   return (
-    <button
+    <Button
+      variant="bare"
       ref={ref}
-      type="button"
       aria-pressed={pressed}
       disabled={soon || rest.disabled}
       className={`relative flex h-[46px] min-w-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[3px] rounded-[6px] px-1.5 transition-colors duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-default ${
@@ -43,6 +43,6 @@ export const ToolbarButton = forwardRef<
           <SoonBadge />
         </span>
       )}
-    </button>
+    </Button>
   );
 });

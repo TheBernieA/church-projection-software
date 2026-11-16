@@ -23,18 +23,19 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
   const { t } = useTranslation();
   const f = feature(id);
   return (
-    <span
+    <Typography
+      tone="muted"
       role="img"
       aria-label={`${f.name} (${t('soon.badge')})`}
       title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
-      className="relative flex h-6 w-6 items-center justify-center text-[var(--text-3)]"
+      className="relative flex h-6 w-6 items-center justify-center"
     >
       {icon}
       <span
         aria-hidden
         className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--soon)]"
       />
-    </span>
+    </Typography>
   );
 }
 
@@ -120,8 +121,9 @@ function ItemSection({
           selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-1)]'
         }`}
       >
-        <button
-          type="button"
+        <Button
+          variant="bare"
+
           onClick={select}
           className="flex min-w-0 cursor-pointer items-center gap-2 text-left"
         >
@@ -132,7 +134,7 @@ function ItemSection({
           <Typography variant="caption" className="shrink-0">
             {t('slides.count', { count: slides.length })}
           </Typography>
-        </button>
+        </Button>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
           <SoonTool id="transitions" icon={<Shuffle size={14} />} />

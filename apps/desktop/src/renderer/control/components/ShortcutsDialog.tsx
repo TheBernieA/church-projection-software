@@ -41,8 +41,9 @@ export function ShortcutsDialog() {
             <tr key={a} className="border-b border-[var(--border)] last:border-0">
               <td className="py-1.5">{t(`shortcuts.action.${a}`)}</td>
               <td className="py-1.5 text-right">
-                <button
-                  type="button"
+                <Button
+                  variant="bare"
+
                   className="rounded px-1 hover:bg-[var(--surface-2)]"
                   onClick={() => setRecording(a)}
                   onKeyDown={(e) => recording === a && record(a, e)}
@@ -53,7 +54,7 @@ export function ShortcutsDialog() {
                   ) : (
                     <Kbd>{displayCombo(map[a])}</Kbd>
                   )}
-                </button>
+                </Button>
               </td>
             </tr>
           ))}

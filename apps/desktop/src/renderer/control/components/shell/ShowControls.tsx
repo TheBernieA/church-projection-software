@@ -8,7 +8,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { SoonBadge } from '@lampstand/ui';
+import { SoonBadge, Button } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
 import { MessagesBin, StageMessage } from '../bins/MessagesBin';
@@ -49,9 +49,9 @@ export function ShowControls() {
             ? `${t('soon.tooltip', { name })}. ${feature(soon[0] ?? '').description}`
             : name;
           return (
-            <button
+            <Button
+              variant="bare"
               key={x}
-              type="button"
               role="tab"
               aria-selected={on}
               aria-pressed={on}
@@ -70,7 +70,7 @@ export function ShowControls() {
                   <SoonBadge label={t('soon.badge')} />
                 </span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>

@@ -27,9 +27,9 @@ function Thumb({ m }: { m: MediaItem }) {
       loading="lazy"
     />
   ) : (
-    <div className="flex h-full w-full items-center justify-center text-[var(--text-3)]">
+    <Typography as="div" tone="muted" className="flex h-full w-full items-center justify-center">
       {m.kind}
-    </div>
+    </Typography>
   );
 }
 

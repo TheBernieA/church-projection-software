@@ -66,7 +66,9 @@ export function ThemesPanel() {
             mode="thumbnail"
           />
           <div className="flex items-center gap-1 px-3 pt-2.5">
-            <span className="truncate font-medium">{th.name}</span>
+            <Typography weight="medium" truncate>
+              {th.name}
+            </Typography>
             {th.builtIn && <Badge>{t('theme.builtIn')}</Badge>}
             <span className="ml-auto" />
             {th.builtIn ? (
@@ -96,7 +98,7 @@ export function ThemesPanel() {
             size={12}
             className="flex flex-wrap items-center gap-1 px-3 pb-3 pt-1.5"
           >
-            <span className="text-[var(--text-3)]">{t('theme.useFor')}:</span>
+            <Typography tone="muted">{t('theme.useFor')}:</Typography>
             {kinds.map((k) => (
               <Button
                 key={k}

@@ -2,14 +2,29 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { typographyClass } from './Typography';
 
 export type ButtonVariant =
-  'primary' | 'secondary' | 'ghost' | 'quiet' | 'link' | 'live' | 'preview' | 'danger' | 'subtle';
+  | 'primary'
+  | 'secondary'
+  | 'ghost'
+  | 'quiet'
+  | 'link'
+  | 'live'
+  | 'preview'
+  | 'danger'
+  | 'subtle'
+  | 'bare';
 
 const base =
   'inline-flex cursor-pointer items-center justify-center gap-2 font-medium select-none whitespace-nowrap ' +
   'transition-[background-color,color,box-shadow,transform,filter] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:scale-[0.97] ' +
   'focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100';
 
-const variants: Record<ButtonVariant, string> = {
+/**
+ * `bare`: the button's behaviour (type, ref, disabled cursor) with no look of its own, for
+ * clickable surfaces that style themselves: slide cards, tiles, grid cells, tabs, list rows.
+ */
+const BARE = 'cursor-pointer disabled:cursor-default';
+
+const variants: Record<Exclude<ButtonVariant, 'bare'>, string> = {
   primary:
     'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_1px_0_rgba(255,255,255,0.25)_inset,0_1px_2px_rgba(0,0,0,0.4)] hover:brightness-110',
   secondary:
@@ -54,7 +69,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={
+        variant === 'bare'
+          ? `${BARE} ${className}`
+          : `${base} ${variants[variant]} ${sizes[size]} ${className}`
+      }
       {...rest}
     >
       {icon}

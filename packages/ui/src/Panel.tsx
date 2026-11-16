@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Typography, typographyClass } from './Typography';
+import { Button } from './Button';
 
 /** Panel header: sentence-case title (13px semibold), optional icon, actions on the right. */
 export function PanelHeader({
@@ -16,7 +17,7 @@ export function PanelHeader({
   return (
     <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[var(--hairline)] px-4">
       <div className="flex min-w-0 items-center gap-2">
-        {icon && <span className="text-[var(--text-3)]">{icon}</span>}
+        {icon && <Typography tone="muted">{icon}</Typography>}
         <Typography as="h2" size={13} tone="primary" weight="semibold" truncate>
           {title}
         </Typography>
@@ -80,8 +81,9 @@ export function ToggleChip({
   className?: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="bare"
+
       aria-pressed={on}
       onClick={onClick}
       title={hint ? `${label} (${hint})` : label}
@@ -92,13 +94,13 @@ export function ToggleChip({
       } ${className}`}
     >
       {icon}
-      <span className="truncate">{label}</span>
+      <Typography truncate>{label}</Typography>
       {hint && (
         <Typography size={11} tone={on ? 'inherit' : 'muted'} className={on ? 'text-white/75' : ''}>
           {hint}
         </Typography>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -113,12 +115,15 @@ export function TallyTag({
   className?: string;
 }) {
   return (
-    <span
-      className={`absolute right-1.5 top-1.5 rounded-[4px] px-1.5 py-px tracking-[0.06em] shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${typographyClass({ size: 10, tone: 'white', weight: 'bold' })} ${
+    <Typography
+      size={10}
+      tone="white"
+      weight="bold"
+      className={`absolute right-1.5 top-1.5 rounded-[4px] px-1.5 py-px tracking-[0.06em] shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${
         tone === 'program' ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'
       } ${className}`}
     >
       {children}
-    </span>
+    </Typography>
   );
 }

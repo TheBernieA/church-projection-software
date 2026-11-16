@@ -20,14 +20,15 @@ export function AddCard({
   icon?: ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="bare"
+
       onClick={onClick}
       className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${typographyClass({ size: 12, tone: 'muted', weight: 'medium' })} ${className}`}
     >
       {icon}
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -132,8 +133,9 @@ export function Tile({
   children: ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="bare"
+
       className={`group/tile block w-full cursor-pointer text-left focus-visible:outline-none ${className}`}
       {...rest}
     >
@@ -155,6 +157,6 @@ export function Tile({
       >
         {label}
       </Typography>
-    </button>
+    </Button>
   );
 }

@@ -2,7 +2,7 @@ import type { MouseEvent } from 'react';
 import { Film, Globe, Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Scene } from '@lampstand/core';
-import { TallyTag, Typography } from '@lampstand/ui';
+import { TallyTag, Typography, Button } from '@lampstand/ui';
 import { groupColor } from '../../lib/slides';
 import { SceneView } from '../SceneView';
 import { type PresentableSlide } from '../../types';
@@ -105,8 +105,9 @@ export function SlideCard({
   const color = groupColor(slide.group);
   return (
     <li>
-      <button
-        type="button"
+      <Button
+        variant="bare"
+
         onClick={onClick}
         onDoubleClick={onDoubleClick}
         onContextMenu={onContextMenu}
@@ -137,10 +138,12 @@ export function SlideCard({
               : { background: 'var(--surface-3)', color: 'var(--text-2)' }
           }
         >
-          <span className="tnum shrink-0">{index + 1}</span>
-          <span className="truncate">{slide.label}</span>
+          <Typography tabular className="shrink-0">
+            {index + 1}
+          </Typography>
+          <Typography truncate>{slide.label}</Typography>
         </Typography>
-      </button>
+      </Button>
     </li>
   );
 }
@@ -155,8 +158,9 @@ export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardPr
   const text = slideText(slide);
   return (
     <li>
-      <button
-        type="button"
+      <Button
+        variant="bare"
+
         onClick={onClick}
         onDoubleClick={onDoubleClick}
         aria-label={label}
@@ -198,7 +202,7 @@ export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardPr
           )}
         </span>
         <Tags state={state} inline />
-      </button>
+      </Button>
     </li>
   );
 }

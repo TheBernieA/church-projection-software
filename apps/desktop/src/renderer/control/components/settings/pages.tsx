@@ -13,7 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch, Typography, IconButton, typographyClass } from '@lampstand/ui';
+import { Button, Segmented, Switch, Typography, IconButton } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
@@ -128,15 +128,17 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
             {t('sidebar.playlists')}
           </Typography>
           {rows.map((r, i) => (
-            <p
+            <Typography
+              as="p"
+              size={13}
               key={r}
-              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 ${typographyClass({ size: 13 })} ${
+              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 ${
                 i === 1 ? 'bg-[var(--select)] text-white' : 'text-[var(--text-1)]'
               }`}
             >
               <ListMusic size={14} className="shrink-0 opacity-80" />
-              <span className="truncate">{r}</span>
-            </p>
+              <Typography truncate>{r}</Typography>
+            </Typography>
           ))}
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
@@ -516,14 +518,14 @@ export function PackagesPage() {
             items.map((m) => (
               <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <IconTile icon={kind === 'bible' ? BookOpen : ListMusic} size={36} />
-                <span className="flex min-w-0 flex-1 flex-col leading-tight">
+                <Typography leading="tight" className="flex min-w-0 flex-1 flex-col">
                   <Typography variant="label" truncate>
                     {m.name}
                   </Typography>
                   <Typography variant="caption" truncate>
                     {m.detail}
                   </Typography>
-                </span>
+                </Typography>
                 <Typography
                   size={11}
                   tone="secondary"

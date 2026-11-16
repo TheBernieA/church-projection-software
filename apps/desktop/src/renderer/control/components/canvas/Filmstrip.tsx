@@ -8,6 +8,7 @@ import { updateItem, useStore } from '../../lib/store';
 import { AddCard } from '../cards';
 import { SceneView } from '../SceneView';
 import { type TextItem } from '../../types';
+import { Button } from '@lampstand/ui';
 
 /** The item's slides as a strip of small thumbnails: pick the slide the canvas edits. */
 export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
@@ -31,8 +32,9 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
     >
       {scenes.map((scene, i) => (
         <li key={slides[i]?.key ?? i} className="w-36 shrink-0">
-          <button
-            type="button"
+          <Button
+            variant="bare"
+
             aria-current={i === index || undefined}
             aria-label={t('inspector.slideOf', { n: i + 1, total: scenes.length })}
             onClick={() => pick(i)}
@@ -43,7 +45,7 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
             }}
           >
             <SceneView scene={scene} mode="thumbnail" />
-          </button>
+          </Button>
         </li>
       ))}
       <li>

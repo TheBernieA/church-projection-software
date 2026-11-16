@@ -18,7 +18,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, Kbd, Typography, typographyClass } from '@lampstand/ui';
+import { Button, Kbd, Typography } from '@lampstand/ui';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { openDialog, useStore } from '../../lib/store';
@@ -43,19 +43,21 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
       data-step={step.id}
       data-done={step.done === undefined ? undefined : String(step.done)}
     >
-      <span
+      <Typography
+        size={12}
+        weight="semibold"
         aria-hidden
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${typographyClass({ size: 12, weight: 'semibold' })} ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${
           step.done
             ? 'bg-[var(--accent)] text-[var(--accent-ink)]'
             : 'bg-[var(--surface-3)] text-[var(--text-2)]'
         }`}
       >
         {step.done ? <Check size={14} strokeWidth={3} /> : n}
-      </span>
+      </Typography>
       <div className="min-w-0 flex-1">
         <Typography as="p" variant="label" className="flex items-center gap-2">
-          <span className="text-[var(--text-3)]">{step.icon}</span>
+          <Typography tone="muted">{step.icon}</Typography>
           {title}
           {step.done && <span className="sr-only"> (done)</span>}
         </Typography>
@@ -323,7 +325,9 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
               key={k}
               className="flex items-center justify-between gap-3"
             >
-              <span className="truncate text-[var(--text-2)]">{t(`shortcuts.action.${k}`)}</span>
+              <Typography tone="secondary" truncate>
+                {t(`shortcuts.action.${k}`)}
+              </Typography>
               <Kbd>{displayCombo(keys[k])}</Kbd>
             </Typography>
           ))}

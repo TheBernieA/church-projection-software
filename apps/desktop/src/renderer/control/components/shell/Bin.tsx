@@ -80,7 +80,7 @@ export function Bin({ height }: { height: number }) {
           {current && current.tab !== 'media' && (
             <>
               <ChevronRight size={12} className="text-[var(--text-3)]" />
-              <span className="text-[var(--text-1)]">{t(`bin.tabs.${current.tab}`)}</span>
+              <Typography tone="primary">{t(`bin.tabs.${current.tab}`)}</Typography>
             </>
           )}
         </Typography>

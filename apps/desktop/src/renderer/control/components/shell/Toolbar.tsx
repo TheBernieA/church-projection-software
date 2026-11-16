@@ -141,12 +141,12 @@ function StatusMenu() {
           sideOffset={4}
           className={`${MENU_CLASS} w-[260px] p-3 ${typographyClass({ size: 12 })}`}
         >
-          <p className="flex items-center justify-between font-semibold">
+          <Typography as="p" weight="semibold" className="flex items-center justify-between">
             <span>{onAir ? t('toolbar.onAir') : t('toolbar.offAir')}</span>
-            <span className="tnum text-[var(--text-2)]">
+            <Typography tone="secondary" tabular>
               {onAir && since ? formatClock(secondsSince(since, now), { hours: 'always' }) : ''}
-            </span>
-          </p>
+            </Typography>
+          </Typography>
           <Typography as="p" variant="overline" className="mt-2">
             {t('toolbar.outputs')}
           </Typography>
@@ -159,17 +159,23 @@ function StatusMenu() {
               outputs.map((d) => (
                 <li key={d.id} className="flex justify-between gap-2">
                   <span>{t(`outputs.role.${d.role}`)}</span>
-                  <span className="truncate text-[var(--text-3)]">{d.label}</span>
+                  <Typography tone="muted" truncate>
+                    {d.label}
+                  </Typography>
                 </li>
               ))
             )}
           </ul>
-          <p className="mt-2 flex justify-between border-t border-[var(--hairline)] pt-2 text-[var(--text-2)]">
+          <Typography
+            as="p"
+            tone="secondary"
+            className="mt-2 flex justify-between border-t border-[var(--hairline)] pt-2"
+          >
             <span>{saving ? t('toolbar.saving') : t('toolbar.saved')}</span>
-            <span className="tnum">
+            <Typography tabular>
               {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </p>
+            </Typography>
+          </Typography>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -295,8 +301,10 @@ export function Toolbar() {
         className="mx-1.5 h-8 w-px bg-[color-mix(in_srgb,var(--text-1)_10%,transparent)]"
       />
 
-      <label
-        className="flex h-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[3px] rounded-[6px] px-1.5 text-[var(--text-2)] hover:bg-[color-mix(in_srgb,var(--text-1)_7%,transparent)]"
+      <Typography
+        as="label"
+        tone="secondary"
+        className="flex h-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[3px] rounded-[6px] px-1.5 hover:bg-[color-mix(in_srgb,var(--text-1)_7%,transparent)]"
         title={t('top.previewFirstHelp')}
       >
         <span className="flex h-[22px] items-center">
@@ -309,7 +317,7 @@ export function Toolbar() {
         <Typography size={11} leading="none">
           {t('toolbar.preview')}
         </Typography>
-      </label>
+      </Typography>
       <ToolbarButton
         icon={<Settings size={20} />}
         label={t('toolbar.settings')}

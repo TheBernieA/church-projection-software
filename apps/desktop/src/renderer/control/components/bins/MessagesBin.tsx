@@ -169,7 +169,7 @@ export function StageMessage() {
           size={12}
           className="flex items-center justify-between gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-2.5 py-1.5"
         >
-          <span className="truncate">“{current.text}”</span>
+          <Typography truncate>“{current.text}”</Typography>
           <Button
             size="xs"
             variant="ghost"

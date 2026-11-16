@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
 import { stripChords } from '@lampstand/lyrics';
-import { IconButton, Typography, typographyClass } from '@lampstand/ui';
+import { IconButton, Typography, typographyClass, Button } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { addItemToService, useStore } from '../lib/store';
@@ -113,8 +113,9 @@ export function SongList({ hymns }: { hymns: boolean }) {
                 className="group absolute left-0 right-0 flex items-center gap-1 pr-1"
                 style={{ top: row.start, height: row.size }}
               >
-                <button
-                  type="button"
+                <Button
+                  variant="bare"
+
                   className={`flex h-[46px] min-w-0 flex-1 items-center gap-3 rounded-[8px] px-2.5 text-left transition-colors ${active ? 'bg-[var(--surface-3)]' : 'hover:bg-[var(--surface-2)]'}`}
                   onClick={() => void openAdhoc(item, 'select')}
                   onDoubleClick={() => addToService({ ...item, id: newId() })}
@@ -130,15 +131,15 @@ export function SongList({ hymns }: { hymns: boolean }) {
                       {s.hymnNumber[0].number}
                     </Typography>
                   )}
-                  <span className="flex min-w-0 flex-col leading-tight">
+                  <Typography leading="tight" className="flex min-w-0 flex-col">
                     <Typography variant="label" truncate>
                       {s.title}
                     </Typography>
                     <Typography variant="caption" truncate>
                       {stripChords(s.sections[0]?.lines[0] ?? '')}
                     </Typography>
-                  </span>
-                </button>
+                  </Typography>
+                </Button>
                 <IconButton
                   size="xs"
                   className={REVEAL}

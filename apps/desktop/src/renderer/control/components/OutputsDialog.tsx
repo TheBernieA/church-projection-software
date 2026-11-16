@@ -34,7 +34,9 @@ export function OutputsDialog() {
 
   return (
     <Dialog name="outputs" title={t('outputs.title')}>
-      <p className="mb-4 text-[var(--text-2)]">{t('outputs.help')}</p>
+      <Typography as="p" tone="secondary" className="mb-4">
+        {t('outputs.help')}
+      </Typography>
       <ul className="space-y-2">
         {displays.map((d) => {
           const outputId = `display-${d.id}`;
@@ -53,7 +55,9 @@ export function OutputsDialog() {
                 {d.width}×{d.height}
               </Typography>
               <div className="min-w-0 flex-1">
-                <div className="truncate font-medium">{d.label}</div>
+                <Typography as="div" weight="medium" truncate>
+                  {d.label}
+                </Typography>
                 <Typography as="div" size={11} tone="muted">
                   {[d.isControl && t('outputs.control'), d.isPrimary && t('outputs.primary')]
                     .filter(Boolean)

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type Overlay, type PropPosition } from '@lampstand/core';
-import { IconButton, TallyTag, Typography } from '@lampstand/ui';
+import { IconButton, TallyTag, Typography, Button } from '@lampstand/ui';
 import { hideOverlay, showOverlay } from '../../lib/actions';
 import {
   isPicture,
@@ -49,8 +49,9 @@ function PropCard({
   );
   return (
     <div className="group flex w-[168px] shrink-0 flex-col gap-1.5">
-      <button
-        type="button"
+      <Button
+        variant="bare"
+
         aria-pressed={on}
         aria-label={prop.name}
         onClick={() =>
@@ -67,7 +68,7 @@ function PropCard({
           </Typography>
         )}
         {on && <TallyTag tone="program">LIVE</TallyTag>}
-      </button>
+      </Button>
       <div className="flex items-center gap-1">
         <Typography size={12} weight="medium" truncate className="min-w-0 flex-1">
           {prop.name}

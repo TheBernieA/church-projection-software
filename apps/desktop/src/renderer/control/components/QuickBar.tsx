@@ -266,11 +266,12 @@ const ROW_ICONS = { references: BookOpen, songs: Music, verses: TextQuote, comma
 function RowIcon({ group }: { group: Row['group'] }) {
   const Icon = ROW_ICONS[group];
   return (
-    <span
+    <Typography
+      tone="secondary"
       aria-hidden
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-2)] text-[var(--text-2)]"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-2)]"
     >
       <Icon size={15} />
-    </span>
+    </Typography>
   );
 }

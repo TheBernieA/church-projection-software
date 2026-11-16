@@ -16,7 +16,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { formatPassage } from '@lampstand/scripture';
-import { IconButton, Typography, typographyClass } from '@lampstand/ui';
+import { IconButton, Typography, typographyClass, Button } from '@lampstand/ui';
 import { importSlides } from '../lib/importSlides';
 import { itemTitle, sectionColor } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
@@ -178,13 +178,16 @@ export function ServicePanel() {
         }}
       >
         {items.length === 0 && (
-          <li
+          <Typography
+            as="li"
+            size={13}
+            tone="muted"
             onDragOver={(e) => trackOver(e, 0)}
             onDrop={drop}
-            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center ${typographyClass({ size: 13, tone: 'muted' })} ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
+            className={`mx-2 rounded-[var(--radius-card)] border border-dashed p-5 text-center ${incoming ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--hairline-strong)]'}`}
           >
             {t('service.empty')}
-          </li>
+          </Typography>
         )}
         {items.map((item, i) => {
           const dropLine =
@@ -213,14 +216,15 @@ export function ServicePanel() {
                     onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
                   />
                 ) : (
-                  <button
-                    type="button"
+                  <Button
+                    variant="bare"
+
                     onDoubleClick={() => setEditing(item.id)}
                     title={t('service.renameHint')}
                     className={`min-w-0 flex-1 text-left ${typographyClass({ size: 12, tone: 'white', weight: 'semibold', truncate: true })}`}
                   >
                     {item.label}
-                  </button>
+                  </Button>
                 )}
                 <ItemMenu index={i} items={items} update={update} item={item} bg="band" />
               </li>
@@ -253,8 +257,9 @@ export function ServicePanel() {
                   aria-hidden
                   className="ml-0.5 shrink-0 text-[var(--text-3)] opacity-0 transition-opacity group-hover:opacity-100"
                 />
-                <button
-                  type="button"
+                <Button
+                  variant="bare"
+
                   className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
                   onClick={() => useStore.setState({ selectedItemId: item.id, adhoc: null })}
                   aria-current={isSel}
@@ -269,7 +274,7 @@ export function ServicePanel() {
                       {subtitle(item)}
                     </Typography>
                   </span>
-                </button>
+                </Button>
                 {isLive && (
                   <Typography
                     size={10}
@@ -397,9 +402,12 @@ export function AddMenu({
                 onSelect={e.run}
                 className="flex cursor-pointer items-start gap-2.5 rounded-[8px] px-2.5 py-2 outline-none data-[highlighted]:bg-[var(--surface-3)]"
               >
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-3)] text-[var(--text-2)]">
+                <Typography
+                  tone="secondary"
+                  className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-3)]"
+                >
                   {e.icon}
-                </span>
+                </Typography>
                 <span className="min-w-0">
                   <Typography size={13} tone="primary" weight="medium" className="block">
                     {e.label}
