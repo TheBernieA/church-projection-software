@@ -33,6 +33,35 @@ export const PreviewSchema = z.object({
 });
 export type Preview = z.infer<typeof PreviewSchema>;
 
+/**
+ * What the last clear took off each layer, so the operator can bring it back with one click
+ * (the layer buttons beside the monitor become "restore" while the layer is empty).
+ */
+export const ClearedLayersSchema = z.object({
+  content: z
+    .object({
+      content: ContentLayerSchema.nullable(),
+      web: WebLayerSchema.nullable(),
+      next: ContentLayerSchema.nullable(),
+    })
+    .optional(),
+  /** Paused-in-time copy: `position` is where the video was when it was cleared. */
+  media: MediaLayerSchema.optional(),
+  background: BackgroundLayerSchema.optional(),
+  messages: z.array(OverlaySchema).max(10).optional(),
+  props: z.array(OverlaySchema).max(10).optional(),
+});
+export type ClearedLayers = z.infer<typeof ClearedLayersSchema>;
+
+export const RestorableLayerSchema = z.enum([
+  'content',
+  'media',
+  'background',
+  'messages',
+  'props',
+]);
+export type RestorableLayer = z.infer<typeof RestorableLayerSchema>;
+
 export const LiveStateSchema = z.object({
   revision: z.number().int(),
   preview: PreviewSchema,
@@ -48,6 +77,7 @@ export const LiveStateSchema = z.object({
   stream: z.object({ status: z.enum(['idle', 'live', 'error']) }),
   /** Timers that have been started (shown in the Timers bin and on the stage display). */
   timers: z.array(LiveTimerSchema).max(20).default([]),
+  cleared: ClearedLayersSchema.default({}),
 });
 export type LiveState = z.infer<typeof LiveStateSchema>;
 
@@ -63,6 +93,7 @@ export function initialLiveState(): LiveState {
     detection: { mode: 'off' },
     stream: { status: 'idle' },
     timers: [],
+    cleared: {},
   };
 }
 
@@ -139,6 +170,79 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
         overlays: [],
         masks: EMPTY_MASKS,
       };
+  }
+}
+
+/** The layers a clear empties (`overlays` = messages and props). */
+const CLEARS: Record<Layer, RestorableLayer[]> = {
+  content: ['content'],
+  media: ['media'],
+  background: ['background'],
+  overlays: ['messages', 'props'],
+  messages: ['messages'],
+  props: ['props'],
+  all: ['content', 'media', 'background', 'messages', 'props'],
+  panic: ['content', 'media', 'messages', 'props'],
+};
+
+/**
+ * Remember what a clear is about to remove. Only layers that have something are remembered, so
+ * clearing an already-empty layer never forgets what could still be brought back.
+ */
+export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): ClearedLayers {
+  const p = s.program;
+  const out: ClearedLayers = { ...s.cleared };
+  for (const l of CLEARS[layer]) {
+    if (l === 'content' && (p.content || p.web))
+      out.content = { content: p.content, web: p.web ?? null, next: s.next };
+    if (l === 'media' && p.media)
+      out.media = { ...p.media, position: mediaPositionAt(p.media, nowMs) };
+    if (l === 'background' && p.background) out.background = p.background;
+    if (l === 'messages' || l === 'props') {
+      const group = p.overlays.filter((o) => overlayGroup(o) === l);
+      if (group.length) out[l] = group;
+    }
+  }
+  return out;
+}
+
+/** Put a remembered layer back on screen (and forget it). Unchanged if nothing is remembered. */
+export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: string): LiveState {
+  const c = s.cleared;
+  // Forget the layer once it's back.
+  const cleared = Object.fromEntries(
+    Object.entries(c).filter(([k]) => k !== layer),
+  ) as ClearedLayers;
+  const program = s.program;
+  switch (layer) {
+    case 'content':
+      if (!c.content) return s;
+      // Text and full-screen media are both "the slide": bringing one back replaces the other.
+      return {
+        ...s,
+        cleared,
+        next: c.content.next,
+        program: { ...program, content: c.content.content, web: c.content.web, media: null },
+      };
+    case 'media':
+      if (!c.media) return s;
+      return {
+        ...s,
+        cleared,
+        // It carries on from where it was cleared.
+        program: { ...program, media: { ...c.media, syncedAt: nowIso }, content: null, web: null },
+      };
+    case 'background':
+      if (!c.background) return s;
+      return { ...s, cleared, program: { ...program, background: c.background } };
+    case 'messages':
+    case 'props': {
+      const back = c[layer];
+      if (!back) return s;
+      const ids = new Set(back.map((o) => o.id));
+      const overlays = [...program.overlays.filter((o) => !ids.has(o.id)), ...back].slice(-10);
+      return { ...s, cleared, program: { ...program, overlays } };
+    }
   }
 }
 
@@ -242,9 +346,20 @@ export function registerLiveCommands(
     handle: (p) => {
       store.update((s) => ({
         ...s,
+        cleared: rememberCleared(s, p.layer, Date.parse(now())),
         program: clearLayer(s.program, p.layer),
         next: p.layer === 'content' || p.layer === 'all' || p.layer === 'panic' ? null : s.next,
       }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.restoreLayer',
+    schema: z.object({ layer: RestorableLayerSchema }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => restoreLayer(s, p.layer, now()));
       return { result: null };
     },
   });

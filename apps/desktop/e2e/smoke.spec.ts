@@ -1053,6 +1053,27 @@ test('Escape (panic) clears text but keeps the background', async () => {
   });
 });
 
+test('a cleared layer comes back with one click', async () => {
+  const out = await outputPage();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+  // Clear the slide: the button turns into "Bring back", and the verse returns.
+  await control.getByRole('button', { name: 'Clear Slide', exact: true }).click();
+  await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
+  const back = control.getByRole('button', { name: 'Bring back Slide', exact: true });
+  await expect(back).toBeEnabled();
+  await control.screenshot({ path: 'test-results/24-restore-layer.png' });
+  await back.click();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world', {
+    timeout: 5000,
+  });
+  await expect(control.getByRole('button', { name: 'Clear Slide', exact: true })).toBeEnabled();
+  // The same for the background.
+  await control.getByRole('button', { name: 'Clear Background', exact: true }).click();
+  await expect(out.locator('.ls-bg')).toHaveCount(0, { timeout: 5000 });
+  await control.getByRole('button', { name: 'Bring back Background', exact: true }).click();
+  await expect(out.locator('.ls-bg')).toHaveCount(1, { timeout: 5000 });
+});
+
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {
   await mode('Show');
   const out = await outputPage();

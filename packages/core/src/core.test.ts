@@ -165,6 +165,48 @@ describe('live commands', () => {
     expect(clearLayer(full, 'all').background).toBeNull();
   });
 
+  it('a cleared layer can be brought back, and only once', async () => {
+    const { store, run } = setup();
+    const bg = { ref: { kind: 'color' as const, color: '#112233' } };
+    await run('live.goLive', { content: content('verse'), background: bg });
+    await run('live.clearLayer', { layer: 'content' });
+    expect(store.get().program.content).toBeNull();
+    expect(store.get().cleared.content?.content?.key).toBe('verse');
+    await run('live.restoreLayer', { layer: 'content' });
+    expect(store.get().program.content?.key).toBe('verse');
+    expect(store.get().cleared.content).toBeUndefined();
+    // Nothing remembered any more: restoring again changes nothing on screen.
+    await run('live.restoreLayer', { layer: 'content' });
+    expect(store.get().program.content?.key).toBe('verse');
+    // Turn off live remembers every layer; each comes back on its own.
+    await run('live.clearLayer', { layer: 'all' });
+    expect(store.get().program.background).toBeNull();
+    await run('live.restoreLayer', { layer: 'background' });
+    expect(store.get().program.background).toEqual(bg);
+    expect(store.get().program.content).toBeNull();
+    await run('live.restoreLayer', { layer: 'content' });
+    expect(store.get().program.content?.key).toBe('verse');
+  });
+
+  it('clearing an empty layer keeps what can still be brought back', async () => {
+    const { store, run } = setup();
+    await run('live.goLive', { content: content('a') });
+    await run('live.clearLayer', { layer: 'content' });
+    await run('live.clearLayer', { layer: 'all' });
+    expect(store.get().cleared.content?.content?.key).toBe('a');
+  });
+
+  it('brought-back messages keep the props that are showing', async () => {
+    const { store, run } = setup();
+    const msg = { id: 'm', kind: 'lower-third' as const, text: 'Parent of 12' };
+    const prop = { id: 'b', kind: 'logo-bug' as const, text: 'L' };
+    await run('live.setOverlays', { overlays: [msg, prop] });
+    await run('live.clearLayer', { layer: 'messages' });
+    expect(store.get().program.overlays.map((o) => o.id)).toEqual(['b']);
+    await run('live.restoreLayer', { layer: 'messages' });
+    expect(store.get().program.overlays.map((o) => o.id)).toEqual(['b', 'm']);
+  });
+
   it('subscriber errors never break delivery', async () => {
     const { store, run } = setup();
     let got = 0;

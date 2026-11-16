@@ -23,6 +23,7 @@ import {
   overlayGroup,
   sceneIsVisible,
   type Layer,
+  type RestorableLayer,
   type Scene,
   type Standby,
 } from '@lampstand/core';
@@ -36,7 +37,7 @@ import {
   typographyClass,
 } from '@lampstand/ui';
 import { feature } from '../../lib/features';
-import { clearLayer, goLive, toggleMask } from '../../lib/actions';
+import { clearLayer, goLive, restoreLayer, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -149,35 +150,53 @@ function PlannedLayers() {
 
 /**
  * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
- * something; clicking clears just that layer. Inert when the layer is empty.
+ * something; clicking clears just that layer. Once cleared it remembers what was there: it gets
+ * a red outline and clicking again brings it back. Inert when there is nothing to bring back.
  */
 function LayerButton({
   icon,
   label,
   hint,
   on,
+  restorable,
+  restoreWhat,
   onClick,
+  onRestore,
 }: {
   icon: ReactNode;
   label: string;
   hint?: string;
   on: boolean;
+  /** Empty now, but the last clear can be undone. */
+  restorable: boolean;
+  /** What would come back (a slide label, a file name), for the tooltip. */
+  restoreWhat?: string | undefined;
   onClick: () => void;
+  onRestore: () => void;
 }) {
   const { t } = useTranslation();
-  const name = t('monitor.clearLayer', { name: label });
+  const restore = !on && restorable;
+  const name = restore
+    ? t('monitor.restoreLayer', { name: label })
+    : t('monitor.clearLayer', { name: label });
+  const tip = restore && restoreWhat ? `${name}: ${restoreWhat}` : name;
   return (
     <IconButton
       size="2xs"
       variant="quiet"
-      onClick={onClick}
-      disabled={!on}
+      onClick={restore ? onRestore : onClick}
+      disabled={!on && !restorable}
       active={on}
       activeTone="live"
       aria-label={name}
-      title={hint ? `${name} (${hint})` : name}
-      // An empty layer is shown as a plain icon, not a faded "disabled" one.
-      className="disabled:cursor-default disabled:opacity-100"
+      title={hint && !restore ? `${tip} (${hint})` : tip}
+      // An empty layer is shown as a plain icon, not a faded "disabled" one; a layer that can be
+      // brought back is outlined in red.
+      className={`disabled:cursor-default disabled:opacity-100 ${
+        restore
+          ? '!text-[var(--text-1)] shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--tally-program)_70%,transparent)]'
+          : ''
+      }`}
     >
       {icon}
     </IconButton>
@@ -261,6 +280,11 @@ export function RightColumn() {
   );
   const has = (g: 'messages' | 'props'): boolean => p.overlays.some((o) => overlayGroup(o) === g);
   const clear = (layer: Layer) => () => void clearLayer(layer);
+  const back = (layer: RestorableLayer) => () => void restoreLayer(layer);
+  const cleared = live.cleared;
+  const clearedMedia = cleared.media
+    ? media.find((m) => m.id === cleared.media?.mediaId)?.name
+    : undefined;
   const anything = onAir || p.overlays.length > 0 || p.masks.black || p.masks.logo;
 
   return (
@@ -353,12 +377,26 @@ export function RightColumn() {
                 label={t('monitor.layers.messages')}
                 on={has('messages')}
                 onClick={clear('messages')}
+                restorable={!!cleared.messages}
+                restoreWhat={
+                  cleared.messages?.length
+                    ? t('monitor.restoreCount', { count: cleared.messages.length })
+                    : undefined
+                }
+                onRestore={back('messages')}
               />
               <LayerButton
                 icon={<Sparkle size={14} />}
                 label={t('monitor.layers.props')}
                 on={has('props')}
                 onClick={clear('props')}
+                restorable={!!cleared.props}
+                restoreWhat={
+                  cleared.props?.length
+                    ? t('monitor.restoreCount', { count: cleared.props.length })
+                    : undefined
+                }
+                onRestore={back('props')}
               />
               <LayerButton
                 icon={<Type size={14} />}
@@ -366,6 +404,12 @@ export function RightColumn() {
                 hint={displayCombo(keys.clearContent)}
                 on={!!p.content}
                 onClick={clear('content')}
+                restorable={!!cleared.content}
+                restoreWhat={
+                  cleared.content?.content?.label ??
+                  (cleared.content?.web ? urlHost(cleared.content.web.url) : undefined)
+                }
+                onRestore={back('content')}
               />
               <LayerButton
                 icon={<Film size={14} />}
@@ -373,6 +417,9 @@ export function RightColumn() {
                 hint={displayCombo(keys.clearMedia)}
                 on={!!p.media || !!p.web}
                 onClick={clear('media')}
+                restorable={!!cleared.media}
+                restoreWhat={clearedMedia}
+                onRestore={back('media')}
               />
               <LayerButton
                 icon={<ImageIcon size={14} />}
@@ -380,6 +427,9 @@ export function RightColumn() {
                 hint={displayCombo(keys.clearBackground)}
                 on={!!p.background}
                 onClick={clear('background')}
+                restorable={!!cleared.background}
+                restoreWhat={undefined}
+                onRestore={back('background')}
               />
               <PlannedLayers />
             </div>

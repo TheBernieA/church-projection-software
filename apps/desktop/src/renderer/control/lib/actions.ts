@@ -1,4 +1,4 @@
-import type { Layer, Overlay, ServiceItem, Settings } from '@lampstand/core';
+import type { Layer, Overlay, RestorableLayer, ServiceItem, Settings } from '@lampstand/core';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides } from './slides';
@@ -178,11 +178,26 @@ export async function step(delta: 1 | -1): Promise<void> {
   await goLiveSlide(item, idx, 'shortcut');
 }
 
+/** Which slide was live when the slide layer was last cleared, so bringing it back re-marks it. */
+let clearedCursor: Cursor | null = null;
+
 export const clearLayer = (layer: Layer): Promise<void> => {
-  if (layer === 'content' || layer === 'all' || layer === 'panic')
+  if (layer === 'content' || layer === 'all' || layer === 'panic') {
+    const cursor = get().liveCursor;
+    if (cursor) clearedCursor = cursor;
     useStore.setState({ liveCursor: null });
+  }
   stopAnnouncements();
   return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
+};
+
+/** Bring back what the last clear took off a layer (see LiveState.cleared). */
+export const restoreLayer = (layer: RestorableLayer): Promise<void> => {
+  if (layer === 'content' && clearedCursor) {
+    useStore.setState({ liveCursor: clearedCursor });
+    clearedCursor = null;
+  }
+  return safe(cmd('live.restoreLayer', { layer }, 'ui'));
 };
 
 export const toggleMask = (mask: 'black' | 'logo' | 'freeze'): Promise<void> =>

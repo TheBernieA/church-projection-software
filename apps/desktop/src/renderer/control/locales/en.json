@@ -149,6 +149,9 @@
     "live": "Live",
     "output": "Output",
     "clearLayer": "Clear {{name}}",
+    "restoreLayer": "Bring back {{name}}",
+    "restoreCount_one": "{{count}} item",
+    "restoreCount_other": "{{count}} items",
     "layers": {
       "slide": "Slide",
       "media": "Media",
