@@ -32,7 +32,13 @@ export function BackgroundTile({
       onFocus={() => setHot(true)}
       onBlur={() => setHot(false)}
     >
-      <SceneView scene={scene} mode={moving && hot ? 'monitor' : 'thumbnail'} />
+      {/* The preview never takes the pointer: hovering swaps it to live motion, and a click
+          whose press and release land on different preview nodes would otherwise be lost. */}
+      <SceneView
+        scene={scene}
+        mode={moving && hot ? 'monitor' : 'thumbnail'}
+        className="pointer-events-none"
+      />
       {moving && (
         <span
           aria-hidden

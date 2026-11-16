@@ -19,3 +19,4 @@ export * from './schemas/scene';
 export * from './schemas/service';
 export * from './schemas/settings';
 export * from './schemas/timers';
+export * from './stock';

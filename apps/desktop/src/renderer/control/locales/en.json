@@ -1155,5 +1155,25 @@
     "level": "{{name}} level",
     "volume": "{{name}} volume",
     "noMics": "No microphones or audio inputs found."
+  },
+  "stock": {
+    "category": "Stock category",
+    "all": "All",
+    "countdowns": "Countdowns",
+    "categories": {
+      "worship": "Worship",
+      "calm": "Calm",
+      "seasons": "Seasons",
+      "abstract": "Abstract",
+      "nature": "Nature"
+    },
+    "hint": "Drawn by Lampstand itself: works offline, free to use, sharp on any screen. Click one to show it behind the words.",
+    "countdown_one": "{{count}} minute",
+    "countdown_other": "{{count}} minutes",
+    "addCountdown_one": "Add a {{count}}-minute countdown to the playlist",
+    "addCountdown_other": "Add a {{count}}-minute countdown to the playlist",
+    "countdownAdded_one": "Added a {{count}}-minute countdown to the playlist.",
+    "countdownAdded_other": "Added a {{count}}-minute countdown to the playlist.",
+    "countdownTitle": "Service begins in"
   }
 }

@@ -1382,6 +1382,35 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await expect.poll(async () => await audioIn()).toBeNull();
 });
 
+test('stock media: a motion background goes live; a countdown joins the playlist', async () => {
+  await binTab('Media');
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'Stock media', exact: true })
+    .click();
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await bin.getByRole('radio', { name: 'Worship' }).click();
+  await bin.getByRole('button', { name: 'Glory', exact: true }).click();
+  const bg = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    const ref = r.ok ? r.value.program.background?.ref : undefined;
+    return ref?.kind === 'generated' ? ref.colors[0] : null;
+  };
+  await expect.poll(bg).toBe('#FFE7B0');
+  await control.screenshot({ path: 'test-results/34-stock-media.png' });
+  const items = async () => await (await servicePlan()).getByRole('listitem').count();
+  const before = await items();
+  await bin.getByRole('radio', { name: 'Countdowns' }).click();
+  await bin.getByRole('button', { name: '5 minutes', exact: true }).first().click();
+  await expect(control.getByText('Added a 5-minute countdown to the playlist.')).toBeVisible();
+  await expect.poll(items).toBe(before + 1);
+  // Leave the verse open and live, as the next tests expect.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
+});
+
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });

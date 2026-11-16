@@ -31,6 +31,7 @@ import { BackgroundsPanel } from '../MediaPanel';
 import { SoonPanel } from '../bins/SoonPanel';
 import { inMediaBin, MediaBrowser } from '../media/MediaBrowser';
 import { VideoInputs } from '../media/VideoInputs';
+import { StockMedia } from '../media/StockMedia';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { type BinTab } from '../../types';
 
@@ -43,7 +44,7 @@ const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
 ];
 const SOURCES: { tab: BinTab; icon: LucideIcon; id: string; soon?: boolean }[] = [
   { tab: 'video-input', icon: Video, id: 'video-input' },
-  { tab: 'stock-media', icon: Store, id: 'stock-media', soon: true },
+  { tab: 'stock-media', icon: Store, id: 'stock-media' },
 ];
 
 const Count = ({ n }: { n: number }) =>
@@ -259,6 +260,8 @@ export function Bin({ height }: { height: number }) {
         <SoonPanel ids={[source.id]} icon={<source.icon size={20} />} />
       ) : tab === 'video-input' ? (
         <VideoInputs />
+      ) : tab === 'stock-media' ? (
+        <StockMedia />
       ) : tab === 'backgrounds' ? (
         <div className="flex min-h-0 flex-1 flex-col bg-[var(--surface-0)]">
           <BackgroundsPanel />

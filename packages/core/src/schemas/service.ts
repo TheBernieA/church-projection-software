@@ -85,6 +85,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     ]),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Its own background (e.g. a stock countdown); otherwise the theme's. */
+    background: BackgroundRefSchema.optional(),
   }),
   z.object({ ...base, kind: z.literal('header'), label: z.string().max(200) }),
   /** A web page (giving page, live feed…), shown in an isolated web view. */

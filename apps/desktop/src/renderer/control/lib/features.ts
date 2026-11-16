@@ -171,8 +171,7 @@ export const FEATURES: Feature[] = [
     'stock-media',
     'media',
     'Stock media library',
-    'Browse ready-made motion backgrounds and countdowns.',
-    'soon',
+    'Ready-made motion backgrounds by occasion and countdowns, drawn by Lampstand itself (offline, licence-free): media bin › Stock media.',
   ),
   f(
     'masks',

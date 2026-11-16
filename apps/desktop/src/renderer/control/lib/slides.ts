@@ -307,7 +307,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
       const slide: PresentableSlide = {
         key: content.key,
         label: item.title,
-        action: { kind: 'content', content, background: themeBackground(theme) },
+        action: { kind: 'content', content, background: themeBackground(theme, item.background) },
       };
       if (durationSec) slide.countdownSec = durationSec;
       return { missing: [], slides: [slide] };
