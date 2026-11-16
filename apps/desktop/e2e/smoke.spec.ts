@@ -471,6 +471,12 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await expect(control.getByRole('button', { name: /Welcome/ }).first()).toBeVisible();
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/11-inspector.png' });
+  // The inspector can be hidden for a bigger canvas, and brought back.
+  await control.getByRole('button', { name: 'Hide inspector' }).click();
+  await expect(control.getByLabel('Heading', { exact: true })).toBeHidden();
+  await control.screenshot({ path: 'test-results/11b-inspector-hidden.png' });
+  await control.getByRole('button', { name: 'Show inspector' }).click();
+  await expect(control.getByLabel('Heading', { exact: true })).toBeVisible();
   await mode('Show');
 });
 

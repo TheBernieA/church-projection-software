@@ -1,4 +1,5 @@
-import { MousePointerClick, PencilOff } from 'lucide-react';
+import { MousePointerClick, PanelRightClose, PanelRightOpen, PencilOff } from 'lucide-react';
+import { IconButton } from '@lampstand/ui';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
@@ -11,16 +12,36 @@ import { SlideInspector } from '../SlideInspector';
 import { SongEditorInline } from '../SongEditor';
 import { EmptyState } from '../EmptyState';
 import { WebEditor } from './WebEditor';
+import { usePaneSize } from '../shell/Splitter';
 import { type TextItem } from '../../types';
+
+/** Whether the Edit workspace's right-hand inspector is showing (remembered between sessions). */
+function useInspector() {
+  const pane = usePaneSize('editInspector', 1, 0, 1);
+  const open = pane.size === 1;
+  return { open, toggle: () => pane.commit(open ? 0 : 1) };
+}
+
+/** Show/hide button for the inspector. */
+function InspectorToggle({ open, toggle }: { open: boolean; toggle: () => void }) {
+  const { t } = useTranslation();
+  const label = open ? t('canvas.hideInspector') : t('canvas.showInspector');
+  return (
+    <IconButton size="sm" aria-label={label} title={label} aria-expanded={open} onClick={toggle}>
+      {open ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+    </IconButton>
+  );
+}
 
 /** Text slides: canvas for the chosen slide, tools above, slides below, properties beside. */
 function CanvasEditor({ item }: { item: TextItem }) {
+  const inspector = useInspector();
   const cursor = useStore((s) => s.editCursor);
   const index = cursor?.itemId === item.id ? Math.min(cursor.index, item.slides.length - 1) : 0;
   return (
     <div className="flex min-h-0 flex-1">
       <div className="flex min-w-0 flex-1 flex-col">
-        <CanvasToolbar item={item} index={index} />
+        <CanvasToolbar item={item} index={index} trailing={<InspectorToggle {...inspector} />} />
         <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-4">
           <div className="w-full max-w-[1100px]">
             <SlideCanvas item={item} index={index} />
@@ -28,7 +49,7 @@ function CanvasEditor({ item }: { item: TextItem }) {
         </div>
         <Filmstrip item={item} index={index} />
       </div>
-      <SlideInspector />
+      {inspector.open && <SlideInspector />}
     </div>
   );
 }
@@ -36,6 +57,7 @@ function CanvasEditor({ item }: { item: TextItem }) {
 /** Edit workspace: the selected item's editor, in place. */
 export function EditMode() {
   const { t } = useTranslation();
+  const inspector = useInspector();
   const item = useSelectedItem();
   const inService = useInService(item);
   if (!item)
@@ -53,8 +75,13 @@ export function EditMode() {
     if (item.kind === 'countdown')
       return (
         <div className="flex min-h-0 flex-1">
-          <SlideGrid purpose="edit" />
-          <SlideInspector />
+          <div className="relative flex min-w-0 flex-1 flex-col">
+            <SlideGrid purpose="edit" />
+            <div className="absolute right-2 top-2 z-10">
+              <InspectorToggle {...inspector} />
+            </div>
+          </div>
+          {inspector.open && <SlideInspector />}
         </div>
       );
     return <CanvasEditor item={item} />;

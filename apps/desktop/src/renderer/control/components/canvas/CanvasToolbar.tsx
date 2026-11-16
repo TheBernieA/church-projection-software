@@ -8,6 +8,7 @@ import {
   Trash2,
   Type,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, IconButton } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
@@ -24,7 +25,16 @@ const ADD: { kind: Exclude<ObjectKind, 'image'>; icon: typeof Type }[] = [
 ];
 
 /** Canvas tools: add a text box, shape, line or picture; arrange or delete the selection. */
-export function CanvasToolbar({ item, index }: { item: TextItem; index: number }) {
+export function CanvasToolbar({
+  item,
+  index,
+  trailing,
+}: {
+  item: TextItem;
+  index: number;
+  /** Shown at the far right (the inspector's show/hide button). */
+  trailing?: ReactNode;
+}) {
   const { t } = useTranslation();
   const pictures = usePictures();
   const selected = useStore((s) => s.editObjectId);
@@ -102,6 +112,7 @@ export function CanvasToolbar({ item, index }: { item: TextItem; index: number }
         <Trash2 size={15} />
       </IconButton>
       <span className="ml-auto text-ui-11 text-[var(--text-3)]">{t('canvas.hint')}</span>
+      {trailing}
     </div>
   );
 }

@@ -852,7 +852,9 @@
       "ellipse": "Ellipse",
       "line": "Line",
       "image": "Picture"
-    }
+    },
+    "hideInspector": "Hide inspector",
+    "showInspector": "Show inspector"
   },
   "import": {
     "button": "Import",
