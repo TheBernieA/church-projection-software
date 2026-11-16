@@ -228,6 +228,15 @@ export class WindowManager {
     );
   }
 
+  /**
+   * Camera and microphone (video and audio inputs): only Lampstand's own control and output
+   * windows, never the stage display or a web page (those have their own deny-all session).
+   */
+  mayUseMedia(wc: WebContents | null): boolean {
+    const kind = wc ? this.kinds.get(wc.id) : undefined;
+    return kind === 'control' || kind === 'output';
+  }
+
   /** Output handshake: send its info and the current state. */
   outputReady(wc: WebContents): void {
     for (const o of this.outputs.values()) {

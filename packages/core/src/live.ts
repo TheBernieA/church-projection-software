@@ -6,6 +6,7 @@ import {
   WebLayerSchema,
   OverlaySchema,
   SceneSchema,
+  VideoInputLayerSchema,
   type BackgroundLayer,
   type ContentLayer,
   type MediaLayer,
@@ -66,6 +67,14 @@ export function audioFadeAt(a: AudioCue, nowMs: number): number {
   const t = (nowMs - Date.parse(a.fade.at)) / 1000;
   return a.fade.sec > 0 ? Math.max(0, 1 - t / a.fade.sec) : 0;
 }
+
+/** A live audio input (microphone, mixer feed) played through the room. */
+export const AudioInputCueSchema = z.object({
+  deviceId: z.string().max(300),
+  label: z.string().max(200),
+  volume: z.number().min(0).max(1).default(1),
+});
+export type AudioInputCue = z.infer<typeof AudioInputCueSchema>;
 
 /**
  * What the last clear took off each layer, so the operator can bring it back with one click
@@ -128,6 +137,8 @@ export const LiveStateSchema = z.object({
   cleared: ClearedLayersSchema.default({}),
   /** Audio playing through the room, or null. */
   audio: AudioCueSchema.nullable().default(null),
+  /** A live audio input played through the room, or null. */
+  audioInput: AudioInputCueSchema.nullable().default(null),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
 });
@@ -147,6 +158,7 @@ export function initialLiveState(): LiveState {
     timers: [],
     cleared: {},
     audio: null,
+    audioInput: null,
     look: null,
   };
 }
@@ -205,7 +217,7 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
       // The web page counts as "the slide" too.
       return { ...scene, content: null, web: null };
     case 'media':
-      return { ...scene, media: null };
+      return { ...scene, media: null, input: null };
     case 'announcements':
       return { ...scene, announcement: null };
     case 'background':
@@ -225,6 +237,7 @@ export function clearLayer(scene: Scene, layer: Layer): Scene {
         content: null,
         web: null,
         announcement: null,
+        input: null,
         overlays: [],
         masks: EMPTY_MASKS,
       };
@@ -413,6 +426,8 @@ export function registerLiveCommands(
           media,
           web,
           background,
+          // A video going live takes the media layer from a camera; words leave the camera up.
+          input: media ? null : (s.program.input ?? null),
           // Going live with new content lifts black/logo masks — the operator intends to show it.
           masks: { ...s.program.masks, black: false, logo: false },
         };
@@ -509,6 +524,31 @@ export function registerLiveCommands(
         };
         return { ...s, audio: next };
       });
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.setInput',
+    schema: z.object({ input: VideoInputLayerSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      // A camera takes the media layer (a playing video gives way); slide text stays on top.
+      store.update((s) => ({
+        ...s,
+        program: { ...s.program, input: p.input, media: p.input ? null : s.program.media },
+        cleared: p.input ? withoutOff(s.cleared) : s.cleared,
+      }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.audioInput',
+    schema: z.object({ input: AudioInputCueSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, audioInput: p.input }));
       return { result: null };
     },
   });

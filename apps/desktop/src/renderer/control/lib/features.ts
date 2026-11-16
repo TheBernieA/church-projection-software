@@ -165,8 +165,7 @@ export const FEATURES: Feature[] = [
     'video-input',
     'media',
     'Video inputs & cameras',
-    'Bring a camera, capture card, NDI or SDI source into slides and onto screens.',
-    'soon',
+    'Put any camera or capture card the computer sees on screen, live: media bin › Video input. (NDI is listed separately.)',
   ),
   f(
     'stock-media',
@@ -195,13 +194,7 @@ export const FEATURES: Feature[] = [
     'Audio bin & playlists',
     'Walk-in music and sound cues, with playlists and fades.',
   ),
-  f(
-    'audio-input',
-    'audio',
-    'Audio inputs',
-    'Route a microphone or mixer feed alongside video.',
-    'soon',
-  ),
+  f('audio-input', 'audio', 'Audio inputs', 'Route a microphone or mixer feed alongside video.'),
 
   // Layers, props & looks
   f(

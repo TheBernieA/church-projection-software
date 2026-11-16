@@ -119,7 +119,12 @@ test.beforeAll(async () => {
   };
   delete env.ELECTRON_RUN_AS_NODE;
   delete env.ELECTRON_RENDERER_URL;
-  app = await electron.launch({ args: ['.'], cwd: join(__dirname, '..'), env });
+  // Chromium's fake camera and microphone stand in for real devices (no OS prompt, no hardware).
+  app = await electron.launch({
+    args: ['.', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
+    cwd: join(__dirname, '..'),
+    env,
+  });
   const mainOutput: string[] = [];
   app.process().stdout?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
   app.process().stderr?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
@@ -1337,6 +1342,44 @@ test('audio bin: play a track, a playlist plays on, fade out', async () => {
   // Fade out: it goes quiet and stops.
   await panel.getByRole('button', { name: 'Fade out and stop' }).click();
   await expect.poll(async () => await audio(), { timeout: 8000 }).toBeNull();
+});
+
+test('inputs: a camera goes live under the words; an audio input plays with a level meter', async () => {
+  const out = await outputPage();
+  await binTab('Media');
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'Video input', exact: true })
+    .click();
+  const bin = control.getByRole('region', { name: 'Bin' });
+  const camera = bin.getByRole('button', { name: /^Show .* on screen$/ }).first();
+  await expect(camera).toBeVisible({ timeout: 10_000 });
+  await camera.click();
+  // The output opens the camera itself, under the slide's words.
+  const feed = out.locator('.ls-layer-input video');
+  await expect
+    .poll(() => feed.evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  await expect(out.locator('.ls-layer-content .ls-text').last()).toContainText('For God so loved');
+  await control.screenshot({ path: 'test-results/33-video-input.png' });
+  await bin.getByRole('button', { name: /^Take .* off the screen$/ }).click();
+  await expect(feed).toHaveCount(0);
+
+  // Audio inputs, in the Audio tab: a level meter that moves, and a switch to go live.
+  await binTab('Audio');
+  const panel = control.getByRole('region', { name: 'Audio inputs' });
+  const meter = panel.getByRole('meter').first();
+  await expect
+    .poll(async () => Number(await meter.getAttribute('aria-valuenow')), { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  await panel.getByRole('switch').first().click();
+  const audioIn = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.audioInput : null;
+  };
+  await expect.poll(async () => (await audioIn())?.volume).toBe(1);
+  await panel.getByRole('switch').first().click();
+  await expect.poll(async () => await audioIn()).toBeNull();
 });
 
 test('media playlists: create, drag media in, open, rename and delete', async () => {

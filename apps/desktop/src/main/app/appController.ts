@@ -162,7 +162,8 @@ export class AppController {
       const item = await repos.media.get(id);
       return item ? { root: mediaDir, rel: item.fileName } : null;
     });
-    installPermissionHandlers(() => false); // camera/mic arrive with detection & streaming (Phase 2/3)
+    // Camera/mic for video and audio inputs: Lampstand's own control and output windows only.
+    installPermissionHandlers((wc) => this.windows.mayUseMedia(wc));
 
     this.search = new SearchService(
       { biblesDir: paths.bibles, cacheDir: paths.cache },

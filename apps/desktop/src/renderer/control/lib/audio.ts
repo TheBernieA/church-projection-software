@@ -1,5 +1,5 @@
 import { audioFadeAt, audioPositionAt, type AudioCue } from '@lampstand/core';
-import { AudioPlayer } from '@lampstand/renderer';
+import { AudioInputPlayer, AudioPlayer } from '@lampstand/renderer';
 import { cmd } from './api';
 import { durations, knownDuration } from './mediaDurations';
 import { attempt, useStore } from './store';
@@ -86,25 +86,34 @@ export function installAudioWatch(): () => void {
  */
 export function installLocalAudio(): () => void {
   let player: AudioPlayer | null = null;
-  let last: { cue: AudioCue | null; local: boolean } | null = null;
+  let input: AudioInputPlayer | null = null;
+  let last: { cue: AudioCue | null; inCue: unknown; local: boolean } | null = null;
   const sync = (): void => {
     const s = get();
     const local = !(s.settings?.windowMode || s.displays.some((d) => d.role === 'main'));
     // Only when the cue or where it plays changes (the store changes for everything else too).
     const cue = s.live?.audio ?? null;
-    if (last?.cue === cue && last.local === local) return;
-    last = { cue, local };
-    if (local && !player) player = new AudioPlayer(document, mediaUrl);
+    const inCue = s.live?.audioInput ?? null;
+    if (last?.cue === cue && last.inCue === inCue && last.local === local) return;
+    last = { cue, inCue, local };
+    if (local && !player) {
+      player = new AudioPlayer(document, mediaUrl);
+      input = new AudioInputPlayer(window);
+    }
     if (!local && player) {
       player.destroy();
       player = null;
+      input?.stop();
+      input = null;
     }
-    player?.sync(s.live?.audio ?? null);
+    player?.sync(cue);
+    input?.sync(inCue);
   };
   sync();
   const off = useStore.subscribe(sync);
   return () => {
     off();
     player?.destroy();
+    input?.stop();
   };
 }

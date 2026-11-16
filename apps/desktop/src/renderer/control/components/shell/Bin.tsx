@@ -30,6 +30,7 @@ import { useStore } from '../../lib/store';
 import { BackgroundsPanel } from '../MediaPanel';
 import { SoonPanel } from '../bins/SoonPanel';
 import { inMediaBin, MediaBrowser } from '../media/MediaBrowser';
+import { VideoInputs } from '../media/VideoInputs';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { type BinTab } from '../../types';
 
@@ -40,9 +41,9 @@ const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
   { tab: 'audio', icon: Music },
   { tab: 'backgrounds', icon: Wallpaper },
 ];
-const SOURCES: { tab: BinTab; icon: LucideIcon; id: string }[] = [
+const SOURCES: { tab: BinTab; icon: LucideIcon; id: string; soon?: boolean }[] = [
   { tab: 'video-input', icon: Video, id: 'video-input' },
-  { tab: 'stock-media', icon: Store, id: 'stock-media' },
+  { tab: 'stock-media', icon: Store, id: 'stock-media', soon: true },
 ];
 
 const Count = ({ n }: { n: number }) =>
@@ -216,17 +217,17 @@ export function BinNav() {
         ))}
 
       <SectionHeading title={t('mediaBin.sources')} />
-      {SOURCES.map(({ tab: x, icon: Icon, id }) => (
+      {SOURCES.map(({ tab: x, icon: Icon, id, soon }) => (
         <NavItem
           key={x}
           aria-pressed={tab === x}
           selected={tab === x}
-          dim
-          title={t('soon.tooltip', { name: feature(id).name })}
+          dim={!!soon}
+          title={soon ? t('soon.tooltip', { name: feature(id).name }) : undefined}
           onClick={() => useStore.setState({ binTab: x })}
           icon={<Icon size={14} className="text-[var(--text-3)]" />}
           label={t(`bin.tabs.${x}`)}
-          trailing={<SoonBadge label={t('soon.badge')} />}
+          trailing={soon ? <SoonBadge label={t('soon.badge')} /> : undefined}
           className="w-[calc(100%-12px)]"
         />
       ))}
@@ -243,7 +244,7 @@ export function Bin({ height }: { height: number }) {
   const tab = useStore((s) => s.binTab);
   const playlistId = useStore((s) => s.binPlaylistId);
   const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
-  const source = SOURCES.find((s) => s.tab === tab);
+  const source = SOURCES.find((s) => s.tab === tab && s.soon);
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
   const view =
     tab === 'images' || tab === 'videos' || tab === 'audio'
@@ -256,6 +257,8 @@ export function Bin({ height }: { height: number }) {
     <section aria-label={t('bin.label')} className="flex shrink-0 flex-col" style={{ height }}>
       {source ? (
         <SoonPanel ids={[source.id]} icon={<source.icon size={20} />} />
+      ) : tab === 'video-input' ? (
+        <VideoInputs />
       ) : tab === 'backgrounds' ? (
         <div className="flex min-h-0 flex-1 flex-col bg-[var(--surface-0)]">
           <BackgroundsPanel />

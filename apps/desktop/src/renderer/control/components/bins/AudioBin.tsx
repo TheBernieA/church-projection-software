@@ -33,7 +33,7 @@ import {
 import { attempt, toast, useStore } from '../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import { Select } from '../Select';
-import { SoonFeature } from '../Soon';
+import { AudioInputs } from './AudioInputs';
 import i18n from '../../i18n';
 
 const pct = (v: number, max: number): CSSProperties =>
@@ -360,8 +360,8 @@ export function AudioBin() {
           ))}
         </ul>
       )}
-      <div className="mt-auto px-2.5 pb-2.5">
-        <SoonFeature id="audio-input" label={t('audio.inputs')} />
+      <div className="mt-auto pt-1">
+        <AudioInputs />
       </div>
     </div>
   );

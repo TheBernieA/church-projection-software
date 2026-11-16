@@ -9,6 +9,7 @@ import {
 } from '@lampstand/core';
 import { buildBackground, buildMedia, mediaKey, syncMedia } from './background';
 import { maskStyle } from './mask';
+import { buildVideoInput } from './inputs';
 import { buildContent } from './content';
 import { animate, el, safePlay } from './dom';
 import { buildOverlay } from './overlays';
@@ -38,6 +39,8 @@ export class SceneRenderer {
   private readonly mediaLayer: HTMLElement;
   private readonly contentLayer: HTMLElement;
   private readonly announceLayer: HTMLElement;
+  private readonly inputLayer: HTMLElement;
+  private input: { key: string; dispose: () => void } | null = null;
   private readonly webLayer: HTMLElement;
   private readonly overlayLayer: HTMLElement;
   private readonly blackMask: HTMLElement;
@@ -86,6 +89,7 @@ export class SceneRenderer {
       el(this.doc, 'div', `ls-layer ls-layer-${name}`, { ...FILL, pointerEvents: 'none' });
     this.bgLayer = layer('background');
     this.mediaLayer = layer('media');
+    this.inputLayer = layer('input');
     this.contentLayer = layer('content');
     this.announceLayer = layer('announcements');
     this.webLayer = layer('web');
@@ -101,6 +105,7 @@ export class SceneRenderer {
     this.stage.append(
       this.bgLayer,
       this.mediaLayer,
+      this.inputLayer,
       this.contentLayer,
       this.webLayer,
       this.announceLayer,
@@ -164,11 +169,26 @@ export class SceneRenderer {
     if (this.frozen) return;
     this.renderBackground(scene, instant);
     this.renderMedia(scene, instant);
+    this.renderInput(scene);
     this.renderContent(scene.content, scene.transition, instant);
     this.renderWeb(scene);
     this.renderContent(scene.announcement ?? null, undefined, instant, 'announce');
     this.applyStandby(scene, instant);
     this.renderOverlays(scene);
+  }
+
+  /** A live camera feed in the media layer; rebuilt only when the device or fit changes. */
+  private renderInput(scene: Scene): void {
+    const input = scene.input ?? null;
+    const key = input ? `${input.deviceId}|${input.fit}` : '';
+    if ((this.input?.key ?? '') === key) return;
+    this.input?.dispose();
+    this.inputLayer.replaceChildren();
+    this.input = null;
+    if (!input) return;
+    const built = buildVideoInput(this.doc, input, this.opts.mode !== 'thumbnail');
+    this.inputLayer.append(built.node);
+    this.input = { key, dispose: built.dispose };
   }
 
   /**
@@ -227,6 +247,7 @@ export class SceneRenderer {
     this.resizeObserver?.disconnect();
     this.content?.extra?.dispose();
     this.announce?.extra?.dispose();
+    this.input?.dispose();
     this.root.remove();
   }
 

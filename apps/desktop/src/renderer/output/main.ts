@@ -1,5 +1,10 @@
 import { applyLook, type LiveState } from '@lampstand/core';
-import { AudioPlayer, buildTestPattern, SceneRenderer } from '@lampstand/renderer';
+import {
+  AudioInputPlayer,
+  AudioPlayer,
+  buildTestPattern,
+  SceneRenderer,
+} from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 import '../shared/outputApi.d';
@@ -21,10 +26,12 @@ let latest: LiveState | null = null;
 let ready = false;
 /** Room audio plays from the main output only. */
 let audio: AudioPlayer | null = null;
+let audioIn: AudioInputPlayer | null = null;
 
 function draw(state: LiveState): void {
   latest = state;
   audio?.sync(state.audio);
+  audioIn?.sync(state.audioInput);
   if (!ready || !renderer) return;
   // The active Look decides which layers this kind of screen shows.
   const layers =
@@ -52,10 +59,15 @@ api.onInfo((i) => {
       audio: i.audio,
     });
   }
-  if (i.audio && !audio) audio = new AudioPlayer(document, mediaUrl);
+  if (i.audio && !audio) {
+    audio = new AudioPlayer(document, mediaUrl);
+    audioIn = new AudioInputPlayer(window);
+  }
   if (!i.audio && audio) {
     audio.destroy();
     audio = null;
+    audioIn?.stop();
+    audioIn = null;
   }
   // Info is re-sent whenever the logo or off-air screen changes.
   renderer.setLogo(i.logo);

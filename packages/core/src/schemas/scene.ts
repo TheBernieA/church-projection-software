@@ -183,12 +183,25 @@ export const WebUrlSchema = z
 export const WebLayerSchema = z.object({ key: z.string().max(200), url: WebUrlSchema });
 export type WebLayer = z.infer<typeof WebLayerSchema>;
 
+/**
+ * A live camera or capture card (any video device the computer sees). Each output opens the
+ * device itself; the scene only says which one.
+ */
+export const VideoInputLayerSchema = z.object({
+  deviceId: z.string().max(300),
+  label: z.string().max(200),
+  fit: z.enum(['contain', 'cover']).default('cover'),
+});
+export type VideoInputLayer = z.infer<typeof VideoInputLayerSchema>;
+
 export const SceneSchema = z.object({
   background: BackgroundLayerSchema.nullable(),
   media: MediaLayerSchema.nullable(),
   content: ContentLayerSchema.nullable(),
   /** A web page on screen (replaces text and media while it shows). */
   web: WebLayerSchema.nullable().optional(),
+  /** A live camera feed, full screen in the media layer (slide text stays on top). */
+  input: VideoInputLayerSchema.nullable().optional(),
   /** Announcements layer: looping announcement slides above the slide, below messages and props. */
   announcement: ContentLayerSchema.nullable().optional(),
   overlays: z.array(OverlaySchema).max(10),

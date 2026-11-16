@@ -13,7 +13,6 @@ import {
   Type,
   ListChecks,
   Settings2,
-  Video,
   Power,
   Ellipsis,
 } from 'lucide-react';
@@ -33,14 +32,12 @@ import {
 import {
   Button,
   Kbd,
-  SoonBadge,
   TallyLabel,
   Typography,
   IconButton,
   typographyClass,
   Segmented,
 } from '@lampstand/ui';
-import { feature } from '../../lib/features';
 import {
   clearGroup,
   clearLayer,
@@ -52,7 +49,7 @@ import {
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
-import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
+import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { ShowControls } from './ShowControls';
@@ -108,11 +105,10 @@ function MonitorCard({
 }
 
 /** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
-const PLANNED_LAYERS = [{ id: 'video-input', label: 'videoInput', icon: <Video size={14} /> }];
 
 /**
  * "…" at the foot of the layer strip: the operator's clear groups (one click clears exactly
- * those layers), a way to edit them, and the layers still to come, marked Soon.
+ * those layers) and a way to edit them.
  */
 function LayersMenu() {
   const { t } = useTranslation();
@@ -147,25 +143,6 @@ function LayersMenu() {
             <Settings2 size={14} />
             {groups.length ? t('clearGroups.edit') : t('clearGroups.create')}
           </DropdownMenu.Item>
-          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
-          <DropdownMenu.Label className={MENU_LABEL}>{t('monitor.moreLayers')}</DropdownMenu.Label>
-          {PLANNED_LAYERS.map((l) => {
-            const f = feature(l.id);
-            return (
-              <DropdownMenu.Item
-                key={l.id}
-                disabled
-                title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
-                className={ITEM_CLASS}
-              >
-                <Typography tone="muted" className="flex">
-                  {l.icon}
-                </Typography>
-                <span className="flex-1">{t(`monitor.layers.${l.label}`)}</span>
-                <SoonBadge label={t('soon.badge')} />
-              </DropdownMenu.Item>
-            );
-          })}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -517,7 +494,7 @@ export function RightColumn() {
                 icon={<Film size={14} />}
                 label={t('monitor.layers.media')}
                 hint={displayCombo(keys.clearMedia)}
-                on={!!p.media || !!p.web}
+                on={!!p.media || !!p.web || !!p.input}
                 onClick={clear('media')}
                 restorable={!!cleared.media}
                 restoreWhat={clearedMedia}

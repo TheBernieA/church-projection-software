@@ -17,7 +17,7 @@ export function makeScene(layers: Partial<Scene> = {}): Scene {
 
 /** Text or media on screen — what the operator thinks of as "live". */
 export function sceneHasContent(scene: Scene): boolean {
-  return !!(scene.content || scene.media || scene.web || scene.announcement);
+  return !!(scene.content || scene.media || scene.web || scene.announcement || scene.input);
 }
 
 /** Anything at all on screen, including a background. */
@@ -41,6 +41,7 @@ export function applyLook(scene: Scene, layers: readonly LookLayer[] | null | un
     ...scene,
     background: on('background') ? scene.background : null,
     media: on('media') ? scene.media : null,
+    input: on('media') ? (scene.input ?? null) : null,
     content: on('content') ? scene.content : null,
     web: on('content') ? (scene.web ?? null) : null,
     announcement: on('announcements') ? (scene.announcement ?? null) : null,

@@ -57,8 +57,8 @@ export function lockDownWebContents(wc: WebContents, log: Logger): void {
 }
 
 /**
- * Permission policy: camera/mic only for the control window, and only once a feature that needs
- * it is enabled (Phase 2/3). Everything else is denied.
+ * Permission policy: camera/mic (video and audio inputs) only for the app's own control and
+ * output windows; everything else, and every other permission, is denied.
  */
 export function installPermissionHandlers(
   isMediaAllowed: (wc: WebContents | null) => boolean,
