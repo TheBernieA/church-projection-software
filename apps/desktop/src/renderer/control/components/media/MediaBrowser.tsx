@@ -287,7 +287,7 @@ function FavouriteStar({ m, onPicture }: { m: MediaItem; onPicture: boolean }) {
       }
       aria-pressed={on}
       onClick={() => void toggleFavourite(m)}
-      className={`${onPicture ? `${ON_PICTURE} right-9` : ''} ${tone}`}
+      className={`${onPicture ? `${ON_PICTURE} left-7 !top-1` : ''} ${tone}`}
     >
       <Star size={13} fill={on ? 'currentColor' : 'none'} />
     </IconButton>
