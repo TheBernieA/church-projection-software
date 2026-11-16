@@ -1072,6 +1072,20 @@ test('a cleared layer comes back with one click', async () => {
   await expect(out.locator('.ls-bg')).toHaveCount(0, { timeout: 5000 });
   await control.getByRole('button', { name: 'Bring back Background', exact: true }).click();
   await expect(out.locator('.ls-bg')).toHaveCount(1, { timeout: 5000 });
+  // Turn off live, then the power button brings it all back. A quick second click (a
+  // double-click) is ignored, so the screen never flashes back on by accident.
+  await control.getByRole('button', { name: /^Turn off live/ }).click();
+  await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
+  const power = control.getByRole('button', { name: 'Bring back what was live' });
+  await power.click();
+  await control.waitForTimeout(300);
+  await expect(out.locator('.ls-text')).toHaveCount(0);
+  await control.waitForTimeout(900);
+  await power.click();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world', {
+    timeout: 5000,
+  });
+  await expect(out.locator('.ls-bg')).toHaveCount(1);
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

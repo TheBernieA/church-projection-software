@@ -150,6 +150,7 @@
     "output": "Output",
     "clearLayer": "Clear {{name}}",
     "restoreLayer": "Bring back {{name}}",
+    "restoreAll": "Bring back what was live",
     "restoreCount_one": "{{count}} item",
     "restoreCount_other": "{{count}} items",
     "layers": {

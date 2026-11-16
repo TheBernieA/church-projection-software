@@ -50,6 +50,16 @@ export const ClearedLayersSchema = z.object({
   background: BackgroundLayerSchema.optional(),
   messages: z.array(OverlaySchema).max(10).optional(),
   props: z.array(OverlaySchema).max(10).optional(),
+  /**
+   * Set by Turn off live: when, and which layers it took off, so the power button can bring
+   * them all back. Dropped as soon as anything new goes on screen.
+   */
+  off: z
+    .object({
+      at: z.string().max(40),
+      layers: z.array(z.enum(['content', 'media', 'background', 'messages', 'props'])).max(5),
+    })
+    .optional(),
 });
 export type ClearedLayers = z.infer<typeof ClearedLayersSchema>;
 
@@ -191,27 +201,58 @@ const CLEARS: Record<Layer, RestorableLayer[]> = {
  */
 export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): ClearedLayers {
   const p = s.program;
-  const out: ClearedLayers = { ...s.cleared };
+  const out = withoutOff(s.cleared);
+  const taken: RestorableLayer[] = [];
   for (const l of CLEARS[layer]) {
-    if (l === 'content' && (p.content || p.web))
+    if (l === 'content' && (p.content || p.web)) {
       out.content = { content: p.content, web: p.web ?? null, next: s.next };
-    if (l === 'media' && p.media)
+      taken.push(l);
+    }
+    if (l === 'media' && p.media) {
       out.media = { ...p.media, position: mediaPositionAt(p.media, nowMs) };
-    if (l === 'background' && p.background) out.background = p.background;
+      taken.push(l);
+    }
+    if (l === 'background' && p.background) {
+      out.background = p.background;
+      taken.push(l);
+    }
     if (l === 'messages' || l === 'props') {
       const group = p.overlays.filter((o) => overlayGroup(o) === l);
-      if (group.length) out[l] = group;
+      if (group.length) {
+        out[l] = group;
+        taken.push(l);
+      }
     }
   }
+  if (layer === 'all' && taken.length)
+    out.off = { at: new Date(nowMs).toISOString(), layers: taken };
+  // Turning off an already-empty screen keeps the earlier "bring it all back".
+  else if (layer === 'all' && s.cleared.off) out.off = s.cleared.off;
   return out;
+}
+
+/** The cleared layers without the Turn-off-live marker (something new is on screen). */
+export function withoutOff(c: ClearedLayers): ClearedLayers {
+  if (!c.off) return c;
+  return Object.fromEntries(Object.entries(c).filter(([k]) => k !== 'off'));
+}
+
+/** Power button after Turn off live: put back every layer it took off, in one step. */
+export function restoreAll(s: LiveState, nowIso: string): LiveState {
+  const layers = s.cleared.off?.layers ?? [];
+  let next: LiveState = { ...s, cleared: withoutOff(s.cleared) };
+  // Background first, so the words never flash up on black.
+  for (const l of ['background', 'media', 'content', 'messages', 'props'] as const)
+    if (layers.includes(l)) next = restoreLayer(next, l, nowIso);
+  return next;
 }
 
 /** Put a remembered layer back on screen (and forget it). Unchanged if nothing is remembered. */
 export function restoreLayer(s: LiveState, layer: RestorableLayer, nowIso: string): LiveState {
   const c = s.cleared;
-  // Forget the layer once it's back.
+  // Forget the layer once it's back; the screen isn't "off" any more either.
   const cleared = Object.fromEntries(
-    Object.entries(c).filter(([k]) => k !== layer),
+    Object.entries(c).filter(([k]) => k !== layer && k !== 'off'),
   ) as ClearedLayers;
   const program = s.program;
   switch (layer) {
@@ -317,7 +358,7 @@ export function registerLiveCommands(
         };
         if (p.transition) program.transition = p.transition;
         else delete program.transition;
-        return { ...s, program, next, programSince: now() };
+        return { ...s, program, next, programSince: now(), cleared: withoutOff(s.cleared) };
       });
       return { result: null };
     },
@@ -360,6 +401,16 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => restoreLayer(s, p.layer, now()));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.restoreAll',
+    schema: z.object({}),
+    undoable: false,
+    handle: () => {
+      store.update((s) => restoreAll(s, now()));
       return { result: null };
     },
   });
@@ -449,7 +500,11 @@ export function registerLiveCommands(
     schema: z.object({ overlays: z.array(OverlaySchema).max(10) }),
     undoable: false,
     handle: (p) => {
-      store.update((s) => ({ ...s, program: { ...s.program, overlays: p.overlays } }));
+      store.update((s) => ({
+        ...s,
+        program: { ...s.program, overlays: p.overlays },
+        cleared: p.overlays.length ? withoutOff(s.cleared) : s.cleared,
+      }));
       return { result: null };
     },
   });

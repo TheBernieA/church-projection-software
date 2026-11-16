@@ -188,6 +188,33 @@ describe('live commands', () => {
     expect(store.get().program.content?.key).toBe('verse');
   });
 
+  it('after Turn off live, restoreAll brings every layer back in one step', async () => {
+    const { store, run } = setup();
+    const bg = { ref: { kind: 'color' as const, color: '#112233' } };
+    const msg = { id: 'm', kind: 'lower-third' as const, text: 'Parent of 12' };
+    await run('live.goLive', { content: content('verse'), background: bg });
+    await run('live.setOverlays', { overlays: [msg] });
+    await run('live.clearLayer', { layer: 'all' });
+    expect(store.get().cleared.off?.layers).toEqual(['content', 'background', 'messages']);
+    await run('live.restoreAll', {});
+    const p = store.get().program;
+    expect(p.content?.key).toBe('verse');
+    expect(p.background).toEqual(bg);
+    expect(p.overlays.map((o) => o.id)).toEqual(['m']);
+    expect(store.get().cleared.off).toBeUndefined();
+  });
+
+  it('anything new going live cancels "bring it all back"', async () => {
+    const { store, run } = setup();
+    await run('live.goLive', { content: content('old') });
+    await run('live.clearLayer', { layer: 'all' });
+    expect(store.get().cleared.off).toBeDefined();
+    await run('live.goLive', { content: content('new') });
+    expect(store.get().cleared.off).toBeUndefined();
+    // The slide button can still bring back the old slide on its own.
+    expect(store.get().cleared.content?.content?.key).toBe('old');
+  });
+
   it('clearing an empty layer keeps what can still be brought back', async () => {
     const { store, run } = setup();
     await run('live.goLive', { content: content('a') });

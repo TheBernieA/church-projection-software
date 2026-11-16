@@ -191,6 +191,20 @@ export const clearLayer = (layer: Layer): Promise<void> => {
   return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
 };
 
+/**
+ * Power button after Turn off live: bring every layer back. A click within a second of turning
+ * off is ignored, so a nervous double-click never flashes the screen back on.
+ */
+export const restoreAll = (): Promise<void> => {
+  const off = get().live?.cleared.off;
+  if (!off || Date.now() - Date.parse(off.at) < 1000) return Promise.resolve();
+  if (off.layers.includes('content') && clearedCursor) {
+    useStore.setState({ liveCursor: clearedCursor });
+    clearedCursor = null;
+  }
+  return safe(cmd('live.restoreAll', {}, 'ui'));
+};
+
 /** Bring back what the last clear took off a layer (see LiveState.cleared). */
 export const restoreLayer = (layer: RestorableLayer): Promise<void> => {
   if (layer === 'content' && clearedCursor) {

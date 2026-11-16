@@ -37,7 +37,7 @@ import {
   typographyClass,
 } from '@lampstand/ui';
 import { feature } from '../../lib/features';
-import { clearLayer, goLive, restoreLayer, toggleMask } from '../../lib/actions';
+import { clearLayer, goLive, restoreAll, restoreLayer, toggleMask } from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -282,6 +282,14 @@ export function RightColumn() {
   const clear = (layer: Layer) => () => void clearLayer(layer);
   const back = (layer: RestorableLayer) => () => void restoreLayer(layer);
   const cleared = live.cleared;
+  // "Romans 8:36–38 + background", for the power button's tooltip.
+  const offSummary = (cleared.off?.layers ?? [])
+    .map((l) =>
+      l === 'content'
+        ? (cleared.content?.content?.label ?? t('monitor.layers.slide'))
+        : t(`monitor.layers.${l}`).toLowerCase(),
+    )
+    .join(' + ');
   const clearedMedia = cleared.media
     ? media.find((m) => m.id === cleared.media?.mediaId)?.name
     : undefined;
@@ -360,6 +368,18 @@ export function RightColumn() {
                   aria-label={`${t('monitor.clearAll')} (${displayCombo(keys.clearAll)})`}
                   onClick={() => void clearLayer('all')}
                   className="!rounded-full"
+                >
+                  <Power size={13} strokeWidth={2.5} />
+                </IconButton>
+              ) : cleared.off ? (
+                // After Turn off live, the power button brings everything back (mouse only).
+                <IconButton
+                  size="2xs"
+                  variant="quiet"
+                  aria-label={t('monitor.restoreAll')}
+                  title={`${t('monitor.restoreAll')}: ${offSummary}`}
+                  onClick={() => void restoreAll()}
+                  className="!rounded-full !text-[var(--tally-program)] shadow-[inset_0_0_0_1.5px_color-mix(in_srgb,var(--tally-program)_70%,transparent)]"
                 >
                   <Power size={13} strokeWidth={2.5} />
                 </IconButton>
