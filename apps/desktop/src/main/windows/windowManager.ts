@@ -281,8 +281,12 @@ export class WindowManager {
   private syncWeb(state: LiveState): void {
     const p = state.program;
     const url = p.web && !p.masks.black && !p.masks.logo ? p.web.url : null;
+    // A Look can leave the slide (and so the page) off a kind of screen.
+    const shows = (role: OutputWindow['role']): boolean =>
+      !state.look ||
+      (role === 'main' || role === 'secondary' ? state.look[role].includes('content') : true);
     const targets = [...this.outputs.values()]
-      .filter((o) => o.role !== 'stage')
+      .filter((o) => o.role !== 'stage' && shows(o.role))
       .map((o) => ({ win: o.win, audio: o.role === 'main' }));
     this.webViews.sync(targets, url);
   }

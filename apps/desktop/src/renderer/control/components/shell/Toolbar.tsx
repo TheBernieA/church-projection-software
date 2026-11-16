@@ -21,13 +21,15 @@ import {
   FileBadge,
   Activity,
   type LucideIcon,
+  Check,
+  Settings2,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatClock, sceneHasContent, secondsSince } from '@lampstand/core';
+import { formatClock, sceneHasContent, secondsSince, type Look } from '@lampstand/core';
 import { SoonBadge, Switch, Typography, typographyClass } from '@lampstand/ui';
 import i18n from '../../i18n';
-import { saveSettings } from '../../lib/actions';
+import { saveSettings, setLook } from '../../lib/actions';
 import { feature } from '../../lib/features';
 import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
@@ -60,6 +62,75 @@ function Dot({ color }: { color: string }) {
       className="absolute -right-1.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-[var(--toolbar)]"
       style={{ background: color, boxShadow: `0 0 6px ${color}` }}
     />
+  );
+}
+
+const NO_LOOKS: Look[] = [];
+
+/**
+ * Looks: switch which layers each kind of screen shows, from saved combinations (Settings ›
+ * Screens). The button lights while a Look is on. An edited Look updates on screen straight away.
+ */
+function LooksMenu() {
+  const { t } = useTranslation();
+  const looks = useStore((s) => s.settings?.looks ?? NO_LOOKS);
+  const active = useStore((s) => s.live?.look ?? null);
+  // Keep the Look on screen in step with its saved version (renamed, layers changed, deleted).
+  useEffect(() => {
+    if (!active) return;
+    const saved = looks.find((l) => l.id === active.id);
+    if (!saved) void setLook(null);
+    else if (JSON.stringify(saved) !== JSON.stringify(active)) void setLook(saved);
+  }, [looks, active]);
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <ToolbarButton
+          icon={<Layers3 size={20} />}
+          label={t('toolbar.looks')}
+          aria-label={t('looks.button')}
+          title={active ? t('looks.on', { name: active.name }) : t('looks.button')}
+          pressed={!!active}
+        />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_CLASS}>
+          <DropdownMenu.RadioGroup
+            value={active?.id ?? 'all'}
+            onValueChange={(id) => void setLook(looks.find((l) => l.id === id) ?? null)}
+          >
+            <DropdownMenu.RadioItem value="all" className={ITEM_CLASS}>
+              <Typography className="flex w-4 justify-center">
+                <DropdownMenu.ItemIndicator>
+                  <Check size={14} />
+                </DropdownMenu.ItemIndicator>
+              </Typography>
+              {t('looks.everything')}
+            </DropdownMenu.RadioItem>
+            {looks.map((l) => (
+              <DropdownMenu.RadioItem key={l.id} value={l.id} className={ITEM_CLASS}>
+                <Typography className="flex w-4 justify-center">
+                  <DropdownMenu.ItemIndicator>
+                    <Check size={14} />
+                  </DropdownMenu.ItemIndicator>
+                </Typography>
+                <Typography truncate className="flex-1">
+                  {l.name}
+                </Typography>
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+          <DropdownMenu.Separator className="my-1 h-px bg-[var(--hairline-strong)]" />
+          <DropdownMenu.Item
+            className={ITEM_CLASS}
+            onSelect={() => openDialog('settings', { settingsPage: 'screens' })}
+          >
+            <Settings2 size={15} />
+            {looks.length ? t('looks.edit') : t('looks.create')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -261,12 +332,7 @@ export function Toolbar() {
         pressed={binOpen}
         onClick={() => useStore.setState({ binOpen: !binOpen })}
       />
-      <ToolbarButton
-        icon={<Layers3 size={20} />}
-        label={t('toolbar.looks')}
-        soon
-        title={soonTitle('looks')}
-      />
+      <LooksMenu />
       <ToolbarButton
         icon={<Radio size={20} />}
         label={t('toolbar.live')}

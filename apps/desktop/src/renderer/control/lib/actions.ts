@@ -2,6 +2,7 @@ import {
   mediaEnd,
   mediaPositionAt,
   type Layer,
+  type Look,
   type Overlay,
   type RestorableLayer,
   type ServiceItem,
@@ -359,3 +360,7 @@ export function installMediaWatch(): () => void {
   }, 200);
   return () => clearInterval(timer);
 }
+
+/** Switch the Look on screen (null: every layer on every screen). Instant, like a mask. */
+export const setLook = (look: Look | null): Promise<void> =>
+  safe(cmd('live.setLook', { look }, 'ui'));

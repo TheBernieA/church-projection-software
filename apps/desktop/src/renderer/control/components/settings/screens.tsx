@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { makeScene, newId, type ScreenMask, type Settings } from '@lampstand/core';
+import { makeScene, newId, type Look, type ScreenMask, type Settings } from '@lampstand/core';
 import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
 import { BUILT_IN_BACKGROUNDS } from '../../constants';
 import { usePictures } from '../../lib/hooks';
@@ -154,6 +154,102 @@ function MaskEditor({
   );
 }
 
+const LOOK_LAYERS = ['background', 'media', 'content', 'messages', 'props'] as const;
+
+/**
+ * Looks: named combinations of which layers the audience and secondary screens show. Switched
+ * from the toolbar's Looks button.
+ */
+function LooksGroup({ s, update }: { s: Settings; update: Update }) {
+  const { t } = useTranslation();
+  const looks = s.looks;
+  const save = (next: Look[]): void => update({ looks: next });
+  const edit = (id: string, patch: Partial<Look>): void =>
+    save(looks.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+  return (
+    <Group title={t('looks.title')} footnote={t('looks.help')}>
+      {looks.map((l) => (
+        <div key={l.id} className="flex flex-col gap-2.5 px-4 py-3.5">
+          <div className="flex items-center gap-2">
+            <DeferredInput
+              aria-label={t('looks.name')}
+              value={l.name}
+              maxLength={40}
+              onCommit={(name) => name.trim() && edit(l.id, { name: name.trim() })}
+              className="field !h-8 flex-1"
+            />
+            <IconButton
+              size="xs"
+              variant="danger"
+              aria-label={t('looks.delete', { name: l.name })}
+              onClick={() => save(looks.filter((x) => x.id !== l.id))}
+            >
+              <Trash2 size={14} />
+            </IconButton>
+          </div>
+          {(['main', 'secondary'] as const).map((screen) => (
+            <div key={screen} className="flex items-center gap-3">
+              <Typography size={12} tone="secondary" className="w-20 shrink-0">
+                {t(`looks.screens.${screen}`)}
+              </Typography>
+              <div
+                role="group"
+                aria-label={t('looks.layersOn', {
+                  screen: t(`looks.screens.${screen}`),
+                  name: l.name,
+                })}
+                className="flex flex-wrap gap-1.5"
+              >
+                {LOOK_LAYERS.map((layer) => {
+                  const on = l[screen].includes(layer);
+                  return (
+                    <Button
+                      key={layer}
+                      size="2xs"
+                      variant={on ? 'primary' : 'subtle'}
+                      aria-pressed={on}
+                      onClick={() =>
+                        edit(l.id, {
+                          [screen]: on
+                            ? l[screen].filter((x) => x !== layer)
+                            : [...l[screen], layer],
+                        })
+                      }
+                    >
+                      {t(`looks.layers.${layer}`)}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+      <div className="px-4 py-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<Plus size={14} />}
+          disabled={looks.length >= 20}
+          onClick={() =>
+            save([
+              ...looks,
+              {
+                id: newId(),
+                name: t('looks.newName', { n: looks.length + 1 }),
+                main: [...LOOK_LAYERS],
+                secondary: ['background'],
+              },
+            ])
+          }
+        >
+          {t('looks.add')}
+        </Button>
+      </div>
+    </Group>
+  );
+}
+
 /**
  * Settings › Screens: screen masks (shape or hide parts of an output, e.g. for a creative stage
  * or a screen partly behind a pillar), and which mask each kind of screen uses.
@@ -195,6 +291,7 @@ export function ScreensPage({ s, update }: { s: Settings; update: Update }) {
           </Row>
         ))}
       </Group>
+      <LooksGroup s={s} update={update} />
       <Group title={t('masks.title')} footnote={t('masks.help')}>
         {masks.map((m) => (
           <MaskEditor

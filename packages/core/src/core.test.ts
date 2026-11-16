@@ -526,6 +526,36 @@ describe('video cues: autoplay, preview playback, trim and fades', () => {
   });
 });
 
+describe('looks', () => {
+  it('a look keeps only the layers it lists; masks always apply', async () => {
+    const { applyLook, makeScene } = await import('./index');
+    const scene = makeScene({
+      background: { ref: { kind: 'color', color: '#000' } },
+      overlays: [
+        { id: 'm', kind: 'lower-third', text: 'Parent of 12' },
+        { id: 'b', kind: 'logo-bug', text: 'L' },
+      ],
+      masks: { black: true, logo: false, freeze: false },
+    });
+    const lobby = applyLook(scene, ['background', 'props']);
+    expect(lobby.background).not.toBeNull();
+    expect(lobby.overlays.map((o) => o.id)).toEqual(['b']);
+    expect(lobby.masks.black).toBe(true);
+    expect(applyLook(scene, null)).toBe(scene);
+  });
+
+  it('switching looks is a live command', async () => {
+    const bus = new CommandBus();
+    const store = new LiveStateStore();
+    registerLiveCommands(bus, store, () => '2026-01-01T00:00:00Z');
+    const look = { id: 'l', name: 'Lobby', main: ['content' as const], secondary: [] };
+    await bus.dispatch({ type: 'live.setLook', payload: { look }, source: 'ui' });
+    expect(store.get().look?.name).toBe('Lobby');
+    await bus.dispatch({ type: 'live.setLook', payload: { look: null }, source: 'ui' });
+    expect(store.get().look).toBeNull();
+  });
+});
+
 describe('logo and off-air screen', () => {
   const kinds: Record<string, string> = { pic: 'image', clip: 'video', song: 'audio' };
   const kindOf = (id: string): string | undefined => kinds[id];

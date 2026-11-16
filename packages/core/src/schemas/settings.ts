@@ -44,6 +44,23 @@ export const ScreenMaskSchema = z.object({
 });
 export type ScreenMask = z.infer<typeof ScreenMaskSchema>;
 
+/** Layers a Look can show or hide on a kind of screen. */
+export const LookLayerSchema = z.enum(['background', 'media', 'content', 'messages', 'props']);
+export type LookLayer = z.infer<typeof LookLayerSchema>;
+export const ALL_LOOK_LAYERS: LookLayer[] = ['background', 'media', 'content', 'messages', 'props'];
+
+/**
+ * A Look: which layers each kind of screen shows ("Lobby": secondary screens show only the
+ * background and announcements). Switching looks is instant and live.
+ */
+export const LookSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().min(1).max(40),
+  main: z.array(LookLayerSchema).max(5),
+  secondary: z.array(LookLayerSchema).max(5),
+});
+export type Look = z.infer<typeof LookSchema>;
+
 export const SettingsSchema = z
   .object({
     schemaVersion: z.literal(1).default(1),
@@ -80,6 +97,8 @@ export const SettingsSchema = z
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
     screenMasks: z.array(ScreenMaskSchema).max(20).default([]),
+    /** Saved Looks (the toolbar's Looks button switches between them). */
+    looks: z.array(LookSchema).max(20).default([]),
     /** Which mask each kind of screen uses (null: none). */
     maskFor: z
       .object({ main: z.string().max(64).nullable(), secondary: z.string().max(64).nullable() })

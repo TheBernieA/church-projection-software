@@ -376,7 +376,7 @@
       "about": "What Lampstand does with your data, and which version you are running.",
       "features": "Everything Lampstand does today, and what is coming.",
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
-      "screens": "Shape or hide parts of your screens with masks."
+      "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks)."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -1081,5 +1081,30 @@
     "add": "Add mask",
     "newName": "Mask {{n}}",
     "preview": "{{name}} preview"
+  },
+  "looks": {
+    "button": "Looks",
+    "on": "Look on screen: {{name}}",
+    "everything": "Everything on every screen",
+    "edit": "Edit looks…",
+    "create": "Make a look…",
+    "title": "Looks",
+    "help": "A Look decides which layers each kind of screen shows, e.g. “Lobby”: secondary screens show only the background. Switch Looks from the toolbar; the change is instant.",
+    "name": "Look name",
+    "delete": "Delete {{name}}",
+    "add": "Add look",
+    "newName": "Look {{n}}",
+    "layersOn": "{{screen}}: layers shown in {{name}}",
+    "screens": {
+      "main": "Audience",
+      "secondary": "Secondary"
+    },
+    "layers": {
+      "background": "Background",
+      "media": "Media",
+      "content": "Slide",
+      "messages": "Messages",
+      "props": "Props"
+    }
   }
 }

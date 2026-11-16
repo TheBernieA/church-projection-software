@@ -1202,6 +1202,38 @@ test('screen masks: made in Settings › Screens, shape the audience output', as
   await control.keyboard.press('Escape');
 });
 
+test('looks: switch which layers each screen shows from the toolbar', async () => {
+  const out = await outputPage();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+  await control.getByRole('button', { name: 'Settings', exact: true }).click();
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'Screens' })
+    .click();
+  await control.getByRole('button', { name: 'Add look' }).click();
+  // Look 1: the audience screens drop the slide (background stays).
+  await control
+    .getByRole('group', { name: 'Audience: layers shown in Look 1' })
+    .getByRole('button', { name: 'Slide' })
+    .click();
+  // Esc closes Settings and nothing else: the verse stays on screen (it used to be panic too).
+  await control.keyboard.press('Escape');
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+  await control.getByRole('banner').getByRole('button', { name: 'Looks' }).click();
+  await control.getByRole('menuitemradio', { name: 'Look 1' }).click();
+  await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
+  await expect(out.locator('.ls-bg')).toHaveCount(1);
+  await expect(control.getByRole('banner').getByRole('button', { name: 'Looks' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await control.screenshot({ path: 'test-results/30-looks.png' });
+  // Back to everything on every screen.
+  await control.getByRole('banner').getByRole('button', { name: 'Looks' }).click();
+  await control.getByRole('menuitemradio', { name: 'Everything on every screen' }).click();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+});
+
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });

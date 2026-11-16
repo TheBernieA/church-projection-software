@@ -13,6 +13,7 @@ import {
   type Scene,
 } from './schemas/scene';
 import { TransitionSpecSchema } from './schemas/theme';
+import { LookSchema } from './schemas/settings';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
 import { mediaPositionAt, mediaStart, startMedia } from './utils/mediaPlayback';
@@ -88,6 +89,8 @@ export const LiveStateSchema = z.object({
   /** Timers that have been started (shown in the Timers bin and on the stage display). */
   timers: z.array(LiveTimerSchema).max(20).default([]),
   cleared: ClearedLayersSchema.default({}),
+  /** The Look on screen (a copy of its layers), or null for everything everywhere. */
+  look: LookSchema.nullable().default(null),
 });
 export type LiveState = z.infer<typeof LiveStateSchema>;
 
@@ -104,6 +107,7 @@ export function initialLiveState(): LiveState {
     stream: { status: 'idle' },
     timers: [],
     cleared: {},
+    look: null,
   };
 }
 
@@ -395,6 +399,16 @@ export function registerLiveCommands(
         program: clearLayer(s.program, p.layer),
         next: p.layer === 'content' || p.layer === 'all' || p.layer === 'panic' ? null : s.next,
       }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.setLook',
+    schema: z.object({ look: LookSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, look: p.look }));
       return { result: null };
     },
   });

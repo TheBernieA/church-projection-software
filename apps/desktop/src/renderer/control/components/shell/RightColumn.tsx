@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
+  applyLook,
   makeScene,
   overlayGroup,
   sceneIsVisible,
@@ -335,7 +336,12 @@ export function RightColumn() {
     const id = s.settings?.maskFor.main;
     return (id && s.settings?.screenMasks.find((m) => m.id === id)) || null;
   });
-  if (!live || !previewScene || !nextScene) return null;
+  // The Program monitor shows what the audience screens show under the active Look.
+  const audienceScene = useMemo(
+    () => (live ? applyLook(live.program, live.look?.main) : null),
+    [live],
+  );
+  if (!live || !previewScene || !nextScene || !audienceScene) return null;
   const p = live.program;
   const mediaName = p.media
     ? media.find((m) => m.id === p.media?.mediaId)?.name
@@ -391,7 +397,7 @@ export function RightColumn() {
                   className={`overflow-hidden rounded-[3px] ${onAir ? 'shadow-[var(--tally-program-glow)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
                 >
                   <SceneView
-                    scene={p}
+                    scene={audienceScene}
                     label={t('monitor.live')}
                     standby={standby}
                     audio={!hasMainOutput}

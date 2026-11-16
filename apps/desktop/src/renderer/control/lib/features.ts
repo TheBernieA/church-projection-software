@@ -236,8 +236,7 @@ export const FEATURES: Feature[] = [
     'looks',
     'layers',
     'Looks',
-    'Choose which layers appear on each screen, and switch between saved combinations.',
-    'soon',
+    'Choose which layers appear on each screen, and switch between saved combinations: Looks in the toolbar, made in Settings › Screens.',
   ),
 
   // Screens & outputs

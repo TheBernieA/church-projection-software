@@ -1,4 +1,4 @@
-import type { LiveState } from '@lampstand/core';
+import { applyLook, type LiveState } from '@lampstand/core';
 import { buildTestPattern, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
@@ -15,6 +15,7 @@ const api = window.lampstandOutput;
 let renderer: SceneRenderer | null = null;
 let outputId = new URLSearchParams(location.search).get('id') ?? '';
 let info = { label: 'Output', width: 1920, height: 1080, audio: false };
+let role: 'main' | 'secondary' | 'stage' | 'none' = 'main';
 let pattern: HTMLElement | null = null;
 let latest: LiveState | null = null;
 let ready = false;
@@ -22,7 +23,10 @@ let ready = false;
 function draw(state: LiveState): void {
   latest = state;
   if (!ready || !renderer) return;
-  renderer.render(state.program);
+  // The active Look decides which layers this kind of screen shows.
+  const layers =
+    state.look && (role === 'main' || role === 'secondary') ? state.look[role] : null;
+  renderer.render(applyLook(state.program, layers));
   const showPattern = state.testPatterns.includes(outputId) || state.testPatterns.includes('*');
   if (showPattern && !pattern) {
     pattern = buildTestPattern(document, info);
@@ -36,6 +40,7 @@ function draw(state: LiveState): void {
 
 api.onInfo((i) => {
   outputId = i.outputId;
+  role = i.role;
   info = { label: i.label, width: i.width, height: i.height, audio: i.audio };
   if (!renderer) {
     renderer = new SceneRenderer(host, {
