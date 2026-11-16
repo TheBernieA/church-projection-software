@@ -59,7 +59,8 @@ const RUN: Record<ShortcutAction, () => void> = {
   logo: () => void toggleMask('logo'),
   freeze: () => void toggleMask('freeze'),
   panic: () => {
-    if (useStore.getState().dialog) return; // Esc closes dialogs first
+    // Esc closes whatever is open first (a dialog, a menu, a dropdown); only then is it panic.
+    if (useStore.getState().dialog || popupOpen()) return;
     void clearLayer('panic');
   },
   quickBar: () => openDialog('quick'),
@@ -81,6 +82,13 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 /** Global keyboard handler. Single keys never fire while typing in a field. */
+/** A Radix dialog, menu or dropdown list is open (it will take Esc for itself). */
+function popupOpen(): boolean {
+  return !!document.querySelector(
+    '[role="dialog"][data-state="open"], [role="menu"][data-state="open"], [role="listbox"][data-state="open"], [data-radix-popper-content-wrapper]',
+  );
+}
+
 export function installShortcuts(): () => void {
   const onKey = (e: KeyboardEvent): void => {
     if (e.repeat && !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
@@ -97,10 +105,14 @@ export function installShortcuts(): () => void {
     // While a dialog is open only global modifier/function shortcuts work (layer clears stay available).
     if (dialogOpen && !hasModifier && !/^F\d+$/.test(combo)) return;
     if (dialogOpen && (action === 'undo' || action === 'redo')) return;
+    // A menu or dropdown is open: plain keys (Esc, Space, arrows) are for it, not the show.
+    if (!hasModifier && !/^F\d+$/.test(combo) && popupOpen()) return;
     e.preventDefault();
     RUN[action]();
   };
-  window.addEventListener('keydown', onKey);
+  // Capture phase: this runs before a dialog or menu handles the same key and closes itself,
+  // so "Esc to close Settings" is never also "Esc: clear the screen".
+  window.addEventListener('keydown', onKey, true);
   // Edit › Undo / Redo in the menu bar: the same rules as the keys.
   // (The menu itself undoes typing in a focused field, natively.)
   const offMenu = api.onMenu((action) => {
@@ -109,7 +121,7 @@ export function installShortcuts(): () => void {
     if (!dialogOpen) void (action === 'undo' ? undo() : redo());
   });
   return () => {
-    window.removeEventListener('keydown', onKey);
+    window.removeEventListener('keydown', onKey, true);
     offMenu();
   };
 }
