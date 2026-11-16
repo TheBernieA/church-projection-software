@@ -45,7 +45,7 @@ export function Bin({ height }: { height: number }) {
       className="flex shrink-0 flex-col overflow-hidden"
       style={{ height: open ? height : undefined }}
     >
-      <div className="flex h-9 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--hairline)] px-2">
+      <div className="no-scrollbar flex h-10 shrink-0 items-center gap-0.5 overflow-x-auto border-b border-[var(--hairline)] px-2">
         {TABS.map(({ tab: x, icon: Icon, soon }) => (
           <PaneTab
             key={x}

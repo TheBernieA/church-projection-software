@@ -1,5 +1,6 @@
 import {
   BookOpen,
+  ChevronDown,
   Circle,
   Flame,
   Keyboard,
@@ -50,7 +51,7 @@ function ModeTabs() {
   return (
     <nav
       aria-label={t('modes.label')}
-      className="flex items-center gap-0.5 rounded-[var(--radius-control)] bg-[var(--surface-0)] p-0.5 shadow-[inset_0_0_0_1px_var(--hairline)]"
+      className="flex shrink-0 items-center gap-0.5 rounded-[8px] bg-[var(--surface-1)] p-[3px] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)]"
     >
       {MODES.map(({ mode: m, icon: Icon }) => (
         <button
@@ -59,14 +60,14 @@ function ModeTabs() {
           title={t(`modes.${m}`)}
           aria-pressed={mode === m}
           onClick={() => useStore.setState({ mode: m })}
-          className={`flex h-[30px] cursor-pointer items-center gap-1.5 rounded-[5px] px-2.5 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+          className={`flex h-[30px] cursor-pointer items-center gap-1.5 rounded-[6px] px-2.5 text-[12px] font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
             mode === m
-              ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[var(--shadow-1)]'
+              ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[0_1px_2px_rgba(0,0,0,0.35),0_0_0_1px_var(--hairline),var(--highlight-top)]'
               : 'text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]'
           }`}
         >
           <Icon size={14} strokeWidth={2} />
-          <span className="max-[1400px]:sr-only">{t(`modes.${m}`)}</span>
+          <span className="max-[1600px]:sr-only">{t(`modes.${m}`)}</span>
         </button>
       ))}
     </nav>
@@ -99,7 +100,7 @@ export function Toolbar() {
   const hot = onAir && !masked;
 
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--hairline)] bg-[var(--surface-1)] px-2.5">
+    <header className="flex h-12 shrink-0 items-center gap-3 bg-[var(--surface-0)] px-3">
       <div
         aria-hidden
         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-gradient-to-br from-[#ffd28a] via-[#f0a73a] to-[#c27414] text-[#1c1306]"
@@ -109,13 +110,14 @@ export function Toolbar() {
       <button
         type="button"
         onClick={() => openDialog('services')}
-        className="flex min-w-0 max-w-[220px] cursor-pointer flex-col items-start rounded-[var(--radius-control)] px-2 py-0.5 text-left leading-tight transition-colors hover:bg-[var(--surface-2)]"
-        title={t('top.services')}
+        className="-ml-1.5 flex h-8 min-w-[110px] max-w-[220px] shrink-0 cursor-pointer items-center gap-1 rounded-[var(--radius-control)] px-2 text-left transition-colors hover:bg-[var(--surface-2)]"
+        title={`${t('top.services')}: ${service?.name ?? ''}`}
       >
-        <span className="text-[10px] font-medium uppercase tracking-[0.06em] text-[var(--text-3)]">
-          {t('top.services')}
+        <span className="sr-only">{t('top.services')}</span>
+        <span className="truncate text-[length:var(--fs-md)] font-semibold">
+          {service?.name ?? ''}
         </span>
-        <span className="w-full truncate text-[13px] font-semibold">{service?.name ?? ''}</span>
+        <ChevronDown size={13} className="shrink-0 text-[var(--text-3)]" />
       </button>
 
       <ModeTabs />
@@ -124,11 +126,11 @@ export function Toolbar() {
         type="button"
         onClick={() => openDialog('quick')}
         aria-label={t('top.search')}
-        className="flex h-8 min-w-[44px] max-w-[280px] flex-1 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] bg-[var(--surface-0)] px-2.5 text-left text-[var(--text-3)] shadow-[inset_0_0_0_1px_var(--hairline)] transition-colors hover:text-[var(--text-2)]"
+        className="flex h-8 w-[clamp(150px,16vw,280px)] shrink-0 cursor-pointer items-center gap-2 rounded-[8px] bg-[var(--surface-1)] px-2.5 text-left text-[var(--text-3)] shadow-[0_0_0_1px_var(--hairline),var(--highlight-top)] transition-[color,box-shadow] duration-[var(--dur-fast)] hover:text-[var(--text-2)] hover:shadow-[0_0_0_1px_var(--hairline-strong),var(--highlight-top)]"
       >
-        <Search size={14} strokeWidth={2} />
-        <span className="flex-1 truncate text-[12px] max-xl:hidden">{t('top.search')}</span>
-        <span className="max-lg:hidden">
+        <Search size={14} strokeWidth={2} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-[12px]">{t('top.search')}</span>
+        <span className="shrink-0 max-lg:hidden">
           <Kbd>{displayCombo(keys.quickBar)}</Kbd>
         </span>
       </button>

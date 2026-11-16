@@ -5,8 +5,8 @@ export type ButtonVariant =
 
 const base =
   'inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium select-none whitespace-nowrap ' +
-  'transition-[background-color,color,box-shadow,transform] duration-150 active:translate-y-px ' +
-  'focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0';
+  'transition-[background-color,color,box-shadow,transform,filter] duration-[var(--dur-fast)] ease-[var(--ease-out)] active:scale-[0.97] ' +
+  'focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100';
 
 const variants: Record<ButtonVariant, string> = {
   primary:

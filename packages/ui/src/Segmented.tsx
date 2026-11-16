@@ -25,9 +25,9 @@ export function Segmented<T extends string>({
           role="radio"
           aria-checked={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`h-7 cursor-pointer rounded-[6px] px-3 text-[12px] font-medium transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+          className={`h-7 cursor-pointer rounded-[5px] px-3 text-[12px] font-medium transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
             value === o.value
-              ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[var(--shadow-1)]'
+              ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_0_1px_var(--hairline),var(--highlight-top)]'
               : 'text-[var(--text-2)] hover:text-[var(--text-1)]'
           }`}
         >

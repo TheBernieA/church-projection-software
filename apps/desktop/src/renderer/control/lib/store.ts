@@ -33,6 +33,7 @@ export const useStore = create<ControlState>((set) => ({
   editingThemeId: null,
   history: { canUndo: false, canRedo: false },
   toasts: [],
+  saving: false,
   set: (p) => set(p),
 }));
 
@@ -144,6 +145,8 @@ export async function refresh(
 
 // ---------- Service editing with debounced autosave (§6.2: 500 ms) ----------
 let pendingSave: ReturnType<typeof setTimeout> | null = null;
+/** Read at call time (it can change while a save is awaited). */
+const hasPendingSave = (): boolean => pendingSave !== null;
 
 /**
  * Edit the current service (autosaved, undoable). Each discrete action becomes exactly one undo
@@ -156,7 +159,7 @@ export function editService(mutate: (s: ServicePlan) => ServicePlan, opts: EditO
   if (!opts.typing && pendingSave) void flushServiceSave();
   const current = get().service;
   if (!current) return;
-  patch({ service: mutate(current) });
+  patch({ service: mutate(current), saving: true });
   if (pendingSave) clearTimeout(pendingSave);
   pendingSave = setTimeout(() => void flushServiceSave(), opts.typing ? 500 : 0);
 }
@@ -208,6 +211,8 @@ export async function flushServiceSave(): Promise<void> {
   const s = get().service;
   if (!s) return;
   await attempt(() => cmd('service.save', { entity: s }), 'errors.saveService');
+  // An edit made while this save was in flight schedules another save; stay "Saving…" for it.
+  if (!hasPendingSave()) patch({ saving: false });
 }
 
 export async function openService(id: string): Promise<void> {

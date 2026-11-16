@@ -733,5 +733,16 @@
     "address": "Web address",
     "help": "Shown full screen in a separate, locked-down window on the projector. It can't see or change anything in Lampstand.",
     "invalid": "Use a full secure address, starting with https://"
+  },
+  "status": {
+    "label": "Status",
+    "outputs": "Outputs",
+    "noOutputs": "No outputs",
+    "window": "Window",
+    "saved": "All changes saved",
+    "saving": "Saving…",
+    "clock": "Time",
+    "onAir": "On air",
+    "offAir": "Off air"
   }
 }

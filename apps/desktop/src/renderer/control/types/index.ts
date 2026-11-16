@@ -100,6 +100,8 @@ export interface ControlState {
   editingThemeId: string | null;
   history: { canUndo: boolean; canRedo: boolean };
   toasts: Toast[];
+  /** A service edit is waiting to be saved (status bar shows "Saving…"). */
+  saving: boolean;
   set: (p: Partial<ControlState>) => void;
 }
 
