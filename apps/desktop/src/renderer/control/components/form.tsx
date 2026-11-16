@@ -1,5 +1,5 @@
 import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Typography } from '@lampstand/ui';
+import { Slider, Typography } from '@lampstand/ui';
 
 /**
  * Shared form controls for editors and inspectors, so every label, colour well, number box,
@@ -149,22 +149,18 @@ export function RangeField({
       as="label"
       size={12}
       tone="secondary"
-      className="grid grid-cols-[96px_minmax(0,1fr)_minmax(44px,auto)] items-center gap-2"
+      className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-2"
     >
       <span>{label}</span>
-      <input
-        type="range"
+      <Slider
         aria-label={label}
         min={min}
         max={max}
         step={step}
         value={value}
+        format={format}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1.5 cursor-pointer accent-[var(--accent)]"
       />
-      <Typography tone="muted" tabular className="text-right">
-        {format(value)}
-      </Typography>
     </Typography>
   );
 }

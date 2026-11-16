@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundAdjust, Theme } from '@lampstand/core';
 import { Checkbox, ColorInput, RangeField } from './form';
-import { Typography, typographyClass } from '@lampstand/ui';
+import { percent, Typography, typographyClass } from '@lampstand/ui';
 
 type TextStyle = Theme['text'];
 
@@ -56,8 +56,6 @@ function Effect({
     </div>
   );
 }
-
-const pct = (v: number): string => `${Math.round(v * 100)}%`;
 
 /**
  * Theme effects: text shadow, outline, glow, letter case and spacing; background dim, blur,
@@ -193,7 +191,7 @@ export function ThemeEffects({
           min={0}
           max={0.9}
           step={0.05}
-          format={pct}
+          format={percent}
           onChange={(dim) => setAdjust({ dim })}
         />
         <RangeField
@@ -210,7 +208,7 @@ export function ThemeEffects({
           min={0.2}
           max={2}
           step={0.05}
-          format={pct}
+          format={percent}
           onChange={(brightness) => setAdjust({ brightness })}
         />
         <RangeField
@@ -219,7 +217,7 @@ export function ThemeEffects({
           min={0.2}
           max={2}
           step={0.05}
-          format={pct}
+          format={percent}
           onChange={(contrast) => setAdjust({ contrast })}
         />
         <RangeField
@@ -228,7 +226,7 @@ export function ThemeEffects({
           min={0}
           max={2}
           step={0.05}
-          format={pct}
+          format={percent}
           onChange={(saturate) => setAdjust({ saturate })}
         />
         <Effect
@@ -254,7 +252,7 @@ export function ThemeEffects({
               min={0}
               max={1}
               step={0.05}
-              format={pct}
+              format={percent}
               onChange={(opacity) => adj.tint && setAdjust({ tint: { ...adj.tint, opacity } })}
             />
           )}

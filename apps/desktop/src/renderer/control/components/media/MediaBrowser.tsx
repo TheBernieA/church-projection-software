@@ -32,7 +32,15 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, newId, type MediaItem, type ServiceItem } from '@lampstand/core';
-import { Button, IconButton, Segmented, SoonBadge, Typography } from '@lampstand/ui';
+import {
+  Button,
+  IconButton,
+  Segmented,
+  Slider,
+  SoonBadge,
+  Typography,
+  percent,
+} from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
 import { openAdhoc } from '../../lib/actions';
 import { playAudio, probeDuration } from '../../lib/audio';
@@ -50,7 +58,6 @@ import {
   toggleFavourite,
   usePlaylists,
 } from '../../lib/mediaPlaylists';
-import { pct } from '../../lib/slider';
 import { addItemToService, attempt, useStore } from '../../lib/store';
 import { mediaUrl, thumbUrl } from '../../../shared/mediaUrl';
 import { usePaneSize } from '../shell/Splitter';
@@ -803,8 +810,8 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
             ]}
           />
           {layout === 'grid' && (
-            <input
-              type="range"
+            <Slider
+              format={(v) => percent(v, 160)}
               aria-label={t('mediaBin.size')}
               title={t('mediaBin.size')}
               min={110}
@@ -814,8 +821,7 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
               onChange={(e) => size.preview(Number(e.target.value))}
               onPointerUp={(e) => size.commit(Number(e.currentTarget.value))}
               onKeyUp={(e) => size.commit(Number(e.currentTarget.value))}
-              style={pct(size.size - 110, 170)}
-              className="ls-range w-16 shrink-0"
+              className="w-[104px] shrink-0"
             />
           )}
           <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-[var(--divider)]" />

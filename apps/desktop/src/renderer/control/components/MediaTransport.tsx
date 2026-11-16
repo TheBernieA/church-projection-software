@@ -2,13 +2,13 @@ import { useEffect, type ReactNode } from 'react';
 import { Pause, Play, Repeat, SkipBack, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, mediaEnd, mediaPositionAt, type MediaLayer } from '@lampstand/core';
-import { Button, IconButton, Typography } from '@lampstand/ui';
+import { Button, IconButton, Slider, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { useNow } from '../lib/hooks';
 import { attempt, useStore } from '../lib/store';
 import { mediaUrl } from '../../shared/mediaUrl';
 import { hasDuration, setDuration, useKnownDuration } from '../lib/mediaDurations';
-import { pct, useDraft } from '../lib/slider';
+import { useDraft } from '../lib/slider';
 
 /**
  * Duration of a library clip: from the library record when known, else read once from the
@@ -277,8 +277,7 @@ export function MediaTransport({
             <Volume2 size={14} />
           )}
         </IconButton>
-        <input
-          type="range"
+        <Slider
           aria-label={t('media.volume')}
           min={0}
           max={1}
@@ -286,8 +285,7 @@ export function MediaTransport({
           disabled={idle}
           value={vol}
           {...volume.props}
-          style={pct(vol, 1)}
-          className="ls-range w-14 shrink-0"
+          className="w-[88px] shrink-0"
         />
       </div>
 
@@ -307,8 +305,7 @@ export function MediaTransport({
         >
           <SkipIcon dir="back" seconds={SKIP} />
         </TransportButton>
-        <input
-          type="range"
+        <Slider
           aria-label={t('media.position')}
           min={0}
           max={duration ?? 0}
@@ -316,11 +313,9 @@ export function MediaTransport({
           disabled={!duration}
           value={Math.min(shown, duration ?? 0)}
           {...scrub.props}
-          style={{
-            ...pct(Math.min(shown, duration ?? 0), duration ?? 0),
-            ...(ending ? { '--fill': 'var(--tally-program)' } : {}),
-          }}
-          className="ls-range mx-2 min-w-0 flex-1"
+          format={null}
+          fill={ending ? 'var(--tally-program)' : undefined}
+          className="mx-2 flex-1"
         />
         <TransportButton
           label={t('media.forward', { count: SKIP })}

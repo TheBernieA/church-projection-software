@@ -34,6 +34,17 @@ describe('one Button for every button', () => {
   });
 });
 
+describe('one Slider for every slider', () => {
+  it('no raw range input outside Slider.tsx; use <Slider> (it draws the track and the value)', () => {
+    const offenders = files()
+      .filter(({ path }) => !path.endsWith('Slider.tsx'))
+      .flatMap(({ path, text }) =>
+        [...text.matchAll(/type="range"/g)].map((m) => `${path}:${lineOf(text, m.index)}`),
+      );
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('typography has a single source of truth', () => {
   it('text elements take their style from <Typography>, not hand-written classes', () => {
     const tag = new RegExp(

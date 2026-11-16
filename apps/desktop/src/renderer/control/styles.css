@@ -203,47 +203,67 @@ input[type='checkbox'] {
   }
 }
 
-/* Transport sliders (media position, volume): a thin track that fills up to --pct, with a
-   round thumb that grows while hovered or dragged. */
+/* The one slider look (see Slider in @lampstand/ui): a thin rounded track filled up to --pct,
+   and a crisp white thumb. Hover brightens the track and grows the thumb; dragging or keyboard
+   focus adds a soft halo instead of a box outline. */
 .ls-range {
   --pct: 0%;
   --fill: var(--text-1);
+  --rail: color-mix(in srgb, var(--text-1) 14%, transparent);
+  --halo: color-mix(in srgb, var(--fill) 22%, transparent);
   -webkit-appearance: none;
   appearance: none;
-  height: 14px;
+  height: 18px;
+  margin: 0;
   background: transparent;
   cursor: pointer;
+  outline: none;
 }
 .ls-range:disabled {
   cursor: default;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 .ls-range::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    var(--fill) 0 var(--pct),
-    color-mix(in srgb, var(--text-1) 16%, transparent) var(--pct) 100%
-  );
+  background: linear-gradient(to right, var(--fill) 0 var(--pct), var(--rail) var(--pct) 100%);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.ls-range:hover:not(:disabled) {
+  --rail: color-mix(in srgb, var(--text-1) 22%, transparent);
 }
 .ls-range::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  margin-top: -3px;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  transition: transform var(--dur-fast) var(--ease-out);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
-.ls-range:hover:not(:disabled)::-webkit-slider-thumb,
-.ls-range:active:not(:disabled)::-webkit-slider-thumb {
-  transform: scale(1.35);
+.ls-range:hover:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.15);
 }
-.ls-range:focus-visible {
-  outline: none;
+.ls-range:active:not(:disabled)::-webkit-slider-thumb,
+.ls-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 5px var(--halo);
 }
 .ls-range:focus-visible::-webkit-slider-thumb {
-  box-shadow: var(--focus-ring);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+/* Any slider: never the browser's rectangular focus box. */
+input[type='range']:focus {
+  outline: none;
 }

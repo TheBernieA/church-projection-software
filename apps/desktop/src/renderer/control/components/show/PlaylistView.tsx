@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
-import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Slider, Typography, percent } from '@lampstand/ui';
 import {
   goLiveSlide,
   runOnAnnouncementsLayer,
@@ -320,8 +320,8 @@ export function PlaylistView() {
           ]}
         />
         {!easy && (
-          <input
-            type="range"
+          <Slider
+            format={(v) => percent(v, 200)}
             aria-label={t('slides.size')}
             title={t('slides.size')}
             min={130}
@@ -331,7 +331,7 @@ export function PlaylistView() {
             onChange={(e) => thumb.preview(Number(e.target.value))}
             onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
             onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-            className="h-1.5 w-28 accent-[var(--accent)]"
+            className="w-36 shrink-0"
           />
         )}
       </div>

@@ -6,3 +6,4 @@ export * from './Switch';
 export * from './Soon';
 export * from './Typography';
 export * from './NavItem';
+export * from './Slider';

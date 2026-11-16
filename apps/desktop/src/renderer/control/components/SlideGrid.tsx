@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button, Segmented, Typography, typographyClass } from '@lampstand/ui';
+import { Button, Segmented, Slider, Typography, percent, typographyClass } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { itemTitle } from '../lib/slides';
@@ -222,8 +222,8 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
             ]}
           />
           {!easy && (
-            <input
-              type="range"
+            <Slider
+              format={(v) => percent(v, 200)}
               aria-label={t('slides.size')}
               title={t('slides.size')}
               min={130}
@@ -233,7 +233,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
               onChange={(e) => thumb.preview(Number(e.target.value))}
               onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
               onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-              className="h-1.5 w-28 accent-[var(--accent)]"
+              className="w-36 shrink-0"
             />
           )}
         </div>

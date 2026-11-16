@@ -20,7 +20,7 @@ import {
   type Standby,
 } from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch, Typography, IconButton } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
 import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
@@ -94,9 +94,9 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
         >
           <Type size={12} />
         </IconButton>
-        <input
+        <Slider
+          format={null}
           id="text-scale"
-          type="range"
           min={TEXT_MIN}
           max={TEXT_MAX}
           step={TEXT_STEP}
@@ -105,7 +105,7 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
           onPointerUp={() => commit()}
           onKeyUp={() => commit()}
           onBlur={() => commit()}
-          className="h-1.5 w-56 cursor-pointer accent-[var(--accent)]"
+          className="w-56"
         />
         <IconButton
           size="xs"

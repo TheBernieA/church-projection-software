@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { audioPositionAt, formatClock, type MediaItem } from '@lampstand/core';
-import { Button, IconButton, Typography } from '@lampstand/ui';
+import { Button, IconButton, Slider, Typography } from '@lampstand/ui';
 import { audioCmd, neighbourTrack, playAudio, probeDuration } from '../../lib/audio';
 
 import { useNow } from '../../lib/hooks';
@@ -34,7 +34,7 @@ import {
   useAudioPreview,
 } from '../../lib/audioPreview';
 import { useInputDevices } from '../../lib/inputs';
-import { pct, useDraft } from '../../lib/slider';
+import { useDraft } from '../../lib/slider';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import {
   addToMediaPlaylist,
@@ -105,21 +105,19 @@ function NowPlaying() {
           </Typography>
         </div>
         <Volume2 size={14} className="shrink-0 text-[var(--text-3)]" />
-        <input
-          type="range"
+        <Slider
           aria-label={t('audio.volume')}
           min={0}
           max={1}
           step={0.05}
           value={vol}
           {...volume.props}
-          style={pct(vol, 1)}
-          className="ls-range w-16 shrink-0"
+          className="w-[88px] shrink-0"
         />
       </div>
       <div>
-        <input
-          type="range"
+        <Slider
+          format={null}
           aria-label={t('audio.position')}
           min={0}
           max={duration ?? 0}
@@ -127,8 +125,7 @@ function NowPlaying() {
           disabled={!duration}
           value={pos}
           {...seek.props}
-          style={pct(pos, duration ?? 0)}
-          className="ls-range block w-full"
+          className="w-full"
         />
         <div className="flex justify-between">
           <Typography size={10} tone="muted" tabular>
@@ -265,8 +262,8 @@ function PreviewBar({ playlistId }: { playlistId: string | null }) {
             <Play size={12} fill="currentColor" />
           )}
         </IconButton>
-        <input
-          type="range"
+        <Slider
+          format={null}
           aria-label={t('audio.previewPosition')}
           min={0}
           max={duration ?? 0}
@@ -274,8 +271,7 @@ function PreviewBar({ playlistId }: { playlistId: string | null }) {
           disabled={!duration}
           value={Math.min(p.position, duration ?? 0)}
           onChange={(e) => seekPreview(Number(e.target.value))}
-          style={pct(p.position, duration ?? 0)}
-          className="ls-range min-w-0 flex-1"
+          className="flex-1"
         />
         <Typography size={10} tone="muted" tabular className="w-9 text-right">
           {formatClock(Math.floor(p.position))}

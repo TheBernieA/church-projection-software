@@ -9,7 +9,7 @@ import {
   type Settings,
   LookLayerSchema,
 } from '@lampstand/core';
-import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Slider, Typography } from '@lampstand/ui';
 import { BUILT_IN_BACKGROUNDS } from '../../constants';
 import { usePictures } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
@@ -45,23 +45,19 @@ function Amount({
       <Typography size={12} tone="secondary" className="w-16 shrink-0">
         {label}
       </Typography>
-      <input
-        type="range"
+      <Slider
         aria-label={label}
         min={0}
         max={max}
         step={1}
         value={shown}
+        format={(v) => `${v}%`}
         onChange={(e) => setDraft(Number(e.target.value))}
         onPointerUp={commit}
         onKeyUp={commit}
         onBlur={commit}
-        style={{ '--pct': `${(shown / max) * 100}%` } as React.CSSProperties}
-        className="ls-range min-w-0 flex-1"
+        className="flex-1"
       />
-      <Typography size={12} tone="muted" tabular className="w-10 text-right">
-        {shown}%
-      </Typography>
     </label>
   );
 }

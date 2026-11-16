@@ -1,6 +1,6 @@
 import { Mic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Switch, Typography } from '@lampstand/ui';
+import { Slider, Switch, Typography } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import {
   useDeviceStream,
@@ -8,7 +8,7 @@ import {
   useLevelMeter,
   type InputDevice,
 } from '../../lib/inputs';
-import { pct, useDraft } from '../../lib/slider';
+import { useDraft } from '../../lib/slider';
 import { attempt, useStore } from '../../lib/store';
 
 const send = (input: unknown): void =>
@@ -54,16 +54,14 @@ function InputRow({ device }: { device: InputDevice }) {
         />
       </div>
       {cue && (
-        <input
-          type="range"
+        <Slider
           aria-label={t('inputs.volume', { name: device.label })}
           min={0}
           max={1}
           step={0.05}
           value={vol}
           {...volume.props}
-          style={pct(vol, 1)}
-          className="ls-range w-full"
+          className="w-full"
         />
       )}
     </li>

@@ -1,8 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react';
-
-/** The fill of an `.ls-range` slider: how far along `value` is, as the `--pct` it reads. */
-export const pct = (value: number, max: number): CSSProperties =>
-  ({ '--pct': `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }) as CSSProperties;
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 
 /**
  * A slider value held locally while the operator drags, committed exactly once when they let
