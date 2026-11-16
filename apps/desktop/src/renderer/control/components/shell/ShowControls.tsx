@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { SoonBadge, Button } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { useStore } from '../../lib/store';
+import { AudioBin } from '../bins/AudioBin';
 import { MessagesBin, StageMessage } from '../bins/MessagesBin';
 import { PropsBin } from '../bins/PropsBin';
 import { SoonPanel } from '../bins/SoonPanel';
@@ -20,7 +21,7 @@ import { type ControlsTab } from '../../types';
 type Tab = ControlsTab;
 
 const TABS: { tab: Tab; icon: LucideIcon; soon?: string[] }[] = [
-  { tab: 'audio', icon: AudioLines, soon: ['audio-bin', 'audio-input'] },
+  { tab: 'audio', icon: AudioLines },
   { tab: 'stage', icon: Podium },
   { tab: 'timers', icon: Timer },
   { tab: 'messages', icon: MessageSquareText },
@@ -77,6 +78,8 @@ export function ShowControls() {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {current?.soon ? (
           <SoonPanel ids={current.soon} icon={<current.icon size={20} />} />
+        ) : tab === 'audio' ? (
+          <AudioBin />
         ) : tab === 'stage' ? (
           <div className="p-2.5">
             <StageMessage />

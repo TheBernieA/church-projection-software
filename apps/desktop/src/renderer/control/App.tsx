@@ -13,6 +13,7 @@ import { TextBar } from './components/shell/TextBar';
 import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
 import { installMediaWatch } from './lib/actions';
+import { installAudioWatch, installLocalAudio } from './lib/audio';
 
 // Opened on demand: loaded the first time they're needed, not at startup.
 const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
@@ -43,6 +44,8 @@ export function App() {
   const bin = usePaneSize('binHeight', 236, 150, 520);
   useEffect(() => installShortcuts(), []);
   useEffect(() => installMediaWatch(), []);
+  useEffect(() => installAudioWatch(), []);
+  useEffect(() => installLocalAudio(), []);
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => {
     document.documentElement.dataset.theme = uiTheme;

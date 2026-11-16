@@ -550,7 +550,8 @@
     "import": "Could not import those files.",
     "duplicate": "Could not duplicate that.",
     "setting": "Could not save that setting.",
-    "install": "Could not install that package."
+    "install": "Could not install that package.",
+    "audio": "Could not change the audio."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -1112,5 +1113,35 @@
   "announce": {
     "run": "Loop on the announcements layer",
     "stop": "Stop the announcements layer"
+  },
+  "audio": {
+    "nowPlaying": "Room audio",
+    "nothing": "No audio playing",
+    "nothingHint": "Pick a track below to play it through the room",
+    "playing": "Playing",
+    "paused": "Paused",
+    "fading": "Fading out…",
+    "volume": "Audio volume",
+    "position": "Audio position",
+    "loop": "Loop track",
+    "previous": "Previous track",
+    "next": "Next track",
+    "play": "Play audio",
+    "pause": "Pause audio",
+    "fadeOut": "Fade out and stop",
+    "stop": "Stop audio",
+    "source": "Audio to show",
+    "all": "All audio",
+    "newPlaylist": "New audio playlist",
+    "deletePlaylist": "Delete {{name}}",
+    "import": "Import audio",
+    "tracks": "Tracks",
+    "trackMenu": "{{name}} options",
+    "addTo": "Add to {{name}}",
+    "newWith": "New audio playlist with this",
+    "remove": "Remove from this playlist",
+    "empty": "No audio yet. Import music or sound effects with the upload button.",
+    "emptyPlaylist": "This playlist is empty. Add tracks from All audio with their … menu, or import into it.",
+    "inputs": "Audio inputs"
   }
 }

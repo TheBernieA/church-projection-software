@@ -163,7 +163,7 @@ function PlaylistRow({ p }: { p: MediaPlaylist }) {
 export function BinNav() {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
-  const playlists = useStore((s) => s.mediaPlaylists);
+  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
   const media = useStore((s) => s.media);
   const library = media.filter(inMediaBin);
   const counts: Partial<Record<BinTab, number>> = {
@@ -242,7 +242,7 @@ export function Bin({ height }: { height: number }) {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
   const playlistId = useStore((s) => s.binPlaylistId);
-  const playlists = useStore((s) => s.mediaPlaylists);
+  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
   const source = SOURCES.find((s) => s.tab === tab);
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
   const view =

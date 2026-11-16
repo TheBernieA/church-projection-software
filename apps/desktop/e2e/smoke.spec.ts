@@ -66,6 +66,51 @@ test.beforeAll(async () => {
       tags: [],
     }),
   );
+  // Two short tones for the Audio tab (a playlist plays one into the next).
+  const tone = (seconds: number, hz: number): Buffer => {
+    const rate = 8000;
+    const n = Math.round(seconds * rate);
+    const wav = Buffer.alloc(44 + n * 2);
+    wav.write('RIFF', 0);
+    wav.writeUInt32LE(36 + n * 2, 4);
+    wav.write('WAVEfmt ', 8);
+    wav.writeUInt32LE(16, 16);
+    wav.writeUInt16LE(1, 20); // PCM
+    wav.writeUInt16LE(1, 22); // mono
+    wav.writeUInt32LE(rate, 24);
+    wav.writeUInt32LE(rate * 2, 28);
+    wav.writeUInt16LE(2, 32);
+    wav.writeUInt16LE(16, 34);
+    wav.write('data', 36);
+    wav.writeUInt32LE(n * 2, 40);
+    for (let i = 0; i < n; i++)
+      wav.writeInt16LE(Math.round(Math.sin((2 * Math.PI * hz * i) / rate) * 3000), 44 + i * 2);
+    return wav;
+  };
+  for (const [id, name, secs, hz] of [
+    ['seed-tone-a', 'Seed tone A', 1.5, 440],
+    ['seed-tone-b', 'Seed tone B', 4, 660],
+  ] as const) {
+    const bytes = tone(secs, hz);
+    writeFileSync(join(mediaDir, `${id}.wav`), bytes);
+    writeFileSync(
+      join(mediaDir, '.meta', `${id}.media.json`),
+      JSON.stringify({
+        id,
+        schemaVersion: 1,
+        createdAt: now,
+        updatedAt: now,
+        name,
+        kind: 'audio',
+        fileName: `${id}.wav`,
+        mimeType: 'audio/wav',
+        sizeBytes: bytes.length,
+        hasThumbnail: false,
+        isBackground: false,
+        tags: [],
+      }),
+    );
+  }
   const env = {
     ...process.env,
     LAMPSTAND_USER_DATA: join(dir, 'user'),
@@ -1027,8 +1072,8 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
   await expect(stage.locator('.timer')).toHaveCount(0);
 
   // Coming soon: unbuilt tools say so, and Settings → Features lists the roadmap.
-  await bin.getByRole('tab', { name: 'Audio' }).click();
-  await expect(bin.getByTestId('soon-panel')).toContainText('Audio bin & playlists');
+  await bin.getByRole('tab', { name: 'Macros' }).click();
+  await expect(bin.getByTestId('soon-panel')).toContainText('Macros');
   await bin.getByRole('button', { name: "See everything that's coming" }).click();
   await expect(control.getByRole('heading', { name: 'Features' })).toBeVisible();
   await expect(control.locator('[data-feature="ndi"]')).toHaveAttribute('data-status', 'soon');
@@ -1263,6 +1308,35 @@ test('announcements layer: loops over the slide, clears on its own', async () =>
   await expect(out.locator('.ls-layer-content .ls-text').last()).toContainText(
     'For God so loved the world',
   );
+});
+
+test('audio bin: play a track, a playlist plays on, fade out', async () => {
+  await binTab('Audio');
+  const panel = control.getByRole('region', { name: 'Show controls' });
+  const audio = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.audio : null;
+  };
+  await panel.getByRole('button', { name: 'Seed tone B', exact: true }).click();
+  await expect.poll(async () => (await audio())?.mediaId).toBe('seed-tone-b');
+  await expect(panel.getByRole('button', { name: 'Pause audio' })).toBeVisible();
+  // An audio playlist: A then B. Playing A moves on to B by itself.
+  await panel.getByRole('button', { name: 'New audio playlist' }).click();
+  await panel.getByRole('combobox', { name: 'Audio to show' }).click();
+  await control.getByRole('option', { name: 'All audio' }).click();
+  for (const name of ['Seed tone A', 'Seed tone B']) {
+    await panel.getByRole('button', { name: `${name} options` }).click();
+    await control.getByRole('menuitem', { name: 'Add to New playlist' }).click();
+  }
+  await panel.getByRole('combobox', { name: 'Audio to show' }).click();
+  await control.getByRole('option', { name: 'New playlist' }).click();
+  await panel.getByRole('button', { name: 'Seed tone A', exact: true }).click();
+  await expect.poll(async () => (await audio())?.mediaId).toBe('seed-tone-a');
+  await expect.poll(async () => (await audio())?.mediaId, { timeout: 8000 }).toBe('seed-tone-b');
+  await control.screenshot({ path: 'test-results/32-audio-bin.png' });
+  // Fade out: it goes quiet and stops.
+  await panel.getByRole('button', { name: 'Fade out and stop' }).click();
+  await expect.poll(async () => await audio(), { timeout: 8000 }).toBeNull();
 });
 
 test('media playlists: create, drag media in, open, rename and delete', async () => {

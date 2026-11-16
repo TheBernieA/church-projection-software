@@ -121,6 +121,8 @@ export interface ControlState {
   binPlaylistId: string | null;
   /** The item looping on the announcements layer, if any. */
   announceItemId: string | null;
+  /** The audio playlist open in the Audio tab (null: all audio). */
+  audioPlaylistId: string | null;
   controlsTab: ControlsTab;
   binOpen: boolean;
   /** The toolbar's Text bar (formatting for the selected item) is showing. */

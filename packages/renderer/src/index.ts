@@ -11,3 +11,4 @@ export * from './objects';
 export * from './testPattern';
 export * from './types';
 export * from './mask';
+export * from './audioPlayer';

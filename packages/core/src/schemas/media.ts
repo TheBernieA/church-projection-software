@@ -30,6 +30,8 @@ export const MEDIA_SCHEMA_VERSION = 1;
  */
 export const MediaPlaylistSchema = EntityMetaSchema.extend({
   name: z.string().min(1).max(120),
+  /** `audio`: an audio playlist (Audio tab under the monitor); `media`: the media bin. */
+  kind: z.enum(['media', 'audio']).default('media'),
   mediaIds: z.array(IdSchema).max(5000).default([]),
 });
 export type MediaPlaylist = z.infer<typeof MediaPlaylistSchema>;

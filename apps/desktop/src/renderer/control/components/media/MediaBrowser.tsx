@@ -18,6 +18,7 @@ import { formatClock, newId, type MediaItem, type ServiceItem } from '@lampstand
 import { Button, IconButton, Segmented, SoonBadge, Typography } from '@lampstand/ui';
 import { feature } from '../../lib/features';
 import { openAdhoc } from '../../lib/actions';
+import { playAudio } from '../../lib/audio';
 import { cmd, q } from '../../lib/api';
 import { isLibraryDrag, libraryDragSource, readLibraryDrop } from '../../lib/libraryDrag';
 import {
@@ -115,7 +116,7 @@ export function Thumb({ m }: { m: MediaItem }) {
 /** The "…" menu on a tile: add to a playlist, take it out of this one, delete it. */
 function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
-  const playlists = useStore((s) => s.mediaPlaylists);
+  const playlists = useStore((s) => s.mediaPlaylists).filter((p) => p.kind !== 'audio');
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -255,9 +256,8 @@ function MediaTile({
         aria-label={m.name}
         title={m.name}
         {...(m.kind === 'audio'
-          ? // Audio can't play yet: say so rather than doing nothing. It stays out of the
-            // service plan (the menu still adds it to media playlists).
-            { onClick: () => toast(i18n.t('mediaBin.audioSoon')) }
+          ? // Audio plays through the room (Audio tab); it stays out of the service plan.
+            { onClick: () => void playAudio(m.id) }
           : {
               onClick: () => void openAdhoc(asItem(m), 'preview'),
               onDoubleClick: () => addItemToService({ ...asItem(m), id: newId() }),

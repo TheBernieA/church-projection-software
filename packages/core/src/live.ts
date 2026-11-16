@@ -35,6 +35,39 @@ export const PreviewSchema = z.object({
 export type Preview = z.infer<typeof PreviewSchema>;
 
 /**
+ * Audio playing through the room (walk-in music, sound cues): one track at a time, from the
+ * library, on the same shared timeline as video so every player agrees on where it is.
+ */
+export const AudioCueSchema = z.object({
+  mediaId: z.string().max(64),
+  playing: z.boolean(),
+  /** Seconds into the track at `syncedAt`. */
+  position: z.number().min(0).max(86_400),
+  syncedAt: z.string().max(40).optional(),
+  volume: z.number().min(0).max(1).default(1),
+  loop: z.boolean().default(false),
+  /** Playing from this audio playlist: at the end, its next track follows. */
+  playlistId: z.string().max(64).optional(),
+  /** Fading out: from `at`, over `sec` seconds, then it stops. */
+  fade: z.object({ at: z.string().max(40), sec: z.number().min(0).max(30) }).optional(),
+});
+export type AudioCue = z.infer<typeof AudioCueSchema>;
+
+/** Where an audio cue is now, in seconds (same maths as video). */
+export function audioPositionAt(a: AudioCue, nowMs: number): number {
+  const elapsed =
+    a.playing && a.syncedAt ? Math.max(0, (nowMs - Date.parse(a.syncedAt)) / 1000) : 0;
+  return a.position + elapsed;
+}
+
+/** Volume multiplier while a fade-out runs (1 when not fading). */
+export function audioFadeAt(a: AudioCue, nowMs: number): number {
+  if (!a.fade) return 1;
+  const t = (nowMs - Date.parse(a.fade.at)) / 1000;
+  return a.fade.sec > 0 ? Math.max(0, 1 - t / a.fade.sec) : 0;
+}
+
+/**
  * What the last clear took off each layer, so the operator can bring it back with one click
  * (the layer buttons beside the monitor become "restore" while the layer is empty).
  */
@@ -93,6 +126,8 @@ export const LiveStateSchema = z.object({
   /** Timers that have been started (shown in the Timers bin and on the stage display). */
   timers: z.array(LiveTimerSchema).max(20).default([]),
   cleared: ClearedLayersSchema.default({}),
+  /** Audio playing through the room, or null. */
+  audio: AudioCueSchema.nullable().default(null),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
 });
@@ -111,6 +146,7 @@ export function initialLiveState(): LiveState {
     stream: { status: 'idle' },
     timers: [],
     cleared: {},
+    audio: null,
     look: null,
   };
 }
@@ -415,6 +451,64 @@ export function registerLiveCommands(
         program: clearLayer(s.program, p.layer),
         next: p.layer === 'content' || p.layer === 'all' || p.layer === 'panic' ? null : s.next,
       }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.audio',
+    schema: z.object({
+      action: z.enum(['play', 'pause', 'toggle', 'seek', 'set', 'stop', 'fadeOut']),
+      /** For `play`: start this track (else resume the current one). */
+      mediaId: z.string().max(64).optional(),
+      playlistId: z.string().max(64).nullable().optional(),
+      position: z.number().min(0).max(86_400).optional(),
+      volume: z.number().min(0).max(1).optional(),
+      loop: z.boolean().optional(),
+      /** For `fadeOut`: seconds. */
+      sec: z.number().min(0).max(30).optional(),
+    }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => {
+        const nowIso = now();
+        const a = s.audio;
+        if (p.action === 'stop') return { ...s, audio: null };
+        if (p.action === 'play' && p.mediaId) {
+          const cue: AudioCue = {
+            mediaId: p.mediaId,
+            playing: true,
+            position: p.position ?? 0,
+            syncedAt: nowIso,
+            // A new track keeps the operator's volume.
+            volume: p.volume ?? a?.volume ?? 1,
+            loop: p.loop ?? false,
+          };
+          if (p.playlistId) cue.playlistId = p.playlistId;
+          return { ...s, audio: cue };
+        }
+        if (!a) return s;
+        const here = audioPositionAt(a, Date.parse(nowIso));
+        if (p.action === 'fadeOut')
+          return { ...s, audio: { ...a, fade: { at: nowIso, sec: p.sec ?? 3 } } };
+        const playing =
+          p.action === 'play'
+            ? true
+            : p.action === 'pause'
+              ? false
+              : p.action === 'toggle'
+                ? !a.playing
+                : a.playing;
+        const next: AudioCue = {
+          ...a,
+          playing,
+          position: p.action === 'seek' ? (p.position ?? here) : here,
+          syncedAt: nowIso,
+          ...(p.volume !== undefined ? { volume: p.volume } : {}),
+          ...(p.loop !== undefined ? { loop: p.loop } : {}),
+        };
+        return { ...s, audio: next };
+      });
       return { result: null };
     },
   });

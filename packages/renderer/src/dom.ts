@@ -42,7 +42,7 @@ export function animate(
 }
 
 /** Start playback; autoplay can be refused (e.g. no user gesture) and that must never throw. */
-export function safePlay(v: HTMLVideoElement): void {
+export function safePlay(v: HTMLMediaElement): void {
   try {
     const p = v.play() as Promise<void> | undefined;
     p?.catch(() => undefined);

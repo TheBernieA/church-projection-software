@@ -1,7 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
-  AudioLines,
   Church,
   Film,
   Image as ImageIcon,
@@ -109,10 +108,7 @@ function MonitorCard({
 }
 
 /** Layers planned but not built yet: shown dimmed in the strip, with a "soon" tooltip. */
-const PLANNED_LAYERS = [
-  { id: 'audio-bin', label: 'audio', icon: <AudioLines size={14} /> },
-  { id: 'video-input', label: 'videoInput', icon: <Video size={14} /> },
-];
+const PLANNED_LAYERS = [{ id: 'video-input', label: 'videoInput', icon: <Video size={14} /> }];
 
 /**
  * "…" at the foot of the layer strip: the operator's clear groups (one click clears exactly

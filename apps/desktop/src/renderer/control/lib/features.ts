@@ -194,7 +194,6 @@ export const FEATURES: Feature[] = [
     'audio',
     'Audio bin & playlists',
     'Walk-in music and sound cues, with playlists and fades.',
-    'soon',
   ),
   f(
     'audio-input',
