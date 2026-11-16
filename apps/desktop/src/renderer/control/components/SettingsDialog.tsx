@@ -30,7 +30,7 @@ import {
 import { ConnectionsPage, FeaturesPage } from './settings/features';
 import { GuidePage, type SettingsPageId } from './settings/guide';
 import { ScreensPage } from './settings/screens';
-import { CamerasPage } from './settings/cameras';
+import { VideoPage } from './settings/video';
 import { Typography, NavItem } from '@lampstand/ui';
 
 type PageId = SettingsPageId;
@@ -41,7 +41,7 @@ const NAV: { id: PageId; icon: LucideIcon }[] = [
   { id: 'songs', icon: Music },
   { id: 'presenting', icon: MonitorPlay },
   { id: 'screens', icon: SquareDashed },
-  { id: 'cameras', icon: Video },
+  { id: 'video', icon: Video },
   { id: 'packages', icon: Package },
   { id: 'library', icon: Archive },
   { id: 'connections', icon: Plug },
@@ -111,7 +111,7 @@ export function SettingsDialog() {
         {page === 'songs' && <SongsPage s={s} update={update} />}
         {page === 'presenting' && <PresentingPage s={s} update={update} />}
         {page === 'screens' && <ScreensPage s={s} update={update} />}
-        {page === 'cameras' && <CamerasPage />}
+        {page === 'video' && <VideoPage s={s} update={update} />}
         {page === 'packages' && <PackagesPage />}
         {page === 'library' && <LibraryPage />}
         {page === 'about' && <AboutPage />}

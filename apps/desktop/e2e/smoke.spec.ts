@@ -1394,13 +1394,13 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
     .first()
     .click();
   await control.getByRole('menuitem', { name: 'Reset to defaults' }).click();
-  // The same settings live in Settings › Cameras: mirroring there flips the live camera too.
+  // The same settings live in Settings › Video: mirroring there flips the live camera too.
   await control.getByTitle('Settings', { exact: true }).click();
   await control
     .getByRole('navigation', { name: 'Settings' })
-    .getByRole('button', { name: 'Cameras' })
+    .getByRole('button', { name: 'Video', exact: true })
     .click();
-  await expect(control.getByRole('heading', { name: 'Cameras', exact: true })).toBeVisible();
+  await expect(control.getByRole('heading', { name: 'Video', exact: true })).toBeVisible();
   await control
     .getByRole('switch', { name: /^Mirror / })
     .first()
@@ -1409,7 +1409,7 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
     .poll(() => out.locator('.ls-layer-input video').evaluate((v) => getComputedStyle(v).transform))
     .toBe('matrix(-1, 0, 0, 1, 0, 0)');
   await control.waitForTimeout(300);
-  await control.screenshot({ path: 'test-results/33-settings-cameras.png' });
+  await control.screenshot({ path: 'test-results/33-settings-video.png' });
   await control.getByRole('button', { name: 'Reset to defaults' }).first().click();
   await control.keyboard.press('Escape');
   await bin.getByRole('button', { name: /^Take .* off the screen$/ }).click();

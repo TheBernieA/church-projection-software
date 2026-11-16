@@ -508,19 +508,6 @@ export function PresentingPage({ s, update }: PageProps) {
       title={t('settings.pages.presenting')}
       description={t('settings.pagesHelp.presenting')}
     >
-      <Group title={t('settings.video')}>
-        <Row label={t('settings.mediaAutoplay')} description={t('settings.mediaAutoplayHelp')}>
-          <Segmented
-            label={t('settings.mediaAutoplay')}
-            value={s.mediaAutoplay ? 'play' : 'wait'}
-            onChange={(v) => update({ mediaAutoplay: v === 'play' })}
-            options={[
-              { value: 'play', label: t('settings.autoplayPlay') },
-              { value: 'wait', label: t('settings.autoplayWait') },
-            ]}
-          />
-        </Row>
-      </Group>
       <ClearGroupsGroup s={s} update={update} />
       <LogoGroup s={s} update={update} />
       <OffAirGroup s={s} update={update} />

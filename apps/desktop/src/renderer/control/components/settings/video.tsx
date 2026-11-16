@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { RotateCcw, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { Settings } from '@lampstand/core';
 import { Button, Segmented, Switch, Typography } from '@lampstand/ui';
 import {
   CAMERA_FITS,
@@ -17,7 +18,7 @@ import {
 import { useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 import { Select } from '../Select';
-import { Group, SettingsPage } from './parts';
+import { Group, Row, SettingsPage } from './parts';
 
 /** One setting in a camera's card: its name on the left, the control on the right. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -143,14 +144,34 @@ function CameraCard({ device }: { device: InputDevice }) {
 }
 
 /**
- * Settings › Cameras: every camera and capture card this computer sees, each with how it goes
- * on screen. Kept per camera on this computer (a different computer has different cameras).
+ * Settings › Video: everything about video in one place. How clips behave when they go live,
+ * and every camera and capture card this computer sees, each with how it goes on screen
+ * (kept per camera on this computer: a different computer has different cameras).
  */
-export function CamerasPage() {
+export function VideoPage({
+  s,
+  update,
+}: {
+  s: Settings;
+  update: (patch: Partial<Settings>) => void;
+}) {
   const { t } = useTranslation();
   const devices = useInputDevices('videoinput');
   return (
-    <SettingsPage title={t('settings.pages.cameras')} description={t('settings.pagesHelp.cameras')}>
+    <SettingsPage title={t('settings.pages.video')} description={t('settings.pagesHelp.video')}>
+      <Group title={t('settings.videoPlayback')}>
+        <Row label={t('settings.mediaAutoplay')} description={t('settings.mediaAutoplayHelp')}>
+          <Segmented
+            label={t('settings.mediaAutoplay')}
+            value={s.mediaAutoplay ? 'play' : 'wait'}
+            onChange={(v) => update({ mediaAutoplay: v === 'play' })}
+            options={[
+              { value: 'play', label: t('settings.autoplayPlay') },
+              { value: 'wait', label: t('settings.autoplayWait') },
+            ]}
+          />
+        </Row>
+      </Group>
       <Group title={t('inputs.camerasTitle')} footnote={t('inputs.camerasFootnote')}>
         {devices === null ? (
           <Typography as="p" size={12} tone="muted" className="px-4 py-4">
