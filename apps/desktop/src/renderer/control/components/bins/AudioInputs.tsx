@@ -15,9 +15,31 @@ const send = (input: unknown): void =>
   void attempt(() => cmd('live.audioInput', { input }), 'errors.input');
 
 /** One input: its level meter, a switch to put it through the room, and its volume. */
-function InputRow({ device }: { device: InputDevice }) {
+/** A live level meter for an audio input (green, then amber, then red near the top). */
+export function LevelMeter({ device }: { device: InputDevice }) {
   const { t } = useTranslation();
   const { track, bar } = useLevelMeter(useDeviceStream('audioinput', device.deviceId));
+  return (
+    <div
+      ref={track}
+      role="meter"
+      aria-label={t('inputs.level', { name: device.label })}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={0}
+      className="h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--text-1)_12%,transparent)]"
+    >
+      <div
+        ref={bar}
+        className="h-full rounded-full bg-[linear-gradient(90deg,#3fb950,#3fb950_70%,#e3b341_85%,#f85149)] transition-[width] duration-75"
+        style={{ width: '0%' }}
+      />
+    </div>
+  );
+}
+
+function InputRow({ device }: { device: InputDevice }) {
+  const { t } = useTranslation();
   const cue = useStore((s) =>
     s.live?.audioInput?.deviceId === device.deviceId ? s.live.audioInput : null,
   );
@@ -38,21 +60,7 @@ function InputRow({ device }: { device: InputDevice }) {
           }
         />
       </div>
-      <div
-        ref={track}
-        role="meter"
-        aria-label={t('inputs.level', { name: device.label })}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={0}
-        className="h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--text-1)_12%,transparent)]"
-      >
-        <div
-          ref={bar}
-          className="h-full rounded-full bg-[linear-gradient(90deg,#3fb950,#3fb950_70%,#e3b341_85%,#f85149)] transition-[width] duration-75"
-          style={{ width: '0%' }}
-        />
-      </div>
+      <LevelMeter device={device} />
       {cue && (
         <Slider
           aria-label={t('inputs.volume', { name: device.label })}

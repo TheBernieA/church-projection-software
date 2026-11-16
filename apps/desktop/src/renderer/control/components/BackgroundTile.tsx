@@ -5,11 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { makeScene, type BackgroundRef } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
 import { setBackground } from '../lib/actions';
-import { setItemBackground, useTargetItem } from '../lib/itemBackground';
+import {
+  setItemBackground,
+  setServiceBackground,
+  useBackgroundItemCount,
+  useTargetItem,
+} from '../lib/itemBackground';
 import { itemTitle } from '../lib/slides';
 import { useStore } from '../lib/store';
 import { Tile, REVEAL } from './cards';
-import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from './menu';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from './menu';
 import { SceneView } from './SceneView';
 
 /**
@@ -22,6 +27,7 @@ export function BackgroundMenu({ bg, name }: { bg: BackgroundRef; name: string }
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
   const targetName = target ? itemTitle(target, { songs, media }) : '';
+  const allCount = useBackgroundItemCount();
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -47,6 +53,17 @@ export function BackgroundMenu({ bg, name }: { bg: BackgroundRef; name: string }
               {target ? t('itemBg.useFor', { name: targetName }) : t('itemBg.pickItemFirst')}
             </Typography>
           </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={ITEM_CLASS}
+            disabled={allCount === 0}
+            onSelect={() => setServiceBackground(bg)}
+          >
+            <Layers size={14} />
+            <Typography truncate className="flex-1">
+              {t('itemBg.useForAll', { count: allCount })}
+            </Typography>
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void setBackground(bg)}>
             <MonitorPlay size={14} />
             {t('itemBg.showNow')}

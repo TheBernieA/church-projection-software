@@ -259,6 +259,7 @@ export class WindowManager {
       width: d ? Math.round(d.size.width * d.scaleFactor) : 1920,
       height: d ? Math.round(d.size.height * d.scaleFactor) : 1080,
       audio: o.role === 'main',
+      audioSink: this.d.getSettings().audio.roomOutput,
       logo: this.d.logo(),
       standby: this.d.standby(),
       mask: this.maskFor(o.role),

@@ -4,13 +4,21 @@ import { Button, Typography } from '@lampstand/ui';
 import { useDeviceAccess } from '../../lib/inputs';
 
 /**
- * When the computer hasn't let Lampstand use its cameras (macOS and Windows ask once), say so
+ * When the computer hasn't let Lampstand use its cameras or microphones (macOS and Windows ask once), say so
  * plainly and offer the fix: ask now, or open the privacy settings if it was refused. Nothing
  * shows once access is granted.
  */
-export function CameraAccess({ className = '' }: { className?: string }) {
+export function CameraAccess({
+  className = '',
+  kind = 'camera',
+}: {
+  className?: string;
+  /** Cameras (the default) or microphones. */
+  kind?: 'camera' | 'microphone';
+}) {
   const { t } = useTranslation();
-  const access = useDeviceAccess('camera');
+  const access = useDeviceAccess(kind);
+  const k = kind === 'camera' ? 'access' : 'micAccess';
   if (access.status === 'granted' || access.status === 'unknown') return null;
   const refused = access.status === 'denied' || access.status === 'restricted';
   return (
@@ -23,10 +31,10 @@ export function CameraAccess({ className = '' }: { className?: string }) {
       </Typography>
       <div className="min-w-0 flex-1">
         <Typography as="p" size={12} weight="semibold" tone="primary">
-          {t('inputs.access.title')}
+          {t(`inputs.${k}.title`)}
         </Typography>
         <Typography as="p" size={11} tone="muted">
-          {refused ? t('inputs.access.refused') : t('inputs.access.ask')}
+          {refused ? t(`inputs.${k}.refused`) : t(`inputs.${k}.ask`)}
         </Typography>
       </div>
       {refused ? (
@@ -40,7 +48,7 @@ export function CameraAccess({ className = '' }: { className?: string }) {
         </>
       ) : (
         <Button size="xs" variant="primary" onClick={access.ask}>
-          {t('inputs.access.allow')}
+          {t(`inputs.${k}.allow`)}
         </Button>
       )}
     </div>

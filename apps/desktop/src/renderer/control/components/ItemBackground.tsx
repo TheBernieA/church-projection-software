@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronRight, Image as ImageIcon, MonitorPlay, Palette } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Image as ImageIcon,
+  Layers,
+  MonitorPlay,
+  Palette,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { STOCK_BACKGROUNDS, type BackgroundRef } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
@@ -10,6 +17,8 @@ import {
   mediaBackground,
   sameBackground,
   setItemBackground,
+  setServiceBackground,
+  useBackgroundItemCount,
   type BackgroundItem,
 } from '../lib/itemBackground';
 import { useStore } from '../lib/store';
@@ -90,6 +99,7 @@ export function ItemBackground({ item }: { item: BackgroundItem }) {
   const yours = useStore((s) => s.media).filter((m) => m.isBackground && m.kind !== 'audio');
   const onScreen = useStore((s) => s.live?.program.background?.ref);
   const current = item.background;
+  const allCount = useBackgroundItemCount();
   const pick = (bg: BackgroundRef | undefined): void => setItemBackground(item, bg);
   return (
     <DropdownMenu.Root>
@@ -117,6 +127,18 @@ export function ItemBackground({ item }: { item: BackgroundItem }) {
               <MonitorPlay size={14} />
               <Typography className="flex-1">{t('itemBg.useOnScreen')}</Typography>
               <Swatch bg={onScreen} size="sm" />
+            </DropdownMenu.Item>
+          )}
+          {allCount > 1 && (
+            <DropdownMenu.Item
+              className={ITEM_CLASS}
+              onSelect={() => setServiceBackground(current)}
+              title={t('itemBg.copyToAllHint')}
+            >
+              <Layers size={14} />
+              <Typography className="flex-1">
+                {t('itemBg.copyToAll', { count: allCount })}
+              </Typography>
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />

@@ -38,18 +38,26 @@ export function SettingsPage({
 export function Group({
   title,
   footnote,
+  action,
   children,
 }: {
   title?: string;
   footnote?: ReactNode;
+  /** A small control beside the title (e.g. "Look again"). */
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section>
-      {title && (
-        <Typography as="h3" variant="overline" className="mb-2 px-1">
-          {title}
-        </Typography>
+      {(title || action) && (
+        <div className="mb-2 flex min-h-6 items-end justify-between gap-3 px-1">
+          {title && (
+            <Typography as="h3" variant="overline">
+              {title}
+            </Typography>
+          )}
+          {action}
+        </div>
       )}
       <div className="divide-y divide-[var(--hairline)] overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
         {children}

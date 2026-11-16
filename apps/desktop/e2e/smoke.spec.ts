@@ -1414,7 +1414,11 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await control.screenshot({ path: 'test-results/33-settings-video.png' });
   await control.getByRole('button', { name: 'Reset to defaults' }).first().click();
   await control.keyboard.press('Escape');
-  await bin.getByRole('button', { name: /^Take .* off the screen$/ }).click();
+  // The camera switch (under the Live monitor while a camera is up) cuts to another, or Off.
+  const switcher = control.getByRole('combobox', { name: 'Camera on screen' }).first();
+  await expect(switcher).toBeVisible();
+  await switcher.click();
+  await control.getByRole('option', { name: 'Off', exact: true }).click();
   await expect(feed).toHaveCount(0);
 
   // Audio inputs, in the Audio tab: a level meter that moves, and a switch to go live.
@@ -1491,7 +1495,7 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   // From a stock tile's menu: behind the verse's slides (live now, so the screen follows).
   await bin.getByRole('button', { name: 'Throne room', exact: true }).hover();
   await bin.getByRole('button', { name: 'Throne room options' }).click();
-  await control.getByRole('menuitem', { name: /^Use behind/ }).click();
+  await control.getByRole('menuitem', { name: /^Use behind “/ }).click();
   await expect.poll(bg).toBe('#F2D27A');
   // From the item's own Background button: another stock background, then the theme's again.
   const pickBg = control.getByRole('button', { name: 'Background for these slides' }).first();
@@ -1504,6 +1508,52 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   // Back to the theme's background: the screen follows at once.
   await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
   await expect.poll(bg).not.toBe('#FFE7B0');
+  // "Every item": the whole service gets it at once; then all back to their themes.
+  await bin.getByRole('button', { name: 'Majesty', exact: true }).hover();
+  await bin.getByRole('button', { name: 'Majesty options' }).click();
+  await control.getByRole('menuitem', { name: /^Use behind every item/ }).click();
+  await expect.poll(bg).toBe('#4B1D8F');
+  await pickBg.click();
+  await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
+  await pickBg.click();
+  await control.getByRole('menuitem', { name: /^Use this for all/ }).click();
+  await expect.poll(bg).not.toBe('#4B1D8F');
+});
+
+test('Easy view shows a picture for slides without words; Settings › Audio', async () => {
+  await binTab('Media');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'All media', exact: true })
+    .click();
+  await bin.getByRole('button', { name: 'Seed image', exact: true }).click();
+  await control.getByRole('radio', { name: 'Easy' }).first().click();
+  const list = control.getByRole('list', { name: 'Slide list' });
+  await expect(list.locator('.ls-layer-media').first()).toBeAttached();
+  await control.screenshot({ path: 'test-results/36-easy-media.png' });
+  await control.getByRole('radio', { name: 'Grid' }).first().click();
+  // Settings › Audio: where the room hears it, fades, listening first, inputs with meters.
+  await control.getByTitle('Settings', { exact: true }).click();
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'Audio', exact: true })
+    .click();
+  await expect(control.getByRole('heading', { name: 'Audio', exact: true })).toBeVisible();
+  await expect(control.getByRole('combobox', { name: 'Plays through' })).toBeVisible();
+  await expect(control.getByRole('slider', { name: 'Fade out takes' })).toHaveAttribute(
+    'aria-valuetext',
+    '3 s',
+  );
+  await expect(control.getByRole('meter').first()).toBeAttached();
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/37-settings-audio.png' });
+  await control.keyboard.press('Escape');
+  // Leave the verse open and live, as the next tests expect.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
 });
 
 test('media playlists: create, drag media in, open, rename and delete', async () => {

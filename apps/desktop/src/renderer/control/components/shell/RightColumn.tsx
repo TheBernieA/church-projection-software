@@ -42,6 +42,7 @@ import { useStore } from '../../lib/store';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { LayerStrip, type StripLayer } from './LayerStrip';
+import { CameraSwitcher } from '../media/CameraSwitcher';
 import { ShowControls } from './ShowControls';
 import { Select } from '../Select';
 import { urlHost } from '../../lib/utils';
@@ -434,6 +435,7 @@ export function RightColumn() {
             hint={displayCombo(keys.freeze)}
           />
         </div>
+        {p.input && <CameraSwitcher />}
         <VideoControls
           program={p.media?.kind === 'video' ? p.media : null}
           preview={live.preview.media?.kind === 'video' ? live.preview.media : null}

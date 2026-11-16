@@ -168,6 +168,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
                 slide={slide}
                 index={i}
                 state={stateOf(slide, i)}
+                scene={thumbScenes[i]}
                 onClick={() => onClick(item, i)}
                 onDoubleClick={() => void goLiveSlide(item, i)}
               />

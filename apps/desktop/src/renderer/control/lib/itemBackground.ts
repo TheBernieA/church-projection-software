@@ -1,7 +1,7 @@
 import type { BackgroundRef, MediaItem, ServiceItem } from '@lampstand/core';
 import { slidesFor } from './actions';
 import { cmd } from './api';
-import { attempt, patchItem, useStore } from './store';
+import { attempt, editItems, patchItem, useStore } from './store';
 import { thumbUrl } from '../../shared/mediaUrl';
 
 /** Items whose slides sit on a background of their own (otherwise their theme's). */
@@ -32,11 +32,38 @@ export function useTargetItem(): BackgroundItem | null {
  */
 export function setItemBackground(item: BackgroundItem, ref: BackgroundRef | undefined): void {
   patchItem<BackgroundItem>(item, { background: ref });
+  followLive({ ...item, background: ref });
+}
+
+/** If one of `item`'s slides is on screen, show its (new) background there; the words stay. */
+function followLive(item: BackgroundItem): void {
   const cur = useStore.getState().liveCursor;
   if (cur?.itemId !== item.id) return;
-  const action = slidesFor({ ...item, background: ref })[cur.index]?.action;
+  const action = slidesFor(item)[cur.index]?.action;
   if (action?.kind === 'content')
     void attempt(() => cmd('live.setBackground', { background: action.background ?? null }));
+}
+
+/** How many items in the service plan can have their own background. */
+export const useBackgroundItemCount = (): number =>
+  useStore((s) => s.service?.items.filter(takesBackground).length ?? 0);
+
+/**
+ * Put `ref` behind the slides of every item in the service plan that has slides (songs,
+ * scripture, presentations, announcements, countdowns); `undefined` puts them all back on their
+ * themes' backgrounds. One undo step.
+ */
+export function setServiceBackground(ref: BackgroundRef | undefined): void {
+  editItems((items) => items.map((i) => (takesBackground(i) ? { ...i, background: ref } : i)));
+  const s = useStore.getState();
+  const adhoc = s.adhoc;
+  if (takesBackground(adhoc)) useStore.setState({ adhoc: { ...adhoc, background: ref } });
+  const live = s.liveCursor
+    ? ((s.adhoc?.id === s.liveCursor.itemId
+        ? s.adhoc
+        : s.service?.items.find((i) => i.id === s.liveCursor?.itemId)) ?? null)
+    : null;
+  if (takesBackground(live)) followLive({ ...live, background: ref });
 }
 
 /** A library picture or video as a background. */

@@ -152,7 +152,17 @@ export function SlideCard({
  * A slide in Easy view: number, group, and the words themselves in large type, so the operator
  * can read ahead without squinting at thumbnails.
  */
-export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardProps) {
+export function SlideRow({
+  slide,
+  index,
+  state,
+  onClick,
+  onDoubleClick,
+  scene,
+}: CardProps & {
+  /** Its picture: shown for slides without words (videos, pictures, web pages). */
+  scene?: Scene | undefined;
+}) {
   const label = useStateLabel(slide, state);
   const color = groupColor(slide.group);
   const text = slideText(slide);
@@ -181,7 +191,12 @@ export function SlideRow({ slide, index, state, onClick, onDoubleClick }: CardPr
         >
           {index + 1}
         </Typography>
-        <span className="min-w-0 flex-1 py-2">
+        {scene && !text && (
+          <span className="relative my-1.5 block aspect-video w-24 shrink-0 self-center overflow-hidden rounded-[4px] bg-black shadow-[0_0_0_1px_var(--hairline)]">
+            <SceneView scene={scene} mode="thumbnail" />
+          </span>
+        )}
+        <span className="min-w-0 flex-1 self-center py-2">
           <Typography
             size={10}
             weight="semibold"

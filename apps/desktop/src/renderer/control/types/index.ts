@@ -39,6 +39,7 @@ export type SettingsPageId =
   | 'presenting'
   | 'screens'
   | 'video'
+  | 'audio'
   | 'packages'
   | 'library'
   | 'about'

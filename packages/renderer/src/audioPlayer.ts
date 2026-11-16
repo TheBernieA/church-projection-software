@@ -20,6 +20,11 @@ export class AudioPlayer {
     this.el.preload = 'auto';
   }
 
+  /** Where it plays ('' = this window's default output); a device that's gone keeps the default. */
+  setSink(sinkId: string): void {
+    void this.el.setSinkId(sinkId).catch(() => undefined);
+  }
+
   sync(cue: AudioCue | null): void {
     const prev = this.cue;
     this.cue = cue;
@@ -89,6 +94,12 @@ export class RoomAudio {
   constructor(win: Window, mediaUrl: (id: string) => string) {
     this.player = new AudioPlayer(win.document, mediaUrl);
     this.input = new AudioInputPlayer(win);
+  }
+
+  /** The speakers or mixer the room hears (Settings › Audio); '' = the default output. */
+  setSink(sinkId: string): void {
+    this.player.setSink(sinkId);
+    this.input.setSink(sinkId);
   }
 
   sync(audio: AudioCue | null, input: AudioInputCue | null): void {

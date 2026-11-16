@@ -198,6 +198,7 @@ function ItemSection({
               slide={slide}
               index={i}
               state={stateOf(slide, i)}
+              scene={thumbs[i]}
               onClick={() => click(i)}
               onDoubleClick={() => live(i)}
             />

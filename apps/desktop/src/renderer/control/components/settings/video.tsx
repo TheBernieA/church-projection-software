@@ -21,6 +21,7 @@ import { DeferredInput } from '../DeferredControls';
 import { Select } from '../Select';
 import { Group, Row, SettingsPage } from './parts';
 import { CameraAccess } from '../media/CameraAccess';
+import { CameraSwitcher } from '../media/CameraSwitcher';
 
 /** One setting in a camera's card: its name on the left, the control on the right. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -182,16 +183,20 @@ export function VideoPage({
         </Row>
       </Group>
       <CameraAccess />
-      <div className="-mb-3 flex items-center justify-between px-1">
-        <Typography as="h3" variant="overline">
-          {t('inputs.camerasTitle')}
-          {devices ? ` · ${devices.length}` : ''}
-        </Typography>
-        <Button size="xs" variant="ghost" icon={<RefreshCw size={13} />} onClick={rescanDevices}>
-          {t('inputs.lookAgain')}
-        </Button>
-      </div>
-      <Group footnote={t('inputs.camerasFootnote')}>
+      <Group title={t('inputs.switchTitle')} footnote={t('inputs.switchHelp')}>
+        <Row label={t('inputs.switcherLabel')} description={t('inputs.switcherHelp')}>
+          <CameraSwitcher label={false} className="w-56" />
+        </Row>
+      </Group>
+      <Group
+        title={`${t('inputs.camerasTitle')}${devices ? ` · ${devices.length}` : ''}`}
+        footnote={t('inputs.camerasFootnote')}
+        action={
+          <Button size="xs" variant="ghost" icon={<RefreshCw size={13} />} onClick={rescanDevices}>
+            {t('inputs.lookAgain')}
+          </Button>
+        }
+      >
         {devices === null ? (
           <Typography as="p" size={12} tone="muted" className="px-4 py-4">
             {t('inputs.looking')}

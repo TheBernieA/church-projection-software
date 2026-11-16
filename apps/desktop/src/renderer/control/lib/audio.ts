@@ -89,20 +89,23 @@ export function installAudioWatch(): () => void {
  */
 export function installLocalAudio(): () => void {
   let player: RoomAudio | null = null;
-  let last: { cue: AudioCue | null; inCue: unknown; local: boolean } | null = null;
+  let last: { cue: AudioCue | null; inCue: unknown; local: boolean; sink: string } | null = null;
   const sync = (): void => {
     const s = get();
     const local = !(s.settings?.windowMode || s.displays.some((d) => d.role === 'main'));
     // Only when the cue or where it plays changes (the store changes for everything else too).
     const cue = s.live?.audio ?? null;
     const inCue = s.live?.audioInput ?? null;
-    if (last?.cue === cue && last.inCue === inCue && last.local === local) return;
-    last = { cue, inCue, local };
+    const sink = s.settings?.audio.roomOutput ?? '';
+    if (last?.cue === cue && last.inCue === inCue && last.local === local && last.sink === sink)
+      return;
+    last = { cue, inCue, local, sink };
     if (local && !player) player = new RoomAudio(window, mediaUrl);
     if (!local && player) {
       player.destroy();
       player = null;
     }
+    player?.setSink(sink);
     player?.sync(cue, inCue);
   };
   sync();

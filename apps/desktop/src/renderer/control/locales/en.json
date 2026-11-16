@@ -371,7 +371,8 @@
       "features": "Features",
       "connections": "Connections",
       "screens": "Screens",
-      "video": "Video"
+      "video": "Video",
+      "audio": "Audio"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -383,7 +384,8 @@
       "features": "Everything Lampstand does today, and what is coming.",
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
       "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
-      "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen."
+      "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen.",
+      "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -1262,6 +1264,18 @@
       "refused": "Camera access was turned off for Lampstand. Turn it on in your computer’s privacy settings, then look again.",
       "allow": "Allow camera access",
       "openSettings": "Open privacy settings"
+    },
+    "switcher": "Camera",
+    "switcherLabel": "Camera on screen",
+    "switcherOff": "Off",
+    "switcherHelp": "Cut straight to another camera, each with its own settings below.",
+    "switchTitle": "Switching",
+    "switchHelp": "While a camera is on screen, the same switch sits under the Live monitor, and in Media › Video input.",
+    "micAccess": {
+      "title": "Lampstand can’t use the microphones yet",
+      "ask": "Your computer asks once before an app can use its microphones and audio inputs.",
+      "refused": "Microphone access was turned off for Lampstand. Turn it on in your computer’s privacy settings, then look again.",
+      "allow": "Allow microphone access"
     }
   },
   "stock": {
@@ -1298,6 +1312,26 @@
     "tileMenu": "{{name}} options",
     "useFor": "Use behind “{{name}}” slides",
     "pickItemFirst": "Select an item to use it behind its slides",
-    "showNow": "Show now, behind what’s live"
+    "showNow": "Show now, behind what’s live",
+    "useForAll_one": "Use behind every item in the service ({{count}})",
+    "useForAll_other": "Use behind every item in the service ({{count}})",
+    "copyToAll_one": "Use this for all {{count}} items",
+    "copyToAll_other": "Use this for all {{count}} items",
+    "copyToAllHint": "Every song, reading, presentation, announcement and countdown in the service gets this background (or the theme’s, if this one uses the theme’s)"
+  },
+  "audioSettings": {
+    "room": "Room audio",
+    "roomHelp": "Tracks from the Audio tab and live audio inputs play here, from the main output (or this computer when there’s no output).",
+    "roomOutput": "Plays through",
+    "roomOutputHelp": "The speakers or mixer the room hears.",
+    "defaultOutput": "This computer’s default output",
+    "fade": "Fade out takes",
+    "fadeHelp": "How long Fade out in the Audio tab takes to reach silence.",
+    "seconds_one": "{{count}} s",
+    "seconds_other": "{{count}} s",
+    "listen": "Listening first",
+    "listenHelp": "Where you hear a track when you click it in the Audio tab, before the room does (headphones, say).",
+    "inputs": "Microphones & audio inputs",
+    "inputsHelp": "Speak or play into an input to see its level. Put one through the room from the Audio tab."
   }
 }

@@ -106,6 +106,14 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** Room audio: where it plays, and how long Fade out takes. */
+    audio: z
+      .object({
+        /** Output device for the room ('' = the computer's default output). */
+        roomOutput: z.string().max(300).default(''),
+        fadeSec: z.number().min(0.5).max(15).default(3),
+      })
+      .default({ roomOutput: '', fadeSec: 3 }),
     screenMasks: z.array(ScreenMaskSchema).max(20).default([]),
     /** Saved Looks (the toolbar's Looks button switches between them). */
     looks: z.array(LookSchema).max(20).default([]),

@@ -28,6 +28,7 @@ import {
 } from '../../lib/inputs';
 import { openDialog, useStore } from '../../lib/store';
 import { CameraAccess } from './CameraAccess';
+import { CameraSwitcher } from './CameraSwitcher';
 import { EmptyState } from '../EmptyState';
 import { REVEAL } from '../cards';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
@@ -310,6 +311,7 @@ export function VideoInputs() {
         <Typography size={11} tone="muted" truncate className="ml-1 min-w-0 flex-1">
           {t('inputs.videoHint')}
         </Typography>
+        <CameraSwitcher className="w-56 shrink-0" />
         <Button
           size="xs"
           variant="ghost"

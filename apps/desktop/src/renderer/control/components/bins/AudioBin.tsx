@@ -52,6 +52,7 @@ import { AudioInputs } from './AudioInputs';
 /** What's playing through the room, with its transport, fade out and volume. */
 function NowPlaying() {
   const { t } = useTranslation();
+  const fadeSec = useStore((s) => s.settings?.audio.fadeSec ?? 3);
   const a = useStore((s) => s.live?.audio ?? null);
   const name = useStore((s) => (a ? s.media.find((m) => m.id === a.mediaId)?.name : undefined));
   const lib = useStore((s) =>
@@ -193,7 +194,7 @@ function NowPlaying() {
             variant="quiet"
             disabled={!!a.fade}
             aria-label={t('audio.fadeOut')}
-            onClick={() => void audioCmd({ action: 'fadeOut', sec: 3 })}
+            onClick={() => void audioCmd({ action: 'fadeOut', sec: fadeSec })}
           >
             <TrendingDown size={14} />
           </IconButton>

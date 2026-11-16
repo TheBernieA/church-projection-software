@@ -20,6 +20,12 @@ export function videoConstraints(
   };
 }
 
+/** Send an AudioContext to an output device (Chromium's AudioContext.setSinkId). */
+function routeContext(ctx: AudioContext, sinkId: string): void {
+  const c = ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> };
+  void c.setSinkId?.(sinkId).catch(() => undefined);
+}
+
 /** Stop every track of a stream (releases the camera or microphone). */
 function release(stream: MediaStream | null): void {
   for (const t of stream?.getTracks() ?? []) t.stop();
@@ -90,8 +96,15 @@ export class AudioInputPlayer {
   private ctx: AudioContext | null = null;
   private gain: GainNode | null = null;
   private deviceId: string | null = null;
+  private sinkId = '';
 
   constructor(private readonly win: Window) {}
+
+  /** Where it plays ('' = this window's default output). */
+  setSink(sinkId: string): void {
+    this.sinkId = sinkId;
+    if (this.ctx) routeContext(this.ctx, sinkId);
+  }
 
   sync(cue: AudioInputCue | null): void {
     if (!cue) return this.stop();
@@ -110,6 +123,7 @@ export class AudioInputPlayer {
         this.stream = s;
         const Ctx = (this.win as Window & { AudioContext: typeof AudioContext }).AudioContext;
         const ctx = new Ctx();
+        if (this.sinkId) routeContext(ctx, this.sinkId);
         const gain = ctx.createGain();
         gain.gain.value = cue.volume;
         ctx.createMediaStreamSource(s).connect(gain).connect(ctx.destination);

@@ -219,9 +219,13 @@ export class AppController {
     await this.refreshScreens();
     // Only display assignments / window mode affect output windows; skip the reconcile otherwise.
     let outputKey = JSON.stringify([settings.get().displays, settings.get().windowMode]);
-    let maskKey = JSON.stringify([settings.get().screenMasks, settings.get().maskFor]);
+    let maskKey = JSON.stringify([
+      settings.get().screenMasks,
+      settings.get().maskFor,
+      settings.get().audio.roomOutput,
+    ]);
     settings.onChange((next) => {
-      const masks = JSON.stringify([next.screenMasks, next.maskFor]);
+      const masks = JSON.stringify([next.screenMasks, next.maskFor, next.audio.roomOutput]);
       if (masks !== maskKey) {
         maskKey = masks;
         this.windows.refreshOutputInfo();

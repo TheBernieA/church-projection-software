@@ -54,6 +54,8 @@ export interface OutputInfo {
   width: number;
   height: number;
   audio: boolean;
+  /** Where the room's audio plays ('' = the default output). */
+  audioSink: string;
   /** What the Logo mask shows, and what to show when nothing is live; re-sent on change. */
   logo: ScreenVisual;
   standby: Standby;
