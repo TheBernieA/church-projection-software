@@ -59,6 +59,7 @@ export const QuerySchemas = {
     action: z.enum(['status', 'ask', 'open']).default('status'),
   }),
   'stream.status': z.undefined(),
+  'ndi.status': z.undefined(),
   /** Which destinations have a stream key saved (never the keys themselves). */
   'stream.keys': z.undefined(),
   'recording.chooseFolder': z.undefined(),

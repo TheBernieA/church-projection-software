@@ -61,3 +61,22 @@ export type StreamSettings = z.infer<typeof StreamSettingsSchema>;
 /** Recommended video bitrate for a size and frame rate, in kb/s (YouTube's guidance, rounded). */
 export const recommendedKbps = (height: number, fps: number): number =>
   height >= 1080 ? (fps > 30 ? 9000 : 6000) : fps > 30 ? 5000 : 3500;
+
+/**
+ * An NDI feed: Lampstand as a source other software sees on the network (vMix, OBS, a
+ * streaming PC, NDI Studio Monitor). Each feed is its own picture: the program as the
+ * projector shows it, the words alone over transparency (to key over cameras), or the stream
+ * picture.
+ */
+export const NdiFeedSchema = z.object({
+  id: IdSchema,
+  /** The source name receivers see ("Lampstand (Program)"). */
+  name: z.string().min(1).max(60),
+  content: z.enum(['program', 'words', 'stream']).default('program'),
+  height: z.union([z.literal(720), z.literal(1080)]).default(1080),
+  fps: z.union([z.literal(30), z.literal(60)]).default(30),
+  /** Send the stream mix's sound with it. */
+  sound: z.boolean().default(true),
+  enabled: z.boolean().default(true),
+});
+export type NdiFeed = z.infer<typeof NdiFeedSchema>;

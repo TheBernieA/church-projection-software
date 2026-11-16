@@ -54,12 +54,17 @@ function draw(): void {
   // What the audience screens show under the active Look.
   const program: Scene = applyLook(latest.program, lookLayersFor(latest.look, 'main'));
   const onCamera = pic.background === 'camera' && !!pic.camera;
+  // 'none': only the words, over transparency (the NDI key feed).
+  const bare = pic.background === 'none';
   syncCamera(onCamera ? pic.camera : null);
   back.render(
     {
       ...program,
       background: pic.background === 'program' ? program.background : null,
-      input: onCamera ? null : program.input,
+      media: bare ? null : program.media,
+      input: onCamera || bare ? null : program.input,
+      inputNext: onCamera || bare ? null : (program.inputNext ?? null),
+      pip: bare ? null : (program.pip ?? null),
       content: null,
       announcement: null,
       web: null,
@@ -74,6 +79,8 @@ function draw(): void {
     background: null,
     media: null,
     input: null,
+    inputNext: null,
+    pip: null,
     web: null,
     content: showWords ? program.content : null,
     announcement: showWords ? program.announcement : null,
@@ -93,7 +100,6 @@ const mix = new MixerEngine(window, { bus: 'stream', ctx });
 const room = new AudioPlayer(document, mediaUrl);
 mix.attach('tracks', room.element);
 back.setAudioTap((v) => mix.attach('video', v));
-mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus }));
 const master = mix.output;
 
 // The mix goes to main as interleaved stereo float32 (it never plays on this computer).
@@ -107,6 +113,11 @@ const tapReady = ctx.audioWorklet.addModule(pcmTapUrl).then(() => {
 });
 
 api.onConfig((c) => {
+  // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
+  if (c.meters && !config?.meters)
+    mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus }));
+  if (!c.meters) mix.stopMeters();
+  document.body.classList.toggle('transparent', c.transparent);
   config = c;
   // The Logo mask covers the stream too. (No off-air card: the words layer is often empty on
   // purpose, and the stream shows its camera or black when nothing is live.)

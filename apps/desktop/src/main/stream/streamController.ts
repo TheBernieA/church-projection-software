@@ -236,6 +236,8 @@ export class StreamController {
       width: this.size.width,
       height: this.size.height,
       picture: s.picture,
+      transparent: false,
+      meters: true,
       logo: this.d.logo(),
       standby: this.d.standby(),
     };

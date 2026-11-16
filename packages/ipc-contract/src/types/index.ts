@@ -119,6 +119,7 @@ export interface QueryResults {
   'media.importBytes': MediaItem | null;
   'devices.access': { status: DeviceAccess };
   'stream.status': StreamStatus;
+  'ndi.status': NdiStatus;
   'stream.keys': Record<string, boolean>;
   'recording.chooseFolder': { folder: string | null };
   'recording.reveal': { done: boolean };
@@ -170,6 +171,8 @@ export interface ControlApi {
   onStream(cb: (s: StreamStatus) => void): () => void;
   /** Mix levels from the room and the stream (about 15 a second each, while they run). */
   onMeters(cb: (m: MeterReport) => void): () => void;
+  /** NDI status changes (runtime found, receivers per feed). */
+  onNdi(cb: (s: NdiStatus) => void): () => void;
   platform: string;
 }
 
@@ -215,8 +218,13 @@ export interface StreamConfig {
   picture: {
     camera: string | null;
     words: 'full' | 'lowerThird' | 'none';
-    background: 'program' | 'camera' | 'black';
+    /** 'none': nothing behind the words (a transparent NDI key feed). */
+    background: 'program' | 'camera' | 'black' | 'none';
   };
+  /** A see-through picture (alpha), for the NDI words feed. */
+  transparent: boolean;
+  /** Report the stream mix's levels (the livestream window only, not NDI feeds). */
+  meters: boolean;
   logo: ScreenVisual;
   standby: Standby;
 }
@@ -238,4 +246,15 @@ export interface OutputApi {
   ready(): void;
   /** The main output's room mix levels (only the window that plays the room sends them). */
   sendMeters(m: MeterReport): void;
+}
+
+/** NDI, as the control window sees it. */
+export interface NdiStatus {
+  /** The NDI runtime was found and loaded (NDI Tools installed). */
+  available: boolean;
+  /** Its version, or why it couldn't load. */
+  version: string | null;
+  error: string | null;
+  /** Receivers watching each feed (by feed id), while it runs. */
+  connections: Record<string, number>;
 }

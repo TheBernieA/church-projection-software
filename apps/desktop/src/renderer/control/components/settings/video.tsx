@@ -198,6 +198,44 @@ export function VideoPage({
             ]}
           />
         </Row>
+        <Row label={t('switcher.click')} description={t('switcher.clickHelp')}>
+          <Segmented<'preview' | 'program'>
+            label={t('switcher.click')}
+            value={s.switcher.click}
+            onChange={(click) => update({ switcher: { ...s.switcher, click } })}
+            options={[
+              { value: 'preview', label: t('switcher.clickPreview') },
+              { value: 'program', label: t('switcher.clickProgram') },
+            ]}
+          />
+        </Row>
+        <Row label={t('switcher.pipCorner')} description={t('switcher.pipHelp')}>
+          <Segmented<'tl' | 'tr' | 'bl' | 'br'>
+            label={t('switcher.pipCorner')}
+            value={s.switcher.pip.corner}
+            onChange={(corner) =>
+              update({ switcher: { ...s.switcher, pip: { ...s.switcher.pip, corner } } })
+            }
+            options={(['tl', 'tr', 'bl', 'br'] as const).map((c) => ({
+              value: c,
+              label: t(`switcher.corners.${c}`),
+            }))}
+          />
+        </Row>
+        <Row label={t('switcher.pipSize')}>
+          <Segmented<string>
+            label={t('switcher.pipSize')}
+            value={String(s.switcher.pip.size)}
+            onChange={(v) =>
+              update({ switcher: { ...s.switcher, pip: { ...s.switcher.pip, size: Number(v) } } })
+            }
+            options={[
+              { value: '0.2', label: t('switcher.sizes.small') },
+              { value: '0.3', label: t('switcher.sizes.medium') },
+              { value: '0.4', label: t('switcher.sizes.large') },
+            ]}
+          />
+        </Row>
       </Group>
       <Group
         title={`${t('inputs.camerasTitle')}${devices ? ` · ${devices.length}` : ''}`}

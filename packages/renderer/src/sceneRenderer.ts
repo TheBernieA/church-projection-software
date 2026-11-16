@@ -6,6 +6,9 @@ import {
   type Standby,
   type TransitionSpec,
   type ScreenMask,
+  type InputTransition,
+  type PipLayer,
+  type VideoInputLayer,
 } from '@lampstand/core';
 import { buildBackground, buildMedia, mediaKey, syncMedia } from './background';
 import { maskStyle } from './mask';
@@ -19,6 +22,16 @@ import { VisualSlot } from './visualSlot';
 import { type SceneRendererOptions } from './types';
 import { BG_FADE_MS, DEFAULT_TRANSITION, FILL, STANDBY_FADE_MS } from './constants';
 import { type BuiltContent } from './types';
+
+interface InputNode {
+  key: string;
+  node: HTMLElement;
+  dispose: () => void;
+}
+
+/** Which camera, set up how: a change here reopens it. */
+const inputKey = (i: VideoInputLayer | null): string =>
+  i ? `${i.deviceId}|${i.fit}|${i.mirror}|${i.resolution}` : '';
 
 interface Slot<T> {
   key: string;
@@ -42,7 +55,10 @@ export class SceneRenderer {
   private readonly contentLayer: HTMLElement;
   private readonly announceLayer: HTMLElement;
   private readonly inputLayer: HTMLElement;
-  private input: { key: string; dispose: () => void } | null = null;
+  private input: InputNode | null = null;
+  /** The camera the T-bar is mixing in (over `input`). */
+  private inputNext: InputNode | null = null;
+  private pip: InputNode | null = null;
   private readonly webLayer: HTMLElement;
   private readonly overlayLayer: HTMLElement;
   private readonly blackMask: HTMLElement;
@@ -205,7 +221,7 @@ export class SceneRenderer {
     if (this.frozen) return;
     this.renderBackground(scene, instant);
     this.renderMedia(scene, instant);
-    this.renderInput(scene);
+    this.renderInput(scene, instant);
     this.renderContent(scene.content, scene.transition, instant);
     this.renderWeb(scene);
     this.renderContent(scene.announcement ?? null, undefined, instant, 'announce');
@@ -213,18 +229,136 @@ export class SceneRenderer {
     this.renderOverlays(scene);
   }
 
-  /** A live camera feed in the media layer; rebuilt only when the device or its settings change. */
-  private renderInput(scene: Scene): void {
-    const input = scene.input ?? null;
-    const key = input ? `${input.deviceId}|${input.fit}|${input.mirror}|${input.resolution}` : '';
-    if ((this.input?.key ?? '') === key) return;
-    this.input?.dispose();
-    this.inputLayer.replaceChildren();
-    this.input = null;
-    if (!input) return;
+  private buildInput(input: VideoInputLayer, key: string): InputNode {
     const built = buildVideoInput(this.doc, input, this.opts.mode !== 'thumbnail');
     this.inputLayer.append(built.node);
-    this.input = { key, dispose: built.dispose };
+    return {
+      key,
+      node: built.node,
+      dispose: () => {
+        built.dispose();
+        built.node.remove();
+      },
+    };
+  }
+
+  /**
+   * The camera layer: the camera on screen, changed with the switcher's transition (fade, dip
+   * through black, wipe) or cut; a second camera mixing in under the T-bar; and the
+   * picture-in-picture box. Each camera is opened once and kept while it stays on screen.
+   */
+  private renderInput(scene: Scene, instant: boolean): void {
+    const input = scene.input ?? null;
+    const key = inputKey(input);
+    if ((this.input?.key ?? '') !== key) {
+      const old = this.input;
+      let fresh: InputNode | null = null;
+      if (input && this.inputNext?.key === key) {
+        // The T-bar finished: the camera already mixing in becomes the one on screen.
+        fresh = this.inputNext;
+        this.inputNext = null;
+      } else if (input) fresh = this.buildInput(input, key);
+      this.input = fresh;
+      this.swapInputs(old, fresh, instant ? undefined : scene.inputTransition);
+    }
+    const mix = scene.inputNext ?? null;
+    const nextKey = mix ? inputKey(mix.input) : '';
+    if ((this.inputNext?.key ?? '') !== nextKey) {
+      this.inputNext?.dispose();
+      this.inputNext = mix ? this.buildInput(mix.input, nextKey) : null;
+    }
+    if (this.inputNext && mix) this.inputNext.node.style.opacity = String(mix.pos);
+    this.renderPip(scene.pip ?? null);
+  }
+
+  private swapInputs(
+    old: InputNode | null,
+    fresh: InputNode | null,
+    tr: InputTransition | undefined,
+  ): void {
+    const ms = tr && tr.kind !== 'cut' ? tr.durationMs : 0;
+    if (!ms) {
+      old?.dispose();
+      if (fresh) fresh.node.style.opacity = '';
+      return;
+    }
+    const from = fresh ? Number(fresh.node.style.opacity || '0') : 0;
+    const done = (): void => old?.dispose();
+    if (tr?.kind === 'dip') {
+      // Through black: the old camera goes down, then the new one comes up.
+      if (old) void animate(old.node, [{ opacity: 1 }, { opacity: 0 }], { duration: ms / 2 });
+      if (fresh) fresh.node.style.opacity = '0';
+      if (fresh)
+        void animate(fresh.node, [{ opacity: 0 }, { opacity: 1 }], {
+          duration: ms / 2,
+          delay: ms / 2,
+        });
+    } else if (tr?.kind === 'wipe' && fresh) {
+      fresh.node.style.opacity = '1';
+      void animate(
+        fresh.node,
+        [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)' }],
+        { duration: ms, easing: 'ease-in-out' },
+      );
+    } else if (fresh) {
+      fresh.node.style.opacity = String(from);
+      void animate(fresh.node, [{ opacity: from }, { opacity: 1 }], { duration: ms });
+    } else if (old) {
+      void animate(old.node, [{ opacity: 1 }, { opacity: 0 }], { duration: ms });
+    }
+    setTimeout(done, ms + 60);
+  }
+
+  /** Picture-in-picture: a second camera in a corner box over the picture. */
+  private renderPip(pip: PipLayer | null): void {
+    const key = pip ? `${inputKey(pip)}|${pip.corner}|${pip.size}` : '';
+    if ((this.pip?.key ?? '') === key) return;
+    const reuse = pip && this.pip && this.pip.key.startsWith(`${inputKey(pip)}|`);
+    if (!reuse) {
+      this.pip?.dispose();
+      this.pip = null;
+    }
+    if (!pip) return;
+    if (!this.pip) {
+      const box = el(this.doc, 'div', 'ls-pip', {
+        position: 'absolute',
+        aspectRatio: '16 / 9',
+        overflow: 'hidden',
+        borderRadius: '14px',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.85)',
+        zIndex: '3',
+        background: '#000',
+      });
+      const built = buildVideoInput(this.doc, pip, this.opts.mode !== 'thumbnail');
+      box.append(built.node);
+      this.inputLayer.append(box);
+      void animate(
+        box,
+        [
+          { opacity: 0, transform: 'scale(0.96)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        {
+          duration: this.opts.mode === 'thumbnail' ? 0 : 250,
+        },
+      );
+      this.pip = {
+        key,
+        node: box,
+        dispose: () => {
+          built.dispose();
+          box.remove();
+        },
+      };
+    }
+    this.pip.key = key;
+    const m = '3.5%';
+    const st = this.pip.node.style;
+    st.width = `${pip.size * 100}%`;
+    st.top = pip.corner[0] === 't' ? m : '';
+    st.bottom = pip.corner[0] === 'b' ? m : '';
+    st.left = pip.corner[1] === 'l' ? m : '';
+    st.right = pip.corner[1] === 'r' ? m : '';
   }
 
   /**
@@ -284,6 +418,8 @@ export class SceneRenderer {
     this.content?.extra?.dispose();
     this.announce?.extra?.dispose();
     this.input?.dispose();
+    this.inputNext?.dispose();
+    this.pip?.dispose();
     this.root.remove();
   }
 

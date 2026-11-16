@@ -15,7 +15,13 @@ import type {
   WebLayer,
   MediaPlaylist,
 } from '@lampstand/core';
-import type { DisplayInfo, Notice, ServiceSummary, StreamStatus } from '@lampstand/ipc-contract';
+import type {
+  DisplayInfo,
+  Notice,
+  ServiceSummary,
+  NdiStatus,
+  StreamStatus,
+} from '@lampstand/ipc-contract';
 
 /** Types shared across the control window. */
 
@@ -41,6 +47,7 @@ export type SettingsPageId =
   | 'video'
   | 'audio'
   | 'streaming'
+  | 'ndi'
   | 'packages'
   | 'library'
   | 'about'
@@ -108,6 +115,7 @@ export interface ControlState {
   displays: DisplayInfo[];
   /** Livestream / recording status (from main). */
   stream: StreamStatus | null;
+  ndi: NdiStatus | null;
   /** Item shown in the slide grid: from the service, or ad-hoc from the library/quick bar. */
   selectedItemId: string | null;
   adhoc: ServiceItem | null;
@@ -242,6 +250,8 @@ export type ShortcutAction =
   | 'cheatSheet'
   | 'perfHud'
   | 'mediaToggle'
-  | 'settings';
+  | 'settings'
+  | 'switcherCut'
+  | 'switcherAuto';
 
 export type ObjectKind = SlideObject['kind'];

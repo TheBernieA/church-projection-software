@@ -29,6 +29,8 @@ import {
 import { openDialog, useStore } from '../../lib/store';
 import { CameraAccess } from './CameraAccess';
 import { CameraSwitcher } from './CameraSwitcher';
+import { SwitcherBar } from './SwitcherBar';
+import { clickSource, take } from '../../lib/switcher';
 import { EmptyState } from '../EmptyState';
 import { REVEAL } from '../cards';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
@@ -161,13 +163,16 @@ function CameraMenu({
  * click puts it on screen (click again takes it off). Its "…" holds its settings, which apply
  * straight away when it's live.
  */
-function InputTile({ device }: { device: InputDevice }) {
+function InputTile({ device, n }: { device: InputDevice; n: number }) {
   const { t } = useTranslation();
   const stream = useDeviceStream('videoinput', device.deviceId);
   const video = useRef<HTMLVideoElement>(null);
   const settings = useCameraSettings(device.deviceId);
   const [renaming, setRenaming] = useState(false);
   const live = useStore((s) => s.live?.program.input?.deviceId === device.deviceId);
+  const onPreview = useStore((s) => s.live?.switcher.preview?.deviceId === device.deviceId);
+  const inPip = useStore((s) => s.live?.program.pip?.deviceId === device.deviceId);
+  const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
   const name = settings.name || device.label;
   useEffect(() => {
     if (video.current) video.current.srcObject = stream;
@@ -177,16 +182,27 @@ function InputTile({ device }: { device: InputDevice }) {
     <li className="group relative">
       <Button
         variant="bare"
-        aria-label={live ? t('inputs.takeOff', { name }) : t('inputs.show', { name })}
-        aria-pressed={live}
-        onClick={() => void showCamera(live ? null : device)}
+        aria-label={
+          previewFirst
+            ? t('switcher.toPreview', { name, n })
+            : live
+              ? t('inputs.takeOff', { name })
+              : t('inputs.show', { name })
+        }
+        aria-pressed={previewFirst ? onPreview : live}
+        onClick={() =>
+          void (previewFirst ? clickSource(device) : live ? showCamera(null) : clickSource(device))
+        }
+        onDoubleClick={() => previewFirst && void take(device)}
         className="group/tile block w-full text-left focus-visible:outline-none"
       >
         <div
           className={`relative aspect-video w-full overflow-hidden rounded-[6px] bg-black transition-shadow duration-100 ${
             live
-              ? 'shadow-[0_0_0_2px_var(--tally-program)]'
-              : 'shadow-[0_0_0_1px_var(--hairline)] group-hover/tile:shadow-[0_0_0_2px_color-mix(in_srgb,var(--text-1)_55%,transparent)] group-focus-visible/tile:shadow-[0_0_0_2px_var(--accent)]'
+              ? 'shadow-[0_0_0_3px_var(--tally-program)]'
+              : onPreview
+                ? 'shadow-[0_0_0_3px_var(--tally-preview)]'
+                : 'shadow-[0_0_0_1px_var(--hairline)] group-hover/tile:shadow-[0_0_0_2px_color-mix(in_srgb,var(--text-1)_55%,transparent)] group-focus-visible/tile:shadow-[0_0_0_2px_var(--accent)]'
           }`}
         >
           <video
@@ -225,15 +241,24 @@ function InputTile({ device }: { device: InputDevice }) {
                 </Typography>
               ))}
           </span>
-          {live && (
+          <Typography
+            size={11}
+            weight="bold"
+            tone="white"
+            tabular
+            className="absolute left-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded-[4px] bg-black/65 px-1"
+          >
+            {n}
+          </Typography>
+          {(live || onPreview || inPip) && (
             <Typography
               size={10}
               weight="bold"
               tone="white"
               caps
-              className="absolute bottom-1.5 right-1.5 rounded-[3px] bg-[var(--tally-program)] px-1 py-px"
+              className={`absolute bottom-1.5 right-1.5 rounded-[3px] px-1 py-px ${live ? 'bg-[var(--tally-program)]' : onPreview ? 'bg-[var(--tally-preview)]' : 'bg-black/70'}`}
             >
-              {t('mediaBin.live')}
+              {live ? t('mediaBin.live') : onPreview ? t('switcher.preview') : t('switcher.pip')}
             </Typography>
           )}
         </div>
@@ -331,6 +356,7 @@ export function VideoInputs() {
           {hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')}
         </Button>
       </div>
+      {devices && devices.length > 0 && <SwitcherBar devices={devices} />}
       <CameraAccess className="mx-4 mt-3" />
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {devices && devices.length === 0 ? (
@@ -343,8 +369,8 @@ export function VideoInputs() {
             className="grid gap-x-3 gap-y-4"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
           >
-            {(devices ?? []).map((d) => (
-              <InputTile key={d.deviceId} device={d} />
+            {(devices ?? []).map((d, i) => (
+              <InputTile key={d.deviceId} device={d} n={i + 1} />
             ))}
           </ul>
         )}

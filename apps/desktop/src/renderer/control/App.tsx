@@ -1,3 +1,4 @@
+import { useSwitcherSources } from './lib/switcher';
 import { MixerPanel } from './components/mixer/MixerPanel';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +52,7 @@ export function App() {
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
   useEffect(() => installCueMix(), []);
+  useSwitcherSources();
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => installNumberWheelGuard(), []);
   useEffect(() => {

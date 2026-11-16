@@ -396,7 +396,8 @@
       "screens": "Screens",
       "video": "Video",
       "audio": "Audio",
-      "streaming": "Streaming"
+      "streaming": "Streaming",
+      "ndi": "NDI"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -410,7 +411,8 @@
       "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
       "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen.",
       "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input.",
-      "streaming": "Livestream the service to YouTube, Facebook or any RTMP service, and record it — straight from Lampstand."
+      "streaming": "Livestream the service to YouTube, Facebook or any RTMP service, and record it — straight from Lampstand.",
+      "ndi": "Send Lampstand over the network to vMix, OBS, a streaming computer or any NDI receiver — the program, or just the words to key over cameras."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -519,7 +521,9 @@
       "cheatSheet": "Show shortcuts",
       "perfHud": "Performance overlay",
       "mediaToggle": "Play / pause the live video",
-      "settings": "Open Settings"
+      "settings": "Open Settings",
+      "switcherCut": "Cut the Preview camera to the screen",
+      "switcherAuto": "Auto: take the Preview camera with the transition"
     }
   },
   "notice": {
@@ -1284,7 +1288,7 @@
   "inputs": {
     "show": "Show {{name}} on screen",
     "takeOff": "Take {{name}} off the screen",
-    "videoHint": "Click a camera to put it on screen. A slide that goes live replaces it, unless Settings › Video keeps cameras under the words.",
+    "videoHint": "Click a camera to put it on Preview, then Cut or Auto. A slide that goes live replaces the camera unless Settings › Video keeps cameras under the words.",
     "noCameras": "No cameras or capture cards found. Plug one in and it appears here.",
     "audioTitle": "Audio inputs",
     "liveAudio": "Play {{name}} through the room",
@@ -1660,5 +1664,83 @@
     "addHint": "Add a microphone or the sound desk's feed with “Add input”.",
     "reset": "Reset mixer levels",
     "resetConfirm": "Put every level, EQ and compressor back to flat? Inputs and routing are kept."
+  },
+  "switcher": {
+    "title": "Switcher",
+    "preview": "Preview",
+    "program": "Program",
+    "cut": "Cut",
+    "auto": "Auto",
+    "transition": "Transition",
+    "kinds": {
+      "cut": "Cut",
+      "fade": "Fade",
+      "dip": "Dip",
+      "wipe": "Wipe"
+    },
+    "duration": "Length",
+    "seconds": "{{s}} s",
+    "pip": "PiP",
+    "pipLabel": "Picture-in-picture camera",
+    "pipOff": "Off",
+    "tbar": "T-bar",
+    "tbarHelp": "Drag down to mix the Preview camera in by hand. Let go past half-way to finish the take.",
+    "toPreview": "Put {{name}} on Preview ({{n}})",
+    "click": "Clicking a camera",
+    "clickHelp": "Preview first: a click puts it on Preview, then Cut (C) or Auto (T) takes it to the screen; double-click takes it at once. Keys 1–9 preview a camera, Shift+1–9 take it.",
+    "clickPreview": "Preview first",
+    "clickProgram": "Straight on screen",
+    "pipCorner": "Picture-in-picture",
+    "pipHelp": "Where the second camera's box sits (choose the camera in the switcher).",
+    "corners": {
+      "tl": "Top left",
+      "tr": "Top right",
+      "bl": "Bottom left",
+      "br": "Bottom right"
+    },
+    "pipSize": "Box size",
+    "sizes": {
+      "small": "Small",
+      "medium": "Medium",
+      "large": "Large"
+    }
+  },
+  "ndi": {
+    "feeds": "Feeds",
+    "feedsHelp": "Each feed is a source other NDI software sees on the network.",
+    "noFeeds": "No feeds yet. Add one for the program, or one for the words alone to key over your cameras.",
+    "enabledOf": "Send {{name}}",
+    "name": "Feed name (seen on the network)",
+    "remove": "Remove {{name}}",
+    "watching_one": "{{count}} watching",
+    "watching_other": "{{count}} watching",
+    "content": "Shows",
+    "contentOf": "What {{name}} shows",
+    "contents": {
+      "program": "Program",
+      "words": "Words (alpha)",
+      "stream": "Stream picture"
+    },
+    "contentHelp": {
+      "program": "Everything the main screen shows: backgrounds, videos, cameras and words.",
+      "words": "Only the slide's words, with a transparent background (alpha), to key over cameras in vMix, OBS or a hardware switcher.",
+      "stream": "The same picture as the livestream (Settings › Streaming › What it shows)."
+    },
+    "size": "Size",
+    "sizeOf": "{{name}} size and frame rate",
+    "sound": "Sound",
+    "soundOf": "Send sound with {{name}} (the stream mix)",
+    "noRuntimeTitle": "NDI Tools needed",
+    "noRuntime": "NDI needs the free NDI runtime, which comes with NDI Tools. Install it, then restart Lampstand.",
+    "loadFailed": "The NDI runtime is installed but didn't start: {{message}}",
+    "getTools": "Get NDI Tools",
+    "readyTitle": "NDI is ready",
+    "ready": "Using NDI {{version}}.",
+    "howTitle": "Using it",
+    "howReceive": "Receive a feed",
+    "howReceiveHelp": "In vMix, OBS (with the NDI plugin) or NDI Studio Monitor, add an NDI source and pick this computer's feed by its name.",
+    "howKey": "Lyrics over cameras",
+    "howKeyHelp": "Add a “Words (alpha)” feed and put it on top of your camera in the receiving software: the background is see-through.",
+    "trademark": "NDI® is a registered trademark of Vizrt NDI AB. Lampstand uses the NDI runtime installed on this computer and doesn't include it."
   }
 }

@@ -21,6 +21,7 @@ import { ScreensPage } from './settings/screens';
 import { VideoPage } from './settings/video';
 import { AudioPage } from './settings/audio';
 import { StreamingPage } from './settings/streaming';
+import { NdiPage } from './settings/ndi';
 import { PageFrameContext, Tag, type PageFrame } from './settings/parts';
 import {
   PAGE_ICONS,
@@ -64,6 +65,8 @@ export function SettingsDialog() {
   const s = useStore((x) => x.settings);
   const page = useStore((x) => x.settingsPage);
   const onAir = useStore((x) => !!x.stream?.streaming || !!x.stream?.recording);
+  const ndiFeeds = useStore((x) => x.settings?.ndi.feeds.filter((f) => f.enabled).length ?? 0);
+  const ndiReady = useStore((x) => !!x.ndi?.available);
   const scroller = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState('');
@@ -119,7 +122,11 @@ export function SettingsDialog() {
   };
 
   const trailing = (id: PageId) =>
-    id === 'streaming' && onAir ? <Tag tone="live">{t('live.badgeLive')}</Tag> : undefined;
+    id === 'streaming' && onAir ? (
+      <Tag tone="live">{t('live.badgeLive')}</Tag>
+    ) : id === 'ndi' && ndiFeeds > 0 ? (
+      <Tag tone={ndiReady ? 'ok' : 'neutral'}>{ndiFeeds}</Tag>
+    ) : undefined;
 
   return (
     <Dialog name="settings" title={t('settings.title')} wide bare>
@@ -244,6 +251,7 @@ export function SettingsDialog() {
           {page === 'video' && <VideoPage s={s} update={update} />}
           {page === 'audio' && <AudioPage s={s} update={update} />}
           {page === 'streaming' && <StreamingPage s={s} update={update} />}
+          {page === 'ndi' && <NdiPage s={s} update={update} />}
           {page === 'packages' && <PackagesPage />}
           {page === 'library' && <LibraryPage />}
           {page === 'about' && <AboutPage />}

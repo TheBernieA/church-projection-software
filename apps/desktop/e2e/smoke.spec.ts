@@ -1151,7 +1151,7 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
   await expect(bin.getByTestId('soon-panel')).toContainText('Macros');
   await bin.getByRole('button', { name: "See everything that's coming" }).click();
   await expect(control.getByRole('heading', { name: 'Features' })).toBeVisible();
-  await expect(control.locator('[data-feature="ndi"]')).toHaveAttribute('data-status', 'soon');
+  await expect(control.locator('[data-feature="sdi"]')).toHaveAttribute('data-status', 'soon');
   await expect(control.locator('[data-feature="props"]')).toHaveAttribute(
     'data-status',
     'available',
@@ -1430,11 +1430,15 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
     .getByRole('button', { name: 'Video input', exact: true })
     .click();
   const bin = control.getByRole('region', { name: 'Bin' });
-  const camera = bin.getByRole('button', { name: /^Show .* on screen$/ }).first();
+  const camera = bin.getByRole('button', { name: /^Put .* on Preview \(1\)$/ });
   await expect(camera).toBeVisible({ timeout: 10_000 });
+  // The switcher: a click puts it on Preview; Cut takes it to the screen.
   await camera.click();
+  const switcher = bin.getByRole('region', { name: 'Switcher' });
+  await expect(camera).toHaveAttribute('aria-pressed', 'true');
+  await switcher.getByRole('button', { name: /^Cut/ }).click();
   // The output opens the camera itself, under the slide's words.
-  const feed = out.locator('.ls-layer-input video');
+  const feed = out.locator('.ls-layer-input > .ls-input video');
   await expect
     .poll(() => feed.evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 })
     .toBeGreaterThan(0);
@@ -1455,7 +1459,15 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
         .evaluate((v) => [getComputedStyle(v).transform, getComputedStyle(v).objectFit]),
     )
     .toEqual(['matrix(-1, 0, 0, 1, 0, 0)', 'contain']);
+  // Picture-in-picture: the same camera in a corner box.
+  await switcher.getByRole('combobox', { name: 'Picture-in-picture camera' }).click();
+  await control.getByRole('option').nth(1).click();
+  await expect(out.locator('.ls-pip video')).toHaveCount(1);
+  await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/33-video-input.png' });
+  await switcher.getByRole('combobox', { name: 'Picture-in-picture camera' }).click();
+  await control.getByRole('option', { name: 'Off', exact: true }).click();
+  await expect(out.locator('.ls-pip')).toHaveCount(0);
   // Back to the defaults for the tests after this one.
   await bin
     .getByRole('listitem')
@@ -1482,9 +1494,9 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await control.getByRole('button', { name: 'Reset to defaults' }).first().click();
   await control.keyboard.press('Escape');
   // The camera switch (under the Live monitor while a camera is up) cuts to another, or Off.
-  const switcher = control.getByRole('combobox', { name: 'Camera on screen' }).first();
-  await expect(switcher).toBeVisible();
-  await switcher.click();
+  const cameraOnScreen = control.getByRole('combobox', { name: 'Camera on screen' }).first();
+  await expect(cameraOnScreen).toBeVisible();
+  await cameraOnScreen.click();
   await control.getByRole('option', { name: 'Off', exact: true }).click();
   await expect(feed).toHaveCount(0);
 
@@ -1558,6 +1570,31 @@ test('mixer: a desk along the bottom; faders, mute and routing change the live m
     .toBe(0);
   await mixer.getByRole('button', { name: 'Close the mixer' }).click();
   await expect(mixer).toHaveCount(0);
+});
+
+test('NDI: feeds in Settings, and a clear way to get the runtime when it is missing', async () => {
+  await control.getByRole('button', { name: 'Settings', exact: true }).click();
+  const nav = control.getByRole('navigation', { name: 'Settings' });
+  await nav.getByRole('button', { name: 'NDI' }).click();
+  await expect(control.getByRole('heading', { name: 'NDI', exact: true })).toBeVisible();
+  const ready = await control.evaluate(async () => {
+    const r = await window.lampstand.query('ndi.status');
+    return r.ok && r.value.available;
+  });
+  if (!ready) await expect(control.getByRole('button', { name: 'Get NDI Tools' })).toBeVisible();
+  const feeds = control.locator('section[data-section="Feeds"]');
+  await feeds.getByRole('button', { name: 'Words (alpha)' }).click();
+  const feed = control.getByRole('region', { name: 'Lampstand (Words (alpha))' });
+  await expect(feed).toBeVisible();
+  await expect(feed.getByRole('radio', { name: 'Words (alpha)' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/41-settings-ndi.png' });
+  await feed.getByRole('button', { name: /^Remove / }).click();
+  await expect(feed).toHaveCount(0);
+  await control.keyboard.press('Escape');
 });
 
 test('stock media: a motion background goes live; a countdown joins the playlist', async () => {

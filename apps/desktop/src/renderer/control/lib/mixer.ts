@@ -19,7 +19,7 @@ export function mixerLive(a: Live): void {
   if (s.live) useStore.setState({ live: { ...s.live, mixer: applyMixerAction(s.live.mixer, a) } });
   const key = a.action === 'bus' ? `bus:${a.bus}` : `ch:${a.id}`;
   const prev = pending.get(key);
-  pending.set(key, prev ? ({ ...a, patch: { ...prev.patch, ...a.patch } }) : a);
+  pending.set(key, prev ? { ...a, patch: { ...prev.patch, ...a.patch } } : a);
   timer ??= setTimeout(() => {
     timer = null;
     const all = [...pending.values()];

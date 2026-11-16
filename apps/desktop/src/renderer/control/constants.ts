@@ -48,6 +48,8 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   perfHud: 'Mod+Alt+P',
   mediaToggle: 'P',
   settings: 'Mod+,',
+  switcherCut: 'C',
+  switcherAuto: 'T',
 };
 
 /**

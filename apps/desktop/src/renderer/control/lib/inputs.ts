@@ -1,3 +1,4 @@
+import type { VideoInputLayer } from '@lampstand/core';
 import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import type { DeviceAccess } from '@lampstand/ipc-contract';
 import { RAW_AUDIO } from '@lampstand/renderer';
@@ -217,30 +218,37 @@ export function useCameraSettings(deviceId: string): CameraSettings {
   return { ...DEFAULT_CAMERA, ...all[deviceId] };
 }
 
+/** A camera as the screen layer: the device and how it's set to show (name, fit, mirror…). */
+export function inputLayerFor(device: InputDevice): VideoInputLayer {
+  const s = cameraSettings(device.deviceId);
+  return {
+    deviceId: device.deviceId,
+    label: s.name || device.label,
+    fit: s.fit,
+    mirror: s.mirror,
+    resolution: s.resolution,
+  };
+}
+
 /** Put a camera on screen with its settings (or take any camera off with `null`). */
 export function showCamera(device: InputDevice | null): Promise<unknown> {
-  if (!device) return attempt(() => cmd('live.setInput', { input: null }), 'errors.input');
-  const s = cameraSettings(device.deviceId);
   return attempt(
-    () =>
-      cmd('live.setInput', {
-        input: {
-          deviceId: device.deviceId,
-          label: s.name || device.label,
-          fit: s.fit,
-          mirror: s.mirror,
-          resolution: s.resolution,
-        },
-      }),
+    () => cmd('live.setInput', { input: device ? inputLayerFor(device) : null }),
     'errors.input',
   );
 }
 
-/** Change a camera's settings; if it's on screen, the screen follows straight away. */
+/** Change a camera's settings; wherever it is (on screen, Preview, PiP) follows straight away. */
 export function updateCamera(device: InputDevice, patch: Partial<CameraSettings>): void {
   setCameraSettings(device.deviceId, patch);
-  if (useStore.getState().live?.program.input?.deviceId === device.deviceId)
-    void showCamera(device);
+  const live = useStore.getState().live;
+  const id = device.deviceId;
+  if (live?.program.input?.deviceId === id) void showCamera(device);
+  if (live?.switcher.preview?.deviceId === id)
+    void cmd('live.switcher', { action: 'preview', input: inputLayerFor(device) });
+  const pip = live?.program.pip;
+  if (pip?.deviceId === id)
+    void cmd('live.switcher', { action: 'pip', pip: { ...pip, ...inputLayerFor(device) } });
 }
 
 /**

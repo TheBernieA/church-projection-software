@@ -30,6 +30,7 @@ const api: ControlApi = {
   onMenu: (cb) => listen(Channels.evMenu, cb),
   onStream: (cb) => listen(Channels.evStream, cb),
   onMeters: (cb) => listen(Channels.evMeters, cb),
+  onNdi: (cb) => listen(Channels.evNdi, cb),
   platform: process.platform,
 } as ControlApi;
 

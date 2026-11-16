@@ -1,3 +1,4 @@
+import type { NdiController } from '../ndi/ndiController';
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
@@ -21,6 +22,7 @@ interface QueryDeps {
   audit: () => AuditEntry[];
   control: () => BrowserWindow | null;
   stream: StreamController;
+  ndi: NdiController;
   secrets: SecretStore;
 }
 
@@ -34,6 +36,7 @@ export function createQueries({
   installModules,
   listModules,
   stream,
+  ndi,
   secrets,
 }: QueryDeps): QueryHandlers {
   const parent = (): BrowserWindow | undefined => control() ?? undefined;
@@ -160,6 +163,7 @@ export function createQueries({
     }),
     'audit.recent': () => audit().slice(-200),
     'stream.status': () => stream.getStatus(),
+    'ndi.status': () => ndi.getStatus(),
     'stream.keys': async () => {
       const out: Record<string, boolean> = {};
       for (const d of s.settings.get().stream.destinations)

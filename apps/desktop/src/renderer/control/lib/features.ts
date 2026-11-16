@@ -195,6 +195,12 @@ export const FEATURES: Feature[] = [
     'Walk-in music and sound cues, with playlists and fades.',
   ),
   f('audio-input', 'audio', 'Audio inputs', 'Route a microphone or mixer feed alongside video.'),
+  f(
+    'mixer',
+    'audio',
+    'Mixer',
+    'A sound desk: faders, mute, solo to headphones, EQ, compressor, room and stream mixes.',
+  ),
 
   // Layers, props & looks
   f(
@@ -256,8 +262,7 @@ export const FEATURES: Feature[] = [
     'ndi',
     'screens',
     'NDI output',
-    'Send outputs over the network to streaming and video gear.',
-    'soon',
+    'Send the program, or the words alone over transparency, to vMix, OBS and other NDI gear (Settings › NDI; needs NDI Tools).',
   ),
   f('sdi', 'screens', 'SDI output', 'Output to broadcast switchers through capture cards.', 'soon'),
   f(

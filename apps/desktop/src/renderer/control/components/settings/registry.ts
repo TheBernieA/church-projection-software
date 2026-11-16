@@ -1,5 +1,6 @@
 import {
   Archive,
+  Cast,
   BookOpen,
   Compass,
   Map as MapIcon,
@@ -21,7 +22,7 @@ import { type SettingsPageId } from '../../types';
 /** The sidebar's sections, in order; each lists its pages. */
 export const SETTINGS_SECTIONS: { id: string; pages: SettingsPageId[] }[] = [
   { id: 'workspace', pages: ['general', 'presenting', 'scripture', 'songs'] },
-  { id: 'screens', pages: ['screens', 'video'] },
+  { id: 'screens', pages: ['screens', 'video', 'ndi'] },
   { id: 'sound', pages: ['audio', 'streaming'] },
   { id: 'system', pages: ['packages', 'library', 'connections', 'about'] },
   { id: 'help', pages: ['guide', 'features'] },
@@ -34,6 +35,7 @@ export const PAGE_ICONS: Record<SettingsPageId, LucideIcon> = {
   songs: Music,
   screens: SquareDashed,
   video: Video,
+  ndi: Cast,
   audio: Volume2,
   streaming: Radio,
   packages: Package,
@@ -103,6 +105,7 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { page: 'screens', label: 'masks.title', keywords: 'shape crop corners' },
   { page: 'video', label: 'settings.videoPlayback', keywords: 'autoplay video clip' },
   { page: 'video', label: 'inputs.switchTitle', keywords: 'camera capture card switch' },
+  { page: 'video', label: 'switcher.click', keywords: 'switcher preview program cut auto pip' },
   { page: 'audio', label: 'mixer.title', keywords: 'mixer fader eq compressor limiter solo' },
   { page: 'audio', label: 'audioSettings.roomOutput', keywords: 'speaker sound device output' },
   { page: 'audio', label: 'audioSettings.fade', keywords: 'fade out seconds' },
@@ -122,7 +125,8 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { page: 'library', label: 'settings.backups', keywords: 'backup restore' },
   { page: 'library', label: 'settings.moveLibrary', keywords: 'export import move computer' },
   { page: 'connections', label: 'connections.control', keywords: 'remote phone tablet' },
-  { page: 'connections', label: 'connections.network', keywords: 'network ndi' },
+  { page: 'connections', label: 'connections.network', keywords: 'network' },
+  { page: 'ndi', label: 'ndi.feeds', keywords: 'ndi network vmix obs key alpha feed' },
   { page: 'about', label: 'settings.version', keywords: 'about update licence' },
   { page: 'guide', label: 'guide.allKeys', keywords: 'keyboard shortcuts keys' },
   { page: 'features', label: 'settings.pages.features', keywords: 'roadmap coming soon' },

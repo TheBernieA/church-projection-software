@@ -11,6 +11,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/main/index.ts'),
+          // The NDI sender runs in its own thread (main/ndi/ndiController.ts).
+          ndiWorker: resolve(__dirname, 'src/main/ndi/ndiWorker.ts'),
         },
       },
     },

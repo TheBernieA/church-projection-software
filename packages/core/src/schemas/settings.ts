@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { StageLayoutSchema } from './stage';
-import { StreamSettingsSchema } from './stream';
+import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
 import { TimerDefSchema } from './timers';
 import { InputTransitionSchema, PropPositionSchema } from './scene';
@@ -127,6 +127,8 @@ export const SettingsSchema = z
         transition: { kind: 'fade', durationMs: 600 },
         pip: { corner: 'br', size: 0.3 },
       }),
+    /** NDI feeds (Settings › NDI). */
+    ndi: z.object({ feeds: z.array(NdiFeedSchema).max(4).default([]) }).default({ feeds: [] }),
     /** The sound desk (channels, buses). Absent in older settings: made from `stream.sound`. */
     mixer: MixerSchema.optional(),
     /** Livestream and recording (the toolbar's Live button). Stream keys are kept elsewhere. */

@@ -20,6 +20,7 @@ export const useStore = create<ControlState>((set) => ({
   service: null,
   displays: [],
   stream: null,
+  ndi: null,
   selectedItemId: null,
   adhoc: null,
   previewCursor: null,
@@ -284,9 +285,11 @@ export function connect(): void {
   api.onDisplaysChanged(() => void refresh('displays'));
   api.onHistoryChanged((history) => patch({ history }));
   api.onStream((stream) => patch({ stream }));
+  api.onNdi((ndi) => patch({ ndi }));
   api.onMeters(publishMeters);
   void q('history.state').then((history) => patch({ history }));
   void q('stream.status').then((stream) => patch({ stream }));
+  void q('ndi.status').then((ndi) => patch({ ndi }));
   void q('live.get').then((live) => patch({ live }));
   window.addEventListener('beforeunload', () => void flushServiceSave());
 }

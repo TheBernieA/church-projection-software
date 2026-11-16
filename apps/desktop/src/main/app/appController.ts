@@ -31,6 +31,7 @@ import { installAppMenu } from './menu';
 import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
+import { NdiController } from '../ndi/ndiController';
 import { isStreamKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
@@ -80,6 +81,7 @@ export class AppController {
   private windows!: WindowManager;
   private search!: SearchService;
   private stream!: StreamController;
+  private ndi!: NdiController;
   private secrets!: SecretStore;
   private auditLog: AuditEntry[] = [];
   private log!: Logger;
@@ -186,6 +188,18 @@ export class AppController {
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
+    // NDI feeds (Settings › NDI), with the NDI runtime from NDI Tools when it's installed.
+    this.ndi = new NdiController({
+      log: log.child('ndi'),
+      windows: this.windows,
+      getSettings: () => settings.get(),
+      getLiveState: () => live.get(),
+      logo: () => this.logo,
+      standby: () => this.standby,
+      onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
+    });
+    this.ndi.settingsChanged();
+    app.on('will-quit', () => this.ndi.shutdown());
 
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
@@ -217,6 +231,7 @@ export class AppController {
         installModules: (files) => this.installModules(files),
         listModules: () => this.listModules(),
         stream: this.stream,
+        ndi: this.ndi,
         secrets: this.secrets,
       }),
       kindOf: (e) => this.windows.kindOf(e.sender),
@@ -276,6 +291,7 @@ export class AppController {
       }
       this.windows.sendToControl(Channels.evRepo, 'settings');
       this.stream.settingsChanged();
+      this.ndi.settingsChanged();
       const key = JSON.stringify([next.displays, next.windowMode]);
       if (key !== outputKey) {
         outputKey = key;

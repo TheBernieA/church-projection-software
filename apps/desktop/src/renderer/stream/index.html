@@ -37,6 +37,11 @@
       body.lower-third.has-words #band {
         display: block;
       }
+      /* The NDI words feed: see-through behind the words (alpha), for keying over cameras. */
+      html:has(body.transparent),
+      body.transparent {
+        background: transparent;
+      }
     </style>
   </head>
   <body>

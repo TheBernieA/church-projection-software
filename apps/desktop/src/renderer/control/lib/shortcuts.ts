@@ -1,6 +1,7 @@
 import { clearLayer, goLive, step, toggleMask } from './actions';
 import { api, cmd } from './api';
 import { openDialog, redo, undo, useStore } from './store';
+import { auto, cut, previewSource, switcherSource, take } from './switcher';
 import { DEFAULT_SHORTCUTS } from '../constants';
 import { type ShortcutAction } from '../types';
 
@@ -69,6 +70,8 @@ const RUN: Record<ShortcutAction, () => void> = {
   perfHud: () =>
     useStore.setState({ dialog: useStore.getState().dialog === 'perf' ? null : 'perf' }),
   settings: () => openDialog('settings'),
+  switcherCut: () => void cut('shortcut'),
+  switcherAuto: () => void auto('shortcut'),
   mediaToggle: () => {
     if (useStore.getState().live?.program.media?.kind === 'video')
       void cmd('live.media', { action: 'toggle' }, 'shortcut');
@@ -88,6 +91,17 @@ export function installShortcuts(): () => void {
     // pick): it isn't also a show shortcut. Radix marks the keys it takes, before we see them.
     if (e.defaultPrevented) return;
     if (e.repeat && !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    // Cameras by number: 1–9 to Preview, Shift+1–9 straight to the screen.
+    const digit = /^Digit([1-9])$/.exec(e.code);
+    if (digit && !e.metaKey && !e.ctrlKey && !e.altKey && !isTyping(e.target)) {
+      const dialog = useStore.getState().dialog;
+      const device = switcherSource(Number(digit[1]));
+      if (device && (!dialog || dialog === 'perf')) {
+        e.preventDefault();
+        void (e.shiftKey ? take(device, true, 'shortcut') : previewSource(device));
+        return;
+      }
+    }
     const combo = comboFromEvent(e);
     const map = effectiveShortcuts();
     let action = (Object.keys(map) as ShortcutAction[]).find((a) => map[a] === combo);

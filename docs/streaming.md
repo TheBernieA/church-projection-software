@@ -24,11 +24,10 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
 - **Frames.** Main receives `paint` events and writes the latest frame to ffmpeg at a **steady**
   frame rate (offscreen windows only paint on change, so the last frame repeats). If ffmpeg can't
   take a frame in time it is dropped and counted.
-- **Sound.** The stream window mixes room audio (Audio tab tracks via `AudioPlayer`, and the sound
-  of videos, captured with `createMediaElementSource` so it never plays on the speakers) with the
-  chosen microphones. An `AudioWorklet` sends ~21 ms batches of stereo float32 to main, which writes
-  them to ffmpeg's fd 3. Main tops up with silence whenever the mix falls behind the clock, so
-  ffmpeg never waits for sound and audio and video stay in step.
+- **Sound.** The stream window runs the Mixer's **stream bus** (see below): tracks, video sound and
+  inputs whose Stream send is on. An `AudioWorklet` sends ~21 ms batches of stereo float32 to main,
+  which writes them to ffmpeg's fd 3. Main tops up with silence whenever the mix falls behind the
+  clock, so ffmpeg never waits for sound and audio and video stay in step.
 - **Encoding.** ffmpeg encodes once (H.264 + AAC, a keyframe every 2 s) and the `tee` muxer sends it
   to every destination (FLV, each `onfail=ignore` so one failing doesn't stop the others) and to the
   recording (fragmented MP4: playable even after a crash).
@@ -37,6 +36,42 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries); a recording carries on as "part 2". Quitting the app finishes the recording first.
+
+## The mixer
+
+`LiveState.mixer` (core `schemas/mixer.ts`) is the sound desk: one channel per source (Audio tab
+tracks, video sound, each live input) with fader (dB), mute, solo, pan, mono, high-pass, 3-band
+EQ, compressor, and Room / Stream sends; and two buses (Room, Stream) with level, mute, limiter and
+delay. Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
+each change; older settings are converted from `stream.sound` (`mixerFromSettings`).
+
+One WebAudio engine (`packages/renderer/src/mixer.ts`, `MixerEngine`) makes each mix where it is
+heard: the **room** in the main output (or the control window with no output; `RoomAudio`), the
+**stream** in the stream window and NDI feeds, and the **cue** (solo) mix on the "Listen on"
+output in the control window. Media elements join a mix through `createMediaElementSource`
+(SceneRenderer's `audioTap`), so they never also play straight to the speakers. The room and
+stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters.
+
+## Video switcher
+
+`LiveState.switcher.preview` is the camera on Preview; `live.switcher` (core `switcher.ts`) does
+preview / cut / auto / take / T-bar / PiP. Program carries `inputTransition` (played by
+`SceneRenderer.renderInput` when the camera changes: fade, dip, wipe), `inputNext` (the T-bar mix)
+and `pip`. Keys: 1–9 preview a camera, Shift+1–9 take it, C cut, T auto.
+
+## NDI
+
+Settings › NDI lists feeds (`settings.ndi.feeds`): the program, the words alone over transparency
+(to key over cameras), or the stream picture. Each enabled feed is an offscreen window of the
+stream page (`NdiController`); frames and the stream mix go to a worker thread (`ndiWorker.ts`) that
+loads the **NDI runtime installed by NDI Tools** with koffi and sends with
+`NDIlib_send_send_video_v2` (BGRA, with alpha) and `NDIlib_send_send_audio_v3` (planar float).
+Lampstand never ships the runtime; without it NDI is off and Settings links to NDI Tools. The
+runtime is looked for at `LAMPSTAND_NDI_LIB`, then the usual install places (`ndiRuntime.ts`).
+Packaging: koffi is unpacked from the asar; macOS needs `disable-library-validation` to load it.
+NDI® is a registered trademark of Vizrt NDI AB.
+
+Later: NDI *input* (sources from the network in the switcher), tested against real sources.
 
 ## Stream keys
 
@@ -61,7 +96,7 @@ with only the hardware encoders avoids the GPL if that matters for distribution.
 - GPU shared-texture capture instead of copying bitmaps (`offscreen.useSharedTexture`).
 - Adaptive bitrate when the connection struggles; per-destination reconnect without restarting.
 - YouTube / Facebook sign-in to create and schedule broadcasts (titles, privacy, chat).
-- Picture-in-picture camera; NDI and alpha output; output profiles for other screens.
+- Output profiles for other screens; NDI input.
 
 ## Tests
 

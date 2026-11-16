@@ -27,6 +27,7 @@
     "@radix-ui/react-dropdown-menu": "2.2.1",
     "chokidar": "6.0.0",
     "fflate": "0.8.3",
+    "koffi": "^3.3.8",
     "minisearch": "7.2.0",
     "pdfjs-dist": "4.10.38",
     "zod": "4.6.7"

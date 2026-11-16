@@ -34,6 +34,7 @@ export const QUERY_NAMES = [
   'stream.keys',
   'recording.chooseFolder',
   'recording.reveal',
+  'ndi.status',
 ] as const;
 export type QueryName = (typeof QUERY_NAMES)[number];
 
@@ -54,6 +55,8 @@ export const Channels = {
   meters: 'mix:meters',
   /** main → control: mix levels, for the mixer's meters. */
   evMeters: 'ev:meters',
+  /** main → control: NDI status (runtime, receivers per feed). */
+  evNdi: 'ev:ndi',
   /** main → control: livestream / recording status. */
   evStream: 'ev:stream',
   // main → renderer events
