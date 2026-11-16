@@ -103,7 +103,15 @@
     },
     "motion": "Motion",
     "still": "Still",
-    "motionOne": "Motion"
+    "motionOne": "Motion",
+    "back": "Back {{count}} seconds",
+    "forward": "Forward {{count}} seconds",
+    "lastSeconds": "Jump to the last {{count}} seconds",
+    "noVideo": "No video playing",
+    "noVideoHint": "Click a video in the media bin to play it",
+    "video": "Video",
+    "looping": "Looping",
+    "muted": "Muted"
   },
   "slides": {
     "empty": "Pick a song from the library, or an item from the service plan.",

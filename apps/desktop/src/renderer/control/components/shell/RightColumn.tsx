@@ -489,7 +489,7 @@ export function RightColumn() {
             hint={displayCombo(keys.freeze)}
           />
         </div>
-        {p.media?.kind === 'video' && <MediaTransport media={p.media} />}
+        <MediaTransport media={p.media?.kind === 'video' ? p.media : null} />
       </div>
       <ShowControls />
     </div>

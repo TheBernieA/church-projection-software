@@ -857,6 +857,15 @@ test('click goes live: a video from the bin plays on every output; Turn off live
   await control.locator('body').click({ position: { x: 5, y: 5 } });
   await control.keyboard.press('p');
   await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
+  // Skip buttons: forward 15 s on a 6 s clip stops at the end; back 15 s returns to the start.
+  await transport.getByRole('button', { name: 'Forward 15 seconds' }).click();
+  await expect
+    .poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.currentTime))
+    .toBeGreaterThan(5);
+  await transport.getByRole('button', { name: 'Back 15 seconds' }).click();
+  await expect
+    .poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.currentTime))
+    .toBeLessThan(0.5);
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/15-video-transport.png' });
   // "Turn off live" (top bar, next to the LIVE indicator) takes it all off the screen.

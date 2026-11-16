@@ -202,3 +202,48 @@ input[type='checkbox'] {
     transform: none;
   }
 }
+
+/* Transport sliders (media position, volume): a thin track that fills up to --pct, with a
+   round thumb that grows while hovered or dragged. */
+.ls-range {
+  --pct: 0%;
+  --fill: var(--text-1);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+.ls-range:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+.ls-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--fill) 0 var(--pct),
+    color-mix(in srgb, var(--text-1) 16%, transparent) var(--pct) 100%
+  );
+}
+.ls-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.ls-range:hover:not(:disabled)::-webkit-slider-thumb,
+.ls-range:active:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.35);
+}
+.ls-range:focus-visible {
+  outline: none;
+}
+.ls-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--focus-ring);
+}
