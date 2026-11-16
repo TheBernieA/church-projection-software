@@ -997,8 +997,6 @@
     "added_other": "Added {{count}} to “{{name}}”.",
     "search": "Search media",
     "sort": "Sort",
-    "byDate": "Date",
-    "byName": "Name",
     "size": "Tile size",
     "noMatch": "Nothing matches your search.",
     "emptyPlaylist": "This playlist is empty. Drag pictures or videos onto it in the sidebar, or use Add media while it's open.",
@@ -1018,7 +1016,42 @@
       "image": "Picture",
       "video": "Video",
       "audio": "Audio"
-    }
+    },
+    "sortBy": "Sort by {{field}}",
+    "sorts": {
+      "date": "Date added",
+      "name": "Name",
+      "kind": "Type",
+      "length": "Length",
+      "size": "Size"
+    },
+    "order": {
+      "date": {
+        "asc": "Oldest first",
+        "desc": "Newest first"
+      },
+      "name": {
+        "asc": "A to Z",
+        "desc": "Z to A"
+      },
+      "kind": {
+        "asc": "A to Z",
+        "desc": "Z to A"
+      },
+      "length": {
+        "asc": "Shortest first",
+        "desc": "Longest first"
+      },
+      "size": {
+        "asc": "Smallest first",
+        "desc": "Largest first"
+      }
+    },
+    "layout": "View as",
+    "grid": "Grid",
+    "list": "List",
+    "renameMedia": "Rename {{name}}",
+    "noFavourites": "No favourites yet. Hover over any media and click the star to keep it here."
   },
   "playback": {
     "title": "Playback options: {{name}}",

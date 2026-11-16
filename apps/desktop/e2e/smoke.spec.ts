@@ -1457,6 +1457,61 @@ test('media playlists: create, drag media in, open, rename and delete', async ()
   await expect(bin.getByRole('button', { name: 'Seed clip', exact: true })).toBeVisible();
 });
 
+test('media bin: hover outline, list view, sort and rename', async () => {
+  await binTab('Media');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  const nav = control.getByRole('navigation', { name: 'Media library' });
+  await nav.getByRole('button', { name: 'All media', exact: true }).click();
+  // Hover outlines a tile without moving it.
+  const tile = bin.getByRole('button', { name: 'Seed clip', exact: true });
+  const before = await tile.boundingBox();
+  await tile.hover();
+  await control.waitForTimeout(200);
+  expect(await tile.boundingBox()).toEqual(before);
+  // Only the seeded media (earlier tests add more).
+  await bin.getByRole('searchbox', { name: 'Search media' }).fill('Seed');
+  // Sort by name, A to Z: the clip comes before the image.
+  await bin.getByRole('button', { name: /^Sort by/ }).click();
+  await control.getByRole('menuitemradio', { name: 'Name' }).click();
+  await expect(bin.getByRole('button', { name: 'Sort by Name' })).toBeVisible();
+  // List view: a row per piece of media, with sortable columns.
+  await bin.getByRole('radio', { name: 'List' }).click();
+  const rows = bin.getByRole('list', { name: 'All media' }).getByRole('listitem');
+  await expect(rows.first()).toContainText('Seed clip');
+  await expect(rows.first()).toContainText('Video');
+  await control.screenshot({ path: 'test-results/26-media-list.png' });
+  // Click the Name heading again: Z to A.
+  await bin.getByRole('button', { name: 'Sort by Name' }).last().click();
+  await expect(rows.last()).toContainText('Seed clip');
+  // Rename from the row's menu, inline.
+  await bin.getByRole('button', { name: 'Seed image options' }).click();
+  await control.getByRole('menuitem', { name: 'Rename' }).click();
+  const field = bin.getByRole('textbox', { name: 'Rename Seed image' });
+  await field.fill('Seed welcome');
+  await field.press('Enter');
+  await expect(bin.getByRole('button', { name: 'Seed welcome', exact: true })).toBeVisible();
+  // Esc cancels a rename.
+  await bin.getByRole('button', { name: 'Seed welcome options' }).click();
+  await control.getByRole('menuitem', { name: 'Rename' }).click();
+  await bin.getByRole('textbox', { name: 'Rename Seed welcome' }).fill('Oops');
+  await control.keyboard.press('Escape');
+  await expect(bin.getByRole('button', { name: 'Seed welcome', exact: true })).toBeVisible();
+  // Back to the grid, newest first, under the old name.
+  await bin.getByRole('button', { name: 'Seed welcome options' }).click();
+  await control.getByRole('menuitem', { name: 'Rename' }).click();
+  await bin.getByRole('textbox', { name: 'Rename Seed welcome' }).fill('Seed image');
+  await control.keyboard.press('Enter');
+  await expect(bin.getByRole('button', { name: 'Seed image', exact: true })).toBeVisible();
+  await bin.getByRole('radio', { name: 'Grid' }).click();
+  await bin.getByRole('button', { name: /^Sort by/ }).click();
+  const byDate = control.getByRole('menuitemradio', { name: 'Date added' });
+  await expect(byDate).toBeVisible();
+  await byDate.click();
+  await expect(bin.getByRole('heading', { level: 3 }).first()).toBeVisible();
+  await control.screenshot({ path: 'test-results/27-media-grid.png' });
+  await bin.getByRole('searchbox', { name: 'Search media' }).fill('');
+});
+
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {
   await mode('Show');
   const out = await outputPage();
@@ -1465,7 +1520,7 @@ test('Easy view lists the words; Turn off live takes everything off the screen',
   const list = control.getByRole('list', { name: 'Slide list' });
   await expect(list).toContainText('For God so loved the world');
   await control.screenshot({ path: 'test-results/23-easy-view.png' });
-  await control.getByRole('radio', { name: 'Grid' }).click();
+  await control.getByRole('radio', { name: 'Grid' }).first().click();
   // Turn off live (the ✕ beside the monitor): every layer comes off, and the ✕ goes away.
   const clearAll = control.getByRole('button', { name: /Turn off live/ });
   await expect(clearAll).toBeVisible();
