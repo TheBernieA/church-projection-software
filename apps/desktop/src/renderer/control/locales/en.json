@@ -993,6 +993,7 @@
     "newPlaylistWith": "New playlist with this",
     "removeFromPlaylist": "Remove from this playlist",
     "deleteFromLibrary": "Delete from library",
-    "live": "Live"
+    "live": "Live",
+    "library": "Media library"
   }
 }

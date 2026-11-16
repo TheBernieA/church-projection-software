@@ -54,7 +54,7 @@ export function App() {
       {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
       <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
         <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
-          <LeftSidebar />
+          <LeftSidebar binHeight={binOpen ? bin.size : null} />
         </aside>
         <Splitter axis="x" pane={left} label={t('layout.resizeLeft')} />
         <div className="flex min-w-0 flex-1 flex-col">

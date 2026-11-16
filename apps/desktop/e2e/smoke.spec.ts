@@ -144,7 +144,10 @@ const binTab = async (name: string) => {
     const bin = control.getByRole('region', { name: 'Bin' });
     if ((await bin.count()) === 0)
       await control.getByRole('banner').getByRole('button', { name: 'Media', exact: true }).click();
-    const cat = bin.getByRole('button', { name: label, exact: true });
+    // Its categories are in the left column's media sidebar.
+    const cat = control
+      .getByRole('navigation', { name: 'Media library' })
+      .getByRole('button', { name: label, exact: true });
     if ((await cat.getAttribute('aria-pressed')) !== 'true') await cat.click();
     return;
   }
@@ -1094,18 +1097,20 @@ test('a cleared layer comes back with one click', async () => {
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });
+  // The media sidebar (library views, playlists) sits in the left column, beside the bin.
+  const nav = control.getByRole('navigation', { name: 'Media library' });
   // Media is grouped by month, newest first, with the pictures and videos counted.
   await expect(bin.getByRole('heading', { level: 3 }).first()).toBeVisible();
-  await bin.getByRole('button', { name: 'New media playlist' }).click();
-  const row = bin.getByRole('button', { name: 'New playlist', exact: true });
+  await nav.getByRole('button', { name: 'New media playlist' }).click();
+  const row = nav.getByRole('button', { name: 'New playlist', exact: true });
   await expect(row).toHaveAttribute('aria-pressed', 'true');
   await expect(bin.getByText(/This playlist is empty/)).toBeVisible();
   // Drag a clip from All media onto the playlist in the sidebar.
-  await bin.getByRole('button', { name: 'All media', exact: true }).click();
+  await nav.getByRole('button', { name: 'All media', exact: true }).click();
   await bin.getByRole('button', { name: 'Seed clip', exact: true }).dragTo(row);
   await row.click();
   await expect(row).toHaveAttribute('aria-pressed', 'true');
-  await expect(bin.getByRole('button', { name: 'All media', exact: true })).toHaveAttribute(
+  await expect(nav.getByRole('button', { name: 'All media', exact: true })).toHaveAttribute(
     'aria-pressed',
     'false',
   );
@@ -1114,16 +1119,16 @@ test('media playlists: create, drag media in, open, rename and delete', async ()
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/25-media-playlist.png' });
   // Rename from its menu, then delete it: the media stays in the library.
-  await bin.getByRole('button', { name: 'New playlist options' }).click();
+  await nav.getByRole('button', { name: 'New playlist options' }).click();
   await control.getByRole('menuitem', { name: 'Rename' }).click();
-  await bin.getByRole('textbox', { name: 'Rename' }).fill('Walk-in loops');
+  await nav.getByRole('textbox', { name: 'Rename' }).fill('Walk-in loops');
   await control.keyboard.press('Enter');
-  const renamed = bin.getByRole('button', { name: 'Walk-in loops', exact: true });
+  const renamed = nav.getByRole('button', { name: 'Walk-in loops', exact: true });
   await expect(renamed).toBeVisible();
-  await bin.getByRole('button', { name: 'Walk-in loops options' }).click();
+  await nav.getByRole('button', { name: 'Walk-in loops options' }).click();
   await control.getByRole('menuitem', { name: 'Delete playlist' }).click();
   await expect(renamed).toHaveCount(0);
-  await bin.getByRole('button', { name: 'All media', exact: true }).click();
+  await nav.getByRole('button', { name: 'All media', exact: true }).click();
   await expect(bin.getByRole('button', { name: 'Seed clip', exact: true })).toBeVisible();
 });
 

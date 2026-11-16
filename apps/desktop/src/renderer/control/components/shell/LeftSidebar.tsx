@@ -5,6 +5,7 @@ import { createService } from '../../lib/services';
 import { openDialog, openService, useStore } from '../../lib/store';
 import { ServicePanel } from '../ServicePanel';
 import { SongList } from '../SongList';
+import { BinNav } from './Bin';
 import { Splitter, usePaneSize } from './Splitter';
 import { Typography, IconButton, NavItem } from '@lampstand/ui';
 
@@ -60,7 +61,7 @@ function OutlineRow({
  * Left sidebar, operator-console style: an outline of libraries and playlists on top, and
  * below it the contents of whichever is selected (a library's songs, or the playlist's items).
  */
-export function LeftSidebar() {
+export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
   const { t } = useTranslation();
   const view = useStore((s) => s.sidebarView);
   const tab = useStore((s) => s.libraryTab);
@@ -122,6 +123,15 @@ export function LeftSidebar() {
       <div className="flex min-h-0 flex-1 flex-col pt-2">
         {view === 'library' ? <SongList hymns={tab === 'hymns'} /> : <ServicePanel />}
       </div>
+      {/* With the media bin open, its sidebar sits here, level with the bin beside it. */}
+      {binHeight !== null && (
+        <>
+          <div aria-hidden className="h-px shrink-0 bg-[var(--divider)]" />
+          <div className="flex shrink-0 flex-col" style={{ height: binHeight }}>
+            <BinNav />
+          </div>
+        </>
+      )}
     </section>
   );
 }

@@ -151,14 +151,13 @@ function PlaylistRow({ p }: { p: MediaPlaylist }) {
 }
 
 /**
- * Media bin, under the slides (opened from the toolbar's Media button), organised like a media
- * library: the sidebar lists the library (all media, pictures, videos, backgrounds), the
- * operator's media playlists and the planned sources; the browser shows what's picked.
+ * The media sidebar, in the left column under the playlist (as in a media-library app): the
+ * library views (all media, pictures, videos, backgrounds), the operator's media playlists, and
+ * the planned sources. Its top lines up with the media browser's.
  */
-export function Bin({ height }: { height: number }) {
+export function BinNav() {
   const { t } = useTranslation();
   const tab = useStore((s) => s.binTab);
-  const playlistId = useStore((s) => s.binPlaylistId);
   const playlists = useStore((s) => s.mediaPlaylists);
   const media = useStore((s) => s.media);
   const library = media.filter((m) => !m.isBackground && m.kind !== 'audio');
@@ -167,79 +166,92 @@ export function Bin({ height }: { height: number }) {
     images: library.filter((m) => m.kind === 'image').length,
     videos: library.filter((m) => m.kind === 'video').length,
   };
+  return (
+    <nav
+      aria-label={t('mediaBin.library')}
+      className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-2"
+    >
+      <SectionHeading title={t('mediaBin.media')} />
+      {LIBRARY.map(({ tab: x, icon: Icon }) => (
+        <NavItem
+          key={x}
+          aria-pressed={tab === x}
+          selected={tab === x}
+          onClick={() => useStore.setState({ binTab: x })}
+          icon={<Icon size={14} className="text-[var(--text-3)]" />}
+          label={t(`mediaBin.views.${x}`)}
+          trailing={<Count n={counts[x] ?? 0} />}
+          className="w-[calc(100%-12px)]"
+        />
+      ))}
+
+      <SectionHeading
+        title={t('mediaBin.playlists')}
+        action={
+          <IconButton
+            size="3xs"
+            variant="quiet"
+            aria-label={t('mediaBin.newPlaylist')}
+            onClick={() => void createMediaPlaylist()}
+          >
+            <Plus size={14} />
+          </IconButton>
+        }
+      />
+      {playlists.length === 0 && (
+        <Typography as="p" size={11} tone="muted" leading="snug" className="px-3 py-1">
+          {t('mediaBin.noPlaylists')}
+        </Typography>
+      )}
+      {[...playlists]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((p) => (
+          <PlaylistRow key={p.id} p={p} />
+        ))}
+
+      <SectionHeading title={t('mediaBin.sources')} />
+      {SOURCES.map(({ tab: x, icon: Icon, id }) => (
+        <NavItem
+          key={x}
+          aria-pressed={tab === x}
+          selected={tab === x}
+          dim
+          title={t('soon.tooltip', { name: feature(id).name })}
+          onClick={() => useStore.setState({ binTab: x })}
+          icon={<Icon size={14} className="text-[var(--text-3)]" />}
+          label={t(`bin.tabs.${x}`)}
+          trailing={<SoonBadge label={t('soon.badge')} />}
+          className="w-[calc(100%-12px)]"
+        />
+      ))}
+    </nav>
+  );
+}
+
+/**
+ * Media bin, under the slides (opened from the toolbar's Media button): whatever the media
+ * sidebar (BinNav, in the left column) has picked, across the full width of the centre.
+ */
+export function Bin({ height }: { height: number }) {
+  const { t } = useTranslation();
+  const tab = useStore((s) => s.binTab);
+  const playlistId = useStore((s) => s.binPlaylistId);
+  const playlists = useStore((s) => s.mediaPlaylists);
   const source = SOURCES.find((s) => s.tab === tab);
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
   const view = tab === 'images' || tab === 'videos' ? tab : openPlaylist ? 'playlist' : 'media';
 
   return (
-    <section aria-label={t('bin.label')} className="flex shrink-0" style={{ height }}>
-      <nav
-        aria-label={t('bin.label')}
-        className="flex w-[200px] shrink-0 flex-col gap-px overflow-y-auto border-r border-[var(--divider)] bg-[var(--surface-1)] pb-2"
-      >
-        <SectionHeading title={t('mediaBin.media')} />
-        {LIBRARY.map(({ tab: x, icon: Icon }) => (
-          <NavItem
-            key={x}
-            aria-pressed={tab === x}
-            selected={tab === x}
-            onClick={() => useStore.setState({ binTab: x })}
-            icon={<Icon size={14} className="text-[var(--text-3)]" />}
-            label={t(`mediaBin.views.${x}`)}
-            trailing={<Count n={counts[x] ?? 0} />}
-          />
-        ))}
-
-        <SectionHeading
-          title={t('mediaBin.playlists')}
-          action={
-            <IconButton
-              size="3xs"
-              variant="quiet"
-              aria-label={t('mediaBin.newPlaylist')}
-              onClick={() => void createMediaPlaylist()}
-            >
-              <Plus size={14} />
-            </IconButton>
-          }
-        />
-        {playlists.length === 0 && (
-          <Typography as="p" size={11} tone="muted" leading="snug" className="px-3 py-1">
-            {t('mediaBin.noPlaylists')}
-          </Typography>
-        )}
-        {[...playlists]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((p) => (
-            <PlaylistRow key={p.id} p={p} />
-          ))}
-
-        <SectionHeading title={t('mediaBin.sources')} />
-        {SOURCES.map(({ tab: x, icon: Icon, id }) => (
-          <NavItem
-            key={x}
-            aria-pressed={tab === x}
-            selected={tab === x}
-            dim
-            title={t('soon.tooltip', { name: feature(id).name })}
-            onClick={() => useStore.setState({ binTab: x })}
-            icon={<Icon size={14} className="text-[var(--text-3)]" />}
-            label={t(`bin.tabs.${x}`)}
-            trailing={<SoonBadge label={t('soon.badge')} />}
-          />
-        ))}
-      </nav>
-      <div className="flex min-w-0 flex-1 flex-col">
-        {source ? (
-          <SoonPanel ids={[source.id]} icon={<source.icon size={20} />} />
-        ) : tab === 'backgrounds' ? (
-          <div className="flex min-h-0 flex-1 flex-col bg-[var(--surface-0)]">
-            <BackgroundsPanel />
-          </div>
-        ) : (
-          <MediaBrowser view={view} playlistId={openPlaylist ? playlistId : null} />
-        )}
-      </div>
+    <section aria-label={t('bin.label')} className="flex shrink-0 flex-col" style={{ height }}>
+      {source ? (
+        <SoonPanel ids={[source.id]} icon={<source.icon size={20} />} />
+      ) : tab === 'backgrounds' ? (
+        <div className="flex min-h-0 flex-1 flex-col bg-[var(--surface-0)]">
+          <BackgroundsPanel />
+        </div>
+      ) : (
+        <MediaBrowser view={view} playlistId={openPlaylist ? playlistId : null} />
+      )}
     </section>
   );
 }
