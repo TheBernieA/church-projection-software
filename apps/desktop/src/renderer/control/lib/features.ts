@@ -490,8 +490,7 @@ export const FEATURES: Feature[] = [
     'custom-clear-groups',
     'layers',
     'Custom clear groups',
-    'One button that clears exactly the layers you choose, e.g. slide and props but not the background.',
-    'soon',
+    'One button that clears exactly the layers you choose, e.g. slide and props but not the background: Settings › Presenting › Clear groups, used from the “…” beside the monitor.',
   ),
   f(
     'syphon',

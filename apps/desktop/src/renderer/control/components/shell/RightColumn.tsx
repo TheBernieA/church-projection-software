@@ -13,6 +13,7 @@ import {
   Square,
   Type,
   ListChecks,
+  Settings2,
   Video,
   Power,
   Ellipsis,
@@ -26,6 +27,7 @@ import {
   type MediaLayer,
   type RestorableLayer,
   type Scene,
+  type Settings,
   type Standby,
 } from '@lampstand/core';
 import {
@@ -39,10 +41,18 @@ import {
   Segmented,
 } from '@lampstand/ui';
 import { feature } from '../../lib/features';
-import { clearLayer, goLive, restoreAll, restoreLayer, toggleMask } from '../../lib/actions';
+import {
+  clearGroup,
+  clearLayer,
+  goLive,
+  restoreAll,
+  restoreLayer,
+  toggleMask,
+} from '../../lib/actions';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { useStore } from '../../lib/store';
+import { openDialog, useStore } from '../../lib/store';
+import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import { MediaTransport } from '../MediaTransport';
 import { SceneView } from '../SceneView';
 import { ShowControls } from './ShowControls';
@@ -102,12 +112,15 @@ const PLANNED_LAYERS = [
   { id: 'announcements-layer', label: 'announcements', icon: <Megaphone size={14} /> },
   { id: 'audio-bin', label: 'audio', icon: <AudioLines size={14} /> },
   { id: 'video-input', label: 'videoInput', icon: <Video size={14} /> },
-  { id: 'custom-clear-groups', label: 'custom', icon: <ListChecks size={14} /> },
 ];
 
-/** "…" at the foot of the layer strip: the layers still to come, each marked Soon. */
-function PlannedLayers() {
+/**
+ * "…" at the foot of the layer strip: the operator's clear groups (one click clears exactly
+ * those layers), a way to edit them, and the layers still to come, marked Soon.
+ */
+function LayersMenu() {
   const { t } = useTranslation();
+  const groups = useStore((s) => s.settings?.clearGroups ?? EMPTY_GROUPS);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -116,17 +129,30 @@ function PlannedLayers() {
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          side="left"
-          align="end"
-          sideOffset={6}
-          className="z-[60] min-w-[230px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]"
-        >
-          <DropdownMenu.Label
-            className={`px-2.5 pb-1 pt-1.5 ${typographyClass({ size: 11, tone: 'muted', weight: 'semibold', caps: true })}`}
+        <DropdownMenu.Content side="left" align="end" sideOffset={6} className={MENU_CLASS}>
+          <DropdownMenu.Label className={MENU_LABEL}>{t('clearGroups.title')}</DropdownMenu.Label>
+          {groups.map((g) => (
+            <DropdownMenu.Item
+              key={g.id}
+              className={ITEM_CLASS}
+              onSelect={() => void clearGroup(g.layers)}
+              title={g.layers.map((l) => t(`clearGroups.layers.${l}`)).join(', ')}
+            >
+              <ListChecks size={14} />
+              <Typography truncate className="flex-1">
+                {t('clearGroups.clear', { name: g.name })}
+              </Typography>
+            </DropdownMenu.Item>
+          ))}
+          <DropdownMenu.Item
+            className={ITEM_CLASS}
+            onSelect={() => openDialog('settings', { settingsPage: 'presenting' })}
           >
-            {t('monitor.moreLayers')}
-          </DropdownMenu.Label>
+            <Settings2 size={14} />
+            {groups.length ? t('clearGroups.edit') : t('clearGroups.create')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+          <DropdownMenu.Label className={MENU_LABEL}>{t('monitor.moreLayers')}</DropdownMenu.Label>
           {PLANNED_LAYERS.map((l) => {
             const f = feature(l.id);
             return (
@@ -134,7 +160,7 @@ function PlannedLayers() {
                 key={l.id}
                 disabled
                 title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
-                className={`flex items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 outline-none ${typographyClass({ size: 13, tone: 'secondary' })}`}
+                className={ITEM_CLASS}
               >
                 <Typography tone="muted" className="flex">
                   {l.icon}
@@ -149,6 +175,9 @@ function PlannedLayers() {
     </DropdownMenu.Root>
   );
 }
+
+const EMPTY_GROUPS: NonNullable<Settings['clearGroups']> = [];
+const MENU_LABEL = `px-2.5 pb-1 pt-1.5 ${typographyClass({ size: 11, tone: 'muted', weight: 'semibold', caps: true })}`;
 
 /**
  * One layer in the vertical clear strip beside the monitor. Lit red while the layer shows
@@ -488,7 +517,7 @@ export function RightColumn() {
                 restoreWhat={undefined}
                 onRestore={back('background')}
               />
-              <PlannedLayers />
+              <LayersMenu />
             </div>
           </div>
         </figure>

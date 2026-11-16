@@ -400,6 +400,27 @@ export function registerLiveCommands(
   });
 
   bus.register({
+    type: 'live.clearLayers',
+    schema: z.object({ layers: z.array(RestorableLayerSchema).min(1).max(5) }),
+    undoable: false,
+    handle: (p) => {
+      // One step for the room: every chosen layer goes at once, each remembered for "bring back".
+      store.update((s) =>
+        p.layers.reduce<LiveState>(
+          (acc, layer) => ({
+            ...acc,
+            cleared: rememberCleared(acc, layer, Date.parse(now())),
+            program: clearLayer(acc.program, layer),
+            next: layer === 'content' ? null : acc.next,
+          }),
+          s,
+        ),
+      );
+      return { result: null };
+    },
+  });
+
+  bus.register({
     type: 'live.restoreLayer',
     schema: z.object({ layer: RestorableLayerSchema }),
     undoable: false,

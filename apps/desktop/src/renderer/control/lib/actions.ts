@@ -222,6 +222,18 @@ export const clearLayer = (layer: Layer): Promise<void> => {
   return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
 };
 
+/** A custom clear group: clear exactly these layers, in one step. */
+export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
+  if (!layers.length) return Promise.resolve();
+  if (layers.includes('content')) {
+    const cursor = get().liveCursor;
+    if (cursor) clearedCursor = cursor;
+    useStore.setState({ liveCursor: null });
+    stopAnnouncements();
+  }
+  return safe(cmd('live.clearLayers', { layers }, 'ui'));
+};
+
 /**
  * Power button after Turn off live: bring every layer back. A click within a second of turning
  * off is ignored, so a nervous double-click never flashes the screen back on.

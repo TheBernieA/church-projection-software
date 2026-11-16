@@ -60,6 +60,20 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** Custom clear groups: one button that clears exactly these layers. */
+    clearGroups: z
+      .array(
+        z.object({
+          id: z.string().min(1).max(64),
+          name: z.string().min(1).max(40),
+          layers: z
+            .array(z.enum(['content', 'media', 'background', 'messages', 'props']))
+            .min(1)
+            .max(5),
+        }),
+      )
+      .max(12)
+      .default([]),
     /** Audience message templates; {tokens} are filled in when shown. */
     messages: z
       .array(

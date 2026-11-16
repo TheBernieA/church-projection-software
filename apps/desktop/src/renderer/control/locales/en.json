@@ -1027,5 +1027,24 @@
     "whenLive": "When it goes live",
     "useSetting": "As in Settings",
     "endOfClip": "End of clip"
+  },
+  "clearGroups": {
+    "title": "Clear groups",
+    "help": "Each group is one button in the “…” menu beside the monitor that clears exactly the layers you tick. Anything it clears can be brought back from its layer button.",
+    "name": "Group name",
+    "delete": "Delete {{name}}",
+    "layersLabel": "Layers {{name}} clears",
+    "add": "Add clear group",
+    "newName": "Clear group {{n}}",
+    "clear": "Clear: {{name}}",
+    "edit": "Edit clear groups…",
+    "create": "Make a clear group…",
+    "layers": {
+      "content": "Slide",
+      "media": "Media",
+      "background": "Background",
+      "messages": "Messages",
+      "props": "Props"
+    }
   }
 }

@@ -215,6 +215,19 @@ describe('live commands', () => {
     expect(store.get().cleared.content?.content?.key).toBe('old');
   });
 
+  it('a clear group clears its layers in one step and each can be brought back', async () => {
+    const { store, run } = setup();
+    const bg = { ref: { kind: 'color' as const, color: '#112233' } };
+    await run('live.goLive', { content: content('verse'), background: bg });
+    const before = store.get().revision;
+    await run('live.clearLayers', { layers: ['content', 'props'] });
+    expect(store.get().revision).toBe(before + 1);
+    expect(store.get().program.content).toBeNull();
+    expect(store.get().program.background).toEqual(bg);
+    await run('live.restoreLayer', { layer: 'content' });
+    expect(store.get().program.content?.key).toBe('verse');
+  });
+
   it('clearing an empty layer keeps what can still be brought back', async () => {
     const { store, run } = setup();
     await run('live.goLive', { content: content('a') });

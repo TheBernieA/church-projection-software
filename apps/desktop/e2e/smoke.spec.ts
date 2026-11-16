@@ -1147,6 +1147,32 @@ test('a cleared layer comes back with one click', async () => {
   await expect(out.locator('.ls-bg')).toHaveCount(1);
 });
 
+test('clear groups: made in Settings, used from the layer strip', async () => {
+  const out = await outputPage();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+  await control.getByRole('button', { name: 'Settings', exact: true }).click();
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'Presenting' })
+    .click();
+  await control.getByRole('button', { name: '+ Add clear group' }).click();
+  // New groups clear the slide and props; leave the background.
+  await expect(
+    control.getByRole('group', { name: 'Layers Clear group 1 clears' }).getByRole('button', {
+      name: 'Slide',
+    }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  await control.screenshot({ path: 'test-results/28-clear-groups.png' });
+  await control.keyboard.press('Escape');
+  await control.getByRole('button', { name: 'More layers' }).click();
+  await control.getByRole('menuitem', { name: 'Clear: Clear group 1' }).click();
+  await expect(out.locator('.ls-text')).toHaveCount(0, { timeout: 5000 });
+  await expect(out.locator('.ls-bg')).toHaveCount(1);
+  // The slide's own button brings it back.
+  await control.getByRole('button', { name: 'Bring back Slide', exact: true }).click();
+  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+});
+
 test('media playlists: create, drag media in, open, rename and delete', async () => {
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });

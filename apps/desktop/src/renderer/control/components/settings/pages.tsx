@@ -11,7 +11,14 @@ import {
   Upload,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
+import {
+  EMPTY_MASKS,
+  EMPTY_SCENE,
+  newId,
+  type Scene,
+  type Settings,
+  type Standby,
+} from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
 import { Button, Segmented, Switch, Typography, IconButton } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
@@ -439,6 +446,91 @@ function OffAirGroup({ s, update }: PageProps) {
   );
 }
 
+const CLEARABLE = ['content', 'media', 'background', 'messages', 'props'] as const;
+type ClearGroup = Settings['clearGroups'][number];
+
+/**
+ * Custom clear groups: named buttons (in the "…" menu beside the monitor) that clear exactly
+ * the layers ticked here, e.g. "Words & props" leaves the background and video playing.
+ */
+function ClearGroupsGroup({ s, update }: PageProps) {
+  const { t } = useTranslation();
+  const groups = s.clearGroups;
+  const save = (next: ClearGroup[]): void => update({ clearGroups: next });
+  const edit = (id: string, patch: Partial<ClearGroup>): void =>
+    save(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+  return (
+    <Group title={t('clearGroups.title')} footnote={t('clearGroups.help')}>
+      {groups.map((g) => (
+        <div key={g.id} className="flex flex-col gap-2.5 px-4 py-3.5">
+          <div className="flex items-center gap-2">
+            <DeferredInput
+              aria-label={t('clearGroups.name')}
+              value={g.name}
+              maxLength={40}
+              onCommit={(name) => name.trim() && edit(g.id, { name: name.trim() })}
+              className="field !h-8 flex-1"
+            />
+            <IconButton
+              size="xs"
+              variant="danger"
+              aria-label={t('clearGroups.delete', { name: g.name })}
+              onClick={() => save(groups.filter((x) => x.id !== g.id))}
+            >
+              <Trash2 size={14} />
+            </IconButton>
+          </div>
+          <div
+            role="group"
+            aria-label={t('clearGroups.layersLabel', { name: g.name })}
+            className="flex flex-wrap gap-1.5"
+          >
+            {CLEARABLE.map((l) => {
+              const on = g.layers.includes(l);
+              return (
+                <Button
+                  key={l}
+                  size="2xs"
+                  variant={on ? 'primary' : 'subtle'}
+                  aria-pressed={on}
+                  // A group always clears at least one layer.
+                  disabled={on && g.layers.length === 1}
+                  onClick={() =>
+                    edit(g.id, {
+                      layers: on ? g.layers.filter((x) => x !== l) : [...g.layers, l],
+                    })
+                  }
+                >
+                  {t(`clearGroups.layers.${l}`)}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <div className="px-4 py-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={groups.length >= 12}
+          onClick={() =>
+            save([
+              ...groups,
+              {
+                id: newId(),
+                name: t('clearGroups.newName', { n: groups.length + 1 }),
+                layers: ['content', 'props'],
+              },
+            ])
+          }
+        >
+          + {t('clearGroups.add')}
+        </Button>
+      </div>
+    </Group>
+  );
+}
+
 export function PresentingPage({ s, update }: PageProps) {
   const { t } = useTranslation();
   return (
@@ -459,6 +551,7 @@ export function PresentingPage({ s, update }: PageProps) {
           />
         </Row>
       </Group>
+      <ClearGroupsGroup s={s} update={update} />
       <LogoGroup s={s} update={update} />
       <OffAirGroup s={s} update={update} />
       <Group title={t('settings.liveEditing')} footnote={t('settings.liveEditingHelp')}>
