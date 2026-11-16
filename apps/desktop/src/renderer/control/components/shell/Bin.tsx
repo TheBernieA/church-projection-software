@@ -5,6 +5,7 @@ import {
   Film,
   Image as ImageIcon,
   Images,
+  Music,
   ListVideo,
   Pencil,
   Plus,
@@ -28,7 +29,7 @@ import {
 import { useStore } from '../../lib/store';
 import { BackgroundsPanel } from '../MediaPanel';
 import { SoonPanel } from '../bins/SoonPanel';
-import { MediaBrowser } from '../media/MediaBrowser';
+import { inMediaBin, MediaBrowser } from '../media/MediaBrowser';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { type BinTab } from '../../types';
 
@@ -36,6 +37,7 @@ const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
   { tab: 'media', icon: Images },
   { tab: 'images', icon: ImageIcon },
   { tab: 'videos', icon: Film },
+  { tab: 'audio', icon: Music },
   { tab: 'backgrounds', icon: Wallpaper },
 ];
 const SOURCES: { tab: BinTab; icon: LucideIcon; id: string }[] = [
@@ -68,7 +70,10 @@ function SectionHeading({ title, action }: { title: string; action?: ReactNode }
 function PlaylistRow({ p }: { p: MediaPlaylist }) {
   const { t } = useTranslation();
   const open = useStore((s) => s.binTab === 'playlist' && s.binPlaylistId === p.id);
-  const count = useStore((s) => p.mediaIds.filter((id) => s.media.some((m) => m.id === id)).length);
+  // Same rule as the browser, so the count always matches what opening it shows.
+  const count = useStore(
+    (s) => p.mediaIds.filter((id) => s.media.some((m) => m.id === id && inMediaBin(m))).length,
+  );
   const [renaming, setRenaming] = useState(false);
   const [over, setOver] = useState(false);
 
@@ -160,11 +165,12 @@ export function BinNav() {
   const tab = useStore((s) => s.binTab);
   const playlists = useStore((s) => s.mediaPlaylists);
   const media = useStore((s) => s.media);
-  const library = media.filter((m) => !m.isBackground && m.kind !== 'audio');
+  const library = media.filter(inMediaBin);
   const counts: Partial<Record<BinTab, number>> = {
     media: library.length,
     images: library.filter((m) => m.kind === 'image').length,
     videos: library.filter((m) => m.kind === 'video').length,
+    audio: library.filter((m) => m.kind === 'audio').length,
   };
   return (
     <nav
@@ -239,7 +245,12 @@ export function Bin({ height }: { height: number }) {
   const playlists = useStore((s) => s.mediaPlaylists);
   const source = SOURCES.find((s) => s.tab === tab);
   const openPlaylist = tab === 'playlist' && playlists.some((p) => p.id === playlistId);
-  const view = tab === 'images' || tab === 'videos' ? tab : openPlaylist ? 'playlist' : 'media';
+  const view =
+    tab === 'images' || tab === 'videos' || tab === 'audio'
+      ? tab
+      : openPlaylist
+        ? 'playlist'
+        : 'media';
 
   return (
     <section aria-label={t('bin.label')} className="flex shrink-0 flex-col" style={{ height }}>

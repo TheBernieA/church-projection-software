@@ -3,6 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   ChevronRight,
   Ellipsis,
+  Music,
   Film,
   Image as ImageIcon,
   ListPlus,
@@ -34,7 +35,16 @@ import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import i18n from '../../i18n';
 
 type Sort = 'date' | 'name';
-export type MediaView = 'media' | 'images' | 'videos' | 'playlist';
+export type MediaView = 'media' | 'images' | 'videos' | 'audio' | 'playlist';
+
+/** What the media bin lists: library pictures, videos and audio (backgrounds have their own view). */
+export const inMediaBin = (m: MediaItem): boolean => !m.isBackground;
+
+const KIND_OF: Record<'images' | 'videos' | 'audio', MediaItem['kind']> = {
+  images: 'image',
+  videos: 'video',
+  audio: 'audio',
+};
 
 /** Import pictures and videos; when a playlist is open they're added to it too. */
 export async function importMedia(playlistId: string | null): Promise<void> {
@@ -75,6 +85,16 @@ export function Thumb({ m }: { m: MediaItem }) {
         className="h-full w-full object-cover transition-transform duration-200 group-hover/tile:scale-[1.03]"
       />
     );
+  if (m.kind === 'audio')
+    return (
+      <Typography
+        as="div"
+        tone="white"
+        className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,#5b4bb7,#2a2350_60%,#15122b)]"
+      >
+        <Music size={26} strokeWidth={1.5} className="opacity-90" />
+      </Typography>
+    );
   if (m.kind === 'video')
     return (
       <video
@@ -110,13 +130,15 @@ function TileMenu({ m, playlistId }: { m: MediaItem; playlistId: string | null }
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
-          <DropdownMenu.Item
-            className={ITEM_CLASS}
-            onSelect={() => addItemToService({ ...asItem(m), id: newId() })}
-          >
-            <ListPlus size={14} />
-            {t('mediaBin.addToService')}
-          </DropdownMenu.Item>
+          {m.kind !== 'audio' && (
+            <DropdownMenu.Item
+              className={ITEM_CLASS}
+              onSelect={() => addItemToService({ ...asItem(m), id: newId() })}
+            >
+              <ListPlus size={14} />
+              {t('mediaBin.addToService')}
+            </DropdownMenu.Item>
+          )}
           <DropdownMenu.Sub>
             <DropdownMenu.SubTrigger className={ITEM_CLASS}>
               <ListVideo size={14} />
@@ -232,9 +254,15 @@ function MediaTile({
         variant="bare"
         aria-label={m.name}
         title={m.name}
-        onClick={() => void openAdhoc(asItem(m), 'preview')}
-        onDoubleClick={() => addItemToService({ ...asItem(m), id: newId() })}
-        {...libraryDragSource(() => asItem(m))}
+        {...(m.kind === 'audio'
+          ? // Audio can't play yet: say so rather than doing nothing. It stays out of the
+            // service plan (the menu still adds it to media playlists).
+            { onClick: () => toast(i18n.t('mediaBin.audioSoon')) }
+          : {
+              onClick: () => void openAdhoc(asItem(m), 'preview'),
+              onDoubleClick: () => addItemToService({ ...asItem(m), id: newId() }),
+              ...libraryDragSource(() => asItem(m)),
+            })}
         className="group/tile block w-full text-left focus-visible:outline-none"
       >
         <div
@@ -250,9 +278,15 @@ function MediaTile({
             tone="white"
             className="absolute left-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-[4px] bg-black/55 backdrop-blur-sm"
           >
-            {m.kind === 'video' ? <Film size={11} /> : <ImageIcon size={11} />}
+            {m.kind === 'video' ? (
+              <Film size={11} />
+            ) : m.kind === 'audio' ? (
+              <Music size={11} />
+            ) : (
+              <ImageIcon size={11} />
+            )}
           </Typography>
-          {m.kind === 'video' && m.durationSec !== undefined && (
+          {m.kind !== 'image' && m.durationSec !== undefined && (
             <Typography
               size={10}
               weight="semibold"
@@ -310,16 +344,14 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
   const size = usePaneSize('mediaTileWidth', 160, 110, 280);
 
   const items = useMemo(() => {
-    const library = all.filter((m) => !m.isBackground && m.kind !== 'audio');
+    const library = all.filter(inMediaBin);
     let list: MediaItem[];
     if (view === 'playlist') {
       const byId = new Map(library.map((m) => [m.id, m]));
       // Playlist order; media deleted from the library simply drops out.
       list = (playlist?.mediaIds ?? []).flatMap((id) => byId.get(id) ?? []);
     } else {
-      list = library.filter(
-        (m) => view === 'media' || m.kind === (view === 'images' ? 'image' : 'video'),
-      );
+      list = library.filter((m) => view === 'media' || m.kind === KIND_OF[view]);
       list = [...list].sort((a, b) =>
         sort === 'name' ? a.name.localeCompare(b.name) : b.createdAt.localeCompare(a.createdAt),
       );

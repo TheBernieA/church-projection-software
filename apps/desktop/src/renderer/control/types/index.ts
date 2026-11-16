@@ -54,7 +54,14 @@ export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
 /** Media bin (under the slides) categories. */
 /** What the media bin shows: a library view, a media playlist (see binPlaylistId), or a planned source. */
 export type BinTab =
-  'media' | 'images' | 'videos' | 'backgrounds' | 'playlist' | 'video-input' | 'stock-media';
+  | 'media'
+  | 'images'
+  | 'videos'
+  | 'audio'
+  | 'backgrounds'
+  | 'playlist'
+  | 'video-input'
+  | 'stock-media';
 /** Show-controls tabs (under the output monitor). */
 export type ControlsTab = 'audio' | 'stage' | 'timers' | 'messages' | 'props' | 'macros';
 
