@@ -100,7 +100,7 @@ export async function dailyBackup(
 }
 
 const IMPORT_PATH =
-  /^(songs\/[A-Za-z0-9-]+\.song\.json|services\/[A-Za-z0-9-]+\.service\.json|themes\/[A-Za-z0-9-]+\.theme\.json|media\/\.meta\/[A-Za-z0-9-]+\.media\.json|media\/[A-Za-z0-9-]+\.[a-z0-9]{2,5}|backgrounds\/[A-Za-z0-9._-]+|library\.manifest\.json)$/;
+  /^(songs\/[A-Za-z0-9-]+\.song\.json|services\/[A-Za-z0-9-]+\.service\.json|themes\/[A-Za-z0-9-]+\.theme\.json|media-playlists\/[A-Za-z0-9-]+\.mediaplaylist\.json|media\/\.meta\/[A-Za-z0-9-]+\.media\.json|media\/[A-Za-z0-9-]+\.[a-z0-9]{2,5}|backgrounds\/[A-Za-z0-9._-]+|library\.manifest\.json)$/;
 
 /**
  * Import a library export. Only known entry paths are accepted; everything goes through the

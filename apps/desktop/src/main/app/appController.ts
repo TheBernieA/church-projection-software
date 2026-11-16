@@ -205,6 +205,7 @@ export class AppController {
       ['songs', repos.songs],
       ['services', repos.services],
       ['themes', repos.themes],
+      ['mediaPlaylists', repos.mediaPlaylists],
       ['media', repos.media],
     ];
     for (const [kind, repo] of repoEvents) {
@@ -251,6 +252,7 @@ export class AppController {
       songs: this.s.songs,
       services: this.s.services,
       themes: this.s.themes,
+      mediaPlaylists: this.s.mediaPlaylists,
     });
     bus.register({
       type: 'settings.update',
@@ -426,6 +428,7 @@ export class AppController {
       songs: this.s.songs,
       services: this.s.services,
       themes: this.s.themes,
+      'media-playlists': this.s.mediaPlaylists,
     };
     const watcher = watch(
       Object.keys(map).map((d) => join(this.s.paths.library, d)),

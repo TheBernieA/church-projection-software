@@ -8,7 +8,13 @@ export const LOG_MAX_BYTES = 5 * 1024 * 1024;
 export const LOG_MAX_FILES = 5;
 
 // Library backups
-export const BACKUP_DATA_DIRS = ['songs', 'services', 'themes', join('media', '.meta')];
+export const BACKUP_DATA_DIRS = [
+  'songs',
+  'services',
+  'themes',
+  'media-playlists',
+  join('media', '.meta'),
+];
 export const KEEP_BACKUPS = 14;
 
 // Media import

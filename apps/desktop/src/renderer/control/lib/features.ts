@@ -478,8 +478,7 @@ export const FEATURES: Feature[] = [
     'media-playlists',
     'media',
     'Media playlists',
-    'Organise media into playlists and folders, and play a playlist straight through.',
-    'soon',
+    'Group pictures and videos into your own playlists in the media bin: drag media onto a playlist, reorder it, and import straight into it.',
   ),
   f(
     'message-tokens',

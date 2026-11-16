@@ -20,6 +20,7 @@ function setup() {
     songs: new MemoryRepository(),
     services,
     themes: new MemoryRepository(),
+    mediaPlaylists: new MemoryRepository(),
   });
   const save = (p: ServicePlan) =>
     bus.dispatch({ type: 'service.save', payload: { entity: p }, source: 'ui' });

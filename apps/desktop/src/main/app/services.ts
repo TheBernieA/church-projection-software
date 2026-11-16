@@ -1,8 +1,10 @@
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  MEDIA_PLAYLIST_SCHEMA_VERSION,
   MEDIA_SCHEMA_VERSION,
   MediaItemSchema,
+  MediaPlaylistSchema,
   SERVICE_SCHEMA_VERSION,
   ServicePlanSchema,
   SONG_SCHEMA_VERSION,
@@ -10,6 +12,7 @@ import {
   ThemeSchema,
   type HymnalFile,
   type MediaItem,
+  type MediaPlaylist,
   type ServicePlan,
   type Song,
   type Theme,
@@ -28,6 +31,7 @@ export async function ensureLibrary(library: string): Promise<void> {
     'songs',
     'services',
     'themes',
+    'media-playlists',
     'media',
     join('media', '.thumbs'),
     join('media', '.meta'),
@@ -70,6 +74,13 @@ export function createRepos(paths: AppPaths, log: Logger, onQuarantine: (f: stri
       suffix: '.theme.json',
       schema: ThemeSchema,
       schemaVersion: 1,
+    }),
+    mediaPlaylists: new JsonFileRepository<MediaPlaylist>({
+      ...common,
+      dir: join(paths.library, 'media-playlists'),
+      suffix: '.mediaplaylist.json',
+      schema: MediaPlaylistSchema,
+      schemaVersion: MEDIA_PLAYLIST_SCHEMA_VERSION,
     }),
     media: new JsonFileRepository<MediaItem>({
       ...common,

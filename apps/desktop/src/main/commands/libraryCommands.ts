@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   AppError,
   CommandBus,
+  MediaPlaylistSchema,
   nowIso,
   ServicePlanSchema,
   SongSchema,
@@ -12,7 +13,7 @@ import { type Repository } from '../types';
 
 interface EntityCommandsOptions<T extends EntityMeta> {
   bus: CommandBus;
-  name: 'song' | 'service' | 'theme';
+  name: 'song' | 'service' | 'theme' | 'mediaPlaylist';
   schema: z.ZodType<T>;
   repo: Repository<T>;
   /** Reject edits to read-only entities (hymnal songs, built-in themes). */
@@ -72,6 +73,7 @@ export function registerLibraryCommands(
     songs: Repository<z.infer<typeof SongSchema>>;
     services: Repository<z.infer<typeof ServicePlanSchema>>;
     themes: Repository<z.infer<typeof ThemeSchema>>;
+    mediaPlaylists: Repository<z.infer<typeof MediaPlaylistSchema>>;
   },
 ): void {
   registerEntityCommands({
@@ -88,5 +90,11 @@ export function registerLibraryCommands(
     schema: ThemeSchema,
     repo: repos.themes,
     isReadOnly: (t) => t.builtIn === true,
+  });
+  registerEntityCommands({
+    bus,
+    name: 'mediaPlaylist',
+    schema: MediaPlaylistSchema,
+    repo: repos.mediaPlaylists,
   });
 }

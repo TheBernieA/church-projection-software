@@ -34,6 +34,7 @@ import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { type Mode } from '../../types';
+import { ITEM_CLASS, MENU_CLASS } from '../menu';
 
 /** The four everyday workspaces sit in the toolbar; Themes is Theme, and Stage is under More. */
 const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
@@ -44,10 +45,6 @@ const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
 ];
 // Themes has its own toolbar button (Theme), so More only holds the Stage workspace.
 const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: SquareUser }];
-
-const MENU_CLASS =
-  'z-[60] min-w-[220px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]';
-const ITEM_CLASS = `flex cursor-pointer items-center gap-2.5 rounded-[5px] px-2.5 py-1.5 outline-none data-[disabled]:cursor-default data-[disabled]:text-[var(--text-3)] data-[highlighted]:bg-[var(--select)] data-[highlighted]:text-white ${typographyClass({ size: 13 })}`;
 
 /** Tooltip for a planned item: what it will do (from the feature catalogue). */
 const soonTitle = (id: string): string => {

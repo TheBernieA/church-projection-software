@@ -3,6 +3,7 @@ import type {
   BookId,
   LiveState,
   MediaItem,
+  MediaPlaylist,
   OutputRole,
   Result,
   ServicePlan,
@@ -91,13 +92,15 @@ export interface QueryResults {
   'services.get': ServicePlan | null;
   'themes.list': Theme[];
   'media.list': MediaItem[];
+  'mediaPlaylists.list': MediaPlaylist[];
   'bible.versions': BibleVersionInfo[];
   'bible.chapter': { verses: string[] };
   'bible.verseCounts': Partial<Record<BookId, number[]>>;
   'search.query': SearchHit[];
   'displays.list': DisplayInfo[];
   'history.state': { canUndo: boolean; canRedo: boolean };
-  'media.import': { imported: number; rejected: number };
+  /** `ids`: the new media, in the order picked (to add them to an open media playlist). */
+  'media.import': { imported: number; rejected: number; ids: string[] };
   'library.export': { done: boolean };
   'library.import': { done: boolean; imported: number };
   'library.backupNow': { done: boolean };
@@ -119,7 +122,8 @@ export type ImportedSlides =
     }
   | { kind: 'pdf'; title: string; data: Uint8Array };
 
-export type RepoKind = 'songs' | 'services' | 'themes' | 'media' | 'bibles' | 'settings';
+export type RepoKind =
+  'songs' | 'services' | 'themes' | 'media' | 'mediaPlaylists' | 'bibles' | 'settings';
 
 export interface Notice {
   level: 'info' | 'warning' | 'error';

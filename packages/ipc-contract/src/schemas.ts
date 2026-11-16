@@ -25,6 +25,7 @@ export const QuerySchemas = {
   'services.get': z.object({ id: z.string().max(64) }),
   'themes.list': z.undefined(),
   'media.list': z.undefined(),
+  'mediaPlaylists.list': z.undefined(),
   'bible.versions': z.undefined(),
   'bible.chapter': z.object({
     versionId: z.string().max(32),

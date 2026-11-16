@@ -13,6 +13,7 @@ export const QUERY_NAMES = [
   'services.get',
   'themes.list',
   'media.list',
+  'mediaPlaylists.list',
   'bible.versions',
   'bible.chapter',
   'bible.verseCounts',

@@ -959,5 +959,40 @@
     "reset": "Use theme",
     "resetHelp": "Remove this item's text formatting and use its theme again.",
     "close": "Close text bar"
+  },
+  "mediaBin": {
+    "media": "Media",
+    "playlists": "Playlists",
+    "sources": "Sources",
+    "views": {
+      "media": "All media",
+      "images": "Pictures",
+      "videos": "Videos",
+      "backgrounds": "Backgrounds",
+      "playlist": "Playlist"
+    },
+    "newPlaylist": "New media playlist",
+    "newPlaylistName": "New playlist",
+    "noPlaylists": "Group media into playlists: click + and drag pictures or videos onto it.",
+    "rename": "Rename",
+    "deletePlaylist": "Delete playlist",
+    "playlistMenu": "{{name}} options",
+    "deleted": "Deleted “{{name}}”. The media is still in your library.",
+    "added_one": "Added to “{{name}}”.",
+    "added_other": "Added {{count}} to “{{name}}”.",
+    "search": "Search media",
+    "sort": "Sort",
+    "byDate": "Date",
+    "byName": "Name",
+    "size": "Tile size",
+    "noMatch": "Nothing matches your search.",
+    "emptyPlaylist": "This playlist is empty. Drag pictures or videos onto it in the sidebar, or use Add media while it's open.",
+    "more": "{{name}} options",
+    "addToService": "Add to service",
+    "addToPlaylist": "Add to playlist",
+    "newPlaylistWith": "New playlist with this",
+    "removeFromPlaylist": "Remove from this playlist",
+    "deleteFromLibrary": "Delete from library",
+    "live": "Live"
   }
 }

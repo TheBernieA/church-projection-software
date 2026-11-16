@@ -24,21 +24,24 @@ export class MediaLibrary {
   async importFiles(
     paths: string[],
     asBackground: boolean,
-  ): Promise<{ imported: number; rejected: number }> {
+  ): Promise<{ imported: number; rejected: number; ids: string[] }> {
     await mkdir(this.thumbsDir(), { recursive: true });
     let imported = 0;
     let rejected = 0;
+    const ids: string[] = [];
     for (const p of paths) {
       try {
         const item = await this.importOne(p, asBackground);
-        if (item) imported++;
-        else rejected++;
+        if (item) {
+          imported++;
+          ids.push(item.id);
+        } else rejected++;
       } catch (e) {
         rejected++;
         this.log.warn('media import failed', { err: errorMessage(e) });
       }
     }
-    return { imported, rejected };
+    return { imported, rejected, ids };
   }
 
   /**

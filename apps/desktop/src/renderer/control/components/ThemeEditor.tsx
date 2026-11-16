@@ -5,7 +5,6 @@ import { Button, Segmented, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-import {} from './MediaPanel';
 import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
 import { ThemeEffects } from './ThemeEffects';

@@ -1,0 +1,83 @@
+import { MEDIA_PLAYLIST_SCHEMA_VERSION, newId, nowIso, type MediaPlaylist } from '@lampstand/core';
+import { cmd } from './api';
+import { attempt, toast, useStore } from './store';
+import i18n from '../i18n';
+
+const find = (id: string): MediaPlaylist | undefined =>
+  useStore.getState().mediaPlaylists.find((p) => p.id === id);
+
+/** Save a media playlist (undoable, like every library edit). */
+const save = (entity: MediaPlaylist) =>
+  attempt(() => cmd('mediaPlaylist.save', { entity }), 'errors.save');
+
+/** A name not used by another media playlist: "New playlist", "New playlist 2"… */
+function freshName(): string {
+  const base = i18n.t('mediaBin.newPlaylistName');
+  const taken = new Set(useStore.getState().mediaPlaylists.map((p) => p.name));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base} ${n}`)) n++;
+  return `${base} ${n}`;
+}
+
+/** Create an empty media playlist (optionally holding `mediaIds`) and open it in the bin. */
+export async function createMediaPlaylist(mediaIds: string[] = []): Promise<string> {
+  const now = nowIso();
+  const entity: MediaPlaylist = {
+    id: newId(),
+    schemaVersion: MEDIA_PLAYLIST_SCHEMA_VERSION,
+    createdAt: now,
+    updatedAt: now,
+    name: freshName(),
+    mediaIds: [...new Set(mediaIds)],
+  };
+  await save(entity);
+  useStore.setState({
+    mediaPlaylists: [...useStore.getState().mediaPlaylists, entity],
+    binTab: 'playlist',
+    binPlaylistId: entity.id,
+  });
+  return entity.id;
+}
+
+export async function renameMediaPlaylist(id: string, name: string): Promise<void> {
+  const p = find(id);
+  const clean = name.trim().slice(0, 120);
+  if (!p || !clean || clean === p.name) return;
+  await save({ ...p, name: clean });
+}
+
+export async function deleteMediaPlaylist(id: string): Promise<void> {
+  const p = find(id);
+  if (!p) return;
+  await attempt(() => cmd('mediaPlaylist.delete', { id }), 'errors.save');
+  const s = useStore.getState();
+  if (s.binPlaylistId === id) useStore.setState({ binTab: 'media', binPlaylistId: null });
+  // The media itself stays in the library; only the grouping goes.
+  toast(i18n.t('mediaBin.deleted', { name: p.name }));
+}
+
+/** Add media to the end of a playlist; media already in it stays where it is. */
+export async function addToMediaPlaylist(id: string, mediaIds: string[]): Promise<void> {
+  const p = find(id);
+  if (!p) return;
+  const add = mediaIds.filter((m) => !p.mediaIds.includes(m));
+  if (!add.length) return;
+  await save({ ...p, mediaIds: [...p.mediaIds, ...add] });
+  toast(i18n.t('mediaBin.added', { count: add.length, name: p.name }));
+}
+
+export async function removeFromMediaPlaylist(id: string, mediaId: string): Promise<void> {
+  const p = find(id);
+  if (!p) return;
+  await save({ ...p, mediaIds: p.mediaIds.filter((m) => m !== mediaId) });
+}
+
+/** Move one media item to a new position inside a playlist (drag to reorder). */
+export async function moveInMediaPlaylist(id: string, mediaId: string, to: number): Promise<void> {
+  const p = find(id);
+  if (!p) return;
+  const rest = p.mediaIds.filter((m) => m !== mediaId);
+  rest.splice(Math.max(0, Math.min(to, rest.length)), 0, mediaId);
+  await save({ ...p, mediaIds: rest });
+}

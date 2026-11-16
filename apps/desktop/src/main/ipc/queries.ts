@@ -81,6 +81,7 @@ export function createQueries({
     'services.get': (a: QueryArgs<'services.get'>) => s.services.get(a.id),
     'themes.list': async () => [...STARTER_THEMES, ...(await s.themes.list())],
     'media.list': () => s.media.list(),
+    'mediaPlaylists.list': () => s.mediaPlaylists.list(),
     'bible.versions': () => s.bibles.list(),
     'bible.chapter': async (a: QueryArgs<'bible.chapter'>) => ({
       verses: await s.bibles.chapter(a.versionId, a.book, a.chapter),
@@ -114,7 +115,7 @@ export function createQueries({
           },
         ],
       });
-      if (!files.length) return { imported: 0, rejected: 0 };
+      if (!files.length) return { imported: 0, rejected: 0, ids: [] };
       return s.mediaLibrary.importFiles(files, a.asBackground ?? false);
     },
     'library.export': async () => {
@@ -143,6 +144,7 @@ export function createQueries({
         s.songs.reload(),
         s.services.reload(),
         s.themes.reload(),
+        s.mediaPlaylists.reload(),
         s.media.reload(),
       ]);
       return { done: true, imported };

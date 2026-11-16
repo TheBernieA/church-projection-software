@@ -13,6 +13,7 @@ import type {
   Song,
   Theme,
   WebLayer,
+  MediaPlaylist,
 } from '@lampstand/core';
 import type { DisplayInfo, Notice, ServiceSummary } from '@lampstand/ipc-contract';
 
@@ -51,7 +52,9 @@ export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
 
 /** Bottom bin tabs. Audio, video input and macros are "Coming soon". */
 /** Media bin (under the slides) categories. */
-export type BinTab = 'media' | 'backgrounds' | 'video-input' | 'media-playlists' | 'stock-media';
+/** What the media bin shows: a library view, a media playlist (see binPlaylistId), or a planned source. */
+export type BinTab =
+  'media' | 'images' | 'videos' | 'backgrounds' | 'playlist' | 'video-input' | 'stock-media';
 /** Show-controls tabs (under the output monitor). */
 export type ControlsTab = 'audio' | 'stage' | 'timers' | 'messages' | 'props' | 'macros';
 
@@ -76,6 +79,7 @@ export interface ControlState {
   songs: Song[];
   themes: Theme[];
   media: MediaItem[];
+  mediaPlaylists: MediaPlaylist[];
   versions: BibleVersionInfo[];
   verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
   chapters: Record<string, string[]>;
@@ -96,6 +100,8 @@ export interface ControlState {
   sidebarView: 'library' | 'playlist';
   mode: Mode;
   binTab: BinTab;
+  /** The media playlist open in the bin (when binTab is 'playlist'). */
+  binPlaylistId: string | null;
   controlsTab: ControlsTab;
   binOpen: boolean;
   /** The toolbar's Text bar (formatting for the selected item) is showing. */

@@ -139,10 +139,12 @@ const mode = async (name: 'Show' | 'Edit' | 'Reflow' | 'Bible' | 'Themes' | 'Sta
  */
 const binTab = async (name: string) => {
   if (name === 'Media' || name === 'Backgrounds') {
+    // The bin's library views: "All media" and "Backgrounds".
+    const label = name === 'Media' ? 'All media' : name;
     const bin = control.getByRole('region', { name: 'Bin' });
     if ((await bin.count()) === 0)
       await control.getByRole('banner').getByRole('button', { name: 'Media', exact: true }).click();
-    const cat = bin.getByRole('button', { name, exact: true });
+    const cat = bin.getByRole('button', { name: label, exact: true });
     if ((await cat.getAttribute('aria-pressed')) !== 'true') await cat.click();
     return;
   }
@@ -709,11 +711,7 @@ test('Preview first: click previews media, Space shows it full-screen without le
   await binTab('Media');
   await control
     .getByRole('region', { name: 'Bin' })
-    .getByText('Seed image')
-    .locator('..')
-    .locator('..')
-    .locator('button')
-    .first()
+    .getByRole('button', { name: 'Seed image', exact: true })
     .click();
   // Preview monitor now holds the image (and nothing went to the screen yet).
   const previewMonitor = control.locator('figure').filter({ hasText: 'Preview' });
@@ -761,11 +759,7 @@ test('click goes live: a video from the bin plays on every output; Turn off live
   // Clicks go live by default: one click puts the clip on screen, no Preview step.
   await control
     .getByRole('region', { name: 'Bin' })
-    .getByText('Seed clip')
-    .locator('..')
-    .locator('..')
-    .locator('button')
-    .first()
+    .getByRole('button', { name: 'Seed clip', exact: true })
     .click();
   let out = await outputPage();
   let outVideo = out.locator('.ls-layer-media video');
@@ -1095,6 +1089,42 @@ test('a cleared layer comes back with one click', async () => {
     timeout: 5000,
   });
   await expect(out.locator('.ls-bg')).toHaveCount(1);
+});
+
+test('media playlists: create, drag media in, open, rename and delete', async () => {
+  await binTab('Media');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  // Media is grouped by month, newest first, with the pictures and videos counted.
+  await expect(bin.getByRole('heading', { level: 3 }).first()).toBeVisible();
+  await bin.getByRole('button', { name: 'New media playlist' }).click();
+  const row = bin.getByRole('button', { name: 'New playlist', exact: true });
+  await expect(row).toHaveAttribute('aria-pressed', 'true');
+  await expect(bin.getByText(/This playlist is empty/)).toBeVisible();
+  // Drag a clip from All media onto the playlist in the sidebar.
+  await bin.getByRole('button', { name: 'All media', exact: true }).click();
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).dragTo(row);
+  await row.click();
+  await expect(row).toHaveAttribute('aria-pressed', 'true');
+  await expect(bin.getByRole('button', { name: 'All media', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  await expect(bin.getByRole('button', { name: 'Seed clip', exact: true })).toBeVisible();
+  await expect(bin.getByRole('button', { name: 'Seed image', exact: true })).toHaveCount(0);
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/25-media-playlist.png' });
+  // Rename from its menu, then delete it: the media stays in the library.
+  await bin.getByRole('button', { name: 'New playlist options' }).click();
+  await control.getByRole('menuitem', { name: 'Rename' }).click();
+  await bin.getByRole('textbox', { name: 'Rename' }).fill('Walk-in loops');
+  await control.keyboard.press('Enter');
+  const renamed = bin.getByRole('button', { name: 'Walk-in loops', exact: true });
+  await expect(renamed).toBeVisible();
+  await bin.getByRole('button', { name: 'Walk-in loops options' }).click();
+  await control.getByRole('menuitem', { name: 'Delete playlist' }).click();
+  await expect(renamed).toHaveCount(0);
+  await bin.getByRole('button', { name: 'All media', exact: true }).click();
+  await expect(bin.getByRole('button', { name: 'Seed clip', exact: true })).toBeVisible();
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

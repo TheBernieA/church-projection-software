@@ -18,6 +18,7 @@ import type {
   Standby,
   Theme,
   Unsubscribe,
+  MediaPlaylist,
 } from '@lampstand/core';
 import type { QueryName, QueryResults } from '@lampstand/ipc-contract';
 import type { MediaLibrary } from '../library/mediaLibrary';
@@ -60,6 +61,7 @@ export interface Services {
   songs: JsonFileRepository<Song>;
   services: JsonFileRepository<ServicePlan>;
   themes: JsonFileRepository<Theme>;
+  mediaPlaylists: JsonFileRepository<MediaPlaylist>;
   media: JsonFileRepository<MediaItem>;
   mediaLibrary: MediaLibrary;
   bibles: BibleStore;

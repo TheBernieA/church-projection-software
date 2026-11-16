@@ -11,6 +11,7 @@ export const useStore = create<ControlState>((set) => ({
   songs: [],
   themes: [],
   media: [],
+  mediaPlaylists: [],
   versions: [],
   verseCounts: {},
   chapters: {},
@@ -26,6 +27,7 @@ export const useStore = create<ControlState>((set) => ({
   libraryTab: 'songs',
   mode: 'show',
   binTab: 'media',
+  binPlaylistId: null,
   controlsTab: 'timers',
   binOpen: true,
   textBarOpen: false,
@@ -114,7 +116,16 @@ export async function loadVerseCounts(versionId: string): Promise<void> {
 }
 
 export async function refresh(
-  kind: 'songs' | 'services' | 'themes' | 'media' | 'bibles' | 'settings' | 'displays' | 'all',
+  kind:
+    | 'songs'
+    | 'services'
+    | 'themes'
+    | 'media'
+    | 'mediaPlaylists'
+    | 'bibles'
+    | 'settings'
+    | 'displays'
+    | 'all',
 ): Promise<void> {
   const all = kind === 'all';
   const tasks: Promise<void>[] = [];
@@ -123,6 +134,8 @@ export async function refresh(
   if (all || kind === 'songs') tasks.push(q('songs.list').then((songs) => patch({ songs })));
   if (all || kind === 'themes') tasks.push(q('themes.list').then((themes) => patch({ themes })));
   if (all || kind === 'media') tasks.push(q('media.list').then((media) => patch({ media })));
+  if (all || kind === 'mediaPlaylists')
+    tasks.push(q('mediaPlaylists.list').then((mediaPlaylists) => patch({ mediaPlaylists })));
   if (all || kind === 'displays')
     tasks.push(q('displays.list').then((displays) => patch({ displays })));
   if (all || kind === 'bibles')
