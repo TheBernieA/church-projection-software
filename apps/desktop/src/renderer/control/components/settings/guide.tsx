@@ -1,7 +1,14 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   ArrowRight,
   Check,
+  ChevronRight,
+  Images,
+  LayoutGrid,
+  Monitor,
+  PanelLeft,
+  PanelTop,
+  SlidersHorizontal,
   HardDriveDownload,
   ListPlus,
   MonitorUp,
@@ -13,10 +20,10 @@ import {
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
+import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { openDialog, useStore } from '../../lib/store';
 import { Group, SettingsPage } from './parts';
 import { type ShortcutAction } from '../../types';
-import {} from '../../types';
 import { type SettingsPageId } from '../../types';
 
 export type { SettingsPageId } from '../../types';
@@ -69,15 +76,108 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
   );
 }
 
+/** Every shortcut, in the order an operator meets them. */
 const KEYS: ShortcutAction[] = [
   'goLive',
   'next',
   'previous',
   'quickBar',
   'clearContent',
+  'clearMedia',
+  'clearBackground',
+  'clearOverlays',
   'clearAll',
-  'black',
   'panic',
+  'black',
+  'logo',
+  'freeze',
+  'mediaToggle',
+  'undo',
+  'redo',
+  'cheatSheet',
+  'perfHud',
+];
+
+/** The regions of the window, left to right, for the tour. */
+const TOUR: { id: string; icon: ReactNode }[] = [
+  { id: 'toolbar', icon: <PanelTop size={15} /> },
+  { id: 'sidebar', icon: <PanelLeft size={15} /> },
+  { id: 'show', icon: <LayoutGrid size={15} /> },
+  { id: 'output', icon: <Monitor size={15} /> },
+  { id: 'controls', icon: <SlidersHorizontal size={15} /> },
+  { id: 'media', icon: <Images size={15} /> },
+];
+
+/** Every built feature, grouped by area and filterable: the guide's "what can it do" list. */
+function FeatureIndex() {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const groups = FEATURE_CATEGORIES.map((c) => ({
+    ...c,
+    items: FEATURES.filter(
+      (f) =>
+        f.category === c.id &&
+        f.status === 'available' &&
+        (!q || `${f.name} ${f.description}`.toLowerCase().includes(q)),
+    ),
+  })).filter((g) => g.items.length > 0);
+  return (
+    <div className="px-4 py-3" data-testid="feature-index">
+      <div className="relative mb-3">
+        <Search
+          size={14}
+          aria-hidden
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]"
+        />
+        <input
+          className="field h-8 !pl-8"
+          placeholder={t('guide.everything.filter')}
+          aria-label={t('guide.everything.filter')}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+      {groups.length === 0 && (
+        <p className="py-2 text-[12px] text-[var(--text-3)]">{t('guide.everything.none')}</p>
+      )}
+      {groups.map((g) => (
+        <section key={g.id} className="mb-3 last:mb-0">
+          <h4 className="section-label pb-1.5">{g.name}</h4>
+          <ul className="divide-y divide-[var(--hairline)] rounded-[6px] bg-[var(--surface-1)] shadow-[inset_0_0_0_1px_var(--hairline)]">
+            {g.items.map((f) => (
+              <li key={f.id} className="px-3 py-2" data-feature={f.id}>
+                <p className="text-[13px] font-medium">{f.name}</p>
+                <p className="mt-0.5 text-[12px] leading-snug text-[var(--text-3)]">
+                  {f.description}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+/** The recipes, in the order a new operator needs them. */
+const HOWTO = [
+  'song',
+  'playlist',
+  'verse',
+  'preview',
+  'clear',
+  'backgrounds',
+  'arrangement',
+  'edit',
+  'import',
+  'web',
+  'props',
+  'timers',
+  'stage',
+  'themes',
+  'logo',
+  'backup',
+  'undo',
 ];
 const QUICK_EXAMPLES = ['jn 3 16', 'Romans 8:28-39', '#23', 'amazing grace'];
 
@@ -91,7 +191,10 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
   const wentLive = useStore((s) => !!s.live?.programSince);
   const keys = effectiveShortcuts();
   // Step text uses the operator's actual (possibly remapped) keys.
-  const keyNames = Object.fromEntries(Object.entries(keys).map(([k, v]) => [k, displayCombo(v)]));
+  const keyNames: Record<string, string> = {
+    ...Object.fromEntries(Object.entries(keys).map(([k, v]) => [k, displayCombo(v)])),
+    quick: displayCombo(keys.quickBar),
+  };
 
   const steps: Step[] = [
     {
@@ -138,6 +241,38 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
         ))}
       </Group>
 
+      <Group title={t('guide.tour.title')} footnote={t('guide.tour.help')}>
+        {TOUR.map((r) => (
+          <div key={r.id} className="flex gap-3 px-4 py-3" data-tour={r.id}>
+            <span className="mt-0.5 shrink-0 text-[var(--accent)]">{r.icon}</span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium">{t(`guide.tour.${r.id}.title`)}</p>
+              <p className="mt-0.5 text-[12px] leading-relaxed text-[var(--text-2)]">
+                {t(`guide.tour.${r.id}.body`, keyNames)}
+              </p>
+            </div>
+          </div>
+        ))}
+      </Group>
+
+      <Group title={t('guide.howto.title')} footnote={t('guide.howto.help')}>
+        {HOWTO.map((id) => (
+          <details key={id} className="group px-4 py-2.5" data-howto={id}>
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-[13px] font-medium [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                size={14}
+                aria-hidden
+                className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
+              />
+              {t(`guide.howto.items.${id}.q`)}
+            </summary>
+            <p className="mt-1.5 pl-[22px] text-[12px] leading-relaxed text-[var(--text-2)]">
+              {t(`guide.howto.items.${id}.a`, keyNames)}
+            </p>
+          </details>
+        ))}
+      </Group>
+
       <Group
         title={t('guide.quickBar')}
         footnote={t('guide.quickBarHelp', { key: displayCombo(keys.quickBar) })}
@@ -155,7 +290,7 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
         </div>
       </Group>
 
-      <Group title={t('guide.keys')} footnote={t('guide.keysHelp')}>
+      <Group title={t('guide.allKeys')} footnote={t('guide.keysHelp')}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 px-4 py-4">
           {KEYS.map((k) => (
             <div key={k} className="flex items-center justify-between gap-3 text-[13px]">
@@ -164,6 +299,10 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
             </div>
           ))}
         </div>
+      </Group>
+
+      <Group title={t('guide.everything.title')} footnote={t('guide.everything.help')}>
+        <FeatureIndex />
       </Group>
 
       <Group title={t('guide.colours')}>

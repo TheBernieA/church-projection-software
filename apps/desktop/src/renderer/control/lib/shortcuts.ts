@@ -1,5 +1,5 @@
 import { clearLayer, goLive, step, toggleMask } from './actions';
-import { cmd } from './api';
+import { api, cmd } from './api';
 import { openDialog, redo, undo, useStore } from './store';
 import { DEFAULT_SHORTCUTS } from '../constants';
 import { type ShortcutAction } from '../types';
@@ -101,5 +101,15 @@ export function installShortcuts(): () => void {
     RUN[action]();
   };
   window.addEventListener('keydown', onKey);
-  return () => window.removeEventListener('keydown', onKey);
+  // Edit › Undo / Redo in the menu bar: the same rules as the keys.
+  // (The menu itself undoes typing in a focused field, natively.)
+  const offMenu = api.onMenu((action) => {
+    if (isTyping(document.activeElement)) return;
+    const dialogOpen = useStore.getState().dialog && useStore.getState().dialog !== 'perf';
+    if (!dialogOpen) void (action === 'undo' ? undo() : redo());
+  });
+  return () => {
+    window.removeEventListener('keydown', onKey);
+    offMenu();
+  };
 }

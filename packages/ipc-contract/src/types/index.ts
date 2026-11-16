@@ -131,6 +131,9 @@ export interface Notice {
 export type CommandResult = Result<unknown>;
 
 /** API exposed to the control window by its preload. */
+/** What an application-menu item asks the control window to do. */
+export type MenuAction = 'undo' | 'redo';
+
 export interface ControlApi {
   command(cmd: CommandEnvelope): Promise<CommandResult>;
   undo(): Promise<CommandResult>;
@@ -141,6 +144,8 @@ export interface ControlApi {
   onDisplaysChanged(cb: () => void): () => void;
   onHistoryChanged(cb: (h: { canUndo: boolean; canRedo: boolean }) => void): () => void;
   onNotice(cb: (n: Notice) => void): () => void;
+  /** Edit › Undo / Redo chosen from the application menu. */
+  onMenu(cb: (action: MenuAction) => void): () => void;
   platform: string;
 }
 

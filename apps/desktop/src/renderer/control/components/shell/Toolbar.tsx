@@ -12,14 +12,12 @@ import {
   Pencil,
   Play,
   Radio,
-  Redo2,
   Rows3,
   Search,
   Settings,
   SquareDashed,
   SquareUser,
   Type,
-  Undo2,
   FileBadge,
   Activity,
   type LucideIcon,
@@ -27,13 +25,13 @@ import {
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, sceneHasContent, secondsSince } from '@lampstand/core';
-import { IconButton, SoonBadge, Switch } from '@lampstand/ui';
+import { SoonBadge, Switch } from '@lampstand/ui';
 import i18n from '../../i18n';
 import { saveSettings } from '../../lib/actions';
 import { feature } from '../../lib/features';
 import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { openDialog, redo, undo, useStore } from '../../lib/store';
+import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { type Mode } from '../../types';
 
@@ -190,7 +188,6 @@ export function Toolbar() {
   const { t } = useTranslation();
   const mode = useStore((s) => s.mode);
   const binOpen = useStore((s) => s.binOpen);
-  const history = useStore((s) => s.history);
   const clickGoesLive = useStore((s) => s.settings?.clickGoesLive ?? true);
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
   const hasMain = useStore((s) => s.displays.some((d) => d.role === 'main'));
@@ -208,26 +205,7 @@ export function Toolbar() {
       >
         <Flame size={18} strokeWidth={2.25} />
       </div>
-      <div className="mr-1 flex flex-col">
-        <IconButton
-          size="xs"
-          className="!h-[22px]"
-          aria-label={`${t('top.undo')} (${displayCombo(keys.undo)})`}
-          onClick={() => void undo()}
-          disabled={!history.canUndo}
-        >
-          <Undo2 size={13} />
-        </IconButton>
-        <IconButton
-          size="xs"
-          className="!h-[22px]"
-          aria-label={`${t('top.redo')} (${displayCombo(keys.redo)})`}
-          onClick={() => void redo()}
-          disabled={!history.canRedo}
-        >
-          <Redo2 size={13} />
-        </IconButton>
-      </div>
+      {/* Undo and redo live in the Edit menu and on ⌘Z / ⌘⇧Z. */}
 
       <ToolbarButton
         icon={<Search size={20} />}

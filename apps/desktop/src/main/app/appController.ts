@@ -25,6 +25,7 @@ import {
 } from '@lampstand/ipc-contract';
 import { stripChords } from '@lampstand/lyrics';
 import { registerIpc } from '../ipc/router';
+import { installAppMenu } from './menu';
 import { createQueries } from '../ipc/queries';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
@@ -234,6 +235,7 @@ export class AppController {
     }
 
     this.windows.createControlWindow();
+    installAppMenu((action) => this.windows.sendToControl(Channels.evMenu, action));
     this.windows.start();
     void dailyBackup(paths.library, paths.backups).catch((e: unknown) =>
       log.warn('backup failed', { err: errorMessage(e) }),

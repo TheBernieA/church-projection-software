@@ -27,6 +27,7 @@ const api: ControlApi = {
   onDisplaysChanged: (cb) => listen(Channels.evDisplays, cb),
   onHistoryChanged: (cb) => listen(Channels.evHistory, cb),
   onNotice: (cb) => listen(Channels.evNotice, cb),
+  onMenu: (cb) => listen(Channels.evMenu, cb),
   platform: process.platform,
 } as ControlApi;
 

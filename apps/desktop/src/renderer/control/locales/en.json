@@ -561,7 +561,7 @@
     "quickBar": "Find anything fast",
     "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter shows it (or previews it with Preview first on); Shift+Enter always shows it now.",
     "keys": "Keyboard essentials",
-    "keysHelp": "Shortcuts can be changed under Keyboard shortcuts in the toolbar.",
+    "keysHelp": "Change any of them under More › Keyboard shortcuts in the toolbar.",
     "colours": "What the colours mean",
     "colour": {
       "preview": {
@@ -576,7 +576,116 @@
         "title": "Gold",
         "body": "Selected or editable — never affects the screen."
       }
-    }
+    },
+    "tour": {
+      "title": "Find your way around",
+      "help": "The window reads left to right: what you have, what you show, what the room sees.",
+      "toolbar": {
+        "title": "Toolbar",
+        "body": "Search (or {{quick}}) finds songs, verses and hymns. Show, Edit, Reflow and Bible switch the workspace; Themes and Stage are under More. On the right: the media bin, the Audience and Stage screen lights (green means connected), Preview first, Settings and Status."
+      },
+      "sidebar": {
+        "title": "Library and playlists",
+        "body": "The outline at the top lists your libraries (Songs, Hymns) and playlists. Pick one to see its contents underneath: songs to drag in, or the playlist’s items with coloured section bands. Use + to add a song, a playlist or an item."
+      },
+      "show": {
+        "title": "Show (the centre)",
+        "body": "The whole playlist on one page, item after item. Click a slide to put it on screen (or into Preview with Preview first on); double-click always goes live; right-click edits it. Switch Grid / Easy (big words) and the slide size at the bottom right."
+      },
+      "output": {
+        "title": "Output",
+        "body": "The monitor shows exactly what the room sees. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: the Audience or Stage view, and Black (B), Logo (L) and Freeze (F)."
+      },
+      "controls": {
+        "title": "Show controls",
+        "body": "Under the monitor: the stage message, timers, messages with fill-in fields, and props. Anything you start here shows on the screens straight away."
+      },
+      "media": {
+        "title": "Media bin",
+        "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides."
+      }
+    },
+    "howto": {
+      "title": "How to…",
+      "help": "Short recipes for the everyday jobs. Click one to open it.",
+      "items": {
+        "song": {
+          "q": "Add a new song",
+          "a": "Click + next to LIBRARY. Type the words with section headers like [Verse 1] and [Chorus] on their own lines; a blank line starts a new slide. Save, then drag the song onto the playlist, or use its Add to service button."
+        },
+        "playlist": {
+          "q": "Build a playlist for Sunday",
+          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. Drag to reorder; a section moves with everything under it."
+        },
+        "verse": {
+          "q": "Put a Bible verse on screen",
+          "a": "Press {{quick}} and type a reference such as jn 3 16 or Romans 8:28-39. Enter loads Preview, Shift+Enter puts it straight on screen. The Bible workspace lets you browse and pick verse ranges."
+        },
+        "preview": {
+          "q": "Check slides before the room sees them",
+          "a": "Turn on Preview first in the toolbar. Clicks then load the Preview monitor; press {{goLive}} (or Go live) to send it to the screens."
+        },
+        "clear": {
+          "q": "Take things off the screen",
+          "a": "Use the strip beside the monitor to clear one layer, or the red power button ({{clearAll}}) to clear everything. {{panic}} clears the words but keeps the background. Black and Logo cover the screen without losing your place."
+        },
+        "backgrounds": {
+          "q": "Use a moving background",
+          "a": "Open the media bin and pick Backgrounds. Hover a motion background to see it move, click to put it behind your words. Themes can carry a background too."
+        },
+        "arrangement": {
+          "q": "Change a song’s order, key or language",
+          "a": "In a song’s header on the Show page, pick an arrangement (a short version, say), transpose the chords for the stage display, or add a translation shown under each line. Write arrangements and translations in the song editor."
+        },
+        "edit": {
+          "q": "Make your own slides",
+          "a": "Add Slides from the + menu, then open the Edit workspace: type a title and text, and add text boxes, shapes, lines and pictures on the canvas. Drag to move, pull the corners to resize."
+        },
+        "import": {
+          "q": "Bring in PowerPoint or PDF",
+          "a": "Choose Import in the + menu. PowerPoint comes in as editable text slides; PDF brings each page in as a picture. From Keynote, export to PowerPoint or PDF first."
+        },
+        "web": {
+          "q": "Show a web page",
+          "a": "Choose Web page in the + menu and enter a secure (https) address. It shows on the audience screens in an isolated view; Black screen covers it."
+        },
+        "props": {
+          "q": "Show a logo or notice over everything",
+          "a": "In Show controls › Props, make a prop from a picture or a line of text and click it to show or hide it. Messages show text such as “Parent of {number}” as a lower third or a ticker."
+        },
+        "timers": {
+          "q": "Run a countdown",
+          "a": "Add a Countdown item for a full-screen countdown, or start a timer in Show controls › Timers; running timers show on the stage display."
+        },
+        "stage": {
+          "q": "Set up the stage display",
+          "a": "Give a screen the Stage role in Screens (click the Audience or Stage light in the toolbar). It shows the current and next slide, the clock, timers, chords and your stage message."
+        },
+        "themes": {
+          "q": "Change how the words look",
+          "a": "Theme in the toolbar opens Themes. Duplicate a built-in theme to change fonts, colours, effects (shadow, glow, outline) and the background, and choose which theme each kind of slide uses."
+        },
+        "logo": {
+          "q": "Set the logo and off-air screen",
+          "a": "Settings › Presenting: your church name and a tagline on a choice of looks, or your own picture or video. The off-air screen shows it whenever nothing is live."
+        },
+        "backup": {
+          "q": "Back up or move your library",
+          "a": "Settings › Library & backups exports everything (songs, playlists, themes, media) to one file and imports it on another computer. A backup is also made every day."
+        },
+        "undo": {
+          "q": "Undo a mistake",
+          "a": "Press {{undo}} (or Edit › Undo in the menu bar) to undo changes to playlists, songs and slides; {{redo}} redoes them."
+        }
+      }
+    },
+    "everything": {
+      "title": "Everything Lampstand does",
+      "help": "Every feature that works today, by area. Planned ones are listed in Settings › Features.",
+      "filter": "Find a feature",
+      "none": "Nothing matches."
+    },
+    "allKeys": "All keyboard shortcuts"
   },
   "modes": {
     "label": "Workspace",

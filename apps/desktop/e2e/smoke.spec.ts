@@ -366,6 +366,16 @@ test('settings: category pages, installed Bible packages', async () => {
   await expect(control.locator('[data-step="screens"]')).toHaveAttribute('data-done', 'true'); // window mode is on
   await expect(control.locator('[data-step="live"]')).toHaveAttribute('data-done', 'true');
   await expect(control.locator('[data-step="packages"]')).not.toHaveAttribute('data-done', /.*/); // not checkable
+  // The tour, the how-to recipes and the full feature list are all there; the list filters.
+  await expect(control.locator('[data-tour]')).toHaveCount(6);
+  await control.locator('[data-howto="verse"] summary').click();
+  await expect(control.locator('[data-howto="verse"]')).toContainText('jn 3 16');
+  const index = control.getByTestId('feature-index');
+  await expect(index.locator('[data-feature="reflow"]')).toBeVisible();
+  await index.getByLabel('Find a feature').fill('chord');
+  await expect(index.locator('[data-feature="chords"]')).toBeVisible();
+  await expect(index.locator('[data-feature="reflow"]')).toHaveCount(0);
+  await index.getByLabel('Find a feature').fill('');
   await control.waitForTimeout(150);
   await control.screenshot({ path: 'test-results/06-settings-guide.png' });
   await control.getByRole('button', { name: 'Bibles & hymnals' }).last().click();
@@ -634,23 +644,19 @@ test('drag from the library into the service plan (songs and verses)', async () 
   await control.screenshot({ path: 'test-results/14-library-drag.png' });
 });
 
-test('undo / redo: buttons and ⌘Z revert and re-apply service edits', async () => {
+test('undo / redo: ⌘Z and ⌘⇧Z revert and re-apply service edits', async () => {
   const plan = await servicePlan();
   const rows = () => plan.locator('ol > li').count();
-  const undo = control.getByRole('button', { name: /^Undo/ });
-  const redo = control.getByRole('button', { name: /^Redo/ });
+  const mod = process.platform === 'darwin' ? 'Meta' : 'Control';
   const before = await rows();
   await addToPlan('Section');
   await expect.poll(rows).toBe(before + 1);
-  await expect(undo).toBeEnabled();
-  await undo.click();
-  await expect.poll(rows).toBe(before);
-  await expect(redo).toBeEnabled();
-  await redo.click();
-  await expect.poll(rows).toBe(before + 1);
-  await expect(redo).toBeDisabled();
   await control.locator('body').click({ position: { x: 5, y: 5 } }); // make sure no text field has focus
-  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z');
+  await control.keyboard.press(`${mod}+Z`);
+  await expect.poll(rows).toBe(before);
+  await control.keyboard.press(`${mod}+Shift+Z`);
+  await expect.poll(rows).toBe(before + 1);
+  await control.keyboard.press(`${mod}+Z`);
   await expect.poll(rows).toBe(before); // leaves the plan as it was for later tests
 });
 

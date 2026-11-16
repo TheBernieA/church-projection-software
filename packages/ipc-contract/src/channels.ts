@@ -46,4 +46,6 @@ export const Channels = {
   evHistory: 'ev:history',
   evNotice: 'ev:notice',
   evOutputInfo: 'ev:output-info',
+  /** Application menu items (Edit › Undo / Redo) for the control window. */
+  evMenu: 'ev:menu',
 } as const;
