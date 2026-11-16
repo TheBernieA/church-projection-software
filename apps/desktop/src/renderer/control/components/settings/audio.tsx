@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Mic, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Settings } from '@lampstand/core';
-import { Button, Slider, Typography } from '@lampstand/ui';
+import { Button, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
 import { setPreviewOutput, useAudioPreview } from '../../lib/audioPreview';
 import { rescanDevices, useInputDevices } from '../../lib/inputs';
 import { LevelMeter } from '../bins/AudioInputs';
@@ -31,6 +31,12 @@ export function AudioPage({
   // The fade slider saves once, when let go.
   const [fadeDraft, setFadeDraft] = useState<number | null>(null);
   const fade = fadeDraft ?? s.audio.fadeSec;
+  const [volumeDraft, setVolumeDraft] = useState<number | null>(null);
+  const volume = volumeDraft ?? s.audio.startVolume ?? 0.8;
+  const commitVolume = (): void => {
+    if (volumeDraft !== null) update({ audio: { ...s.audio, startVolume: volumeDraft } });
+    setVolumeDraft(null);
+  };
   const commitFade = (): void => {
     if (fadeDraft !== null && fadeDraft !== s.audio.fadeSec)
       update({ audio: { ...s.audio, fadeSec: fadeDraft } });
@@ -69,6 +75,68 @@ export function AudioPage({
             onKeyUp={commitFade}
             onBlur={commitFade}
             className="w-60"
+          />
+        </Row>
+      </Group>
+      <Group title={t('audioSettings.tracks')}>
+        <Row label={t('audioSettings.click')} description={t('audioSettings.clickHelp')}>
+          <Segmented<'listen' | 'room'>
+            label={t('audioSettings.click')}
+            value={s.audio.click}
+            onChange={(click) => update({ audio: { ...s.audio, click } })}
+            options={[
+              { value: 'listen', label: t('audioSettings.clickListen') },
+              { value: 'room', label: t('audioSettings.clickRoom') },
+            ]}
+          />
+        </Row>
+        <Row
+          label={t('audioSettings.startVolume')}
+          description={t('audioSettings.startVolumeHelp')}
+        >
+          <div className="flex w-60 items-center gap-3">
+            <Switch
+              label={t('audioSettings.fixedVolume')}
+              checked={s.audio.startVolume !== null}
+              onChange={(on) => update({ audio: { ...s.audio, startVolume: on ? 0.8 : null } })}
+            />
+            {s.audio.startVolume === null ? (
+              <Typography size={12} tone="muted">
+                {t('audioSettings.keepLast')}
+              </Typography>
+            ) : (
+              <Slider
+                aria-label={t('audioSettings.startVolume')}
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                onChange={(e) => setVolumeDraft(Number(e.currentTarget.value))}
+                onPointerUp={commitVolume}
+                onKeyUp={commitVolume}
+                onBlur={commitVolume}
+                className="flex-1"
+              />
+            )}
+          </div>
+        </Row>
+        <Row label={t('audioSettings.afterTrack')} description={t('audioSettings.afterTrackHelp')}>
+          <Segmented<'next' | 'stop'>
+            label={t('audioSettings.afterTrack')}
+            value={s.audio.afterTrack}
+            onChange={(afterTrack) => update({ audio: { ...s.audio, afterTrack } })}
+            options={[
+              { value: 'next', label: t('audioSettings.afterNext') },
+              { value: 'stop', label: t('audioSettings.afterStop') },
+            ]}
+          />
+        </Row>
+        <Row label={t('audioSettings.loop')} description={t('audioSettings.loopHelp')}>
+          <Switch
+            label={t('audioSettings.loop')}
+            checked={s.audio.loopPlaylist}
+            disabled={s.audio.afterTrack === 'stop'}
+            onChange={(loopPlaylist) => update({ audio: { ...s.audio, loopPlaylist } })}
           />
         </Row>
       </Group>

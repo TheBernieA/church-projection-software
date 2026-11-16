@@ -22,7 +22,10 @@ export class AudioPlayer {
 
   /** Where it plays ('' = this window's default output); a device that's gone keeps the default. */
   setSink(sinkId: string): void {
-    void this.el.setSinkId(sinkId).catch(() => undefined);
+    const sinkable = this.el as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
+    // Not in every engine (jsdom in tests): call it where it exists.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    void sinkable.setSinkId?.(sinkId).catch(() => undefined);
   }
 
   sync(cue: AudioCue | null): void {

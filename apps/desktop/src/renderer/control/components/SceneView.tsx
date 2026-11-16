@@ -3,6 +3,7 @@ import type { Scene, ScreenMask, Standby } from '@lampstand/core';
 import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
 import { mediaUrl } from '../../shared/mediaUrl';
 import { useLogo } from '../lib/hooks';
+import { useStore } from '../lib/store';
 
 /**
  * React wrapper around the shared output renderer — the operator sees exactly what the
@@ -35,6 +36,8 @@ export const SceneView = memo(function SceneView({
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<SceneRenderer | null>(null);
   const logo = useLogo(); // so the monitors show the real Logo mask
+  // With no output, the monitor plays the room's video sound: through the room output.
+  const sink = useStore((s) => (audio ? (s.settings?.audio.roomOutput ?? '') : ''));
   const [visible, setVisible] = useState(mode !== 'thumbnail');
 
   useEffect(() => {
@@ -60,12 +63,13 @@ export const SceneView = memo(function SceneView({
 
   useEffect(() => {
     renderer.current?.setLogo(logo);
+    renderer.current?.setAudioSink(sink);
     renderer.current?.setAudio(audio);
     renderer.current?.setStandby(standby);
     renderer.current?.setMask(mask);
     renderer.current?.render(scene);
     // mode/transparent: a new renderer was just built and needs the scene drawn into it.
-  }, [scene, standby, audio, logo, visible, mode, transparent, mask]);
+  }, [scene, standby, audio, sink, logo, visible, mode, transparent, mask]);
 
   return (
     <div

@@ -1,6 +1,6 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
 import type { LiveState, OutputRole, ScreenMask } from '@lampstand/core';
-import { lookLayersFor, maskForRole } from '@lampstand/core';
+import { lookLayersFor, maskForRole, resolveStageLayout } from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences } from '../security/hardening';
@@ -263,6 +263,10 @@ export class WindowManager {
       logo: this.d.logo(),
       standby: this.d.standby(),
       mask: this.maskFor(o.role),
+      stageLayout: resolveStageLayout(
+        this.d.getSettings().stageLayouts,
+        this.d.getSettings().stageLayoutId,
+      ),
     };
   }
 

@@ -294,7 +294,6 @@ export const FEATURES: Feature[] = [
     'stage',
     'Custom stage layouts',
     'Design your own stage screens and switch between them.',
-    'soon',
   ),
 
   // Timers & clocks
@@ -310,13 +309,7 @@ export const FEATURES: Feature[] = [
     'Timers',
     'Countdowns, countdown-to-time and elapsed timers you can start, stop and reset.',
   ),
-  f(
-    'video-countdowns',
-    'timers',
-    'Video countdowns',
-    'Countdown videos synced to the start time.',
-    'soon',
-  ),
+  f('video-countdowns', 'timers', 'Video countdowns', 'Countdown videos synced to the start time.'),
 
   // Messages
   f(

@@ -3,11 +3,11 @@ import { Film, Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatTimer, newId, timerSeconds, type LiveTimer, type TimerDef } from '@lampstand/core';
 import { Button, Segmented, Typography } from '@lampstand/ui';
+import { addVideoCountdown } from '../../lib/actions';
 import { cmd } from '../../lib/api';
 import { useNow, useSettingsList } from '../../lib/hooks';
 import { attempt, useStore } from '../../lib/store';
 import { AddCard, BIN_CARD, BinRow, CardTitle, FormActions } from '../cards';
-import { SoonFeature } from '../Soon';
 
 type Kind = TimerDef['kind'];
 
@@ -217,7 +217,15 @@ export function TimersBin() {
           className="h-[112px] w-[150px]"
         />
       )}
-      <SoonFeature id="video-countdowns" icon={<Film size={14} />} className="self-center" />
+      <AddCard
+        label={t('timers.videoCountdown')}
+        icon={<Film size={16} />}
+        title={t('timers.videoCountdownHelp')}
+        onClick={() =>
+          addVideoCountdown(useStore.getState().media.find((m) => m.kind === 'video')?.id ?? null)
+        }
+        className="h-[112px] w-[150px]"
+      />
       <Typography
         as="p"
         size={11}

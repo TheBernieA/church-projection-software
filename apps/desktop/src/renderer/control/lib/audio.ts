@@ -16,7 +16,17 @@ export const playAudio = (
   mediaId: string,
   playlistId: string | null = null,
   position = 0,
-): Promise<unknown> => audioCmd({ action: 'play', mediaId, playlistId, position });
+): Promise<unknown> => {
+  // Settings › Audio can start every track at the same volume.
+  const start = get().settings?.audio.startVolume;
+  return audioCmd({
+    action: 'play',
+    mediaId,
+    playlistId,
+    position,
+    ...(start != null ? { volume: start } : {}),
+  });
+};
 
 /** The tracks an audio playlist plays, in order (missing files skipped). */
 export function playlistTracks(playlistId: string): string[] {
@@ -77,7 +87,13 @@ export function installAudioWatch(): () => void {
     if (duration === undefined) return probeDuration(a.mediaId);
     if (audioPositionAt(a, now) < duration - 0.15) return;
     handled = key;
-    const next = neighbourTrack(1);
+    // Settings › Audio: carry on with the playlist (from the top again, if it loops), or stop.
+    const opts = s.settings?.audio;
+    const first = a.playlistId ? (playlistTracks(a.playlistId)[0] ?? null) : null;
+    const next =
+      opts?.afterTrack === 'stop'
+        ? null
+        : (neighbourTrack(1) ?? (opts?.loopPlaylist ? first : null));
     void (next ? playAudio(next, a.playlistId ?? null) : audioCmd({ action: 'stop' }));
   }, 250);
   return () => clearInterval(timer);

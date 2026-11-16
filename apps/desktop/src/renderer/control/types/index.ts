@@ -165,6 +165,10 @@ export interface PresentableSlide {
   action: SlideAction;
   /** Countdown duration resolved at go-live time. */
   countdownSec?: number;
+  /** A count-to-time countdown ("HH:MM"): its target is worked out when it goes live. */
+  countdownClock?: string;
+  /** A countdown video, synced to end on zero when the slide goes live. */
+  countdownVideo?: { mediaId: string; hideTimer: boolean };
 }
 
 export interface SlideContext {

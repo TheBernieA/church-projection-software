@@ -27,6 +27,7 @@ import {
   Radio,
   Search,
   Star,
+  Timer,
   Trash2,
   X,
 } from 'lucide-react';
@@ -42,7 +43,7 @@ import {
   percent,
 } from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
-import { openAdhoc } from '../../lib/actions';
+import { addVideoCountdown, openAdhoc } from '../../lib/actions';
 import { playAudio, probeDuration } from '../../lib/audio';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import { previewTrack } from '../../lib/audioPreview';
@@ -338,6 +339,12 @@ function TileMenu({
             >
               <ListPlus size={14} />
               {t('mediaBin.addToService')}
+            </DropdownMenu.Item>
+          )}
+          {m.kind === 'video' && (
+            <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => addVideoCountdown(m.id)}>
+              <Timer size={14} />
+              {t('mediaBin.makeCountdown')}
             </DropdownMenu.Item>
           )}
           <DropdownMenu.Sub>

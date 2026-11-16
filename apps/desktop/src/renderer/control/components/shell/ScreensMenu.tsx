@@ -2,7 +2,14 @@ import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { AppWindow, Check, Grid3x3, LayoutTemplate, Monitor, Settings2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { OutputRole } from '@lampstand/core';
+import {
+  resolveStageLayout,
+  STAGE_PRESETS,
+  type OutputRole,
+  type StageLayout,
+} from '@lampstand/core';
+
+const NO_LAYOUTS: StageLayout[] = [];
 import { Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { cmd } from '../../lib/api';
@@ -76,6 +83,9 @@ export function ScreensMenu({ role, trigger }: { role: 'main' | 'stage'; trigger
   const displays = useStore((s) => s.displays);
   const windowMode = useStore((s) => s.settings?.windowMode ?? false);
   const patterns = useStore((s) => s.live?.testPatterns ?? EMPTY_LIST);
+  const layouts = useStore((s) => s.settings?.stageLayouts ?? NO_LAYOUTS);
+  const chosen = useStore((s) => s.settings?.stageLayoutId ?? null);
+  const layoutId = resolveStageLayout(layouts, chosen).id;
   const mine = displays.filter((d) => d.role === role);
   // The outputs a test pattern goes to: each audience display, or the rehearsal window.
   const outputs = [
@@ -128,6 +138,36 @@ export function ScreensMenu({ role, trigger }: { role: 'main' | 'stage'; trigger
               }}
             />
           ) : (
+            <>
+              <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+                {t('stageLayouts.switch')}
+              </DropdownMenu.Label>
+              <DropdownMenu.RadioGroup
+                value={layoutId}
+                onValueChange={(id) => void saveSettings({ stageLayoutId: id })}
+              >
+                {[...STAGE_PRESETS, ...layouts].map((l) => (
+                  <DropdownMenu.RadioItem
+                    key={l.id}
+                    value={l.id}
+                    className={ITEM_CLASS}
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    <Typography className="flex w-3.5 justify-center">
+                      <DropdownMenu.ItemIndicator>
+                        <Check size={14} />
+                      </DropdownMenu.ItemIndicator>
+                    </Typography>
+                    <Typography truncate className="flex-1">
+                      {l.name}
+                    </Typography>
+                  </DropdownMenu.RadioItem>
+                ))}
+              </DropdownMenu.RadioGroup>
+              <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+            </>
+          )}
+          {role === 'stage' && (
             <DropdownMenu.Item
               className={ITEM_CLASS}
               onSelect={() => useStore.setState({ mode: 'stage' })}

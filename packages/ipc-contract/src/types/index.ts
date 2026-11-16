@@ -11,6 +11,7 @@ import type {
   Song,
   ScreenVisual,
   ScreenMask,
+  StageLayout,
   Standby,
   Theme,
 } from '@lampstand/core';
@@ -61,6 +62,8 @@ export interface OutputInfo {
   standby: Standby;
   /** The screen mask this output uses (Settings › Screens), or null for the full screen. */
   mask: ScreenMask | null;
+  /** Stage screens: the layout they show (Stage workspace). */
+  stageLayout: StageLayout;
 }
 
 export interface ServiceSummary {

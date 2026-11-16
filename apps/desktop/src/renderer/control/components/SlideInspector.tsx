@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { newId, type ServiceItem, type TextSlide } from '@lampstand/core';
-import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
+import { formatClock, newId, omit, type ServiceItem, type TextSlide } from '@lampstand/core';
+import { Button, IconButton, Segmented, Switch, Typography, typographyClass } from '@lampstand/ui';
 import { useInService, useSelectedItem } from '../lib/hooks';
 import { moveItem } from '../lib/array';
 import { updateItem, useStore } from '../lib/store';
@@ -9,6 +9,10 @@ import { ObjectInspector } from './canvas/ObjectInspector';
 import { Field, NumberInput } from './form';
 import { type CountdownItem, type TextItem } from '../types';
 import { clamp } from '../lib/utils';
+import { isClockTime } from '../lib/slides';
+import { Select } from './Select';
+
+const NO_VIDEO = 'none';
 
 /** Replace an item. `typing` groups keystrokes into one undo step; actions are one step each. */
 function replaceItem(next: ServiceItem, typing = false): void {
@@ -246,8 +250,13 @@ function TextInspector({ item }: { item: TextItem }) {
 
 function CountdownInspector({ item }: { item: CountdownItem }) {
   const { t } = useTranslation();
-  const minutes =
-    typeof item.target === 'string' ? '' : String(Math.round(item.target.durationSec / 60));
+  const videos = useStore((s) => s.media).filter((m) => m.kind === 'video');
+  const byTime = typeof item.target === 'string';
+  const minutes = byTime
+    ? ''
+    : String(Math.round((item.target as { durationSec: number }).durationSec / 60));
+  const clock = typeof item.target === 'string' && isClockTime(item.target) ? item.target : '10:30';
+  const video = item.video ? videos.find((m) => m.id === item.video?.mediaId) : undefined;
   return (
     <div className="flex flex-col gap-4 p-5">
       <Typography as="h3" variant="overline">
@@ -261,26 +270,96 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
           onChange={(e) => replaceItem({ ...item, title: e.target.value }, true)}
         />
       </Field>
-      <Field label={t('inspector.minutes')} htmlFor="insp-cd-min" hint={t('inspector.minutesHelp')}>
-        <input
-          id="insp-cd-min"
-          type="number"
-          min={1}
-          max={600}
-          className="field w-28"
-          value={minutes}
-          placeholder="5"
-          onChange={(e) =>
-            replaceItem(
-              {
-                ...item,
-                target: { durationSec: Math.max(1, Number(e.target.value) || 5) * 60 },
-              },
-              true,
-            )
+      <Field label={t('inspector.countTo')} group>
+        <Segmented<'length' | 'time'>
+          label={t('inspector.countTo')}
+          value={byTime ? 'time' : 'length'}
+          onChange={(v) =>
+            replaceItem({ ...item, target: v === 'time' ? clock : { durationSec: 300 } })
           }
+          options={[
+            { value: 'length', label: t('inspector.forLength') },
+            { value: 'time', label: t('inspector.untilTime') },
+          ]}
         />
       </Field>
+      {byTime ? (
+        <Field
+          label={t('inspector.endsAt')}
+          htmlFor="insp-cd-time"
+          hint={t('inspector.endsAtHelp')}
+        >
+          <input
+            id="insp-cd-time"
+            type="time"
+            className="field w-32"
+            value={clock}
+            onChange={(e) =>
+              e.target.value && replaceItem({ ...item, target: e.target.value }, true)
+            }
+          />
+        </Field>
+      ) : (
+        <Field
+          label={t('inspector.minutes')}
+          htmlFor="insp-cd-min"
+          hint={t('inspector.minutesHelp')}
+        >
+          <input
+            id="insp-cd-min"
+            type="number"
+            min={1}
+            max={600}
+            className="field w-28"
+            value={minutes}
+            placeholder="5"
+            onChange={(e) =>
+              replaceItem(
+                {
+                  ...item,
+                  target: { durationSec: Math.max(1, Number(e.target.value) || 5) * 60 },
+                },
+                true,
+              )
+            }
+          />
+        </Field>
+      )}
+      <Field label={t('inspector.countdownVideo')} group hint={t('inspector.countdownVideoHelp')}>
+        <Select<string>
+          size="sm"
+          aria-label={t('inspector.countdownVideo')}
+          value={item.video?.mediaId ?? NO_VIDEO}
+          onChange={(id) =>
+            replaceItem(
+              id === NO_VIDEO
+                ? omit(item, 'video', 'hideTimer')
+                : { ...item, video: { mediaId: id } },
+            )
+          }
+          options={[
+            { value: NO_VIDEO, label: t('inspector.noVideo') },
+            ...videos.map((m) => ({
+              value: m.id,
+              label: m.durationSec
+                ? `${m.name} · ${formatClock(Math.round(m.durationSec))}`
+                : m.name,
+            })),
+          ]}
+        />
+      </Field>
+      {video && (
+        <label className="flex items-center justify-between gap-3">
+          <Typography size={13} tone="secondary">
+            {t('inspector.showTimerOverVideo')}
+          </Typography>
+          <Switch
+            label={t('inspector.showTimerOverVideo')}
+            checked={!item.hideTimer}
+            onChange={(on) => replaceItem({ ...item, hideTimer: !on })}
+          />
+        </label>
+      )}
     </div>
   );
 }

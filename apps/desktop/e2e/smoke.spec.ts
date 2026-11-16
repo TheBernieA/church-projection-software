@@ -339,14 +339,14 @@ test('songs: build arrangements and a translation, then pick them per item', asy
   await expect(out.locator('.ls-block-secondary')).toHaveText('Coro de prueba');
   await expect(out.locator('.ls-text').last()).not.toContainText('['); // the room never sees chords
   const stage = app.windows().find((w) => w.url().includes('/stage/'))!;
-  await expect(stage.locator('#chords .chord-row')).toHaveText('C');
-  await expect(stage.locator('#chords .lyric-row')).toHaveText('Chorus test line');
+  await expect(stage.locator('.ls-st-chords .chord-row')).toHaveText('C');
+  await expect(stage.locator('.ls-st-chords .lyric-row')).toHaveText('Chorus test line');
   // Transpose up a tone: the band's chart follows, the room's text doesn't change.
   const up = control.getByRole('button', { name: 'Transpose up a semitone' });
   await up.click();
   await up.click();
   await expect(control.getByTestId('transpose-value')).toHaveText('+2');
-  await expect(stage.locator('#chords .chord-row')).toHaveText('D');
+  await expect(stage.locator('.ls-st-chords .chord-row')).toHaveText('D');
   await stage.screenshot({ path: 'test-results/05c-stage-chords.png' });
   const down = control.getByRole('button', { name: 'Transpose down a semitone' });
   await down.click();
@@ -1691,6 +1691,89 @@ test('layer strip: drag a layer to move it, tuck it into "…", put it back', as
   await strip.getByRole('button', { name: 'More layers' }).click();
   await control.getByRole('menuitem', { name: 'Reset the strip' }).click();
   await expect.poll(names).toEqual(order);
+});
+
+test('stage layouts: pick a ready-made one, design your own, switch from the Stage menu', async () => {
+  await outputPage();
+  const stage = app.windows().find((w) => w.url().includes('/stage/'))!;
+  await mode('Stage');
+  const list = control.getByRole('complementary', { name: 'Stage layouts' });
+  await expect(list.getByRole('button', { name: /Classic/ })).toContainText('On stage');
+  // Big clock on the stage screens: the clock shows, the slide renders don't.
+  await list.getByRole('button', { name: /Big clock/ }).click();
+  await control.getByRole('button', { name: 'Use on stage screens' }).click();
+  await expect(stage.locator('.ls-st-clock')).toBeVisible();
+  await expect(stage.locator('.ls-st-current')).toHaveCount(0);
+  // Your own: duplicate it, add a line of text, use it.
+  await control.getByRole('button', { name: 'Duplicate to edit' }).click();
+  await expect(control.getByRole('textbox', { name: 'Layout name' })).toHaveValue('Big clock copy');
+  const elements = control.getByRole('complementary', { name: 'Elements' });
+  await elements.getByRole('button', { name: 'Text', exact: true }).click();
+  const field = elements.getByRole('textbox', { name: 'What it says' });
+  await field.fill('Pray for the band');
+  await field.press('Enter');
+  await control.getByRole('button', { name: 'Use on stage screens' }).click();
+  await expect(stage.locator('.ls-st-text')).toContainText('Pray for the band');
+  // Drag the text box: it moves on the stage screen too.
+  const box = control.getByRole('button', { name: 'Text box' });
+  const before = await stage.locator('.ls-st-text').evaluate((e) => (e as HTMLElement).style.left);
+  const b = (await box.boundingBox())!;
+  await control.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await control.mouse.down();
+  await control.mouse.move(b.x + b.width / 2 - 80, b.y + b.height / 2 - 40, { steps: 6 });
+  await control.mouse.up();
+  await expect
+    .poll(() => stage.locator('.ls-st-text').evaluate((e) => (e as HTMLElement).style.left))
+    .not.toBe(before);
+  await control.screenshot({ path: 'test-results/38-stage-layouts.png' });
+  // The Stage menu in the toolbar switches layouts too: back to Classic.
+  await control.getByRole('button', { name: /^Stage:/ }).click();
+  await control.getByRole('menuitemradio', { name: 'Classic' }).click();
+  await control.keyboard.press('Escape');
+  await expect(stage.locator('.ls-st-current')).toHaveCount(1);
+  await mode('Show');
+});
+
+test('video countdown: a video timed to end on zero, made from the media bin', async () => {
+  const out = await outputPage();
+  await binTab('Media');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'All media', exact: true })
+    .click();
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).hover();
+  await bin.getByRole('button', { name: 'Seed clip options' }).click();
+  await control.getByRole('menuitem', { name: 'Make a countdown with it' }).click();
+  // It opens for editing, with the clip chosen and the numbers hidden (the video has its own).
+  await expect(control.getByRole('combobox', { name: 'Countdown video' })).toContainText(
+    'Seed clip',
+  );
+  await expect(
+    control.getByRole('switch', { name: 'Show the numbers over the video' }),
+  ).toHaveAttribute('aria-checked', 'false');
+  await control.screenshot({ path: 'test-results/39-video-countdown.png' });
+  // Live: the 6 s clip waits on its first frame until 6 s before zero (a minute away).
+  await mode('Show');
+  await control.keyboard.press('Space');
+  await expect(out.locator('.ls-layer-media video')).toHaveCount(1);
+  const media = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.program.media : null;
+  };
+  await expect.poll(async () => (await media())?.mediaId).toBe('seed-clip');
+  const m = await media();
+  expect(Date.parse(m!.syncedAt!) - Date.now()).toBeGreaterThan(40_000);
+  await expect
+    .poll(() => out.locator('.ls-layer-media video').evaluate((v: HTMLVideoElement) => v.paused))
+    .toBe(true);
+  await expect(out.locator('.ls-countdown')).toHaveCount(0);
+  // Take it out of the service again (one undo), and put the verse back for the next tests.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+Z' : 'Control+Z');
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

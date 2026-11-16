@@ -313,6 +313,7 @@ function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }
   const { t } = useTranslation();
   const playing = useStore((s) => s.live?.audio?.mediaId === m.id);
   const listening = useAudioPreview().mediaId === m.id;
+  const clickToRoom = useStore((s) => s.settings?.audio.click === 'room');
   const playlists = usePlaylists('audio');
   const length = useKnownDuration(m.id, m.durationSec);
   useEffect(() => probeDuration(m.id), [m.id]);
@@ -322,9 +323,14 @@ function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }
         variant="bare"
         aria-label={t('audio.listenTo', { name: m.name })}
         aria-current={playing || undefined}
-        title={t('audio.rowHint')}
-        // Click: listen here first (headphones). Double-click: straight into the room.
-        onClick={() => previewTrack(m.id)}
+        title={clickToRoom ? t('audio.rowHintRoom') : t('audio.rowHint')}
+        // Click: listen here first (headphones), or straight into the room (Settings › Audio).
+        // Double-click always goes to the room.
+        onClick={() => {
+          if (!clickToRoom) return previewTrack(m.id);
+          stopPreview();
+          void playAudio(m.id, playlistId);
+        }}
         onDoubleClick={() => {
           stopPreview();
           void playAudio(m.id, playlistId);

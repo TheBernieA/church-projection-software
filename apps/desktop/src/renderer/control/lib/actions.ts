@@ -2,9 +2,11 @@ import {
   layersClearedBy,
   mediaEnd,
   mediaPositionAt,
+  newId,
   type BackgroundRef,
   type Layer,
   type Look,
+  type MediaLayer,
   type Overlay,
   type RestorableLayer,
   type ServiceItem,
@@ -13,8 +15,8 @@ import {
 import { knownDuration } from './mediaDurations';
 import { cmd } from './api';
 import i18n from '../i18n';
-import { buildItemSlides } from './slides';
-import { attempt, loadChapter, toast, useStore } from './store';
+import { buildItemSlides, countdownTarget } from './slides';
+import { addItemToService, attempt, loadChapter, toast, useStore } from './store';
 import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
 
 const get = useStore.getState;
@@ -68,12 +70,33 @@ async function safe(p: Promise<unknown>): Promise<void> {
 }
 
 function withFreshCountdown(slide: PresentableSlide): PresentableSlide {
-  if (!slide.countdownSec || slide.action.kind !== 'content') return slide;
-  const content = {
-    ...slide.action.content,
-    countdownTo: new Date(Date.now() + slide.countdownSec * 1000).toISOString(),
-  };
+  if (slide.action.kind !== 'content') return slide;
+  const target = slide.countdownSec ? { durationSec: slide.countdownSec } : slide.countdownClock;
+  if (!target) return slide;
+  const content = { ...slide.action.content, countdownTo: countdownTarget(target, Date.now()) };
   return { ...slide, action: { ...slide.action, content } };
+}
+
+/**
+ * A countdown video's media layer, synced so its last frame lands on the countdown's zero: it
+ * starts (length) seconds before the target; early, it waits on its first frame; late, it joins
+ * part-way through. With an unknown length it just starts now.
+ */
+function countdownVideoLayer(mediaId: string, targetIso: string): MediaLayer {
+  const lib = get().media.find((m) => m.id === mediaId)?.durationSec;
+  const length = knownDuration(mediaId, lib);
+  const startMs = length ? Date.parse(targetIso) - length * 1000 : Date.now();
+  return {
+    mediaId,
+    kind: 'video',
+    loop: false,
+    muted: false,
+    fit: 'cover',
+    playing: true,
+    position: 0,
+    syncedAt: new Date(startMs).toISOString(),
+    volume: 1,
+  };
 }
 
 /** Does this item's video start playing as soon as it goes live? (Settings › Presenting.) */
@@ -138,12 +161,17 @@ export async function goLiveSlide(
   useStore.setState({ liveCursor: { itemId: item.id, index } });
   const a = slide.action;
   if (a.kind === 'content') {
+    const cv = slide.countdownVideo;
+    const video =
+      cv && a.content.countdownTo ? countdownVideoLayer(cv.mediaId, a.content.countdownTo) : null;
     await safe(
       cmd(
         'live.goLive',
         {
-          content: a.content,
+          // A countdown video can hide the numbers (it shows its own).
+          content: video && cv?.hideTimer ? null : a.content,
           background: a.background,
+          ...(video ? { media: video, keepTiming: true } : {}),
           next: next?.action.kind === 'content' ? next.action.content : null,
           keepInput: get().settings?.keepCameraUnderWords ?? false,
         },
@@ -417,3 +445,22 @@ export async function stopAnnouncementsLayer(): Promise<void> {
 /** Put a background behind the words on screen. */
 export const setBackground = (ref: BackgroundRef): Promise<void> =>
   safe(cmd('live.setBackground', { background: { ref } }, 'ui'));
+
+/**
+ * Add a countdown to the service that plays `mediaId` so it ends on zero (its length by
+ * default), and open it for editing.
+ */
+export function addVideoCountdown(mediaId: string | null): void {
+  const s = get();
+  const m = mediaId ? s.media.find((x) => x.id === mediaId) : undefined;
+  const length = m ? knownDuration(m.id, m.durationSec) : undefined;
+  const id = newId();
+  addItemToService({
+    id,
+    kind: 'countdown',
+    title: i18n.t('service.countdownTitle'),
+    target: { durationSec: length ? Math.max(60, Math.ceil(length)) : 300 },
+    ...(m ? { video: { mediaId: m.id }, hideTimer: true } : {}),
+  });
+  useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
+}

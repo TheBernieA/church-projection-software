@@ -96,16 +96,37 @@ export function syncMedia(
   m: MediaLayer,
   mode: RenderMode,
   audio: boolean,
+  sinkId = '',
 ): void {
   const v = node.querySelector('video');
   if (!v || mode === 'thumbnail') return;
+  // The room hears a video's sound where Settings › Audio sends room audio.
+  const routed = v as HTMLVideoElement & { lsSink?: string };
+  if (audio && routed.lsSink !== sinkId) {
+    routed.lsSink = sinkId;
+    const sinkable = v as HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> };
+    // Not in every engine (jsdom in tests): call it where it exists.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    void sinkable.setSinkId?.(sinkId).catch(() => undefined);
+  }
   const trimmed = m.start !== undefined || m.end !== undefined;
   // A trimmed clip loops between its in- and out-points (handled below), not the whole file.
   v.loop = m.loop && !trimmed;
   // Only one renderer plays audio (the main output, or the Program monitor when there is no
   // output), so the room never hears doubled sound.
   v.muted = m.muted || !audio;
+  const held = v as HTMLVideoElement & { lsHold?: ReturnType<typeof setTimeout> };
+  if (held.lsHold) clearTimeout(held.lsHold);
   const apply = (): void => {
+    // Synced to start later (a countdown video ending on the start time): hold its first frame
+    // until then, so every output starts it together.
+    const wait = m.playing && m.syncedAt ? Date.parse(m.syncedAt) - Date.now() : 0;
+    if (wait > 50) {
+      v.pause();
+      if (Math.abs(v.currentTime - m.position) > 0.05) v.currentTime = m.position;
+      held.lsHold = setTimeout(apply, Math.min(wait, 2_147_000_000));
+      return;
+    }
     const duration = Number.isFinite(v.duration) ? v.duration : undefined;
     const target = mediaPositionAt(m, Date.now(), duration);
     if (Math.abs(v.currentTime - target) > 0.3) v.currentTime = target;
@@ -170,6 +191,7 @@ export function buildMedia(
   media: MediaResolver,
   mode: RenderMode,
   audio: boolean,
+  sinkId = '',
 ): HTMLElement {
   const wrap = el(doc, 'div', 'ls-media', { ...FILL, background: '#000' });
   if (m.kind === 'image') {
@@ -184,7 +206,7 @@ export function buildMedia(
     v.preload = mode === 'thumbnail' ? 'metadata' : 'auto';
     v.muted = true; // syncMedia sets the real audio state once metadata is known
     wrap.append(v);
-    syncMedia(wrap, m, mode, audio);
+    syncMedia(wrap, m, mode, audio, sinkId);
   }
   return wrap;
 }

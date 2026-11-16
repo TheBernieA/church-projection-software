@@ -83,6 +83,10 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     textFormat: TextFormatSchema.optional(),
     /** Its own background (e.g. a stock countdown); otherwise the theme's. */
     background: BackgroundRefSchema.optional(),
+    /** A countdown video, played so its last frame lands exactly on zero. */
+    video: z.object({ mediaId: IdSchema }).optional(),
+    /** Hide the numbers (a countdown video usually shows its own). */
+    hideTimer: z.boolean().optional(),
   }),
   z.object({ ...base, kind: z.literal('header'), label: z.string().max(200) }),
   /** A web page (giving page, live feed…), shown in an isolated web view. */

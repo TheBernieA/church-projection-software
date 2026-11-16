@@ -223,9 +223,17 @@ export class AppController {
       settings.get().screenMasks,
       settings.get().maskFor,
       settings.get().audio.roomOutput,
+      settings.get().stageLayouts,
+      settings.get().stageLayoutId,
     ]);
     settings.onChange((next) => {
-      const masks = JSON.stringify([next.screenMasks, next.maskFor, next.audio.roomOutput]);
+      const masks = JSON.stringify([
+        next.screenMasks,
+        next.maskFor,
+        next.audio.roomOutput,
+        next.stageLayouts,
+        next.stageLayoutId,
+      ]);
       if (masks !== maskKey) {
         maskKey = masks;
         this.windows.refreshOutputInfo();

@@ -13,15 +13,18 @@ export function AddCard({
   onClick,
   className = '',
   icon = <Plus size={18} />,
+  title,
 }: {
   label: string;
   onClick: () => void;
   className?: string;
   icon?: ReactNode;
+  title?: string;
 }) {
   return (
     <Button
       variant="bare"
+      title={title}
 
       onClick={onClick}
       className={`flex shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[6px] border-2 border-dashed border-[var(--hairline-strong)] transition-colors hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${typographyClass({ size: 12, tone: 'muted', weight: 'medium' })} ${className}`}

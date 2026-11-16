@@ -254,6 +254,18 @@ describe('live commands', () => {
     expect(store.get().cleared.input).toBeUndefined();
   });
 
+  it('a countdown video keeps the timing it was sent (synced to end on zero)', async () => {
+    const { store, run } = setup();
+    const later = new Date(Date.now() + 60_000).toISOString();
+    await run('live.goLive', {
+      content: content('countdown'),
+      media: { mediaId: 'clip', kind: 'video', loop: false, position: 0, syncedAt: later },
+      keepTiming: true,
+    });
+    expect(store.get().program.media?.syncedAt).toBe(later);
+    expect(store.get().program.content?.key).toBe('countdown');
+  });
+
   it('a slide going live replaces a camera, unless cameras stay under the words', async () => {
     const { store, run } = setup();
     const cam = { deviceId: 'cam1', label: 'Camera', fit: 'cover' as const };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { StageLayoutSchema } from './stage';
 import { TimerDefSchema } from './timers';
 import { PropPositionSchema } from './scene';
 
@@ -106,6 +107,9 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** Custom stage screen layouts, and which one stage screens show (null: Classic). */
+    stageLayouts: z.array(StageLayoutSchema).max(30).default([]),
+    stageLayoutId: z.string().max(64).nullable().default(null),
     /** A slide going live over a camera keeps the camera underneath (off: the slide replaces it). */
     keepCameraUnderWords: z.boolean().default(false),
     /** Room audio: where it plays, and how long Fade out takes. */
@@ -114,8 +118,23 @@ export const SettingsSchema = z
         /** Output device for the room ('' = the computer's default output). */
         roomOutput: z.string().max(300).default(''),
         fadeSec: z.number().min(0.5).max(15).default(3),
+        /** Every new track starts at this volume (null: it keeps the last one's). */
+        startVolume: z.number().min(0).max(1).nullable().default(null),
+        /** At the end of a track from a playlist: play the next one, or stop. */
+        afterTrack: z.enum(['next', 'stop']).default('next'),
+        /** After a playlist's last track, start again from the top. */
+        loopPlaylist: z.boolean().default(false),
+        /** Clicking a track in the Audio tab: listen first on this computer, or play it in the room. */
+        click: z.enum(['listen', 'room']).default('listen'),
       })
-      .default({ roomOutput: '', fadeSec: 3 }),
+      .default({
+        roomOutput: '',
+        fadeSec: 3,
+        startVolume: null,
+        afterTrack: 'next',
+        loopPlaylist: false,
+        click: 'listen',
+      }),
     screenMasks: z.array(ScreenMaskSchema).max(20).default([]),
     /** Saved Looks (the toolbar's Looks button switches between them). */
     looks: z.array(LookSchema).max(20).default([]),

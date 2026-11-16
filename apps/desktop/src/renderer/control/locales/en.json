@@ -557,7 +557,16 @@
     "noSlide": "This item has no slides yet.",
     "countdownText": "Text above the timer",
     "minutes": "Length (minutes)",
-    "minutesHelp": "The countdown starts when it goes live."
+    "minutesHelp": "The countdown starts when it goes live.",
+    "countTo": "Count down",
+    "forLength": "For a length",
+    "untilTime": "Until a time",
+    "endsAt": "Ends at",
+    "endsAtHelp": "Reaches zero at this time today (or tomorrow, if it’s long past).",
+    "countdownVideo": "Countdown video",
+    "countdownVideoHelp": "Plays so its last frame lands exactly on zero: early, it waits on its first frame; late, it joins part-way through.",
+    "noVideo": "None (just the numbers)",
+    "showTimerOverVideo": "Show the numbers over the video"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -830,7 +839,9 @@
       "countdown": "Countdown",
       "to-time": "Count to time",
       "elapsed": "Elapsed"
-    }
+    },
+    "videoCountdown": "Video countdown",
+    "videoCountdownHelp": "Add a countdown that plays a video ending exactly at zero (pick the video in its settings)"
   },
   "reflow": {
     "revert": "Revert",
@@ -1068,7 +1079,8 @@
     "grid": "Grid",
     "list": "List",
     "renameMedia": "Rename {{name}}",
-    "noFavourites": "No favourites yet. Hover over any media and click the star to keep it here."
+    "noFavourites": "No favourites yet. Hover over any media and click the star to keep it here.",
+    "makeCountdown": "Make a countdown with it"
   },
   "playback": {
     "title": "Playback options: {{name}}",
@@ -1214,7 +1226,8 @@
     "previewPosition": "Preview position",
     "listenOn": "Listen on",
     "defaultOutput": "This computer's output",
-    "sendToRoom": "Play in room"
+    "sendToRoom": "Play in room",
+    "rowHintRoom": "Click to play it in the room; double-click does the same"
   },
   "inputs": {
     "show": "Show {{name}} on screen",
@@ -1332,7 +1345,7 @@
   },
   "audioSettings": {
     "room": "Room audio",
-    "roomHelp": "Tracks from the Audio tab and live audio inputs play here, from the main output (or this computer when there’s no output).",
+    "roomHelp": "Tracks from the Audio tab, live audio inputs and the sound of videos play here, from the main output (or this computer when there’s no output).",
     "roomOutput": "Plays through",
     "roomOutputHelp": "The speakers or mixer the room hears.",
     "defaultOutput": "This computer’s default output",
@@ -1343,7 +1356,22 @@
     "listen": "Listening first",
     "listenHelp": "Where you hear a track when you click it in the Audio tab, before the room does (headphones, say).",
     "inputs": "Microphones & audio inputs",
-    "inputsHelp": "Speak or play into an input to see its level. Put one through the room from the Audio tab."
+    "inputsHelp": "Speak or play into an input to see its level. Put one through the room from the Audio tab.",
+    "tracks": "Tracks",
+    "click": "Clicking a track",
+    "clickHelp": "In the Audio tab. Double-click always plays it in the room.",
+    "clickListen": "Listen first",
+    "clickRoom": "Play in the room",
+    "startVolume": "New tracks start at",
+    "startVolumeHelp": "Off: each track keeps the volume the last one had.",
+    "fixedVolume": "Start every track at a set volume",
+    "keepLast": "The last track’s volume",
+    "afterTrack": "At the end of a track",
+    "afterTrackHelp": "For tracks played from a playlist.",
+    "afterNext": "Play the next one",
+    "afterStop": "Stop",
+    "loop": "Loop the playlist",
+    "loopHelp": "After the last track, start again from the top."
   },
   "screensMenu": {
     "main": {
@@ -1359,5 +1387,43 @@
     "windowHint": "Show it in a window on this screen",
     "editStage": "Edit the stage layout",
     "settings": "Output settings…"
+  },
+  "stageLayouts": {
+    "list": "Stage layouts",
+    "preset": "Ready-made",
+    "inUse": "On stage",
+    "new": "New layout",
+    "name": "Layout name",
+    "copyName": "{{name}} copy",
+    "duplicate": "Duplicate",
+    "duplicateToEdit": "Duplicate to edit",
+    "delete": "Delete {{name}}",
+    "use": "Use on stage screens",
+    "onStage": "On the stage screens",
+    "presetHint": "Ready-made",
+    "presetHelp": "A ready-made layout. Duplicate it to move things around, resize them, or add your own text.",
+    "editHelp": "Drag a box to move it, its corner to resize it. Arrow keys nudge the selected box (Shift: further); Delete removes it.",
+    "elements": "Elements",
+    "add": "Add",
+    "element": "{{name}} box",
+    "removeElement": "Remove this box",
+    "textOf": "What it says",
+    "size": "Text size",
+    "position": "At {{x}}%, {{y}}% · {{w}}% × {{h}}%",
+    "selectHint": "Select a box on the layout to change it.",
+    "newText": "Your text",
+    "switch": "Layout",
+    "kinds": {
+      "current": "Now",
+      "next": "Next",
+      "clock": "Clock",
+      "elapsed": "Slide time",
+      "timers": "Timers",
+      "label": "Slide name",
+      "notes": "Notes",
+      "message": "Message",
+      "chords": "Chords",
+      "text": "Text"
+    }
   }
 }

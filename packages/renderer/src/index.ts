@@ -13,3 +13,4 @@ export * from './types';
 export * from './mask';
 export * from './audioPlayer';
 export * from './inputs';
+export * from './stageView';

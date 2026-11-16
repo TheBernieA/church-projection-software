@@ -58,6 +58,7 @@ api.onInfo((i) => {
   }
   if (i.audio && !audio) audio = new RoomAudio(window, mediaUrl);
   audio?.setSink(i.audioSink);
+  renderer.setAudioSink(i.audioSink);
   if (!i.audio && audio) {
     audio.destroy();
     audio = null;

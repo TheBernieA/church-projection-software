@@ -63,6 +63,7 @@ export class SceneRenderer {
   private resizeObserver: ResizeObserver | null = null;
   private last: Scene | null = null;
   private audio: boolean;
+  private audioSink = '';
 
   constructor(
     private readonly host: HTMLElement,
@@ -139,12 +140,20 @@ export class SceneRenderer {
     this.stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   }
 
+  /** Where a video's sound plays when this renderer plays audio ('' = default output). */
+  setAudioSink(sinkId: string): void {
+    if (this.audioSink === sinkId) return;
+    this.audioSink = sinkId;
+    if (this.media && this.last?.media)
+      syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, sinkId);
+  }
+
   /** Hand the sound to / take it from this renderer (e.g. a projector was plugged in). */
   setAudio(on: boolean): void {
     if (this.audio === on) return;
     this.audio = on;
     if (this.media && this.last?.media)
-      syncMedia(this.media.node, this.last.media, this.opts.mode, on);
+      syncMedia(this.media.node, this.last.media, this.opts.mode, on, this.audioSink);
   }
 
   /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
@@ -317,13 +326,20 @@ export class SceneRenderer {
     if ((this.media?.key ?? 'none') === key) {
       // Same clip: apply play/pause/seek/volume in place.
       if (this.media && scene.media)
-        syncMedia(this.media.node, scene.media, this.opts.mode, this.audio);
+        syncMedia(this.media.node, scene.media, this.opts.mode, this.audio, this.audioSink);
       return;
     }
     const old = this.media;
     this.media = null;
     if (scene.media) {
-      const node = buildMedia(this.doc, scene.media, this.opts, this.opts.mode, this.audio);
+      const node = buildMedia(
+        this.doc,
+        scene.media,
+        this.opts,
+        this.opts.mode,
+        this.audio,
+        this.audioSink,
+      );
       this.mediaLayer.append(node);
       this.media = { key, node };
       if (!instant)

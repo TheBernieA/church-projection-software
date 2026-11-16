@@ -30,7 +30,26 @@ type SlideView = 'grid' | 'easy';
 
 export function thumbScene(slide: PresentableSlide): Scene {
   const a = slide.action;
-  if (a.kind === 'content') return makeScene({ background: a.background, content: a.content });
+  if (a.kind === 'content') {
+    const v = slide.countdownVideo;
+    return makeScene({
+      background: a.background,
+      content: v?.hideTimer ? null : a.content,
+      // A countdown video: its first frame, under the numbers.
+      media: v
+        ? {
+            mediaId: v.mediaId,
+            kind: 'video',
+            loop: false,
+            muted: true,
+            fit: 'cover',
+            playing: false,
+            position: 0,
+            volume: 1,
+          }
+        : null,
+    });
+  }
   if (a.kind === 'media') return makeScene({ media: a.media });
   if (a.kind === 'web') return makeScene({ web: a.web });
   return makeScene({ background: a.background });

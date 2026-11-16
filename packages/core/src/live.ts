@@ -383,6 +383,8 @@ const GoLiveSchema = z.object({
   autoplay: z.boolean().optional(),
   /** Words going live over a camera keep it underneath (lyrics over a camera shot); else it goes. */
   keepInput: z.boolean().optional(),
+  /** Keep the media's timing as sent (a countdown video synced to end on the start time). */
+  keepTiming: z.boolean().optional(),
 });
 
 /** Registers every live-output command. Pure logic; the main process wires it to IPC. */
@@ -425,7 +427,9 @@ export function registerLiveCommands(
           p.media !== undefined ? p.media : explicit ? null : (s.preview.media ?? null);
         // Media that goes live starts from the top, stamped so every output plays in sync.
         const media = picked
-          ? { ...startMedia(picked, now()), playing: p.autoplay !== false }
+          ? p.keepTiming
+            ? { ...picked, syncedAt: picked.syncedAt ?? now() }
+            : { ...startMedia(picked, now()), playing: p.autoplay !== false }
           : null;
         const bgFromPayload: BackgroundLayer | null | undefined =
           p.background !== undefined ? p.background : s.preview.background;

@@ -3,6 +3,7 @@ import {
   withTextFormat,
   findTheme,
   omit,
+  secondsUntilTime,
   type BackgroundLayer,
   type BibleVersionInfo,
   type BookId,
@@ -59,6 +60,20 @@ function themeBackground(theme: Theme, override?: BackgroundLayer['ref']): Backg
 }
 
 const textBlock = (text: string): TextBlock => ({ spans: [{ text }] });
+
+/** "10:30": a time of day a countdown runs to. */
+export const isClockTime = (s: string): boolean => /^([01]?\d|2[0-3]):[0-5]\d$/.test(s);
+
+/**
+ * When a countdown reaches zero, as an ISO time: after its length from now, at its time of day
+ * (today, or tomorrow if that's long past), or the exact time it was given.
+ */
+export function countdownTarget(target: string | { durationSec: number }, nowMs: number): string {
+  if (typeof target !== 'string') return new Date(nowMs + target.durationSec * 1000).toISOString();
+  if (isClockTime(target))
+    return new Date(nowMs + secondsUntilTime(target, nowMs) * 1000).toISOString();
+  return target;
+}
 
 export function itemTitle(item: ServiceItem, ctx: Pick<SlideContext, 'songs' | 'media'>): string {
   switch (item.kind) {
@@ -281,10 +296,9 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'countdown': {
       const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
       const durationSec = typeof item.target === 'string' ? undefined : item.target.durationSec;
-      const target =
-        typeof item.target === 'string'
-          ? item.target
-          : new Date(Date.now() + (durationSec ?? 0) * 1000).toISOString();
+      const clock =
+        typeof item.target === 'string' && isClockTime(item.target) ? item.target : undefined;
+      const target = countdownTarget(item.target, Date.now());
       const content: ContentLayer = {
         key: `${item.id}:countdown`,
         kind: 'countdown',
@@ -299,6 +313,9 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         action: { kind: 'content', content, background: themeBackground(theme, item.background) },
       };
       if (durationSec) slide.countdownSec = durationSec;
+      if (clock) slide.countdownClock = clock;
+      if (item.video)
+        slide.countdownVideo = { mediaId: item.video.mediaId, hideTimer: !!item.hideTimer };
       return { missing: [], slides: [slide] };
     }
   }
