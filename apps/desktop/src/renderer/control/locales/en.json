@@ -582,7 +582,7 @@
       "help": "The window reads left to right: what you have, what you show, what the room sees.",
       "toolbar": {
         "title": "Toolbar",
-        "body": "Search (or {{quick}}) finds songs, verses and hymns. Show, Edit, Reflow and Bible switch the workspace; Themes and Stage are under More. On the right: the media bin, the Audience and Stage screen lights (green means connected), Preview first, Settings and Status."
+        "body": "Search (or {{quick}}) finds songs, verses and hymns. Show, Edit, Reflow and Bible switch the workspace; Theme opens Themes, and Stage is under More. On the right: the media bin, the Audience and Stage screen lights (green means connected), Preview first, Settings and Status."
       },
       "sidebar": {
         "title": "Library and playlists",

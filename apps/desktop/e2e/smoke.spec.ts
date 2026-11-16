@@ -118,10 +118,14 @@ test.afterAll(async () => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-/** Switch the centre workspace: Show/Edit/Reflow/Bible in the toolbar, Themes/Stage under More. */
+/** Switch the workspace: Show/Edit/Reflow/Bible in the toolbar, Themes = Theme, Stage under More. */
 const mode = async (name: 'Show' | 'Edit' | 'Reflow' | 'Bible' | 'Themes' | 'Stage') => {
   const nav = control.getByRole('navigation', { name: 'Workspace' });
-  if (name === 'Themes' || name === 'Stage') {
+  if (name === 'Themes') {
+    await control.getByRole('banner').getByRole('button', { name: 'Theme', exact: true }).click();
+    return;
+  }
+  if (name === 'Stage') {
     await nav.getByRole('button', { name: 'More' }).click();
     await control.getByRole('menuitem', { name }).click();
     return;

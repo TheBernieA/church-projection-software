@@ -35,17 +35,15 @@ import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
 import { type Mode } from '../../types';
 
-/** The four everyday workspaces sit in the toolbar; the rest are under More. */
+/** The four everyday workspaces sit in the toolbar; Themes is Theme, and Stage is under More. */
 const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
   { mode: 'show', icon: Play },
   { mode: 'edit', icon: Pencil },
   { mode: 'reflow', icon: Rows3 },
   { mode: 'bible', icon: BookOpen },
 ];
-const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [
-  { mode: 'themes', icon: Palette },
-  { mode: 'stage', icon: SquareUser },
-];
+// Themes has its own toolbar button (Theme), so More only holds the Stage workspace.
+const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: SquareUser }];
 
 const MENU_CLASS =
   'z-[60] min-w-[220px] rounded-[8px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-3)] outline-none focus-visible:!shadow-[var(--shadow-3)] data-[state=open]:animate-[ls-pop_120ms_ease-out]';
