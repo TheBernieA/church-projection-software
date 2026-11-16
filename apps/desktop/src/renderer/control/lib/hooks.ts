@@ -12,7 +12,7 @@ import {
 import { findItem, loadMissingChapters, saveSettings } from './actions';
 import { buildItemSlides } from './slides';
 import { useStore } from './store';
-import { type ItemSlides } from '../types';
+import { type ItemSlides, type SlideContext } from '../types';
 import { CANVAS } from '../constants';
 
 export function useSelectedItem(): ServiceItem | null {
@@ -22,8 +22,8 @@ export function useSelectedItem(): ServiceItem | null {
   return findItem(id);
 }
 
-/** Reactive slides for an item; loads missing Bible chapters on demand. */
-export function useItemSlides(item: ServiceItem | null): ItemSlides & { loading: boolean } {
+/** Everything slides are built from (songs, themes, media, settings, Bibles), kept current. */
+export function useSlideContext(): SlideContext {
   const songs = useStore((s) => s.songs);
   const themes = useStore((s) => s.themes);
   const media = useStore((s) => s.media);
@@ -31,12 +31,19 @@ export function useItemSlides(item: ServiceItem | null): ItemSlides & { loading:
   const versions = useStore((s) => s.versions);
   const verseCounts = useStore((s) => s.verseCounts);
   const chapters = useStore((s) => s.chapters);
+  return useMemo(
+    () => ({ songs, themes, media, settings, versions, verseCounts, chapters }),
+    [songs, themes, media, settings, versions, verseCounts, chapters],
+  );
+}
+
+/** Reactive slides for an item; loads missing Bible chapters on demand. */
+export function useItemSlides(item: ServiceItem | null): ItemSlides & { loading: boolean } {
+  const ctx = useSlideContext();
+  const { verseCounts } = ctx;
   const built = useMemo(
-    () =>
-      item
-        ? buildItemSlides(item, { songs, themes, media, settings, versions, verseCounts, chapters })
-        : { slides: [], missing: [] },
-    [item, songs, themes, media, settings, versions, verseCounts, chapters],
+    () => (item ? buildItemSlides(item, ctx) : { slides: [], missing: [] }),
+    [item, ctx],
   );
   useEffect(() => {
     void loadMissingChapters(built.missing);

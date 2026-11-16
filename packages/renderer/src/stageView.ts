@@ -36,6 +36,7 @@ const STYLE = `
 .ls-stage{position:absolute;inset:0;container-type:size;background:#07080c;color:#eceef4;font-family:'Inter',system-ui,sans-serif;overflow:hidden}
 .ls-stage *{box-sizing:border-box}
 .ls-st-el{position:absolute;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.ls-st-el[hidden]{display:none}
 .ls-st-tag{font-size:2.2cqh;text-transform:uppercase;letter-spacing:.12em;color:#9aa1b5;margin-bottom:.8cqh;flex:none}
 .ls-st-current .ls-st-tag{color:#e5484d}
 .ls-st-screen{position:relative;flex:1;min-height:0;border:2px solid #2a2f40;background:#000}
@@ -115,15 +116,45 @@ export class StageView {
     this.timer = setInterval(() => this.tick(), 500);
   }
 
-  /** Show a layout (rebuilt only when it really changed). */
+  /**
+   * Show a layout. Moving, resizing or retyping an element updates it in place (cheap enough
+   * for every pointer move while dragging in the editor); a different set of elements rebuilds.
+   */
   setLayout(layout: StageLayout): void {
     const key = JSON.stringify(layout.elements);
     if (key === this.layoutKey) return;
     this.layoutKey = key;
+    const same =
+      layout.elements.length === this.built.length &&
+      layout.elements.every((e, i) => {
+        const b = this.built[i];
+        return b !== undefined && e.id === b.el.id && e.kind === b.el.kind;
+      });
+    if (same) {
+      layout.elements.forEach((e, i) => {
+        const b = this.built[i];
+        if (!b) return;
+        b.el = e;
+        this.place(b.node, e);
+        if (e.kind === 'text') b.body.textContent = e.text ?? '';
+      });
+      return;
+    }
     for (const b of this.built) b.scene?.destroy();
     this.root.replaceChildren();
     this.built = layout.elements.map((e) => this.build(e));
     if (this.state) this.update(this.state);
+  }
+
+  /** Put an element's box where the layout says, at its text size. */
+  private place(node: HTMLElement, e: StageElement): void {
+    Object.assign(node.style, {
+      left: `${e.x}%`,
+      top: `${e.y}%`,
+      width: `${e.w}%`,
+      height: `${e.h}%`,
+      fontSize: `${BASE[e.kind] * e.size}cqh`,
+    });
   }
 
   update(state: LiveState): void {
@@ -175,13 +206,8 @@ export class StageView {
 
   private build(e: StageElement): Built {
     const doc = this.host.ownerDocument;
-    const node = el(doc, 'div', `ls-st-el ls-st-${e.kind}`, {
-      left: `${e.x}%`,
-      top: `${e.y}%`,
-      width: `${e.w}%`,
-      height: `${e.h}%`,
-      fontSize: `${BASE[e.kind] * e.size}cqh`,
-    });
+    const node = el(doc, 'div', `ls-st-el ls-st-${e.kind}`);
+    this.place(node, e);
     node.dataset.kind = e.kind;
     this.root.append(node);
     if (e.kind === 'current' || e.kind === 'next') {

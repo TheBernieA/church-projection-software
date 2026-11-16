@@ -83,11 +83,13 @@ function EditBoxes({
   selected,
   onSelect,
   onChange,
+  onRemove,
 }: {
   elements: StageElement[];
   selected: string | null;
   onSelect: (id: string | null) => void;
   onChange: (id: string, patch: Partial<StageElement>, commit: boolean) => void;
+  onRemove: (id: string) => void;
 }) {
   const { t } = useTranslation();
   const area = useRef<HTMLDivElement>(null);
@@ -95,6 +97,8 @@ function EditBoxes({
     e.preventDefault();
     e.stopPropagation();
     onSelect(el.id);
+    // preventDefault stops the box taking focus on its own: give it focus, for the keys.
+    e.currentTarget.closest<HTMLElement>('[role="button"]')?.focus();
     const rect = area.current?.getBoundingClientRect();
     if (!rect) return;
     const start = { x: e.clientX, y: e.clientY };
@@ -149,6 +153,9 @@ function EditBoxes({
               if (patch) {
                 e.preventDefault();
                 onChange(el.id, patch, true);
+              } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                onRemove(el.id);
               }
             }}
             onFocus={() => onSelect(el.id)}
@@ -287,19 +294,10 @@ export function StageMode() {
     save({ ...layout, elements: [...layout.elements, el] });
     setSelected(el.id);
   };
-  // Delete removes the selected element (when the focus isn't in a text field).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (preset || !selected || (e.key !== 'Delete' && e.key !== 'Backspace')) return;
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      e.preventDefault();
-      save({ ...layout, elements: layout.elements.filter((x) => x.id !== selected) });
-      setSelected(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
+  const removeElement = (id: string): void => {
+    save({ ...layout, elements: layout.elements.filter((x) => x.id !== id) });
+    setSelected(null);
+  };
 
   const all = useMemo(
     () => [
@@ -398,6 +396,7 @@ export function StageMode() {
               selected={selected}
               onSelect={setSelected}
               onChange={patchElement}
+              onRemove={removeElement}
             />
           )}
         </div>

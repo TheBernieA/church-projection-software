@@ -1,8 +1,10 @@
-import { MousePointerClick, PanelRightClose, PanelRightOpen, PencilOff } from 'lucide-react';
-import { IconButton } from '@lampstand/ui';
+import { useEffect } from 'react';
+import { MousePointerClick, PanelRightClose, PanelRightOpen, PencilOff, Rows3 } from 'lucide-react';
+import { Button, IconButton } from '@lampstand/ui';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
+import { selectSlide } from '../../lib/textSlides';
 import type {} from '../../lib/objects';
 import { CanvasToolbar } from '../canvas/CanvasToolbar';
 import { Filmstrip } from '../canvas/Filmstrip';
@@ -35,13 +37,51 @@ function InspectorToggle({ open, toggle }: { open: boolean; toggle: () => void }
 
 /** Text slides: canvas for the chosen slide, tools above, slides below, properties beside. */
 function CanvasEditor({ item }: { item: TextItem }) {
+  const { t } = useTranslation();
   const inspector = useInspector();
   const cursor = useStore((s) => s.editCursor);
   const index = cursor?.itemId === item.id ? Math.min(cursor.index, item.slides.length - 1) : 0;
+  // Page Up / Page Down step through the slides being edited (not while typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.defaultPrevented || (e.key !== 'PageUp' && e.key !== 'PageDown')) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (e.target as HTMLElement | null)?.isContentEditable
+      )
+        return;
+      e.preventDefault();
+      selectSlide(item, index + (e.key === 'PageDown' ? 1 : -1));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [item, index]);
+  const reflow = (
+    <Button
+      size="sm"
+      variant="ghost"
+      icon={<Rows3 size={14} />}
+      title={t('canvas.reflowHint')}
+      onClick={() => useStore.setState({ mode: 'reflow' })}
+    >
+      {t('canvas.reflow')}
+    </Button>
+  );
   return (
     <div className="flex min-h-0 flex-1">
       <div className="flex min-w-0 flex-1 flex-col">
-        <CanvasToolbar item={item} index={index} trailing={<InspectorToggle {...inspector} />} />
+        <CanvasToolbar
+          item={item}
+          index={index}
+          trailing={
+            <>
+              {reflow}
+              <InspectorToggle {...inspector} />
+            </>
+          }
+        />
         <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto p-4">
           <div className="w-full max-w-[1100px]">
             <SlideCanvas item={item} index={index} />

@@ -846,10 +846,25 @@
   "reflow": {
     "revert": "Revert",
     "label": "All slide text",
-    "help": "Blank lines split slides. A line like [Verse 1] or [Welcome] starts a new group or slide title.",
+    "help": "Blank lines split slides. A line like [Verse 1] or [Welcome] starts a new group or slide title. Click a slide to jump to its text.",
     "unavailable": "Reflow works with songs and text slides",
     "unavailableHelp": "Pick a song, or a text slides or announcements item in the service plan.",
-    "save": "Save"
+    "save": "Save",
+    "unsaved": "Unsaved changes",
+    "saveHint": "Save (⌘S)",
+    "readOnly": "Hymns from an installed hymnal can’t be changed. Copy it to your songs to edit it.",
+    "tools": "Reflow tools",
+    "insertSection": "Add a section",
+    "insertSlide": "Add a slide",
+    "newSlideTitle": "Title",
+    "untitledSlide": "Slide without a title",
+    "splitHere": "Split here",
+    "tidy": "Tidy up",
+    "splitLong": "Split slides over {{count}} lines",
+    "preview": "Slides",
+    "jumpTo": "Slide {{n}}: {{label}} (go to its text)",
+    "long": "Long",
+    "longHint": "More than {{count}} lines: it may not fit. Split it, or use Split slides over {{count}} lines."
   },
   "stage": {
     "now": "Now",
@@ -907,7 +922,11 @@
       "image": "Picture"
     },
     "hideInspector": "Hide inspector",
-    "showInspector": "Show inspector"
+    "showInspector": "Show inspector",
+    "duplicateSlide": "Duplicate slide {{n}}",
+    "deleteSlide": "Delete slide {{n}}",
+    "reflow": "Edit all text",
+    "reflowHint": "Edit every slide’s words at once (Reflow)"
   },
   "import": {
     "button": "Import",

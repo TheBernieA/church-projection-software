@@ -1,9 +1,9 @@
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatClock, newId, omit, type ServiceItem, type TextSlide } from '@lampstand/core';
+import { formatClock, omit, type ServiceItem, type TextSlide } from '@lampstand/core';
 import { Button, IconButton, Segmented, Switch, Typography, typographyClass } from '@lampstand/ui';
 import { useInService, useSelectedItem } from '../lib/hooks';
-import { moveItem } from '../lib/array';
+import { deleteSlide, duplicateSlide, moveSlide } from '../lib/textSlides';
 import { updateItem, useStore } from '../lib/store';
 import { ObjectInspector } from './canvas/ObjectInspector';
 import { Field, NumberInput } from './form';
@@ -82,11 +82,7 @@ function TextInspector({ item }: { item: TextItem }) {
         true,
       );
   };
-  const move = (to: number): void => {
-    if (!slide || to < 0 || to >= count) return;
-    setSlides(moveItem(item.slides, index, to));
-    select(to);
-  };
+  const move = (to: number): void => moveSlide(item, index, to);
   const isLive = liveCursor?.itemId === item.id && liveCursor.index === index;
 
   return (
@@ -212,14 +208,7 @@ function TextInspector({ item }: { item: TextItem }) {
               size="sm"
               variant="ghost"
               icon={<Copy size={15} />}
-              onClick={() => {
-                setSlides([
-                  ...item.slides.slice(0, index + 1),
-                  { ...slide, id: newId() },
-                  ...item.slides.slice(index + 1),
-                ]);
-                select(index + 1);
-              }}
+              onClick={() => duplicateSlide(item, index)}
             >
               {t('service.duplicate')}
             </Button>
@@ -230,10 +219,7 @@ function TextInspector({ item }: { item: TextItem }) {
               icon={<Trash2 size={15} />}
               disabled={count <= 1}
               title={count <= 1 ? t('inspector.lastSlide') : undefined}
-              onClick={() => {
-                setSlides(item.slides.filter((s) => s.id !== slide.id));
-                select(Math.max(0, index - 1));
-              }}
+              onClick={() => deleteSlide(item, index)}
             >
               {t('inspector.delete')}
             </Button>

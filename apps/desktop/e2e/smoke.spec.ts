@@ -565,6 +565,15 @@ test('canvas editor: add a rectangle, drag it, and it shows on the output where 
   expect(x).toBeGreaterThan(660); // moved right of where it was added
   expect(x % 8).toBe(0); // snapped to the grid
   await control.waitForTimeout(200);
+  // The filmstrip: duplicate a slide from its corner, then delete the copy.
+  const strip = control.getByRole('list', { name: 'Slides' });
+  const before = await strip.getByRole('listitem').count();
+  await strip.getByRole('listitem').first().hover();
+  await strip.getByRole('button', { name: 'Duplicate slide 1' }).click();
+  await expect(strip.getByRole('listitem')).toHaveCount(before + 1);
+  await strip.getByRole('listitem').nth(1).hover();
+  await strip.getByRole('button', { name: 'Delete slide 2' }).click();
+  await expect(strip.getByRole('listitem')).toHaveCount(before);
   await control.screenshot({ path: 'test-results/11b-canvas.png' });
   await mode('Show');
   // The slide being edited (with the rectangle) goes live; the output draws it at the same spot.
@@ -1045,7 +1054,16 @@ test('new tools: reflow, props, messages with fields, timers on stage, coming so
   const text = control.getByLabel('All slide text');
   await expect(text).toHaveValue(/\[Welcome\]\nCoffee is served after the service/);
   await text.fill('[Welcome]\nCoffee is served after the service\n\nSee you next week');
-  await control.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(control.getByText('Unsaved changes')).toBeVisible();
+  // The slides beside the text are real renders; clicking one jumps to its words.
+  const previews = control.getByRole('list', { name: 'Slides' });
+  await expect(previews.getByRole('listitem')).toHaveCount(2);
+  await previews.getByRole('button', { name: /^Slide 2/ }).click();
+  await expect
+    .poll(() => text.evaluate((el: HTMLTextAreaElement) => el.selectionStart))
+    .toBe('[Welcome]\nCoffee is served after the service\n\n'.length);
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+S' : 'Control+S');
+  await expect(control.getByText('Unsaved changes')).toHaveCount(0);
   await expect(control.getByText('2 slides')).toBeVisible();
   await control.screenshot({ path: 'test-results/18-reflow.png' });
   await mode('Show');
@@ -1731,6 +1749,8 @@ test('stage layouts: pick a ready-made one, design your own, switch from the Sta
   await control.getByRole('menuitemradio', { name: 'Classic' }).click();
   await control.keyboard.press('Escape');
   await expect(stage.locator('.ls-st-current')).toHaveCount(1);
+  // Nothing to say: the message box stays out of sight (it used to show as an empty bar).
+  await expect(stage.locator('.ls-st-message')).toBeHidden();
   await mode('Show');
 });
 
