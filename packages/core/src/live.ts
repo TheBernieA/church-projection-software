@@ -381,6 +381,8 @@ const GoLiveSchema = z.object({
   transition: TransitionSpecSchema.optional(),
   /** Video going live: start playing at once (default) or wait on the first frame for Play. */
   autoplay: z.boolean().optional(),
+  /** Words going live over a camera keep it underneath (lyrics over a camera shot); else it goes. */
+  keepInput: z.boolean().optional(),
 });
 
 /** Registers every live-output command. Pure logic; the main process wires it to IPC. */
@@ -438,8 +440,9 @@ export function registerLiveCommands(
           media,
           web,
           background,
-          // A video going live takes the media layer from a camera; words leave the camera up.
-          input: media ? null : (s.program.input ?? null),
+          // A video, a page or a slide going live replaces a camera, unless the operator keeps
+          // cameras under the words (Settings › Video).
+          input: media || web || !p.keepInput ? null : (s.program.input ?? null),
           // Going live with new content lifts black/logo masks — the operator intends to show it.
           masks: { ...s.program.masks, black: false, logo: false },
         };

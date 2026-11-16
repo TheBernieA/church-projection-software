@@ -254,6 +254,18 @@ describe('live commands', () => {
     expect(store.get().cleared.input).toBeUndefined();
   });
 
+  it('a slide going live replaces a camera, unless cameras stay under the words', async () => {
+    const { store, run } = setup();
+    const cam = { deviceId: 'cam1', label: 'Camera', fit: 'cover' as const };
+    await run('live.setInput', { input: cam });
+    await run('live.goLive', { content: content('welcome') });
+    expect(store.get().program.input).toBeNull();
+    await run('live.setInput', { input: cam });
+    await run('live.goLive', { content: content('lyrics'), keepInput: true });
+    expect(store.get().program.input?.deviceId).toBe('cam1');
+    expect(store.get().program.content?.key).toBe('lyrics');
+  });
+
   it('play during a fade-out cancels the fade', async () => {
     const { store, run } = setup();
     await run('live.audio', { action: 'play', mediaId: 'song' });

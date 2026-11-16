@@ -145,6 +145,7 @@ export async function goLiveSlide(
           content: a.content,
           background: a.background,
           next: next?.action.kind === 'content' ? next.action.content : null,
+          keepInput: get().settings?.keepCameraUnderWords ?? false,
         },
         source,
       ),

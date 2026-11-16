@@ -106,6 +106,8 @@ export const SettingsSchema = z
     clickGoesLive: z.boolean().default(true),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /** A slide going live over a camera keeps the camera underneath (off: the slide replaces it). */
+    keepCameraUnderWords: z.boolean().default(false),
     /** Room audio: where it plays, and how long Fade out takes. */
     audio: z
       .object({

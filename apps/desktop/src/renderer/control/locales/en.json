@@ -1212,7 +1212,7 @@
   "inputs": {
     "show": "Show {{name}} on screen",
     "takeOff": "Take {{name}} off the screen",
-    "videoHint": "Click a camera to put it on screen, under the slide's words. Its … menu sets how it shows.",
+    "videoHint": "Click a camera to put it on screen. A slide that goes live replaces it, unless Settings › Video keeps cameras under the words.",
     "noCameras": "No cameras or capture cards found. Plug one in and it appears here.",
     "audioTitle": "Audio inputs",
     "liveAudio": "Play {{name}} through the room",
@@ -1276,7 +1276,11 @@
       "ask": "Your computer asks once before an app can use its microphones and audio inputs.",
       "refused": "Microphone access was turned off for Lampstand. Turn it on in your computer’s privacy settings, then look again.",
       "allow": "Allow microphone access"
-    }
+    },
+    "overCamera": "When a slide goes live",
+    "overCameraHelp": "Replace the camera with the slide and its background, or keep the camera under the words (for lyrics over a camera shot).",
+    "overCameraReplace": "Replace the camera",
+    "overCameraKeep": "Keep camera under words"
   },
   "stock": {
     "category": "Stock category",

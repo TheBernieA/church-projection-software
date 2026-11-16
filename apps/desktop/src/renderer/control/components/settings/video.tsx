@@ -187,6 +187,17 @@ export function VideoPage({
         <Row label={t('inputs.switcherLabel')} description={t('inputs.switcherHelp')}>
           <CameraSwitcher label={false} className="w-56" />
         </Row>
+        <Row label={t('inputs.overCamera')} description={t('inputs.overCameraHelp')}>
+          <Segmented
+            label={t('inputs.overCamera')}
+            value={s.keepCameraUnderWords ? 'keep' : 'replace'}
+            onChange={(v) => update({ keepCameraUnderWords: v === 'keep' })}
+            options={[
+              { value: 'replace', label: t('inputs.overCameraReplace') },
+              { value: 'keep', label: t('inputs.overCameraKeep') },
+            ]}
+          />
+        </Row>
       </Group>
       <Group
         title={`${t('inputs.camerasTitle')}${devices ? ` · ${devices.length}` : ''}`}
