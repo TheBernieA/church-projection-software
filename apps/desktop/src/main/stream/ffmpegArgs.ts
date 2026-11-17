@@ -155,6 +155,10 @@ export const INGEST_FALLBACK: Partial<Record<ServiceKind, string>> = {
   youtube: 'rtmp://a.rtmp.youtube.com/live2',
 };
 
+/** Does this kind of destination have a second address to try? */
+export const hasFallbackIngest = (kind: DestinationKind): boolean =>
+  kind !== 'custom' && kind !== 'direct' && !!INGEST_FALLBACK[kind];
+
 /** The full ingest address for a destination (its fallback address with `alt`). */
 export function destinationUrl(
   kind: DestinationKind,
