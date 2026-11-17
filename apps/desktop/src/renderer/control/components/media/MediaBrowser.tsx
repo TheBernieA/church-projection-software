@@ -60,6 +60,7 @@ import {
   usePlaylists,
 } from '../../lib/mediaPlaylists';
 import { addItemToService, attempt, useStore } from '../../lib/store';
+import { useWidth } from '../../lib/hooks';
 import { mediaUrl, thumbUrl } from '../../../shared/mediaUrl';
 import { usePaneSize } from '../shell/Splitter';
 import { EmptyState } from '../EmptyState';
@@ -80,6 +81,11 @@ const KIND_OF: Record<'images' | 'videos' | 'audio', MediaItem['kind']> = {
 };
 
 /** How the library can be ordered (a playlist keeps its own, drag-to-reorder order). */
+/** Toolbar widths (px): below each, the bin's toolbar gives something up. */
+const BAR_ROOMY = 860; // the "Media ›" prefix and Select
+const BAR_LABELS = 700; // labels on Sort and Grid / List, and the size slider
+const BAR_TIGHT = 520; // the label on Add media
+
 const SORTS = ['date', 'name', 'kind', 'length', 'size'] as const;
 type SortField = (typeof SORTS)[number];
 
@@ -636,10 +642,13 @@ function SortMenu({
   field,
   desc,
   onChange,
+  compact = false,
 }: {
   field: SortField;
   desc: boolean;
   onChange: (field: SortField, desc: boolean) => void;
+  /** The icon alone (a narrow toolbar). */
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -650,9 +659,10 @@ function SortMenu({
           variant="ghost"
           aria-label={t('mediaBin.sortBy', { field: t(`mediaBin.sorts.${field}`) })}
           icon={<DirIcon desc={desc} size={13} />}
+          title={t('mediaBin.sortBy', { field: t(`mediaBin.sorts.${field}`) })}
           className="shrink-0"
         >
-          {t(`mediaBin.sorts.${field}`)}
+          {compact ? null : t(`mediaBin.sorts.${field}`)}
         </Button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
@@ -763,23 +773,37 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
   const crumb = inPlaylist ? (playlist?.name ?? '') : t(`mediaBin.views.${view}`);
   const renaming = useMemo(() => ({ id: renamingId, set: setRenamingId }), [renamingId]);
 
+  // The toolbar gives things up as the bin narrows: first the extras, then the labels.
+  const [barRef, barWidth] = useWidth();
+  const bar = {
+    roomy: barWidth === 0 || barWidth >= BAR_ROOMY,
+    labels: barWidth === 0 || barWidth >= BAR_LABELS,
+    tight: barWidth > 0 && barWidth < BAR_TIGHT,
+  };
   return (
     <Renaming.Provider value={renaming}>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
-        <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
+        <div
+          ref={barRef}
+          className="flex h-11 shrink-0 items-center gap-2 overflow-hidden border-b border-[var(--divider)] bg-[var(--surface-1)] px-3"
+        >
           {/* Where you are, and how many. */}
-          <Typography size={12} tone="muted" className="shrink-0">
-            {t('mediaBin.media')}
-          </Typography>
-          <Typography tone="muted" className="flex shrink-0">
-            <ChevronRight size={12} />
-          </Typography>
+          {bar.roomy && (
+            <>
+              <Typography size={12} tone="muted" className="shrink-0">
+                {t('mediaBin.media')}
+              </Typography>
+              <Typography tone="muted" className="flex shrink-0">
+                <ChevronRight size={12} />
+              </Typography>
+            </>
+          )}
           <Typography
             size={13}
             weight="semibold"
             tone="primary"
             truncate
-            className="min-w-[4rem] max-w-[14rem] shrink-0"
+            className="min-w-[3rem] max-w-[14rem] shrink"
           >
             {crumb}
           </Typography>
@@ -793,7 +817,7 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
           </Typography>
           <span className="flex-1" />
           {/* Find and arrange. */}
-          <label className="relative flex min-w-0 shrink items-center">
+          <label className="relative flex w-40 min-w-[6.5rem] shrink items-center">
             <Typography tone="muted" className="pointer-events-none absolute left-2 flex">
               <Search size={13} />
             </Typography>
@@ -803,20 +827,32 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
               placeholder={t('mediaBin.search')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="field !h-7 !w-40 min-w-0 !pl-7"
+              className="field !h-7 !w-full min-w-0 !pl-7"
             />
           </label>
-          {!inPlaylist && <SortMenu field={field} desc={desc} onChange={setSort} />}
+          {!inPlaylist && (
+            <SortMenu field={field} desc={desc} onChange={setSort} compact={!bar.labels} />
+          )}
           <Segmented<Layout>
             label={t('mediaBin.layout')}
             value={layout}
             onChange={(l) => layoutPref.commit(l === 'list' ? 1 : 0)}
             options={[
-              { value: 'grid', label: t('mediaBin.grid'), icon: <LayoutGrid size={13} /> },
-              { value: 'list', label: t('mediaBin.list'), icon: <List size={13} /> },
+              {
+                value: 'grid',
+                label: bar.labels ? t('mediaBin.grid') : '',
+                name: t('mediaBin.grid'),
+                icon: <LayoutGrid size={13} />,
+              },
+              {
+                value: 'list',
+                label: bar.labels ? t('mediaBin.list') : '',
+                name: t('mediaBin.list'),
+                icon: <List size={13} />,
+              },
             ]}
           />
-          {layout === 'grid' && (
+          {layout === 'grid' && bar.labels && (
             <Slider
               format={(v) => percent(v, 160)}
               aria-label={t('mediaBin.size')}
@@ -831,21 +867,27 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
               className="w-[104px] shrink-0"
             />
           )}
-          <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-[var(--divider)]" />
-          {/* Act. */}
-          <SoonFeature
-            id="media-multiselect"
-            label={t('mediaBin.select')}
-            className="!h-7 shrink-0"
-          />
+          {bar.roomy && (
+            <>
+              <span aria-hidden className="mx-0.5 h-5 w-px shrink-0 bg-[var(--divider)]" />
+              {/* Act. */}
+              <SoonFeature
+                id="media-multiselect"
+                label={t('mediaBin.select')}
+                className="!h-7 shrink-0"
+              />
+            </>
+          )}
           <Button
             size="xs"
             variant="primary"
             icon={<Plus size={13} />}
             onClick={() => void importMedia({ playlistId })}
+            aria-label={t('media.add')}
+            title={t('media.add')}
             className="shrink-0"
           >
-            {t('media.add')}
+            {bar.tight ? null : t('media.add')}
           </Button>
         </div>
         <div

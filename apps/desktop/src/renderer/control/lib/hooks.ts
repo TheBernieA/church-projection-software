@@ -148,3 +148,21 @@ export function useCanvasScale<T extends HTMLElement = HTMLDivElement>(
   }, []);
   return [ref, scale];
 }
+
+/**
+ * An element's width, kept up to date as it is resized (0 until it is first measured): for
+ * toolbars that drop labels and extras when their pane is narrow.
+ */
+export function useWidth<T extends HTMLElement = HTMLDivElement>(): [RefObject<T | null>, number] {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.clientWidth);
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, width];
+}
