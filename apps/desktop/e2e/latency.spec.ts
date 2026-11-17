@@ -198,7 +198,14 @@ test('livestream sending latency to a local RTMP server', async () => {
       { timeout: 20_000 },
     )
     .toBe('live');
-  await control.waitForTimeout(SECONDS * 1000);
+  if (process.env.LAMPSTAND_LATENCY_STALL) {
+    // A stalled upload: the server stops reading for 4 s, 12 s in, then carries on.
+    await control.waitForTimeout(12_000);
+    server.kill('SIGSTOP');
+    await control.waitForTimeout(4_000);
+    server.kill('SIGCONT');
+    await control.waitForTimeout((SECONDS - 16) * 1000);
+  } else await control.waitForTimeout(SECONDS * 1000);
   const status = await control.evaluate(async () => {
     const r = await window.lampstand.query('stream.status');
     return r.ok ? { pipeline: r.value.pipeline, fps: r.value.fps, dropped: r.value.dropped } : null;

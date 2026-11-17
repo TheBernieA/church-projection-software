@@ -21,6 +21,15 @@ CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
   and never guesses times, and a skipped frame leaves a gap in time instead of slowing the
   video's clock. (Raw H.264 timed by frame number arrived in bursts of up to 0.5 s, and every
   dropped frame put the picture permanently behind the sound.)
+- The encoder runs in its **own worker thread** (`renderer/stream/encoder.worker.ts`: the frame
+  clock and the hardware encoder), so drawing a slide or starting a video in the stream page
+  never makes a frame late. A keyframe goes out every two seconds of stream time even when the
+  frame on that tick was skipped.
+- **Staying live when the upload can't keep up.** ffmpeg's input queues are about half a second
+  (they were 512 packets, 8 s at 60 fps), and main measures the video waiting for ffmpeg *in
+  seconds* (`backlog.ts`; bytes can't say, a still slide is tiny). Past 1.2 s it skips ahead to
+  the next keyframe: the picture jumps, but the stream doesn't fall behind live for good.
+  `LAMPSTAND_LATENCY_STALL=1` with the latency spec freezes the server for 4 s to check it.
 - The sound is timed by counting samples, so it's kept to the clock both ways: silence fills a
   gap, and a batch that arrives after its gap was filled is dropped.
 - The window paints only on change, so the page always receives the newest picture: main holds at

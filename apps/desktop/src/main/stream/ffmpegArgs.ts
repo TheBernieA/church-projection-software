@@ -228,7 +228,9 @@ export function videoCodecArgs(
 export function buildArgs(o: EncodeOptions): string[] {
   const gpu = o.input === 'flv';
   const outputs = [
-    ...o.streams.map((u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize]${teeEscape(u)}`),
+    ...o.streams.map(
+      (u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1]${teeEscape(u)}`,
+    ),
     ...(o.record
       ? [`[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]${teeEscape(o.record)}`]
       : []),
@@ -241,8 +243,10 @@ export function buildArgs(o: EncodeOptions): string[] {
     '-stats_period',
     '1',
     // Video: the stream window's frames (raw), or its hardware-encoded H.264.
+    // A short queue (about half a second): when a destination can't keep up, the app must feel
+    // it at once and skip frames, rather than let seconds of delay pile up inside ffmpeg.
     '-thread_queue_size',
-    '512',
+    String(Math.max(8, Math.round(o.fps / 2))),
     ...(gpu
       ? // Encoded frames in FLV, each with its real time. Start at once (the picture size is in
         // the first tag), and don't hold packets back to study them.
@@ -259,9 +263,9 @@ export function buildArgs(o: EncodeOptions): string[] {
           '-i',
           'pipe:0',
         ]),
-    // Sound: its mix, 48 kHz stereo float.
+    // Sound: its mix, 48 kHz stereo float (the same half-second queue).
     '-thread_queue_size',
-    '512',
+    '24',
     '-f',
     'f32le',
     '-ar',

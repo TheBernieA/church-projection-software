@@ -52,6 +52,7 @@ import {
   recordingName,
   type Encoder,
 } from './ffmpegArgs';
+import { Backlog } from './backlog';
 import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
 import { FramePump } from './framePump';
 import { isStruggling, Ring, sampleProcess, type HealthSample } from './health';
@@ -148,6 +149,9 @@ interface Watcher {
   lastFrame: number;
 }
 
+/** Most video (in seconds) allowed to wait for ffmpeg before skipping ahead to stay live. */
+const MAX_BACKLOG_S = 1.2;
+
 /** The stream page's encoder, as a GPU frame receiver (window ids are positive). */
 const ENCODER_TARGET = -1;
 
@@ -229,9 +233,10 @@ export class StreamController {
   private audioDropped = 0;
   private audioPadded = 0;
   private healthTicks = 0;
+  private readonly backlog = new Backlog();
+  /** Times video was skipped because a destination couldn't keep up (for the log and advice). */
+  private congested = 0;
   private pcmSeen = 0;
-  private pcmBad = 0;
-  private pcmType = '';
   private videoSeen = false;
   /** Destinations using their fallback address this session (the first couldn't connect). */
   private readonly altIngest = new Set<string>();
@@ -258,11 +263,7 @@ export class StreamController {
     ipcMain.on(Channels.streamAudio, (e, pcm: unknown) => {
       if (!this.fromStreamWindow(e)) return;
       this.pcmSeen += 1;
-      if (!(pcm instanceof Float32Array)) {
-        this.pcmBad += 1;
-        this.pcmType = Object.prototype.toString.call(pcm);
-        return;
-      }
+      if (!(pcm instanceof Float32Array)) return;
       this.writeAudio(Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength));
     });
     ipcMain.on(
@@ -804,18 +805,24 @@ export class StreamController {
       this.audioBytes = 0;
       this.startAudioClock();
     }
-    // ffmpeg has fallen far behind (a stalled network): drop and restart from a keyframe, so
-    // memory never grows and the picture recovers cleanly.
-    if (stdin.writableLength > 8 * 1024 * 1024) {
+    // ffmpeg can't take video as fast as it's made (a slow or stalled upload): rather than let
+    // the stream fall further and further behind live, skip ahead to the next keyframe once
+    // about a second is waiting. The picture jumps; the delay doesn't grow.
+    // Measured in seconds of video waiting (a still slide is tiny in bytes).
+    if (this.backlog.seconds(stdin.writableLength) > MAX_BACKLOG_S) {
       this.waitForKey = true;
       this.pageDropped += 1;
+      this.congested += 1;
+      this.backlog.reset();
       this.win?.webContents.send(Channels.evEncode, { keyframe: true });
       this.repaint();
       return;
     }
     this.videoBytes += data.byteLength;
     this.videoChunks += 1;
-    stdin.write(flvFrame(data, key, ms - this.flvBase));
+    const tag = flvFrame(data, key, ms - this.flvBase);
+    this.backlog.add(tag.length, ms);
+    stdin.write(tag);
   }
 
   // ---------- The encoder ----------
@@ -996,6 +1003,7 @@ export class StreamController {
       this.lastPageDropped = 0;
       this.waitForKey = true;
       this.flvOpen = false;
+      this.backlog.reset();
       this.videoBytes = 0;
       this.videoChunks = 0;
       const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
@@ -1027,10 +1035,11 @@ export class StreamController {
   private topUpAudio(): void {
     const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
     const behind = due - this.audioBytes;
-    if (behind > BYTES_PER_SECOND * 0.08) {
+    // A busy moment in the stream page delays a batch of sound: wait up to 150 ms for it
+    // before filling with silence (filling sooner turns every small delay into a click).
+    if (behind > BYTES_PER_SECOND * 0.15) {
       const bytes = Math.floor(behind / 8) * 8;
-      this.audioPadded += bytes;
-      this.writeAudio(Buffer.alloc(bytes), true);
+      if (this.writeAudio(Buffer.alloc(bytes), true)) this.audioPadded += bytes;
     }
   }
 
@@ -1053,23 +1062,24 @@ export class StreamController {
     this.pump.begin();
   }
 
-  private writeAudio(chunk: Buffer, silence = false): void {
+  private writeAudio(chunk: Buffer, silence = false): boolean {
     // GPU pipeline: nothing until the page is encoding (else the sound would start early).
-    if (this.pipeline === 'gpu' && !this.encodeLive) return;
+    if (this.pipeline === 'gpu' && !this.encodeLive) return false;
     // The sound is timed by counting samples, so it must match the clock both ways: silence
     // fills a gap, and sound that arrives after its gap was filled (a late batch) is dropped,
     // or every hiccup would push the sound later for the rest of the stream.
     if (!silence && this.encodeStart) {
       const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
-      if (this.audioBytes - due > BYTES_PER_SECOND * 0.12) {
+      if (this.audioBytes - due > BYTES_PER_SECOND * 0.15) {
         this.audioDropped += chunk.length;
-        return;
+        return false;
       }
     }
     const out = this.audioOut;
-    if (!out?.writable || out.writableNeedDrain) return;
+    if (!out?.writable || out.writableNeedDrain) return false;
     out.write(chunk);
     this.audioBytes += chunk.length;
+    return true;
   }
 
   // ---------- Health ----------
@@ -1102,11 +1112,9 @@ export class StreamController {
         ),
         audioPaddedMs: Math.round((this.audioPadded / BYTES_PER_SECOND) * 1000),
         audioDroppedMs: Math.round((this.audioDropped / BYTES_PER_SECOND) * 1000),
-        pendingVideoBytes: this.ff?.stdin?.writableLength ?? 0,
+        backlogS: Math.round(this.backlog.seconds(this.ff?.stdin?.writableLength ?? 0) * 100) / 100,
+        congested: this.congested,
         pcmSeen: this.pcmSeen,
-        pcmBad: this.pcmBad,
-        pcmType: this.pcmType,
-        audioNeedDrain: this.audioOut?.writableNeedDrain,
       });
     if (process.env.LAMPSTAND_FFMPEG_DEBUG)
       this.d.log.info('gpu frames', {

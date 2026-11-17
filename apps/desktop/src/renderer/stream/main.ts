@@ -150,7 +150,7 @@ api.onConfig((c) => {
     const key = JSON.stringify(c.probe);
     if (key !== probed) {
       probed = key;
-      void encoder.probe(c.probe);
+      encoder.probe(c.probe);
     }
   }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
