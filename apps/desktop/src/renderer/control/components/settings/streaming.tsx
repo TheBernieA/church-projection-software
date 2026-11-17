@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { FolderOpen, KeyRound, Plus, SlidersVertical, Trash2 } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Cast, FolderOpen, Globe, Link2, Plus, SlidersVertical, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   newId,
@@ -11,66 +11,40 @@ import {
 import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
 import { cmd, q } from '../../lib/api';
 import { useInputDevices } from '../../lib/inputs';
-import { attempt, closeDialog, toast, useStore } from '../../lib/store';
+import { attempt, closeDialog, openDialog, useStore } from '../../lib/store';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
 import { Group, Notice, Row, SettingsPage, Tag } from './parts';
 import { CheckComputer } from '../live/CheckComputer';
+import { DestinationFields, KindBadge } from '../live/destinationFields';
 
 type Update = (patch: Partial<Settings>) => void;
 const NONE = 'none';
 const ENCODERS = ['auto', 'h264_videotoolbox', 'h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264'];
 
-/** One destination: its name, on/off, its ingest address (custom), and its stream key. */
+/** One destination: its name, on/off, and what it needs (a key, an address). */
 export function DestinationRow({
   dest,
   hasKey,
+  srt,
   onChange,
   onRemove,
   onKeySaved,
 }: {
   dest: StreamDestination;
   hasKey: boolean;
+  srt: boolean | null;
   onChange: (patch: Partial<StreamDestination>) => void;
   onRemove: () => void;
   onKeySaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [key, setKey] = useState('');
-  const saveKey = async (value: string | null): Promise<void> => {
-    const r = await attempt(
-      () => cmd('stream.setKey', { destinationId: dest.id, key: value }),
-      'errors.save',
-    );
-    if (r === undefined) return;
-    setKey('');
-    onKeySaved();
-    toast(value ? t('streaming.keySaved', { name: dest.name }) : t('streaming.keyRemoved'));
-  };
   return (
     <section aria-label={dest.name} className="flex flex-col gap-2.5 px-4 py-3.5">
       <div className="flex items-center gap-2">
-        <Typography
-          size={10}
-          weight="bold"
-          caps
-          tone="white"
-          className="shrink-0 rounded-[3px] px-1.5 py-0.5"
-          style={{
-            background:
-              dest.kind === 'youtube'
-                ? '#d43b30'
-                : dest.kind === 'facebook'
-                  ? '#2f6ad9'
-                  : dest.kind === 'direct'
-                    ? '#1f8a70'
-                    : '#555b6e',
-          }}
-        >
-          {t(`streaming.kinds.${dest.kind}`)}
-        </Typography>
+        <KindBadge kind={dest.kind} />
         <DeferredInput
           aria-label={t('streaming.destName')}
           value={dest.name}
@@ -92,65 +66,45 @@ export function DestinationRow({
           <Trash2 size={14} />
         </IconButton>
       </div>
-      {dest.kind === 'direct' && (
-        <>
-          <DeferredInput
-            aria-label={t('streaming.directUrl')}
-            placeholder="srt://192.168.1.50:9000"
-            value={dest.url}
-            maxLength={500}
-            onCommit={(url) => onChange({ url: url.trim() })}
-            className="field !h-8 w-full"
-          />
-          <Typography as="p" size={11} tone="muted">
-            {t('streaming.directHelp')}
-          </Typography>
-        </>
-      )}
-      {dest.kind === 'custom' && (
-        <DeferredInput
-          aria-label={t('streaming.url')}
-          placeholder="rtmp://…"
-          value={dest.url}
-          maxLength={500}
-          onCommit={(url) => onChange({ url: url.trim() })}
-          className="field !h-8 w-full"
-        />
-      )}
-      {dest.kind !== 'direct' && (
-        <>
-          <div className="flex items-center gap-2">
-            <KeyRound size={14} className="shrink-0 text-[var(--text-3)]" />
-            <input
-              type="password"
-              autoComplete="off"
-              aria-label={t('streaming.keyOf', { name: dest.name })}
-              placeholder={hasKey ? t('streaming.keyReplace') : t('streaming.keyPlaceholder')}
-              value={key}
-              onChange={(e) => setKey(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && key.trim() && void saveKey(key)}
-              className="field !h-8 flex-1"
-            />
-            <Button
-              size="xs"
-              variant="primary"
-              disabled={!key.trim()}
-              onClick={() => void saveKey(key)}
-            >
-              {t('streaming.saveKey')}
-            </Button>
-            {hasKey && (
-              <Button size="xs" variant="ghost" onClick={() => void saveKey(null)}>
-                {t('streaming.forgetKey')}
-              </Button>
-            )}
-          </div>
-          <Typography as="p" size={11} tone="muted">
-            {hasKey ? t('streaming.keyStored') : t(`streaming.keyHelp.${dest.kind}`)}
-          </Typography>
-        </>
-      )}
+      <DestinationFields
+        dest={dest}
+        hasKey={hasKey}
+        srt={srt}
+        onChange={onChange}
+        onKeySaved={onKeySaved}
+      />
     </section>
+  );
+}
+
+/** One way of getting the service out, with what it's for and how to add it. */
+function Way({
+  icon,
+  title,
+  delay,
+  body,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  delay: string;
+  body: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex gap-3 px-4 py-3.5">
+      <span className="mt-0.5 shrink-0 text-[var(--accent)]">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <Typography variant="label">{title}</Typography>
+          <Tag>{delay}</Tag>
+        </div>
+        <Typography as="p" size={12} tone="secondary" leading="snug" className="mt-1">
+          {body}
+        </Typography>
+        <div className="mt-2 flex flex-wrap gap-1.5">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -197,6 +151,8 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
     set({ destinations: st.destinations.filter((x) => x.id !== d.id) });
   };
   const live = !!status && status.state !== 'idle';
+  const ndi = useStore((x) => x.ndi);
+  const ndiOn = s.ndi.feeds.filter((f) => f.enabled).length;
 
   return (
     <SettingsPage
@@ -204,25 +160,61 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
       description={t('settings.pagesHelp.streaming')}
     >
       {status && !status.available && <Notice tone="warn">{t('live.noFfmpeg')}</Notice>}
-      <Group
-        title={t('streaming.destinations')}
-        footnote={t('streaming.destinationsHelp')}
-        action={
-          <span className="flex gap-1">
-            {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
-              <Button
-                key={k}
-                size="xs"
-                variant="ghost"
-                icon={<Plus size={13} />}
-                onClick={() => addDest(k)}
-              >
-                {t(`streaming.kinds.${k}`)}
-              </Button>
-            ))}
-          </span>
-        }
-      >
+      <Group title={t('streaming.ways.title')} footnote={t('streaming.ways.help')}>
+        <Way
+          icon={<Globe size={16} />}
+          title={t('streaming.ways.service.title')}
+          delay={t('streaming.ways.service.delay')}
+          body={t('streaming.ways.service.body')}
+        >
+          {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+            <Button
+              key={k}
+              size="xs"
+              variant="secondary"
+              icon={<Plus size={13} />}
+              onClick={() => addDest(k)}
+            >
+              {t(`streaming.kinds.${k}`)}
+            </Button>
+          ))}
+        </Way>
+        <Way
+          icon={<Link2 size={16} />}
+          title={t('streaming.ways.direct.title')}
+          delay={t('streaming.ways.direct.delay')}
+          body={t('streaming.ways.direct.body')}
+        >
+          <Button
+            size="xs"
+            variant="secondary"
+            icon={<Plus size={13} />}
+            onClick={() => addDest('direct')}
+          >
+            {t('streaming.kinds.direct')}
+          </Button>
+        </Way>
+        <Way
+          icon={<Cast size={16} />}
+          title={t('streaming.ways.ndi.title')}
+          delay={t('streaming.ways.ndi.delay')}
+          body={
+            ndi?.available
+              ? t('streaming.ways.ndi.body')
+              : `${t('streaming.ways.ndi.body')} ${t('streaming.ways.ndi.needsTools')}`
+          }
+        >
+          <Button
+            size="xs"
+            variant="secondary"
+            onClick={() => openDialog('settings', { settingsPage: 'ndi' })}
+          >
+            {t('streaming.ways.ndi.open', { count: ndiOn })}
+          </Button>
+        </Way>
+      </Group>
+
+      <Group title={t('streaming.destinations')} footnote={t('streaming.destinationsHelp')}>
         {st.destinations.length === 0 ? (
           <Typography as="p" size={12} tone="muted" className="px-4 py-4">
             {t('streaming.noDestinations')}
@@ -233,6 +225,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
               key={d.id}
               dest={d}
               hasKey={!!keys[d.id]}
+              srt={status?.srt ?? null}
               onChange={(patch) => setDest(d.id, patch)}
               onRemove={() => void removeDest(d)}
               onKeySaved={loadKeys}

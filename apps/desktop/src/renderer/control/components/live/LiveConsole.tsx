@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
+  ChevronDown,
   Circle,
   ExternalLink,
   FolderOpen,
-  KeyRound,
   Plus,
   Gauge,
   PanelRightClose,
@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Settings2,
   Square,
+  Trash2,
   Volume2,
   VolumeX,
   X,
@@ -40,7 +41,8 @@ import { attempt, openDialog, useStore } from '../../lib/store';
 import { useStreamPreview } from '../../lib/streamPreview';
 import { Select } from '../Select';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
-import { DestinationRow } from '../settings/streaming';
+import { DeferredInput } from '../DeferredControls';
+import { DESTINATION_KINDS, DestinationFields, parseDirect } from './destinationFields';
 import { Sparkline } from './Sparkline';
 import { CheckComputer } from './CheckComputer';
 
@@ -303,9 +305,13 @@ function SoundPanel() {
   );
 }
 
+/** What each kind of destination is for, in the Add menu. */
+const ADD_KINDS = DESTINATION_KINDS;
+
 /**
- * Where the stream goes: each destination with its health, on/off, and its stream key (added or
- * replaced right here). Add YouTube, Facebook or any RTMP service from the + menu.
+ * Where the stream goes: each destination with its health and on/off; opening one shows just
+ * what it needs (a stream key, a server address, a receiver's address). NDI, which is set up on
+ * its own page, has a row here too so every way out is in one list.
  */
 function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettings }) {
   const { t } = useTranslation();
@@ -315,20 +321,25 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
   const [open, setOpen] = useState<string | null>(null);
   const loadKeys = useCallback(() => void q('stream.keys').then(setKeys, () => undefined), []);
   useEffect(loadKeys, [loadKeys, st.destinations.length]);
+  const ndi = useStore((x) => x.ndi);
+  const ndiFeeds = useStore((x) => x.settings?.ndi.feeds.filter((f) => f.enabled).length ?? 0);
   const setDestinations = (destinations: StreamDestination[]): void =>
     void saveSettings({ stream: { ...st, destinations } });
+  const patch = (id: string, p: Partial<StreamDestination>): void =>
+    setDestinations(st.destinations.map((x) => (x.id === id ? { ...x, ...p } : x)));
   const add = (kind: StreamDestination['kind']): void => {
     const id = newId();
     setDestinations([
       ...st.destinations,
       { id, kind, name: t(`streaming.kinds.${kind}`), url: '', enabled: true },
     ]);
-    setOpen(id); // straight to its key
+    setOpen(id); // straight to what it needs
   };
   const remove = async (d: StreamDestination): Promise<void> => {
     await attempt(() => cmd('stream.setKey', { destinationId: d.id, key: null }), 'errors.save');
     setDestinations(st.destinations.filter((x) => x.id !== d.id));
   };
+  const openNdi = (): void => openDialog('settings', { settingsPage: 'ndi' });
   const dot = (id: string): string => {
     const state = s?.destinations.find((d) => d.id === id)?.state;
     return state === 'ok'
@@ -338,6 +349,15 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
         : state === 'connecting'
           ? 'var(--accent)'
           : 'var(--text-3)';
+  };
+  /** What a destination still needs before it can go live (null: it's set). */
+  const missing = (d: StreamDestination): string | null => {
+    if (d.kind === 'direct') {
+      const a = parseDirect(d.url);
+      return a.host && a.port ? null : t('console.addressNeeded');
+    }
+    if (d.kind === 'custom') return d.url.trim() ? null : t('console.addressNeeded');
+    return keys[d.id] ? null : t('console.keyNeeded');
   };
   return (
     <Section
@@ -361,25 +381,51 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
-              <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
-                {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
-                  <DropdownMenu.Item key={k} className={ITEM_CLASS} onSelect={() => add(k)}>
-                    {t(`streaming.kinds.${k}`)}
+              <DropdownMenu.Content
+                align="end"
+                sideOffset={4}
+                className={`${MENU_CLASS} w-[280px]`}
+              >
+                {ADD_KINDS.map((k) => (
+                  <DropdownMenu.Item
+                    key={k}
+                    aria-label={t(`streaming.kinds.${k}`)}
+                    className={`${ITEM_CLASS} !h-auto flex-col !items-start gap-0.5 py-1.5`}
+                    onSelect={() => add(k)}
+                  >
+                    <Typography size={13} tone="primary">
+                      {t(`streaming.kinds.${k}`)}
+                    </Typography>
+                    <Typography size={11} tone="muted" leading="snug">
+                      {t(`console.kindHelp.${k}`)}
+                    </Typography>
                   </DropdownMenu.Item>
                 ))}
+                <DropdownMenu.Item
+                  aria-label={t('console.ndi')}
+                  className={`${ITEM_CLASS} !h-auto flex-col !items-start gap-0.5 py-1.5`}
+                  onSelect={openNdi}
+                >
+                  <Typography size={13} tone="primary">
+                    {t('console.ndi')}
+                  </Typography>
+                  <Typography size={11} tone="muted" leading="snug">
+                    {t('console.kindHelp.ndi')}
+                  </Typography>
+                </DropdownMenu.Item>
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
         </div>
       }
     >
-      {st.destinations.length === 0 ? (
+      {st.destinations.length === 0 && (
         <div className="flex flex-col items-start gap-2">
           <Typography as="p" size={12} tone="muted" leading="snug">
             {t('console.noDestinations')}
           </Typography>
           <div className="flex flex-wrap gap-1.5">
-            {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
+            {ADD_KINDS.map((k) => (
               <Button
                 key={k}
                 size="xs"
@@ -392,99 +438,224 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
             ))}
           </div>
         </div>
-      ) : (
-        <ul className="flex flex-col gap-1.5">
-          {st.destinations.map((d) => {
-            const going = s?.destinations.find((x) => x.id === d.id);
-            const state = going?.state;
-            const reason = going?.reason;
-            const needsKey = d.kind !== 'custom' && d.kind !== 'direct' && !keys[d.id];
-            const expanded = open === d.id;
-            return (
-              <li
-                key={d.id}
-                className={`rounded-[8px] ${expanded ? 'bg-[var(--surface-2)] shadow-[0_0_0_1px_var(--hairline)]' : ''}`}
-              >
-                <div className={`flex items-center gap-2.5 ${expanded ? 'px-2.5 pt-2' : ''}`}>
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 shrink-0 rounded-full"
-                    style={{ background: dot(d.id) }}
-                  />
-                  <Typography size={13} tone="primary" truncate className="min-w-0 flex-1">
+      )}
+      <ul className="flex flex-col gap-1">
+        {st.destinations.map((d) => {
+          const going = s?.destinations.find((x) => x.id === d.id);
+          const state = going?.state;
+          const reason = going?.reason;
+          const needs = missing(d);
+          const expanded = open === d.id;
+          return (
+            <li
+              key={d.id}
+              className={`rounded-[8px] transition-colors ${expanded ? 'bg-[var(--surface-2)] shadow-[0_0_0_1px_var(--hairline)]' : ''}`}
+            >
+              <div className="flex h-9 items-center gap-2 pl-2 pr-1.5">
+                <span
+                  aria-hidden
+                  className="h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: dot(d.id) }}
+                />
+                <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+                  <Typography size={13} tone="primary" truncate>
                     {d.name}
                   </Typography>
-                  {state ? (
-                    <Typography size={11} tone="muted" title={reason}>
-                      {t(`live.dest.${state}`)}
+                  {d.name !== t(`streaming.kinds.${d.kind}`) && (
+                    <Typography size={11} tone="muted" className="shrink-0">
+                      {t(`streaming.kinds.${d.kind}`)}
                     </Typography>
-                  ) : (
-                    needsKey && (
-                      <Typography
-                        size={10}
-                        weight="semibold"
-                        tone="inherit"
-                        caps
-                        className="rounded-[4px] bg-[var(--accent-soft)] px-1.5 py-px text-[var(--accent)]"
-                      >
-                        {t('console.keyNeeded')}
-                      </Typography>
-                    )
                   )}
-                  <IconButton
-                    size="xs"
-                    aria-label={t('console.editDestination', { name: d.name })}
-                    active={expanded}
-                    disabled={live}
-                    onClick={() => setOpen(expanded ? null : d.id)}
-                  >
-                    <KeyRound size={13} />
-                  </IconButton>
-                  <Switch
-                    label={t('streaming.enabledOf', { name: d.name })}
-                    checked={d.enabled}
-                    disabled={live}
-                    onChange={(enabled) =>
-                      setDestinations(
-                        st.destinations.map((x) => (x.id === d.id ? { ...x, enabled } : x)),
-                      )
-                    }
-                  />
                 </div>
-                {state === 'failed' && reason && (
-                  <Typography
-                    as="p"
-                    size={11}
-                    tone="inherit"
-                    leading="snug"
-                    className="mt-1 break-words pl-[18px] text-[var(--tally-program)]"
-                  >
-                    {reason}
+                {state ? (
+                  <Typography size={11} tone="muted" title={reason} className="shrink-0">
+                    {t(`live.dest.${state}`)}
                   </Typography>
+                ) : (
+                  needs && (
+                    <Typography
+                      size={10}
+                      weight="semibold"
+                      tone="inherit"
+                      caps
+                      className="shrink-0 rounded-[4px] bg-[var(--accent-soft)] px-1.5 py-px text-[var(--accent)]"
+                    >
+                      {needs}
+                    </Typography>
+                  )
                 )}
-                {expanded && (
-                  <div className="-mx-1.5">
-                    <DestinationRow
-                      dest={d}
-                      hasKey={!!keys[d.id]}
-                      onChange={(patch) =>
-                        setDestinations(
-                          st.destinations.map((x) => (x.id === d.id ? { ...x, ...patch } : x)),
-                        )
-                      }
-                      onRemove={() => void remove(d)}
-                      onKeySaved={() => {
-                        loadKeys();
-                        setOpen(null);
-                      }}
+                <Switch
+                  label={t('streaming.enabledOf', { name: d.name })}
+                  checked={d.enabled}
+                  disabled={live}
+                  onChange={(enabled) => patch(d.id, { enabled })}
+                />
+                <IconButton
+                  size="xs"
+                  aria-label={t('console.editDestination', { name: d.name })}
+                  aria-expanded={expanded}
+                  disabled={live}
+                  onClick={() => setOpen(expanded ? null : d.id)}
+                >
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+                  />
+                </IconButton>
+              </div>
+              {state === 'failed' && reason && (
+                <Typography
+                  as="p"
+                  size={11}
+                  tone="inherit"
+                  leading="snug"
+                  className="break-words px-2 pb-1.5 pl-[26px] text-[var(--tally-program)]"
+                >
+                  {reason}
+                </Typography>
+              )}
+              {expanded && (
+                <div className="flex flex-col gap-2.5 border-t border-[var(--hairline)] px-2.5 pb-2.5 pt-2.5">
+                  <DestinationFields
+                    dest={d}
+                    hasKey={!!keys[d.id]}
+                    srt={s?.srt ?? null}
+                    onChange={(p) => patch(d.id, p)}
+                    onKeySaved={() => {
+                      loadKeys();
+                      setOpen(null);
+                    }}
+                  />
+                  <div className="flex items-center gap-2 border-t border-[var(--hairline)] pt-2.5">
+                    <Typography size={11} tone="muted" className="shrink-0">
+                      {t('streaming.destName')}
+                    </Typography>
+                    <DeferredInput
+                      aria-label={t('streaming.destName')}
+                      value={d.name}
+                      maxLength={60}
+                      onCommit={(name) => name.trim() && patch(d.id, { name: name.trim() })}
+                      className="field !h-7 min-w-0 flex-1"
                     />
+                    <Button
+                      size="2xs"
+                      variant="danger"
+                      icon={<Trash2 size={12} />}
+                      aria-label={t('streaming.remove', { name: d.name })}
+                      onClick={() => void remove(d)}
+                    >
+                      {t('console.remove')}
+                    </Button>
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+        {/* NDI: sent whenever its feeds are on (no Go live needed); set up on its own page. */}
+        <li className="flex h-9 items-center gap-2 pl-2 pr-1.5">
+          <span
+            aria-hidden
+            className="h-2 w-2 shrink-0 rounded-full"
+            style={{
+              background: ndi?.available && ndiFeeds > 0 ? 'var(--tally-preview)' : 'var(--text-3)',
+            }}
+          />
+          <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+            <Typography size={13} tone="primary">
+              {t('console.ndi')}
+            </Typography>
+            <Typography size={11} tone="muted" truncate>
+              {!ndi?.available
+                ? t('console.ndiNeedsTools')
+                : ndiFeeds > 0
+                  ? t('console.ndiOn', { count: ndiFeeds })
+                  : t('console.ndiOff')}
+            </Typography>
+          </div>
+          <Button size="2xs" variant="ghost" onClick={openNdi}>
+            {t('console.ndiSetUp')}
+          </Button>
+        </li>
+      </ul>
+    </Section>
+  );
+}
+
+const QUICK_MODES = ['auto', 'light', 'balanced', 'quality'] as const;
+
+/**
+ * The few settings worth reaching without opening Settings: how hard the stream works this
+ * computer, whether going live also records, and whether the picture shows before going live.
+ */
+function QuickSettings({
+  s,
+  st,
+  showReady,
+  canReady,
+  onReady,
+}: {
+  s: StreamStatus | null;
+  st: StreamSettings;
+  showReady: boolean;
+  canReady: boolean;
+  onReady: (on: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const running = !!s && s.state !== 'idle';
+  const p = s?.profile;
+  return (
+    <Section title={t('console.quick')}>
+      <div className="flex flex-col gap-1.5">
+        <Segmented<StreamSettings['performance']>
+          label={t('streaming.performanceMode')}
+          value={st.performance}
+          disabled={running}
+          onChange={(performance) => void saveSettings({ stream: { ...st, performance } })}
+          options={[
+            ...QUICK_MODES.map((m) => ({ value: m, label: t(`streaming.modes.${m}`) })),
+            ...(st.performance === 'custom'
+              ? [{ value: 'custom' as const, label: t('streaming.modes.custom') }]
+              : []),
+          ]}
+        />
+        <Typography as="p" size={11} tone="muted" leading="snug">
+          {running
+            ? t('console.quickLocked')
+            : p
+              ? t('console.quickNow', {
+                  size: `${p.height}p${p.fps}`,
+                  rate: (p.videoKbps / 1000).toFixed(1),
+                })
+              : null}
+        </Typography>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <Typography size={12} tone="secondary">
+          {t('console.recordWithStream')}
+        </Typography>
+        <Switch
+          label={t('console.recordWithStream')}
+          checked={st.recording.recordWhileStreaming}
+          disabled={!!s?.streaming}
+          onChange={(recordWhileStreaming) =>
+            void saveSettings({
+              stream: { ...st, recording: { ...st.recording, recordWhileStreaming } },
+            })
+          }
+        />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <Typography size={12} tone="secondary">
+          {t('console.showBefore')}
+        </Typography>
+        <Switch
+          label={t('console.showBefore')}
+          checked={showReady && canReady}
+          disabled={!canReady}
+          onChange={onReady}
+        />
+      </div>
     </Section>
   );
 }
@@ -894,22 +1065,18 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
               </Typography>
             )}
           </div>
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <Typography size={12} tone="secondary">
-              {t('console.showBefore')}
-            </Typography>
-            <Switch
-              label={t('console.showBefore')}
-              checked={showReady && canReady}
-              disabled={!canReady}
-              onChange={toggleReady}
-            />
-          </div>
         </div>
 
+        <DestinationsPanel s={s} st={st} />
+        <QuickSettings
+          s={s}
+          st={st}
+          showReady={showReady}
+          canReady={canReady}
+          onReady={toggleReady}
+        />
         <PicturePanel st={st} />
         <SoundPanel />
-        <DestinationsPanel s={s} st={st} />
         {s && <HealthPanel s={s} />}
 
         {s?.recordingPath && (

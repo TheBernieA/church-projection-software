@@ -2125,7 +2125,22 @@ test('Live console: pops out into its own window, records from there, docks back
   await keyField.fill('abcd-1234-efgh-5678-ijkl');
   await keyField.press('Enter');
   await expect(youtube.getByText('Key needed')).toHaveCount(0);
+  // A direct link: no key, just the receiver's address and port.
+  await live.getByRole('button', { name: 'Add', exact: true }).click();
+  await control.getByRole('menuitem', { name: 'Direct link' }).click();
+  const direct = live.getByRole('listitem').filter({ hasText: 'Direct link' });
+  await expect(direct.getByText('Address needed')).toBeVisible();
+  await live.getByRole('textbox', { name: "Receiver's address" }).fill('192.168.1.50');
+  await live.getByRole('textbox', { name: 'Port' }).fill('9000');
+  await expect(direct.getByText('Address needed')).toHaveCount(0);
+  await control.screenshot({ path: 'test-results/41b-live-destinations.png' });
+  await live.getByRole('button', { name: 'Remove Direct link' }).click();
+  await expect(direct).toHaveCount(0);
+  // NDI has its own row, and quick settings sit under the destinations.
+  await expect(live.getByRole('listitem').filter({ hasText: 'NDI' })).toBeVisible();
+  await expect(live.getByRole('radiogroup', { name: 'Mode' })).toBeVisible();
   await youtube.getByRole('button', { name: /^Stream key and settings for YouTube/ }).click();
+  await control.screenshot({ path: 'test-results/41c-live-key.png' });
   await live.getByRole('button', { name: 'Remove YouTube' }).click();
   await expect(youtube).toHaveCount(0);
   const opened = app.waitForEvent('window');

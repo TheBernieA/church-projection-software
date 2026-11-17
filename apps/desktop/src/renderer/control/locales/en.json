@@ -1575,26 +1575,58 @@
   },
   "streaming": {
     "destinations": "Where it streams",
-    "destinationsHelp": "Add YouTube, Facebook or any RTMP service. Stream keys are stored encrypted on this computer and never shown again.",
-    "noDestinations": "No destinations yet. Add YouTube, Facebook or a custom RTMP service.",
+    "destinationsHelp": "Stream keys are stored encrypted on this computer and never shown again.",
+    "noDestinations": "No destinations yet. Add one above.",
     "kinds": {
       "youtube": "YouTube",
       "facebook": "Facebook",
       "custom": "Custom RTMP",
       "direct": "Direct link"
     },
-    "directUrl": "Receiver's address (SRT or UDP)",
-    "directHelp": "Straight to a receiver you run (OBS, vMix, VLC, a decoder box), with well under a second of delay. Type the receiver's address: srt://192.168.1.50:9000, or udp://192.168.1.50:9000 on the same network. The receiver listens on that port.",
+    "direct": {
+      "protocol": "Kind of link",
+      "udp": "UDP · same network",
+      "srt": "SRT · over the internet",
+      "host": "Receiver's address",
+      "port": "Port",
+      "help": {
+        "udp": "The other computer's IP address and a free port. There, in OBS: Media Source, untick “Local file”, Input udp://@:{{port}}. In VLC: Open Network, udp://@:{{port}}.",
+        "srt": "The receiver's address and port. It listens there: in OBS, Media Source, untick “Local file”, Input srt://:{{port}}?mode=listener. Lost packets are resent, so it suits a link between sites."
+      },
+      "noSrt": "The ffmpeg on this computer was built without SRT, so this link can't start yet. UDP works now."
+    },
+    "ways": {
+      "title": "Ways to go live",
+      "help": "Use one or several at once: they all carry the same picture and sound.",
+      "service": {
+        "title": "A streaming service",
+        "delay": "Viewers 2–30 s behind",
+        "body": "YouTube, Facebook or any service with an RTMP address, for people watching online. Paste the stream key the service gives you. The delay is set by the service (on YouTube: Stream latency › Ultra low-latency)."
+      },
+      "direct": {
+        "title": "A direct link",
+        "delay": "Under 1 s",
+        "body": "Straight to a computer you run (OBS, vMix, VLC or a decoder box): an overflow room, another campus, a second streaming computer. No key: you type the receiver's address."
+      },
+      "ndi": {
+        "title": "NDI",
+        "delay": "Under 0.2 s",
+        "body": "To vMix, OBS and other NDI gear on this network, as the program, the words alone to key over cameras, or the stream picture. It sends whenever a feed is on; no Go live needed.",
+        "needsTools": "Needs the free NDI Tools installed on this computer.",
+        "open_one": "NDI settings · {{count}} feed on",
+        "open_other": "NDI settings · {{count}} feeds on"
+      }
+    },
     "destName": "Name",
     "enabledOf": "Stream to {{name}}",
     "remove": "Remove {{name}}",
     "url": "Server address (RTMP)",
     "keyOf": "Stream key for {{name}}",
     "keyPlaceholder": "Paste the stream key",
-    "keyReplace": "Paste a new key to replace the saved one",
+    "keyReplace": "Paste a new key",
     "saveKey": "Save key",
     "forgetKey": "Forget key",
-    "keyStored": "A stream key is saved (encrypted). Paste a new one to replace it.",
+    "keyStored": "Key saved. Paste a new one to replace it.",
     "keySaved": "Stream key saved for {{name}}.",
     "keyRemoved": "Stream key removed.",
     "keyHelp": {
@@ -1851,8 +1883,27 @@
     "switchLight": "Switch to Light",
     "recordingTitle": "Recording",
     "addDestination": "Add",
-    "noDestinations": "Add where the stream goes, then paste its stream key.",
+    "noDestinations": "Add where the stream goes: a service such as YouTube (paste its stream key), or a direct link to another room.",
     "keyNeeded": "Key needed",
+    "addressNeeded": "Address needed",
+    "remove": "Remove",
+    "kindHelp": {
+      "youtube": "Paste the stream key from YouTube Studio.",
+      "facebook": "Paste the stream key from Facebook Live.",
+      "custom": "Any service that gives an RTMP address and key.",
+      "direct": "Straight to OBS, vMix or VLC in another room. Under a second of delay.",
+      "ndi": "To vMix, OBS and NDI gear on this network. Set up in Settings."
+    },
+    "ndi": "NDI",
+    "ndiNeedsTools": "Needs NDI Tools installed",
+    "ndiOff": "No feeds on",
+    "ndiOn_one": "{{count}} feed on the network",
+    "ndiOn_other": "{{count}} feeds on the network",
+    "ndiSetUp": "Set up",
+    "quick": "Quick settings",
+    "quickNow": "Streams at {{size}}, {{rate}} Mb/s.",
+    "quickLocked": "Stop the stream or recording to change the mode.",
+    "recordWithStream": "Record whenever I go live",
     "editDestination": "Stream key and settings for {{name}}",
     "stats": "Stream readouts",
     "droppedShort_one": "{{count}} dropped",

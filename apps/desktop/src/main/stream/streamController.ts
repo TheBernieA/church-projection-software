@@ -109,6 +109,7 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   speed: 0,
   dropped: 0,
   delayMs: null,
+  srt: null,
   droppedLocal: 0,
   destinations: [],
   recordingPath: null,
@@ -255,6 +256,8 @@ export class StreamController {
   private rateBytes = 0;
   /** GPU pipeline: the hardware encoder's time per frame (ms), from the page. */
   private encodeMs = 0;
+  /** This ffmpeg can send SRT (null until asked). */
+  private srt: boolean | null = null;
   private videoChunks = 0;
   private audioTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -847,8 +850,10 @@ export class StreamController {
         )
       : 'libx264';
     this.machine = { ...this.machine, hardwareEncoder: encoder !== 'libx264' };
+    this.srt = ffmpeg ? (await probeProtocols(ffmpeg)).includes('srt') : false;
     if (this.status.state === 'idle')
-      this.setStatus({ available: !!ffmpeg, encoder, profile: this.profile() });
+      this.setStatus({ available: !!ffmpeg, encoder, profile: this.profile(), srt: this.srt });
+    else this.setStatus({ srt: this.srt });
   }
 
   /** (Re)start ffmpeg with what's wanted now; a recording carried over continues as a new part. */
@@ -1439,7 +1444,7 @@ export class StreamController {
    */
   private setStatus(patch: Partial<StreamStatus>, now = false): void {
     const stateChanged = patch.state !== undefined && patch.state !== this.status.state;
-    this.status = { ...this.status, ...patch };
+    this.status = { ...this.status, ...patch, srt: this.srt };
     const since = Date.now() - this.lastEmit;
     if (now || stateChanged || since >= STATUS_MS) {
       if (this.statusTimer) clearTimeout(this.statusTimer);

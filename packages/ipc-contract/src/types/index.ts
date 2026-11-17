@@ -216,6 +216,8 @@ export interface StreamStatus {
    * What a viewer sees is this plus the streaming service's own delay.
    */
   delayMs: number | null;
+  /** This computer's ffmpeg can send SRT (direct links); null until asked. */
+  srt: boolean | null;
   destinations: StreamDestinationStatus[];
   /** The file being written, if recording. */
   recordingPath: string | null;
