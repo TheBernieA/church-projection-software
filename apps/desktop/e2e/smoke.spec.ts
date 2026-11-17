@@ -655,6 +655,8 @@ test('canvas editor: add a rectangle, drag it, and it shows on the output where 
     .getByRole('button', { name: 'Rectangle' })
     .click();
   const rect = canvas.getByRole('button', { name: 'Rectangle on the slide' });
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/44-edit-workspace.png' });
   await expect(rect).toBeVisible();
   const box = (await rect.boundingBox())!;
   await control.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

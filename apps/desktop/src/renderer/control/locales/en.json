@@ -662,7 +662,8 @@
     "countdownVideo": "Countdown video",
     "countdownVideoHelp": "Plays so its last frame lands exactly on zero: early, it waits on its first frame; late, it joins part-way through.",
     "noVideo": "None (just the numbers)",
-    "showTimerOverVideo": "Show the numbers over the video"
+    "showTimerOverVideo": "Show the numbers over the video",
+    "thisSlide": "This slide"
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",
@@ -1042,11 +1043,11 @@
     "tools": "Canvas tools",
     "object": "{{kind}} on the slide",
     "slides": "Slides",
-    "addPicture": "Add picture…",
-    "forward": "Bring forward",
-    "backward": "Send backward",
-    "delete": "Delete object",
-    "hint": "Drag to move, corners to resize. Alt: no snapping. Arrows nudge.",
+    "addPicture": "Add a picture",
+    "forward": "Forward",
+    "backward": "Back",
+    "delete": "Delete",
+    "hint": "Drag to move · corners to resize · Alt: no snapping · arrows nudge",
     "properties": "Object properties",
     "backToSlide": "Slide text",
     "text": "Text",
@@ -1082,7 +1083,13 @@
     "duplicateSlide": "Duplicate slide {{n}}",
     "deleteSlide": "Delete slide {{n}}",
     "reflow": "Edit all text",
-    "reflowHint": "Edit every slide’s words at once (Reflow)"
+    "reflowHint": "Edit every slide’s words at once (Reflow)",
+    "slideOf": "Slide {{n}} of {{total}}",
+    "prevSlide": "Previous slide (Page Up)",
+    "nextSlide": "Next slide (Page Down)",
+    "untitled": "Slide {{n}}",
+    "noPictures": "No pictures in the library yet.",
+    "importPicture": "Import a picture…"
   },
   "import": {
     "button": "Import",

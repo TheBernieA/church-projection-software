@@ -1,20 +1,24 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   ArrowDownToLine,
   ArrowUpToLine,
   Circle,
   Image as ImageIcon,
   Minus,
+  Plus,
   Square,
   Trash2,
   Type,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, IconButton, Typography } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
+import { importMedia } from '../../lib/mediaPlaylists';
 import { editObjects, newObject } from '../../lib/objects';
 import { useStore } from '../../lib/store';
-import { Select } from '../Select';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
+import { mediaUrl } from '../../../shared/mediaUrl';
 import { type ObjectKind, type TextItem } from '../../types';
 
 const ADD: { kind: Exclude<ObjectKind, 'image'>; icon: typeof Type }[] = [
@@ -24,19 +28,94 @@ const ADD: { kind: Exclude<ObjectKind, 'image'>; icon: typeof Type }[] = [
   { kind: 'line', icon: Minus },
 ];
 
-/** Canvas tools: add a text box, shape, line or picture; arrange or delete the selection. */
-export function CanvasToolbar({
-  item,
-  index,
-  trailing,
+/** One tool in the floating bar: an icon over its short name. */
+function Tool({
+  icon,
+  label,
+  onClick,
+  disabled,
+  danger,
 }: {
-  item: TextItem;
-  index: number;
-  /** Shown at the far right (the inspector's show/hide button). */
-  trailing?: ReactNode;
+  icon: ReactNode;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  danger?: boolean;
 }) {
+  return (
+    <Button
+      variant="bare"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-12 w-14 cursor-pointer flex-col items-center justify-center gap-1 rounded-[8px] text-[var(--text-2)] transition-colors disabled:cursor-default disabled:opacity-35 ${
+        danger
+          ? 'hover:bg-[color-mix(in_srgb,var(--tally-program)_18%,transparent)] hover:text-[var(--tally-program)]'
+          : 'hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
+      }`}
+    >
+      {icon}
+      <Typography size={10} weight="medium" tone="inherit" truncate className="max-w-full">
+        {label}
+      </Typography>
+    </Button>
+  );
+}
+
+/** Pictures from the media library, to place on the slide (or import one). */
+function PictureTool({ onPick }: { onPick: (mediaId: string) => void }) {
   const { t } = useTranslation();
   const pictures = usePictures();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Tool icon={<ImageIcon size={17} />} label={t('canvas.kinds.image')} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="center"
+          sideOffset={6}
+          className={`${MENU_CLASS} max-h-[360px] w-[280px] overflow-y-auto`}
+        >
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+            {t('canvas.addPicture')}
+          </DropdownMenu.Label>
+          {pictures.length === 0 && (
+            <Typography as="p" size={12} tone="muted" leading="snug" className="px-2 py-1.5">
+              {t('canvas.noPictures')}
+            </Typography>
+          )}
+          {pictures.map((m) => (
+            <DropdownMenu.Item key={m.id} className={ITEM_CLASS} onSelect={() => onPick(m.id)}>
+              <img
+                src={mediaUrl(m.id)}
+                alt=""
+                className="h-7 w-12 shrink-0 rounded-[3px] object-cover"
+                draggable={false}
+              />
+              <Typography truncate className="min-w-0">
+                {m.name}
+              </Typography>
+            </DropdownMenu.Item>
+          ))}
+          <DropdownMenu.Separator className="my-1 h-px bg-[var(--hairline)]" />
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void importMedia({})}>
+            <Plus size={14} />
+            {t('canvas.importPicture')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+/**
+ * The canvas tools, as a floating bar over the slide: add a text box, shape, line or picture;
+ * with something selected, bring it forward, send it back or delete it.
+ */
+export function CanvasToolbar({ item, index }: { item: TextItem; index: number }) {
+  const { t } = useTranslation();
   const selected = useStore((s) => s.editObjectId);
   const objects = item.slides[index]?.objects ?? [];
   const at = objects.findIndex((o) => o.id === selected);
@@ -56,65 +135,40 @@ export function CanvasToolbar({
     <div
       role="toolbar"
       aria-label={t('canvas.tools')}
-      className="flex shrink-0 flex-wrap items-center gap-1 border-b border-[var(--hairline)] px-3 py-1.5"
+      className="flex items-center gap-0.5 rounded-[12px] bg-[var(--surface-1)] p-1 shadow-[0_0_0_1px_var(--hairline-strong),0_10px_30px_rgba(0,0,0,0.35)]"
     >
       {ADD.map(({ kind, icon: Icon }) => (
-        <Button
+        <Tool
           key={kind}
-          size="sm"
-          variant="ghost"
-          icon={<Icon size={14} />}
+          icon={<Icon size={17} />}
+          label={t(`canvas.kinds.${kind}`)}
           onClick={() => add(kind)}
-        >
-          {t(`canvas.kinds.${kind}`)}
-        </Button>
-      ))}
-      <div className="w-44">
-        <Select<string>
-          size="sm"
-          aria-label={t('canvas.addPicture')}
-          value=""
-          placeholder={t('canvas.addPicture')}
-          onChange={(id) => add('image', id)}
-          options={pictures.map((m) => ({
-            value: m.id,
-            label: m.name,
-            leading: <ImageIcon size={13} />,
-          }))}
         />
-      </div>
-      <span className="mx-1 h-5 w-px bg-[var(--hairline-strong)]" aria-hidden />
-      <IconButton
-        size="sm"
-        aria-label={t('canvas.forward')}
+      ))}
+      <PictureTool onPick={(id) => add('image', id)} />
+      <span className="mx-1 h-8 w-px bg-[var(--hairline-strong)]" aria-hidden />
+      <Tool
+        icon={<ArrowUpToLine size={17} />}
+        label={t('canvas.forward')}
         disabled={at < 0 || at === objects.length - 1}
         onClick={() => arrange(at + 1)}
-      >
-        <ArrowUpToLine size={15} />
-      </IconButton>
-      <IconButton
-        size="sm"
-        aria-label={t('canvas.backward')}
+      />
+      <Tool
+        icon={<ArrowDownToLine size={17} />}
+        label={t('canvas.backward')}
         disabled={at <= 0}
         onClick={() => arrange(at - 1)}
-      >
-        <ArrowDownToLine size={15} />
-      </IconButton>
-      <IconButton
-        size="sm"
-        aria-label={t('canvas.delete')}
+      />
+      <Tool
+        icon={<Trash2 size={17} />}
+        label={t('canvas.delete')}
         disabled={at < 0}
+        danger
         onClick={() => {
           editObjects(item, index, (os) => os.filter((o) => o.id !== selected));
           useStore.setState({ editObjectId: null });
         }}
-      >
-        <Trash2 size={15} />
-      </IconButton>
-      <Typography size={11} tone="muted" className="ml-auto">
-        {t('canvas.hint')}
-      </Typography>
-      {trailing}
+      />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Copy, Info, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, omit, type ServiceItem, type TextSlide } from '@lampstand/core';
 import { Button, IconButton, Segmented, Switch, Typography, typographyClass } from '@lampstand/ui';
@@ -71,8 +71,6 @@ function TextInspector({ item }: { item: TextItem }) {
   const count = item.slides.length;
   const index = editCursor?.itemId === item.id ? Math.min(editCursor.index, count - 1) : 0;
   const slide = item.slides[index];
-  const select = (i: number): void =>
-    useStore.setState({ editCursor: { itemId: item.id, index: i } });
   const setSlides = (slides: TextSlide[], typing = false): void =>
     replaceItem({ ...item, slides }, typing);
   const patchSlide = (p: Partial<TextSlide>): void => {
@@ -124,29 +122,10 @@ function TextInspector({ item }: { item: TextItem }) {
 
       {slide ? (
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Typography as="h3" variant="overline">
-              {t('inspector.slideOf', { n: index + 1, total: count })}
-            </Typography>
-            <div className="flex">
-              <IconButton
-                size="xs"
-                aria-label={t('inspector.prev')}
-                disabled={index === 0}
-                onClick={() => select(index - 1)}
-              >
-                <ChevronLeft size={16} />
-              </IconButton>
-              <IconButton
-                size="xs"
-                aria-label={t('inspector.next')}
-                disabled={index >= count - 1}
-                onClick={() => select(index + 1)}
-              >
-                <ChevronRight size={16} />
-              </IconButton>
-            </div>
-          </div>
+          {/* Which slide, and the way to the others, are in the header above the canvas. */}
+          <Typography as="h3" variant="overline">
+            {t('inspector.thisSlide')}
+          </Typography>
           <Field label={t('inspector.title')} htmlFor="insp-title">
             <input
               id="insp-title"

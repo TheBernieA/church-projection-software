@@ -2,8 +2,9 @@ import { useMemo, useRef, useState } from 'react';
 import { Copy, Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene } from '@lampstand/core';
-import { Button, IconButton, Typography } from '@lampstand/ui';
+import { Button, IconButton, TallyTag, Typography } from '@lampstand/ui';
 import { useItemSlides } from '../../lib/hooks';
+import { useStore } from '../../lib/store';
 import type {} from '../../lib/objects';
 import {
   addSlide,
@@ -45,11 +46,12 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
     );
   };
   const one = item.slides.length <= 1;
+  const live = useStore((s) => (s.liveCursor?.itemId === item.id ? s.liveCursor.index : -1));
   return (
     <ol
       ref={strip}
       aria-label={t('canvas.slides')}
-      className="flex shrink-0 items-start gap-2 overflow-x-auto border-t border-[var(--hairline)] p-2"
+      className="flex shrink-0 items-start gap-3 overflow-x-auto border-t border-[var(--hairline)] bg-[var(--surface-1)] px-4 pb-3 pt-3"
     >
       {scenes.map((scene, i) => {
         const title = item.slides[i]?.title?.trim();
@@ -57,7 +59,7 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
         return (
           <li
             key={slides[i]?.key ?? i}
-            className={`group relative w-36 shrink-0 ${dragFrom === i ? 'opacity-40' : ''}`}
+            className={`group relative w-44 shrink-0 transition-transform duration-[var(--dur-fast)] ${dragFrom === i ? 'opacity-40' : ''} ${on ? '-translate-y-0.5' : ''}`}
             draggable
             onDragStart={(e) => {
               e.dataTransfer.setData(DRAG, String(i));
@@ -107,22 +109,39 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
                   focusSlide(Math.max(0, i - 1));
                 }
               }}
-              className="block w-full overflow-hidden rounded-[4px] text-left focus-visible:outline-none"
+              className="relative block w-full overflow-hidden rounded-[6px] text-left transition-shadow focus-visible:outline-none"
               style={{
-                boxShadow: on ? '0 0 0 2px var(--accent)' : '0 0 0 1px var(--hairline-strong)',
+                boxShadow: on
+                  ? '0 0 0 2px var(--accent), 0 8px 22px rgba(0,0,0,0.4)'
+                  : live === i
+                    ? 'var(--tally-program-glow)'
+                    : '0 0 0 1px var(--hairline-strong)',
               }}
             >
               <SceneView scene={scene} mode="thumbnail" />
+              <Typography
+                size={11}
+                weight="bold"
+                tone="white"
+                tabular
+                className="absolute bottom-1.5 left-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 backdrop-blur-sm"
+              >
+                {i + 1}
+              </Typography>
+              {live === i && (
+                <TallyTag tone="program" className="!left-1.5 !right-auto">
+                  LIVE
+                </TallyTag>
+              )}
             </Button>
             <Typography
               size={11}
               tone={on ? 'primary' : 'muted'}
               weight={on ? 'semibold' : 'regular'}
               truncate
-              className="mt-1 block px-0.5"
+              className="mt-1.5 block px-0.5"
             >
-              {i + 1}
-              {title ? ` · ${title}` : ''}
+              {title || t('canvas.untitled', { n: i + 1 })}
             </Typography>
             <span className="absolute right-1 top-1 flex gap-0.5">
               <IconButton
@@ -153,7 +172,7 @@ export function Filmstrip({ item, index }: { item: TextItem; index: number }) {
         <AddCard
           label={t('inspector.addSlide')}
           icon={<Plus size={16} />}
-          className="aspect-video w-36"
+          className="aspect-video w-44 rounded-[6px]"
           onClick={() => addSlide(item)}
         />
       </li>
