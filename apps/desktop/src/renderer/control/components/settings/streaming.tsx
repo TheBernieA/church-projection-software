@@ -247,6 +247,47 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             ]}
           />
         </Row>
+        {st.picture.words !== 'none' && (
+          <Row label={t('streaming.wordsAlign')} description={t('streaming.wordsAlignHelp')}>
+            <Segmented<StreamSettings['picture']['wordsAlign']>
+              label={t('streaming.wordsAlign')}
+              value={st.picture.wordsAlign}
+              onChange={(wordsAlign) => set({ picture: { ...st.picture, wordsAlign } })}
+              options={[
+                { value: 'left', label: t('streaming.alignLeft') },
+                { value: 'center', label: t('streaming.alignCenter') },
+                { value: 'right', label: t('streaming.alignRight') },
+              ]}
+            />
+          </Row>
+        )}
+        {st.picture.words === 'lowerThird' && (
+          <>
+            <Row label={t('streaming.wordsAutoLong')} description={t('streaming.wordsAutoHelp')}>
+              <Switch
+                label={t('streaming.wordsAutoLong')}
+                checked={st.picture.wordsAuto}
+                onChange={(wordsAuto) => set({ picture: { ...st.picture, wordsAuto } })}
+              />
+            </Row>
+            {!st.picture.wordsAuto && (
+              <Row label={t('streaming.wordsSize')} description={t('streaming.wordsSizeHelp')}>
+                <Slider
+                  aria-label={t('streaming.wordsSize')}
+                  min={25}
+                  max={100}
+                  step={5}
+                  value={st.picture.wordsSize}
+                  format={(v) => `${v}%`}
+                  className="w-56"
+                  onChange={(e) =>
+                    set({ picture: { ...st.picture, wordsSize: Number(e.currentTarget.value) } })
+                  }
+                />
+              </Row>
+            )}
+          </>
+        )}
         <Row label={t('streaming.background')} description={t('streaming.backgroundHelp')}>
           <Segmented<StreamSettings['picture']['background']>
             label={t('streaming.background')}

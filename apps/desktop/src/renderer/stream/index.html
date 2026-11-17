@@ -19,10 +19,23 @@
         position: absolute;
         inset: 0;
       }
-      /* Lower third: the slide's words, smaller, near the bottom, over a soft dark band. */
+      /* Lower third: the slide's words, smaller, near the bottom, over a soft dark band
+         (main.ts sizes and places them: wordsLayout.ts). */
       body.lower-third #words .ls-layer-content {
-        transform: translateY(16%) scale(0.6);
-        transform-origin: 50% 100%;
+        transform-origin: 0 0;
+      }
+      /* Where the words sit across the picture, whatever the theme says. */
+      body.words-left #words .ls-layer-content .ls-content {
+        align-items: flex-start !important;
+      }
+      body.words-right #words .ls-layer-content .ls-content {
+        align-items: flex-end !important;
+      }
+      body.words-left #words .ls-layer-content :is(.ls-text, .ls-reference) {
+        text-align: left !important;
+      }
+      body.words-right #words .ls-layer-content :is(.ls-text, .ls-reference) {
+        text-align: right !important;
       }
       #band {
         position: absolute;

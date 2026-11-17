@@ -40,8 +40,21 @@ export const StreamSettingsSchema = z.object({
       words: z.enum(['full', 'lowerThird', 'none']).default('lowerThird'),
       /** Behind the words: what the projector shows, the camera, or black. */
       background: z.enum(['program', 'camera', 'black']).default('program'),
+      /** Lower third: size the words to fit the band by themselves (long verses shrink). */
+      wordsAuto: z.boolean().default(true),
+      /** Lower third, when not automatic: the words' size, as % of their full-screen size. */
+      wordsSize: z.number().int().min(25).max(100).default(60),
+      /** Where the words sit across the picture. */
+      wordsAlign: z.enum(['left', 'center', 'right']).default('center'),
     })
-    .default({ camera: null, words: 'lowerThird', background: 'program' }),
+    .default({
+      camera: null,
+      words: 'lowerThird',
+      background: 'program',
+      wordsAuto: true,
+      wordsSize: 60,
+      wordsAlign: 'center',
+    }),
   sound: z
     .object({
       /** Tracks from the Audio tab and the sound of videos. */

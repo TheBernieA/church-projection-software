@@ -14,6 +14,7 @@ import { mediaUrl } from '../shared/mediaUrl';
 // (inlined, the tap failed to load and the stream had no sound).
 import pcmTapUrl from './pcmTap.worklet.js?url&no-inline';
 import { StreamEncoder } from './encoder';
+import { lowerThird } from './wordsLayout';
 
 /**
  * The livestream picture and sound, drawn offscreen (main encodes what it paints). Layers, back
@@ -104,10 +105,62 @@ function draw(): void {
   });
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
+  // Left or right moves the words whatever the theme says; centre leaves the theme alone.
+  document.body.classList.toggle('words-left', showWords && pic.wordsAlign === 'left');
+  document.body.classList.toggle('words-right', showWords && pic.wordsAlign === 'right');
+  placeWords();
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);
   mix.sync(config.mix ? latest.mixer : silent(latest.mixer));
 }
+
+/**
+ * Lower third: size the words and sit them near the bottom. The newest slide's text box is
+ * measured where the theme laid it out (layout boxes, so a transition in progress doesn't
+ * matter), then the whole words layer is scaled and moved to put it in the band.
+ */
+function placeWords(): void {
+  const layer = $('words').querySelector<HTMLElement>('.ls-layer-content');
+  const band = $('band');
+  if (!layer) return;
+  const pic = config?.picture;
+  const slide = layer.lastElementChild as HTMLElement | null;
+  const boxes = slide
+    ? [...slide.querySelectorAll<HTMLElement>(':scope > .ls-text, :scope > .ls-reference')].map(
+        (e) => ({ x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight }),
+      )
+    : [];
+  if (pic?.words !== 'lowerThird' || !slide || boxes.length === 0) {
+    layer.style.transform = '';
+    band.style.height = '';
+    return;
+  }
+  const placed = lowerThird(
+    boxes,
+    { width: slide.offsetWidth, height: slide.offsetHeight },
+    { auto: pic.wordsAuto, size: pic.wordsSize, align: pic.wordsAlign },
+  );
+  layer.style.transform = `translate(${placed.x}px, ${placed.y}px) scale(${placed.scale})`;
+  band.style.height = `${Math.round(placed.band * 100)}%`;
+}
+
+// The words change size after they're drawn (fonts arriving, text fitted to its box, a
+// countdown ticking): place them again whenever the words layer changes.
+let placing = false;
+const replace = (): void => {
+  if (placing) return;
+  placing = true;
+  requestAnimationFrame(() => {
+    placing = false;
+    placeWords();
+  });
+};
+new MutationObserver(replace).observe($('words'), {
+  childList: true,
+  subtree: true,
+  characterData: true,
+});
+void fontsReady().then(replace, () => undefined);
 
 // ---------- Sound ----------
 

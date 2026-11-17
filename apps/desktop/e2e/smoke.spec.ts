@@ -2092,6 +2092,22 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBeGreaterThan(1);
   await control.waitForTimeout(1_500);
   await control.screenshot({ path: 'test-results/41-live-console.png' });
+  // The words on the stream: move them left and choose a size instead of the automatic fit.
+  const shows = live.getByRole('region', { name: 'What the stream shows' });
+  await shows.scrollIntoViewIfNeeded();
+  await shows.getByRole('radio', { name: 'Left' }).click();
+  await shows.getByRole('button', { name: 'Auto', exact: true }).click();
+  await expect(shows.getByRole('slider', { name: 'Size' })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? `${r.value.stream.picture.wordsAlign} ${r.value.stream.picture.wordsAuto}` : '';
+    })
+    .toBe('left false');
+  await control.waitForTimeout(700);
+  await control.screenshot({ path: 'test-results/41a-live-words.png' });
+  await shows.getByRole('radio', { name: 'Centre' }).click();
+  await shows.getByRole('button', { name: 'Auto', exact: true }).click();
   await live.getByRole('button', { name: 'End stream' }).click();
   await expect(live.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
   control.off('dialog', accept);

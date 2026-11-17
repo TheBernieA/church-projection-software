@@ -90,7 +90,14 @@ const DEFAULT_PROFILE: StreamProfile = resolvePerformance(
   {
     destinations: [],
     quality: { height: 720, fps: 30, videoKbps: 3500, audioKbps: 160, encoder: 'auto' },
-    picture: { camera: null, words: 'lowerThird', background: 'program' },
+    picture: {
+      camera: null,
+      words: 'lowerThird',
+      background: 'program',
+      wordsAuto: true,
+      wordsSize: 60,
+      wordsAlign: 'center',
+    },
     sound: { room: true, roomGain: 1, mics: [] },
     performance: 'balanced',
     benchmark: null,

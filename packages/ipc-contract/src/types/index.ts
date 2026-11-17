@@ -270,6 +270,10 @@ export interface StreamConfig {
     words: 'full' | 'lowerThird' | 'none';
     /** 'none': nothing behind the words (a transparent NDI key feed). */
     background: 'program' | 'camera' | 'black' | 'none';
+    /** Lower third: fit the words to the band automatically, or use `wordsSize` (%). */
+    wordsAuto: boolean;
+    wordsSize: number;
+    wordsAlign: 'left' | 'center' | 'right';
   };
   /** The stream's own camera, with its saved settings (capture size capped at the stream's). */
   cameraLayer: VideoInputLayer | null;

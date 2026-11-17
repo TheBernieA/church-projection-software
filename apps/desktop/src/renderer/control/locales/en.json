@@ -713,7 +713,7 @@
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
+          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Position puts the words left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
@@ -1637,6 +1637,17 @@
     "picture": "What it shows",
     "pictureHelp": "The stream can show something different from the projector: e.g. the camera with the lyrics as a lower third.",
     "words": "The words",
+    "wordsAlign": "Position",
+    "wordsAlignHelp": "Where the words sit across the picture: left, centre or right.",
+    "alignLeft": "Left",
+    "alignCenter": "Centre",
+    "alignRight": "Right",
+    "wordsSize": "Size",
+    "wordsSizeHelp": "How big the lower-third words are, as a share of their full-screen size.",
+    "wordsAuto": "Auto",
+    "wordsAutoLong": "Size the words automatically",
+    "wordsAutoOn": "Fits each slide to the band.",
+    "wordsAutoHelp": "Long verses shrink to fit the lower third; short lines stay large. Turn off to choose one size.",
     "wordsHelp": "Lower third: smaller, along the bottom, over a soft band.",
     "lowerThird": "Lower third",
     "fullScreen": "Full screen",

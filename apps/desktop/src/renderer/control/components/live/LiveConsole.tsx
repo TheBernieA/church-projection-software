@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ChevronDown,
   Circle,
   ExternalLink,
@@ -182,54 +185,125 @@ function StatusPill({ s }: { s: StreamStatus | null }) {
   );
 }
 
-/** What the stream shows: words, what's behind them, and which camera (applies at once). */
+/** A labelled row in the picture panel. */
+function PictureRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-x-3">
+      <Typography size={12} tone="secondary">
+        {label}
+      </Typography>
+      {children}
+    </div>
+  );
+}
+
+/**
+ * What the stream shows, in two parts: the picture behind (the projector's, a camera, or
+ * black) and the words over it (a lower third, full screen, or none), with where the words sit
+ * and how big they are. Only the choices that apply show. Everything applies at once.
+ */
 function PicturePanel({ st }: { st: StreamSettings }) {
   const { t } = useTranslation();
   const cameras = useInputDevices('videoinput');
+  const pic = st.picture;
   const set = (patch: Partial<StreamSettings['picture']>): void =>
-    void saveSettings({ stream: { ...st, picture: { ...st.picture, ...patch } } });
+    void saveSettings({ stream: { ...st, picture: { ...pic, ...patch } } });
   return (
     <Section title={t('console.picture')}>
-      <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-2">
-        <Typography size={12} tone="secondary">
-          {t('streaming.words')}
-        </Typography>
-        <Segmented<StreamSettings['picture']['words']>
-          label={t('streaming.words')}
-          value={st.picture.words}
-          onChange={(words) => set({ words })}
-          options={[
-            { value: 'lowerThird', label: t('streaming.lowerThird') },
-            { value: 'full', label: t('streaming.fullScreen') },
-            { value: 'none', label: t('streaming.off') },
-          ]}
-        />
-        <Typography size={12} tone="secondary">
-          {t('console.behind')}
-        </Typography>
-        <Segmented<StreamSettings['picture']['background']>
-          label={t('streaming.background')}
-          value={st.picture.background}
-          onChange={(background) => set({ background })}
-          options={[
-            { value: 'program', label: t('streaming.bgProgram') },
-            { value: 'camera', label: t('streaming.bgCamera') },
-            { value: 'black', label: t('streaming.bgBlack') },
-          ]}
-        />
-        <Typography size={12} tone="secondary">
-          {t('streaming.camera')}
-        </Typography>
-        <Select<string>
-          size="sm"
-          aria-label={t('streaming.camera')}
-          value={st.picture.camera ?? NO_CAMERA}
-          onChange={(id) => set({ camera: id === NO_CAMERA ? null : id })}
-          options={[
-            { value: NO_CAMERA, label: t('streaming.noCamera') },
-            ...(cameras ?? []).map((c) => ({ value: c.deviceId, label: c.label })),
-          ]}
-        />
+      <div className="flex flex-col gap-2">
+        <PictureRow label={t('console.behind')}>
+          <Segmented<StreamSettings['picture']['background']>
+            label={t('streaming.background')}
+            value={pic.background}
+            onChange={(background) => set({ background })}
+            options={[
+              { value: 'program', label: t('streaming.bgProgram') },
+              { value: 'camera', label: t('streaming.bgCamera') },
+              { value: 'black', label: t('streaming.bgBlack') },
+            ]}
+          />
+        </PictureRow>
+        {pic.background === 'camera' && (
+          <PictureRow label={t('streaming.camera')}>
+            <Select<string>
+              size="sm"
+              aria-label={t('streaming.camera')}
+              value={pic.camera ?? NO_CAMERA}
+              onChange={(id) => set({ camera: id === NO_CAMERA ? null : id })}
+              options={[
+                { value: NO_CAMERA, label: t('streaming.noCamera') },
+                ...(cameras ?? []).map((c) => ({ value: c.deviceId, label: c.label })),
+              ]}
+            />
+          </PictureRow>
+        )}
+      </div>
+      <div className="flex flex-col gap-2 border-t border-[var(--hairline)] pt-2.5">
+        <PictureRow label={t('streaming.words')}>
+          <Segmented<StreamSettings['picture']['words']>
+            label={t('streaming.words')}
+            value={pic.words}
+            onChange={(words) => set({ words })}
+            options={[
+              { value: 'lowerThird', label: t('streaming.lowerThird') },
+              { value: 'full', label: t('streaming.fullScreen') },
+              { value: 'none', label: t('streaming.off') },
+            ]}
+          />
+        </PictureRow>
+        {pic.words !== 'none' && (
+          <PictureRow label={t('streaming.wordsAlign')}>
+            <Segmented<StreamSettings['picture']['wordsAlign']>
+              label={t('streaming.wordsAlign')}
+              value={pic.wordsAlign}
+              onChange={(wordsAlign) => set({ wordsAlign })}
+              options={[
+                { value: 'left', label: t('streaming.alignLeft'), icon: <AlignLeft size={13} /> },
+                {
+                  value: 'center',
+                  label: t('streaming.alignCenter'),
+                  icon: <AlignCenter size={13} />,
+                },
+                {
+                  value: 'right',
+                  label: t('streaming.alignRight'),
+                  icon: <AlignRight size={13} />,
+                },
+              ]}
+            />
+          </PictureRow>
+        )}
+        {pic.words === 'lowerThird' && (
+          <PictureRow label={t('streaming.wordsSize')}>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Button
+                size="xs"
+                variant={pic.wordsAuto ? 'primary' : 'subtle'}
+                aria-pressed={pic.wordsAuto}
+                title={t('streaming.wordsAutoHelp')}
+                onClick={() => set({ wordsAuto: !pic.wordsAuto })}
+              >
+                {t('streaming.wordsAuto')}
+              </Button>
+              {pic.wordsAuto ? (
+                <Typography size={11} tone="muted" leading="snug" className="min-w-0">
+                  {t('streaming.wordsAutoOn')}
+                </Typography>
+              ) : (
+                <Slider
+                  aria-label={t('streaming.wordsSize')}
+                  min={25}
+                  max={100}
+                  step={5}
+                  value={pic.wordsSize}
+                  format={(v) => `${v}%`}
+                  onChange={(e) => set({ wordsSize: Number(e.target.value) })}
+                  className="min-w-0 flex-1"
+                />
+              )}
+            </div>
+          </PictureRow>
+        )}
       </div>
     </Section>
   );

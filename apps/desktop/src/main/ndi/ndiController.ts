@@ -33,15 +33,24 @@ interface Feed {
 }
 
 /** What a feed's window draws. */
+/** The words as the theme draws them: full screen, nothing resized or moved. */
+const FULL = {
+  camera: null,
+  words: 'full',
+  wordsAuto: false,
+  wordsSize: 100,
+  wordsAlign: 'center',
+} as const;
+
 function pictureOf(feed: NdiFeed, s: Settings): Pick<StreamConfig, 'picture' | 'transparent'> {
   switch (feed.content) {
     case 'program':
       return {
-        picture: { camera: null, words: 'full', background: 'program' },
+        picture: { ...FULL, background: 'program' },
         transparent: false,
       };
     case 'words':
-      return { picture: { camera: null, words: 'full', background: 'none' }, transparent: true };
+      return { picture: { ...FULL, background: 'none' }, transparent: true };
     case 'stream':
       return { picture: s.stream.picture, transparent: false };
   }
