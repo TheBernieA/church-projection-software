@@ -1,8 +1,11 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Circle,
   ExternalLink,
   FolderOpen,
+  KeyRound,
+  Plus,
   Gauge,
   PanelRightClose,
   PictureInPicture2,
@@ -20,7 +23,9 @@ import {
   formatDb,
   MAX_DB,
   MIN_DB,
+  newId,
   secondsSince,
+  type StreamDestination,
   type StreamSettings,
 } from '@lampstand/core';
 import type { StreamStatus } from '@lampstand/ipc-contract';
@@ -34,6 +39,8 @@ import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { attempt, openDialog, useStore } from '../../lib/store';
 import { useStreamPreview } from '../../lib/streamPreview';
 import { Select } from '../Select';
+import { ITEM_CLASS, MENU_CLASS } from '../menu';
+import { DestinationRow } from '../settings/streaming';
 import { Sparkline } from './Sparkline';
 import { CheckComputer } from './CheckComputer';
 
@@ -296,10 +303,32 @@ function SoundPanel() {
   );
 }
 
+/**
+ * Where the stream goes: each destination with its health, on/off, and its stream key (added or
+ * replaced right here). Add YouTube, Facebook or any RTMP service from the + menu.
+ */
 function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettings }) {
   const { t } = useTranslation();
   const live = !!s?.streaming;
   const failed = live && s.destinations.some((d) => d.state === 'failed');
+  const [keys, setKeys] = useState<Record<string, boolean>>({});
+  const [open, setOpen] = useState<string | null>(null);
+  const loadKeys = useCallback(() => void q('stream.keys').then(setKeys, () => undefined), []);
+  useEffect(loadKeys, [loadKeys, st.destinations.length]);
+  const setDestinations = (destinations: StreamDestination[]): void =>
+    void saveSettings({ stream: { ...st, destinations } });
+  const add = (kind: StreamDestination['kind']): void => {
+    const id = newId();
+    setDestinations([
+      ...st.destinations,
+      { id, kind, name: t(`streaming.kinds.${kind}`), url: '', enabled: true },
+    ]);
+    setOpen(id); // straight to its key
+  };
+  const remove = async (d: StreamDestination): Promise<void> => {
+    await attempt(() => cmd('stream.setKey', { destinationId: d.id, key: null }), 'errors.save');
+    setDestinations(st.destinations.filter((x) => x.id !== d.id));
+  };
   const dot = (id: string): string => {
     const state = s?.destinations.find((d) => d.id === id)?.state;
     return state === 'ok'
@@ -314,62 +343,246 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
     <Section
       title={t('console.destinations')}
       action={
-        failed ? (
-          <Button
-            size="2xs"
-            variant="secondary"
-            icon={<RotateCcw size={12} />}
-            onClick={() => run('stream.retry')}
-          >
-            {t('console.retry')}
-          </Button>
-        ) : undefined
+        <div className="flex items-center gap-1">
+          {failed && (
+            <Button
+              size="2xs"
+              variant="secondary"
+              icon={<RotateCcw size={12} />}
+              onClick={() => run('stream.retry')}
+            >
+              {t('console.retry')}
+            </Button>
+          )}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <Button size="2xs" variant="ghost" icon={<Plus size={12} />} disabled={live}>
+                {t('console.addDestination')}
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
+                {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+                  <DropdownMenu.Item key={k} className={ITEM_CLASS} onSelect={() => add(k)}>
+                    {t(`streaming.kinds.${k}`)}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+        </div>
       }
     >
       {st.destinations.length === 0 ? (
-        <Typography as="p" size={12} tone="muted" leading="snug">
-          {t('live.noDestinations')}
-        </Typography>
+        <div className="flex flex-col items-start gap-2">
+          <Typography as="p" size={12} tone="muted" leading="snug">
+            {t('console.noDestinations')}
+          </Typography>
+          <div className="flex flex-wrap gap-1.5">
+            {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+              <Button
+                key={k}
+                size="xs"
+                variant="secondary"
+                icon={<Plus size={12} />}
+                onClick={() => add(k)}
+              >
+                {t(`streaming.kinds.${k}`)}
+              </Button>
+            ))}
+          </div>
+        </div>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {st.destinations.map((d) => {
             const state = s?.destinations.find((x) => x.id === d.id)?.state;
+            const needsKey = d.kind !== 'custom' && !keys[d.id];
+            const expanded = open === d.id;
             return (
-              <li key={d.id} className="flex items-center gap-2.5">
-                <span
-                  aria-hidden
-                  className="h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: dot(d.id) }}
-                />
-                <Typography size={13} tone="primary" truncate className="min-w-0 flex-1">
-                  {d.name}
-                </Typography>
-                {state && (
-                  <Typography size={11} tone="muted">
-                    {t(`live.dest.${state}`)}
+              <li
+                key={d.id}
+                className={`rounded-[8px] ${expanded ? 'bg-[var(--surface-2)] shadow-[0_0_0_1px_var(--hairline)]' : ''}`}
+              >
+                <div className={`flex items-center gap-2.5 ${expanded ? 'px-2.5 pt-2' : ''}`}>
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{ background: dot(d.id) }}
+                  />
+                  <Typography size={13} tone="primary" truncate className="min-w-0 flex-1">
+                    {d.name}
                   </Typography>
+                  {state ? (
+                    <Typography size={11} tone="muted">
+                      {t(`live.dest.${state}`)}
+                    </Typography>
+                  ) : (
+                    needsKey && (
+                      <Typography
+                        size={10}
+                        weight="semibold"
+                        tone="inherit"
+                        caps
+                        className="rounded-[4px] bg-[var(--accent-soft)] px-1.5 py-px text-[var(--accent)]"
+                      >
+                        {t('console.keyNeeded')}
+                      </Typography>
+                    )
+                  )}
+                  <IconButton
+                    size="xs"
+                    aria-label={t('console.editDestination', { name: d.name })}
+                    active={expanded}
+                    disabled={live}
+                    onClick={() => setOpen(expanded ? null : d.id)}
+                  >
+                    <KeyRound size={13} />
+                  </IconButton>
+                  <Switch
+                    label={t('streaming.enabledOf', { name: d.name })}
+                    checked={d.enabled}
+                    disabled={live}
+                    onChange={(enabled) =>
+                      setDestinations(
+                        st.destinations.map((x) => (x.id === d.id ? { ...x, enabled } : x)),
+                      )
+                    }
+                  />
+                </div>
+                {expanded && (
+                  <div className="-mx-1.5">
+                    <DestinationRow
+                      dest={d}
+                      hasKey={!!keys[d.id]}
+                      onChange={(patch) =>
+                        setDestinations(
+                          st.destinations.map((x) => (x.id === d.id ? { ...x, ...patch } : x)),
+                        )
+                      }
+                      onRemove={() => void remove(d)}
+                      onKeySaved={() => {
+                        loadKeys();
+                        setOpen(null);
+                      }}
+                    />
+                  </div>
                 )}
-                <Switch
-                  label={t('streaming.enabledOf', { name: d.name })}
-                  checked={d.enabled}
-                  disabled={live}
-                  onChange={(enabled) =>
-                    void saveSettings({
-                      stream: {
-                        ...st,
-                        destinations: st.destinations.map((x) =>
-                          x.id === d.id ? { ...x, enabled } : x,
-                        ),
-                      },
-                    })
-                  }
-                />
               </li>
             );
           })}
         </ul>
       )}
     </Section>
+  );
+}
+
+/** "VideoToolbox", "NVENC"… for the stats strip. */
+const ENCODER_NAMES: Record<string, string> = {
+  h264_videotoolbox: 'VideoToolbox',
+  h264_nvenc: 'NVENC',
+  h264_qsv: 'Quick Sync',
+  h264_amf: 'AMF',
+  libx264: 'x264',
+};
+
+/**
+ * The readouts at the top: while running, frame rate, encoder speed, bitrate, dropped frames,
+ * the encoder and the computer's load (each coloured by how it's doing); otherwise the mode,
+ * size and encoder the next start will use.
+ */
+function StatsStrip({ s }: { s: StreamStatus }) {
+  const { t } = useTranslation();
+  const running = s.state !== 'idle' && s.state !== 'stopping';
+  const p = s.profile;
+  const encoder = ENCODER_NAMES[s.encoder] ?? s.encoder;
+  const load = s.health ? s.health.appCpu + (s.health.encoderCpu ?? 0) : null;
+  const chips: { label: string; title: string; tone: 'ok' | 'warn' | 'bad' | 'plain' }[] = running
+    ? [
+        {
+          label: `${Math.round(s.fps)}/${p.fps} fps`,
+          title: t('console.fps'),
+          tone:
+            s.fps === 0
+              ? 'plain'
+              : s.fps >= p.fps * 0.95
+                ? 'ok'
+                : s.fps >= p.fps * 0.8
+                  ? 'warn'
+                  : 'bad',
+        },
+        {
+          label: s.speed > 0 ? `${s.speed.toFixed(2)}×` : '—×',
+          title: t('console.speed'),
+          tone: s.speed === 0 ? 'plain' : s.speed >= 0.97 ? 'ok' : s.speed >= 0.9 ? 'warn' : 'bad',
+        },
+        {
+          label:
+            s.kbps > 0
+              ? `${(s.kbps / 1000).toFixed(1)} Mb/s`
+              : `${(p.videoKbps / 1000).toFixed(1)} Mb/s`,
+          title: t('console.bitrate'),
+          tone: 'plain',
+        },
+        ...(s.dropped > 0
+          ? [
+              {
+                label: t('console.droppedShort', { count: s.dropped }),
+                title: t('live.dropped', { count: s.dropped }),
+                tone: 'warn' as const,
+              },
+            ]
+          : []),
+        { label: encoder, title: t('streaming.encoder'), tone: 'plain' },
+        ...(load !== null
+          ? [
+              {
+                label: t('console.loadShort', { load }),
+                title: t('console.cpu'),
+                tone: 'plain' as const,
+              },
+            ]
+          : []),
+      ]
+    : [
+        {
+          label: t(`streaming.modes.${p.mode}`),
+          title: t('streaming.performanceMode'),
+          tone: 'plain',
+        },
+        { label: `${p.height}p${p.fps}`, title: t('streaming.resolution'), tone: 'plain' },
+        {
+          label: `${(p.videoKbps / 1000).toFixed(1)} Mb/s`,
+          title: t('console.bitrate'),
+          tone: 'plain',
+        },
+        { label: encoder, title: t('streaming.encoder'), tone: 'plain' },
+      ];
+  const look = {
+    ok: 'text-[var(--tally-preview)]',
+    warn: 'text-[var(--accent)]',
+    bad: 'text-[var(--tally-program)]',
+    plain: 'text-[var(--text-2)]',
+  };
+  return (
+    <div
+      role="group"
+      aria-label={t('console.stats')}
+      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--hairline)] px-3 py-2"
+    >
+      {chips.map((c) => (
+        <Typography
+          key={c.title}
+          size={11}
+          weight="semibold"
+          tone="inherit"
+          tabular
+          title={c.title}
+          className={`rounded-[5px] bg-[var(--surface-2)] px-1.5 py-0.5 shadow-[0_0_0_1px_var(--hairline)] ${look[c.tone]}`}
+        >
+          {c.label}
+        </Typography>
+      ))}
+    </div>
   );
 }
 
@@ -538,6 +751,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           </IconButton>
         )}
       </header>
+      {s && s.available && <StatsStrip s={s} />}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Going live and recording. */}
@@ -668,34 +882,31 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       </div>
 
       <footer className="flex shrink-0 items-center gap-1 border-t border-[var(--hairline)] px-3 py-2">
-        <Button
-          size="xs"
-          variant="ghost"
-          icon={<FolderOpen size={13} />}
-          onClick={() => void q('recording.reveal', { path: s?.recordingPath ?? null })}
-        >
-          {t('live.openRecordings')}
-        </Button>
         <CheckComputer showResult={false} />
         <span className="flex-1" />
+        <IconButton
+          size="sm"
+          aria-label={t('live.openRecordings')}
+          onClick={() => void q('recording.reveal', { path: s?.recordingPath ?? null })}
+        >
+          <FolderOpen size={15} />
+        </IconButton>
         {mode === 'docked' && (
-          <Button
-            size="xs"
-            variant="ghost"
-            icon={<PictureInPicture2 size={13} />}
+          <IconButton
+            size="sm"
+            aria-label={t('console.popOut')}
             onClick={() => run('liveConsole.open', { open: true })}
           >
-            {t('console.popOutShort')}
-          </Button>
+            <PictureInPicture2 size={15} />
+          </IconButton>
         )}
-        <Button
-          size="xs"
-          variant="ghost"
-          icon={<Settings2 size={13} />}
+        <IconButton
+          size="sm"
+          aria-label={t('live.settings')}
           onClick={() => openDialog('settings', { settingsPage: 'streaming' })}
         >
-          {t('live.settings')}
-        </Button>
+          <Settings2 size={15} />
+        </IconButton>
       </footer>
     </section>
   );

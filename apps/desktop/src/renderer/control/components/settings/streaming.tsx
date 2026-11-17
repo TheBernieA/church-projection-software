@@ -24,7 +24,7 @@ const NONE = 'none';
 const ENCODERS = ['auto', 'h264_videotoolbox', 'h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264'];
 
 /** One destination: its name, on/off, its ingest address (custom), and its stream key. */
-function DestinationRow({
+export function DestinationRow({
   dest,
   hasKey,
   onChange,

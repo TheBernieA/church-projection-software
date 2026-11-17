@@ -2059,6 +2059,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await live.getByRole('button', { name: 'Go live' }).click();
   await expect(live.getByRole('status')).toHaveText(/Live/, { timeout: 20_000 });
   await expect(live.getByText('Frame rate')).toBeVisible();
+  await expect(live.getByRole('group', { name: 'Stream readouts' })).toContainText(/\d+\/\d+ fps/);
   await expect
     .poll(async () => (await stream())?.health?.history.fps.length ?? 0, { timeout: 10_000 })
     .toBeGreaterThan(1);
@@ -2088,8 +2089,23 @@ test('livestream: set up a destination, go live from the Live console, end it', 
 test('Live console: pops out into its own window, records from there, docks back', async () => {
   const live = control.getByRole('region', { name: 'Live', exact: true });
   await expect(live).toBeVisible();
+  // Add a destination and its stream key right from the console.
+  await live.getByRole('button', { name: 'Add', exact: true }).click();
+  await control.getByRole('menuitem', { name: 'YouTube' }).click();
+  const youtube = live.getByRole('listitem').filter({ hasText: 'YouTube' });
+  await expect(youtube.getByText('Key needed')).toBeVisible();
+  const keyField = live.getByLabel('Stream key for YouTube');
+  await keyField.fill('abcd-1234-efgh');
+  await keyField.press('Enter');
+  await expect(youtube.getByText('Key needed')).toHaveCount(0);
+  await youtube.getByRole('button', { name: /^Stream key and settings for YouTube/ }).click();
+  await live.getByRole('button', { name: 'Remove YouTube' }).click();
+  await expect(youtube).toHaveCount(0);
   const opened = app.waitForEvent('window');
-  await live.getByRole('button', { name: 'Open the Live console in its own window' }).click();
+  await live
+    .getByRole('button', { name: 'Open the Live console in its own window' })
+    .first()
+    .click();
   const win = await opened;
   await win.waitForLoadState('domcontentloaded');
   expect(win.url()).toContain('view=live');

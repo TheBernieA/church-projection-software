@@ -1801,7 +1801,15 @@
     "cpuSplit": "Lampstand {{app}}% · encoder {{encoder}}% · {{mem}}",
     "advice": "This computer is struggling to keep up. Light mode streams smoothly with a smaller picture (a two-second pause, and the recording carries on).",
     "switchLight": "Switch to Light",
-    "recordingTitle": "Recording"
+    "recordingTitle": "Recording",
+    "addDestination": "Add",
+    "noDestinations": "Add where the stream goes, then paste its stream key.",
+    "keyNeeded": "Key needed",
+    "editDestination": "Stream key and settings for {{name}}",
+    "stats": "Stream readouts",
+    "droppedShort_one": "{{count}} dropped",
+    "droppedShort_other": "{{count}} dropped",
+    "loadShort": "CPU {{load}}%"
   },
   "benchmark": {
     "button": "Check this computer",
