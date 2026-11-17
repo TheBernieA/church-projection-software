@@ -11,6 +11,7 @@ import {
   type RestorableLayer,
   type ServiceItem,
   type Settings,
+  type Theme,
 } from '@lampstand/core';
 import { knownDuration } from './mediaDurations';
 import { cmd } from './api';
@@ -395,6 +396,13 @@ export function installMediaWatch(): () => void {
   }, 200);
   return () => clearInterval(timer);
 }
+
+/**
+ * Lower-third mode on the audience screens: draw the words with this theme (null: off, each
+ * slide's own theme again). Instant, like a mask.
+ */
+export const setLowerThird = (theme: Theme | null): Promise<void> =>
+  safe(cmd('live.setLowerThird', { theme }, 'ui'));
 
 /** Switch the Look on screen (null: every layer on every screen). Instant, like a mask. */
 export const setLook = (look: Look | null): Promise<void> =>

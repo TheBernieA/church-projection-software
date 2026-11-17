@@ -149,6 +149,10 @@
     "black": "Black screen",
     "logo": "Logo",
     "freeze": "Freeze",
+    "lowerThird": "Lower third on the screens",
+    "lowerThirdOn": "Lower third on the screens: {{name}}",
+    "lowerThirdOff": "Off (each slide's own theme)",
+    "lowerThirdHelp": "Show the words along the bottom of the audience screens, in a lower-third theme.",
     "stageMessage": "Message to stage",
     "send": "Send",
     "clearMessage": "Clear",
@@ -713,7 +717,7 @@
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Position puts the words left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
+          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Theme draws the lower third in a theme made for it (Stream lower third, Modern lower third, or your own with the Lower third layout). Position puts the words left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
@@ -734,6 +738,10 @@
         "ndi": {
           "q": "Send to vMix, OBS or NDI gear on the network",
           "a": "Install NDI Tools (free) on this computer, then open Settings › NDI and turn on a feed: the program, the words alone over transparency (to key over cameras), or the stream picture. In vMix, OBS (with the NDI plugin) or NDI Studio Monitor, add an NDI source and pick this computer’s feed by name. NDI stays on the local network and is the lowest-delay way to feed a video mixer."
+        },
+        "screens": {
+          "q": "Show a lower third on the projector too",
+          "a": "Under the output monitor, click the lower-third button (beside Black, Logo and Freeze) and pick a theme. The audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you choose Off. The stream follows it unless you pick a different theme for the stream."
         },
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
@@ -1638,10 +1646,17 @@
     "pictureHelp": "The stream can show something different from the projector: e.g. the camera with the lyrics as a lower third.",
     "words": "The words",
     "wordsAlign": "Position",
-    "wordsAlignHelp": "Where the words sit across the picture: left, centre or right.",
-    "alignLeft": "Left",
-    "alignCenter": "Centre",
-    "alignRight": "Right",
+    "wordsAlignHelp": "Where the words sit across the picture: where the theme puts them, or left, centre or right.",
+    "align": {
+      "theme": "Theme",
+      "left": "Left",
+      "center": "Centre",
+      "right": "Right"
+    },
+    "wordsTheme": "Theme",
+    "wordsThemeOwn": "Each slide's own (made smaller)",
+    "wordsThemeHelp": "Draw the stream's lower third with a theme made for it, whatever the projector shows. Make your own in Themes with the Lower third layout.",
+    "wordsAutoTheme": "The theme's own size.",
     "wordsSize": "Size",
     "wordsSizeHelp": "How big the lower-third words are, as a share of their full-screen size.",
     "wordsAuto": "Auto",

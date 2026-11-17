@@ -320,3 +320,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     }
   }
 }
+
+/** Themes made for a lower third (words along the bottom), for the stream and the screens. */
+export const lowerThirdThemes = (themes: Theme[]): Theme[] =>
+  themes.filter((t) => t.layout === 'lower-third');

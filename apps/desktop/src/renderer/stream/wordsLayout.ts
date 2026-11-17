@@ -15,7 +15,8 @@ export interface WordsOptions {
   auto: boolean;
   /** Otherwise: the size, as % of the words' full-screen size. */
   size: number;
-  align: 'left' | 'center' | 'right';
+  /** 'theme': keep the words where the theme put them across the picture. */
+  align: 'theme' | 'left' | 'center' | 'right';
 }
 
 /** Space kept clear at the sides and under the words, as a share of the picture. */
@@ -47,7 +48,13 @@ export function lowerThird(
       ? side
       : o.align === 'right'
         ? canvas.width - side - w * scale
-        : (canvas.width - w * scale) / 2;
+        : o.align === 'center'
+          ? (canvas.width - w * scale) / 2
+          : // As the theme has it: the block keeps its centre, kept inside the margins.
+            Math.max(
+              side,
+              Math.min(canvas.width - side - w * scale, left + w / 2 - (w * scale) / 2),
+            );
   // Tall words at a large chosen size: keep the top on the picture.
   const targetY = Math.max(canvas.height * 0.02, canvas.height * (1 - BOTTOM) - h * scale);
   return {

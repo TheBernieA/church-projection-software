@@ -13,6 +13,7 @@ import { cmd, q } from '../../lib/api';
 import { useInputDevices } from '../../lib/inputs';
 import { attempt, closeDialog, openDialog, useStore } from '../../lib/store';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
+import { lowerThirdThemes } from '../../lib/slides';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
@@ -120,6 +121,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   const status = useStore((x) => x.stream);
   const cameras = useInputDevices('videoinput');
   const mixer = useStore((x) => x.live?.mixer ?? null);
+  const themes = useStore((x) => x.themes);
   const [keys, setKeys] = useState<Record<string, boolean>>({});
   const loadKeys = (): void => void q('stream.keys').then(setKeys, () => undefined);
   useEffect(loadKeys, [st.destinations.length]);
@@ -247,17 +249,34 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             ]}
           />
         </Row>
+        {st.picture.words === 'lowerThird' && (
+          <Row label={t('streaming.wordsTheme')} description={t('streaming.wordsThemeHelp')}>
+            <div className="w-60">
+              <Select<string>
+                size="sm"
+                aria-label={t('streaming.wordsTheme')}
+                value={st.picture.wordsTheme ?? NONE}
+                onChange={(v) =>
+                  set({ picture: { ...st.picture, wordsTheme: v === NONE ? null : v } })
+                }
+                options={[
+                  { value: NONE, label: t('streaming.wordsThemeOwn') },
+                  ...lowerThirdThemes(themes).map((th) => ({ value: th.id, label: th.name })),
+                ]}
+              />
+            </div>
+          </Row>
+        )}
         {st.picture.words !== 'none' && (
           <Row label={t('streaming.wordsAlign')} description={t('streaming.wordsAlignHelp')}>
             <Segmented<StreamSettings['picture']['wordsAlign']>
               label={t('streaming.wordsAlign')}
               value={st.picture.wordsAlign}
               onChange={(wordsAlign) => set({ picture: { ...st.picture, wordsAlign } })}
-              options={[
-                { value: 'left', label: t('streaming.alignLeft') },
-                { value: 'center', label: t('streaming.alignCenter') },
-                { value: 'right', label: t('streaming.alignRight') },
-              ]}
+              options={(['theme', 'left', 'center', 'right'] as const).map((a) => ({
+                value: a,
+                label: t(`streaming.align.${a}`),
+              }))}
             />
           </Row>
         )}

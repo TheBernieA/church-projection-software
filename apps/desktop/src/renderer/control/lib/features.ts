@@ -397,6 +397,12 @@ export const FEATURES: Feature[] = [
     'Send the stream straight to OBS, vMix, VLC or a decoder in another room, with well under a second of delay.',
   ),
   f(
+    'lower-third-mode',
+    'capture',
+    'Lower third on screens and stream',
+    'Show the words along the bottom in a lower-third theme, on the projector, the stream or both, with automatic sizing.',
+  ),
+  f(
     'live-console',
     'capture',
     'Live console',

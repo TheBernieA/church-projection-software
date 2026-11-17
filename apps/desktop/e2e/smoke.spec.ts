@@ -2106,8 +2106,31 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBe('left false');
   await control.waitForTimeout(700);
   await control.screenshot({ path: 'test-results/41a-live-words.png' });
-  await shows.getByRole('radio', { name: 'Centre' }).click();
+  await shows.getByRole('radio', { name: 'Theme' }).click();
   await shows.getByRole('button', { name: 'Auto', exact: true }).click();
+  // The stream's lower third in a theme made for it.
+  await shows.getByRole('combobox', { name: 'Theme' }).click();
+  await control.getByRole('option', { name: 'Stream lower third' }).click();
+  await control.waitForTimeout(900);
+  await control.screenshot({ path: 'test-results/41d-live-words-theme.png' });
+  // Lower-third mode on the audience screens: the words move to the bottom in that theme.
+  await control.getByRole('button', { name: 'Lower third on the screens' }).click();
+  await control.getByRole('menuitem', { name: 'Modern lower third' }).click();
+  await expect
+    .poll(async () => (await control.evaluate(() => window.lampstand.query('live.get'))).ok)
+    .toBe(true);
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      return r.ok ? (r.value.lowerThird?.name ?? null) : null;
+    })
+    .toBe('Modern lower third');
+  await control.waitForTimeout(700);
+  await control.screenshot({ path: 'test-results/41e-screens-lower-third.png' });
+  await control.getByRole('button', { name: 'Lower third on the screens' }).click();
+  await control.getByRole('menuitem', { name: /^Off/ }).click();
+  await shows.getByRole('combobox', { name: 'Theme' }).click();
+  await control.getByRole('option', { name: /Each slide/ }).click();
   await live.getByRole('button', { name: 'End stream' }).click();
   await expect(live.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
   control.off('dialog', accept);

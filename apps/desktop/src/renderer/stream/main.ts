@@ -1,6 +1,7 @@
 import {
   applyLook,
   lookLayersFor,
+  withWordsTheme,
   type LiveState,
   type Mixer,
   type Scene,
@@ -65,7 +66,14 @@ const NO_MASKS = { black: false, logo: false, freeze: false };
 
 function draw(): void {
   if (!latest || !config) return;
-  const inputs = [config, latest.program, latest.look, latest.audio, latest.mixer];
+  const inputs = [
+    config,
+    latest.program,
+    latest.look,
+    latest.audio,
+    latest.mixer,
+    latest.lowerThird,
+  ];
   if (inputs.length === drawn.length && inputs.every((x, i) => x === drawn[i])) return;
   drawn = inputs;
   const pic = config.picture;
@@ -92,22 +100,30 @@ function draw(): void {
     { instant: false },
   );
   const showWords = pic.words !== 'none';
+  // A lower third drawn with a theme made for it: the stream's own choice, else the one the
+  // screens are using (lower-third mode). Without one, the slide's own theme is made smaller.
+  const worded =
+    pic.words === 'lowerThird'
+      ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
+      : program;
+  themed = worded.content?.theme.layout === 'lower-third';
   words.render({
-    ...program,
+    ...worded,
     background: null,
     media: null,
     input: null,
     inputNext: null,
     pip: null,
     web: null,
-    content: showWords ? program.content : null,
+    content: showWords ? worded.content : null,
     announcement: showWords ? program.announcement : null,
   });
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
-  // Left or right moves the words whatever the theme says; centre leaves the theme alone.
+  // Left, centre or right moves the words whatever the theme says.
   document.body.classList.toggle('words-left', showWords && pic.wordsAlign === 'left');
   document.body.classList.toggle('words-right', showWords && pic.wordsAlign === 'right');
+  document.body.classList.toggle('words-center', showWords && pic.wordsAlign === 'center');
   placeWords();
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);
@@ -119,6 +135,9 @@ function draw(): void {
  * measured where the theme laid it out (layout boxes, so a transition in progress doesn't
  * matter), then the whole words layer is scaled and moved to put it in the band.
  */
+/** The words are being drawn with a theme laid out as a lower third. */
+let themed = false;
+
 function placeWords(): void {
   const layer = $('words').querySelector<HTMLElement>('.ls-layer-content');
   const band = $('band');
@@ -133,6 +152,13 @@ function placeWords(): void {
   if (pic?.words !== 'lowerThird' || !slide || boxes.length === 0) {
     layer.style.transform = '';
     band.style.height = '';
+    return;
+  }
+  // A lower-third theme at its own size: it is already where and how big it should be, with
+  // its own backing, so nothing is moved and the dark band stays away.
+  if (themed && pic.wordsAuto) {
+    layer.style.transform = '';
+    band.style.height = '0';
     return;
   }
   const placed = lowerThird(

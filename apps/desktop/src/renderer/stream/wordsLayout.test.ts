@@ -56,4 +56,11 @@ describe('lower-third words', () => {
     expect(p.band).toBeGreaterThan(400 / 1080);
     expect(p.band).toBeLessThanOrEqual(1);
   });
+
+  it('keeps the words where the theme put them across the picture', () => {
+    const leftish = { x: 120, y: 700, w: 600, h: 200 };
+    const p = lowerThird([leftish], canvas, { auto: false, size: 50, align: 'theme' });
+    // The block's centre stays at 420.
+    expect(p.x + (leftish.x + leftish.w / 2) * p.scale).toBeCloseTo(420, 0);
+  });
 });

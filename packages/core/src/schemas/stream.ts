@@ -45,7 +45,12 @@ export const StreamSettingsSchema = z.object({
       /** Lower third, when not automatic: the words' size, as % of their full-screen size. */
       wordsSize: z.number().int().min(25).max(100).default(60),
       /** Where the words sit across the picture. */
-      wordsAlign: z.enum(['left', 'center', 'right']).default('center'),
+      wordsAlign: z.enum(['theme', 'left', 'center', 'right']).default('theme'),
+      /**
+       * Lower third: the theme the words are drawn with (one made for lower thirds); null: each
+       * slide's own theme, made smaller.
+       */
+      wordsTheme: z.string().max(64).nullable().default(null),
     })
     .default({
       camera: null,
@@ -53,7 +58,8 @@ export const StreamSettingsSchema = z.object({
       background: 'program',
       wordsAuto: true,
       wordsSize: 60,
-      wordsAlign: 'center',
+      wordsAlign: 'theme',
+      wordsTheme: null,
     }),
   sound: z
     .object({

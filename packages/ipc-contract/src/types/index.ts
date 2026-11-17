@@ -273,8 +273,12 @@ export interface StreamConfig {
     /** Lower third: fit the words to the band automatically, or use `wordsSize` (%). */
     wordsAuto: boolean;
     wordsSize: number;
-    wordsAlign: 'left' | 'center' | 'right';
+    /** 'theme': where the theme puts them. */
+    wordsAlign: 'theme' | 'left' | 'center' | 'right';
+    wordsTheme: string | null;
   };
+  /** Lower third: the theme to draw the words with (resolved from `picture.wordsTheme`). */
+  wordsTheme: Theme | null;
   /** The stream's own camera, with its saved settings (capture size capped at the stream's). */
   cameraLayer: VideoInputLayer | null;
   /** GPU pipeline: check the hardware encoder can do this (the page reports back to main). */

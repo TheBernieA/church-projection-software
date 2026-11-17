@@ -1,4 +1,4 @@
-import { applyLook, lookLayersFor, type LiveState } from '@lampstand/core';
+import { applyLook, lookLayersFor, withWordsTheme, type LiveState } from '@lampstand/core';
 import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
@@ -32,7 +32,12 @@ function draw(state: LiveState): void {
   // it keeps playing the video, unseen, so the sound isn't lost.
   const silentVideo =
     info.audio && !!layers && !layers.includes('media') && state.program.media?.kind === 'video';
-  renderer.render(applyLook(state.program, silentVideo ? [...layers, 'media'] : layers));
+  // Lower-third mode: the audience screens draw the words with its theme.
+  const program =
+    role === 'main' || role === 'secondary'
+      ? withWordsTheme(state.program, state.lowerThird)
+      : state.program;
+  renderer.render(applyLook(program, silentVideo ? [...layers, 'media'] : layers));
   renderer.setMediaHidden(silentVideo);
   const showPattern = state.testPatterns.includes(outputId) || state.testPatterns.includes('*');
   if (showPattern && !pattern) {

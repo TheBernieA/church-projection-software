@@ -13,10 +13,12 @@ import {
   resolveLogo,
   resolveStandby,
   standbyKey,
+  STARTER_THEMES,
   type AuditEntry,
   type Song,
   type ScreenVisual,
   type Standby,
+  type Theme,
 } from '@lampstand/core';
 import {
   Channels,
@@ -88,6 +90,19 @@ export class AppController {
   private started = false;
   private logo: ScreenVisual = { kind: 'logo', text: 'Lampstand' };
   private standby: Standby = this.logo;
+  /** The theme chosen for the stream's lower third, looked up from its id. */
+  private wordsTheme: Theme | null = null;
+
+  /** Look the stream's lower-third theme up again (the choice or the theme itself changed). */
+  private async refreshWordsTheme(): Promise<void> {
+    const id = this.s.settings.get().stream.picture.wordsTheme;
+    const all = id ? [...STARTER_THEMES, ...(await this.s.themes.list())] : [];
+    const next = all.find((t) => t.id === id) ?? null;
+    if (JSON.stringify(next) === JSON.stringify(this.wordsTheme)) return;
+    this.wordsTheme = next;
+    this.stream.settingsChanged();
+    this.ndi.settingsChanged();
+  }
 
   /** Re-resolve the logo and off-air screen (settings or media library changed); push changes. */
   private async refreshScreens(): Promise<void> {
@@ -206,6 +221,7 @@ export class AppController {
       getLiveState: () => live.get(),
       logo: () => this.logo,
       standby: () => this.standby,
+      wordsTheme: () => this.wordsTheme,
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
@@ -217,6 +233,7 @@ export class AppController {
       getLiveState: () => live.get(),
       logo: () => this.logo,
       standby: () => this.standby,
+      wordsTheme: () => this.wordsTheme,
       onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
     });
     this.ndi.settingsChanged();
@@ -286,10 +303,12 @@ export class AppController {
       repo.watch(() => {
         this.windows.sendToControl(Channels.evRepo, kind);
         if (kind === 'songs') this.debouncedReindex();
+        if (kind === 'themes') void this.refreshWordsTheme();
         if (kind === 'media') void this.refreshScreens(); // a logo/off-air pick may have been deleted
       });
     }
     await this.refreshScreens();
+    await this.refreshWordsTheme();
     // Only display assignments / window mode affect output windows; skip the reconcile otherwise.
     let outputKey = JSON.stringify([settings.get().displays, settings.get().windowMode]);
     let maskKey = JSON.stringify([
@@ -314,6 +333,7 @@ export class AppController {
       this.windows.sendToControl(Channels.evRepo, 'settings');
       this.stream.settingsChanged();
       this.ndi.settingsChanged();
+      void this.refreshWordsTheme();
       const key = JSON.stringify([next.displays, next.windowMode]);
       if (key !== outputKey) {
         outputKey = key;

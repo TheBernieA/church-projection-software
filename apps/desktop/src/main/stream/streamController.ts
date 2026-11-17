@@ -21,6 +21,7 @@ import {
   type Settings,
   type Standby,
   type StreamProfile,
+  type Theme,
   type VideoInputLayer,
 } from '@lampstand/core';
 import {
@@ -69,6 +70,8 @@ export interface StreamDeps {
   getLiveState: () => LiveState;
   logo: () => ScreenVisual;
   standby: () => Standby;
+  /** The theme chosen for the stream's lower third (resolved from its id), or null. */
+  wordsTheme: () => Theme | null;
   onStatus: (s: StreamStatus) => void;
   notice: (n: Notice) => void;
 }
@@ -96,7 +99,8 @@ const DEFAULT_PROFILE: StreamProfile = resolvePerformance(
       background: 'program',
       wordsAuto: true,
       wordsSize: 60,
-      wordsAlign: 'center',
+      wordsAlign: 'theme',
+      wordsTheme: null,
     },
     sound: { room: true, roomGain: 1, mics: [] },
     performance: 'balanced',
@@ -588,6 +592,7 @@ export class StreamController {
       width: Math.round((profile.height * 16) / 9),
       height: profile.height,
       picture: s.picture,
+      wordsTheme: this.d.wordsTheme(),
       cameraLayer: streamCameraLayer(settings, profile.height),
       transparent: false,
       // Meters only while someone can see them (a console, or the mixer while live).

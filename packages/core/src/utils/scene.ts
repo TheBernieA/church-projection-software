@@ -1,5 +1,6 @@
 import type { Masks, Overlay, Scene } from '../schemas/scene';
 import type { Look, LookLayer, ScreenMask, Settings } from '../schemas/settings';
+import type { Theme } from '../schemas/theme';
 
 export const EMPTY_MASKS: Masks = { black: false, logo: false, freeze: false };
 export const EMPTY_SCENE: Scene = {
@@ -47,6 +48,15 @@ export function applyLook(scene: Scene, layers: readonly LookLayer[] | null | un
     announcement: on('announcements') ? (scene.announcement ?? null) : null,
     overlays: scene.overlays.filter((o) => on(overlayGroup(o))),
   };
+}
+
+/**
+ * A scene with its words drawn in another theme (lower-third mode: the same words, along the
+ * bottom). Everything else is untouched; no theme leaves the scene as it is.
+ */
+export function withWordsTheme(scene: Scene, theme: Theme | null | undefined): Scene {
+  if (!theme || !scene.content) return scene;
+  return { ...scene, content: { ...scene.content, theme } };
 }
 
 /** The layers a Look shows on a kind of screen (null: no Look applies, everything shows). */

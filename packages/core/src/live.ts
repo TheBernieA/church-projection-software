@@ -13,7 +13,7 @@ import {
   type WebLayer,
   type Scene,
 } from './schemas/scene';
-import { TransitionSpecSchema } from './schemas/theme';
+import { ThemeSchema, TransitionSpecSchema } from './schemas/theme';
 import { LookLayerSchema, LookSchema } from './schemas/settings';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
@@ -134,6 +134,11 @@ export const LiveStateSchema = z.object({
   mixer: MixerSchema.default(() => defaultMixer()),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
+  /**
+   * Lower-third mode for the audience screens: the words are drawn with this theme (a copy)
+   * instead of each slide's own, so they sit along the bottom over a camera or video. Null: off.
+   */
+  lowerThird: ThemeSchema.nullable().default(null),
 });
 export type LiveState = z.infer<typeof LiveStateSchema>;
 
@@ -154,6 +159,7 @@ export function initialLiveState(): LiveState {
     switcher: { preview: null },
     mixer: defaultMixer(),
     look: null,
+    lowerThird: null,
   };
 }
 
@@ -598,6 +604,16 @@ export function registerLiveCommands(
         program: { ...s.program, announcement: p.content },
         cleared: p.content ? withoutOff(s.cleared) : s.cleared,
       }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.setLowerThird',
+    schema: z.object({ theme: ThemeSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, lowerThird: p.theme }));
       return { result: null };
     },
   });

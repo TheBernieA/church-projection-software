@@ -1,9 +1,12 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
+  Check,
   Church,
   Film,
   Image as ImageIcon,
   Megaphone,
+  PanelBottom,
   MessageSquareText,
   Play,
   Snowflake,
@@ -20,6 +23,7 @@ import {
   makeScene,
   overlayGroup,
   sceneIsVisible,
+  withWordsTheme,
   type Layer,
   type MediaLayer,
   type RestorableLayer,
@@ -35,7 +39,16 @@ import {
   typographyClass,
   Segmented,
 } from '@lampstand/ui';
-import { clearLayer, goLive, restoreAll, restoreLayer, toggleMask } from '../../lib/actions';
+import {
+  clearLayer,
+  goLive,
+  restoreAll,
+  restoreLayer,
+  setLowerThird,
+  toggleMask,
+} from '../../lib/actions';
+import { lowerThirdThemes } from '../../lib/slides';
+import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -126,6 +139,59 @@ function MaskButton({
 }
 
 /**
+ * Lower-third mode for the audience screens: the words drawn along the bottom with a theme
+ * made for it (over a camera or a video), switched on and off here like a mask.
+ */
+function LowerThirdButton() {
+  const { t } = useTranslation();
+  const current = useStore((s) => s.live?.lowerThird ?? null);
+  const themes = useStore((s) => s.themes);
+  const choices = useMemo(() => lowerThirdThemes(themes), [themes]);
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button
+          size="xs"
+          variant="subtle"
+          aria-pressed={!!current}
+          aria-label={t('monitor.lowerThird')}
+          title={
+            current ? t('monitor.lowerThirdOn', { name: current.name }) : t('monitor.lowerThird')
+          }
+          icon={<PanelBottom size={13} />}
+          className={
+            current ? '!bg-[var(--accent)] !text-[var(--accent-ink)]' : '!text-[var(--text-2)]'
+          }
+        />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="end" sideOffset={4} className={`${MENU_CLASS} w-[240px]`}>
+          <DropdownMenu.Label className="px-2 pb-1 pt-1.5">
+            <Typography size={11} tone="muted" leading="snug">
+              {t('monitor.lowerThirdHelp')}
+            </Typography>
+          </DropdownMenu.Label>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void setLowerThird(null)}>
+            <span className="w-4 shrink-0">{!current && <Check size={13} />}</span>
+            {t('monitor.lowerThirdOff')}
+          </DropdownMenu.Item>
+          {choices.map((th) => (
+            <DropdownMenu.Item
+              key={th.id}
+              className={ITEM_CLASS}
+              onSelect={() => void setLowerThird(th)}
+            >
+              <span className="w-4 shrink-0">{current?.id === th.id && <Check size={13} />}</span>
+              {th.name}
+            </DropdownMenu.Item>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+/**
  * The transport under the monitor drives the video on screen, or the one waiting in Preview
  * (played silently, so the operator can check it). With both, a Live / Preview switch picks.
  */
@@ -197,7 +263,10 @@ export function RightColumn() {
   const audienceMask = useStore((s) => (s.settings ? maskForRole(s.settings, 'main') : null));
   // The Program monitor shows what the audience screens show under the active Look.
   const audienceScene = useMemo(
-    () => (live ? applyLook(live.program, lookLayersFor(live.look, 'main')) : null),
+    () =>
+      live
+        ? applyLook(withWordsTheme(live.program, live.lowerThird), lookLayersFor(live.look, 'main'))
+        : null,
     [live],
   );
   if (!live || !previewScene || !nextScene || !audienceScene) return null;
@@ -413,6 +482,7 @@ export function RightColumn() {
             ]}
           />
           <span className="flex-1" />
+          <LowerThirdButton />
           <MaskButton
             on={p.masks.black}
             onClick={() => void toggleMask('black')}

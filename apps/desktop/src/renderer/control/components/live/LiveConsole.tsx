@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
   ChevronDown,
   Circle,
   ExternalLink,
@@ -40,6 +37,7 @@ import { useNow } from '../../lib/hooks';
 import { useInputDevices } from '../../lib/inputs';
 import { onMeters, readMeter } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
+import { lowerThirdThemes } from '../../lib/slides';
 import { attempt, openDialog, useStore } from '../../lib/store';
 import { useStreamPreview } from '../../lib/streamPreview';
 import { Select } from '../Select';
@@ -52,6 +50,7 @@ import { CheckComputer } from './CheckComputer';
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
 const NO_CAMERA = 'none';
+const OWN_THEME = 'own';
 
 const run = (type: string, payload: object = {}): void =>
   void attempt(() => cmd(type, payload), 'errors.stream');
@@ -205,6 +204,8 @@ function PictureRow({ label, children }: { label: string; children: ReactNode })
 function PicturePanel({ st }: { st: StreamSettings }) {
   const { t } = useTranslation();
   const cameras = useInputDevices('videoinput');
+  const themes = useStore((x) => x.themes);
+  const lowerThirds = useMemo(() => lowerThirdThemes(themes), [themes]);
   const pic = st.picture;
   const set = (patch: Partial<StreamSettings['picture']>): void =>
     void saveSettings({ stream: { ...st, picture: { ...pic, ...patch } } });
@@ -251,25 +252,30 @@ function PicturePanel({ st }: { st: StreamSettings }) {
             ]}
           />
         </PictureRow>
+        {pic.words === 'lowerThird' && (
+          <PictureRow label={t('streaming.wordsTheme')}>
+            <Select<string>
+              size="sm"
+              aria-label={t('streaming.wordsTheme')}
+              value={pic.wordsTheme ?? OWN_THEME}
+              onChange={(id) => set({ wordsTheme: id === OWN_THEME ? null : id })}
+              options={[
+                { value: OWN_THEME, label: t('streaming.wordsThemeOwn') },
+                ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
+              ]}
+            />
+          </PictureRow>
+        )}
         {pic.words !== 'none' && (
           <PictureRow label={t('streaming.wordsAlign')}>
             <Segmented<StreamSettings['picture']['wordsAlign']>
               label={t('streaming.wordsAlign')}
               value={pic.wordsAlign}
               onChange={(wordsAlign) => set({ wordsAlign })}
-              options={[
-                { value: 'left', label: t('streaming.alignLeft'), icon: <AlignLeft size={13} /> },
-                {
-                  value: 'center',
-                  label: t('streaming.alignCenter'),
-                  icon: <AlignCenter size={13} />,
-                },
-                {
-                  value: 'right',
-                  label: t('streaming.alignRight'),
-                  icon: <AlignRight size={13} />,
-                },
-              ]}
+              options={(['theme', 'left', 'center', 'right'] as const).map((a) => ({
+                value: a,
+                label: t(`streaming.align.${a}`),
+              }))}
             />
           </PictureRow>
         )}
@@ -287,7 +293,7 @@ function PicturePanel({ st }: { st: StreamSettings }) {
               </Button>
               {pic.wordsAuto ? (
                 <Typography size={11} tone="muted" leading="snug" className="min-w-0">
-                  {t('streaming.wordsAutoOn')}
+                  {pic.wordsTheme ? t('streaming.wordsAutoTheme') : t('streaming.wordsAutoOn')}
                 </Typography>
               ) : (
                 <Slider
@@ -854,7 +860,7 @@ function HeaderReadings({ s }: { s: StreamStatus }) {
           help: t('console.help.size', { mode: t(`streaming.modes.${p.mode}`) }),
         },
       ];
-  return <Readings items={items} label={t('console.stats')} />;
+  return <Readings items={items} label={t('console.stats')} className="shrink overflow-hidden" />;
 }
 
 /** Quieter details in the footer: bitrate and the encoder. */
@@ -1013,7 +1019,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
     >
       <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-3">
         <Radio size={16} className="text-[var(--tally-program)]" />
-        <Typography as="h2" size={14} weight="semibold" tone="primary" className="flex-1">
+        <Typography as="h2" size={14} weight="semibold" tone="primary" className="flex-1 shrink-0">
           {t('console.title')}
         </Typography>
         {s && s.available && <HeaderReadings s={s} />}

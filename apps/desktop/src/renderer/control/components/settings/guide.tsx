@@ -196,6 +196,7 @@ const LIVE_HOWTO = [
   'youtube',
   'console',
   'picture',
+  'screens',
   'record',
   'slow',
   'delay',
