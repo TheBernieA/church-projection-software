@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Gauge, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, Typography } from '@lampstand/ui';
+import { Button, IconButton, Typography } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { attempt, toast, useStore } from '../../lib/store';
 
@@ -17,9 +17,12 @@ interface Result {
 export function CheckComputer({
   size = 'xs',
   showResult = true,
+  compact = false,
 }: {
   size?: 'xs' | 'sm';
   showResult?: boolean;
+  /** Just an icon (its name on hover), for tight spaces. */
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
@@ -35,6 +38,17 @@ export function CheckComputer({
         'info',
       );
   };
+  if (compact)
+    return (
+      <IconButton
+        size="sm"
+        aria-label={busy ? t('benchmark.running') : t('benchmark.button')}
+        disabled={busy || live}
+        onClick={() => void check()}
+      >
+        {busy ? <Loader2 size={15} className="animate-spin" /> : <Gauge size={15} />}
+      </IconButton>
+    );
   return (
     <div className="flex items-center gap-2">
       <Button

@@ -485,104 +485,122 @@ const ENCODER_NAMES: Record<string, string> = {
   libx264: 'x264',
 };
 
+type Tone = 'ok' | 'warn' | 'bad' | 'plain';
+const TONE: Record<Tone, string> = {
+  ok: 'text-[var(--tally-preview)]',
+  warn: 'text-[var(--accent)]',
+  bad: 'text-[var(--tally-program)]',
+  plain: 'text-[var(--text-2)]',
+};
+
+/** A row of short readings, each explained on hover, separated by dots. */
+function Readings({
+  items,
+  label,
+  className = '',
+}: {
+  items: { text: string; help: string; tone?: Tone }[];
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className={`flex min-w-0 items-center gap-1.5 ${className}`}
+    >
+      {items.map((r, i) => (
+        <span key={r.help} className="flex items-center gap-1.5">
+          {i > 0 && (
+            <Typography aria-hidden size={11} tone="muted">
+              ·
+            </Typography>
+          )}
+          <Typography
+            size={11}
+            weight="semibold"
+            tone="inherit"
+            tabular
+            title={r.help}
+            className={`cursor-help whitespace-nowrap ${TONE[r.tone ?? 'plain']}`}
+          >
+            {r.text}
+          </Typography>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+const fpsTone = (s: StreamStatus): Tone =>
+  s.fps === 0
+    ? 'plain'
+    : s.fps >= s.profile.fps * 0.95
+      ? 'ok'
+      : s.fps >= s.profile.fps * 0.8
+        ? 'warn'
+        : 'bad';
+const speedTone = (s: StreamStatus): Tone =>
+  s.speed === 0 ? 'plain' : s.speed >= 0.97 ? 'ok' : s.speed >= 0.9 ? 'warn' : 'bad';
+
 /**
- * The readouts at the top: while running, frame rate, encoder speed, bitrate, dropped frames,
- * the encoder and the computer's load (each coloured by how it's doing); otherwise the mode,
- * size and encoder the next start will use.
+ * The few readings that matter at a glance, beside the status: while running, frame rate,
+ * encoder speed, the computer's load and any dropped frames; before, just the size it will use.
  */
-function StatsStrip({ s }: { s: StreamStatus }) {
+function HeaderReadings({ s }: { s: StreamStatus }) {
   const { t } = useTranslation();
-  const running = s.state !== 'idle' && s.state !== 'stopping';
   const p = s.profile;
-  const encoder = ENCODER_NAMES[s.encoder] ?? s.encoder;
+  const running = s.state !== 'idle' && s.state !== 'stopping';
   const load = s.health ? s.health.appCpu + (s.health.encoderCpu ?? 0) : null;
-  const chips: { label: string; title: string; tone: 'ok' | 'warn' | 'bad' | 'plain' }[] = running
+  const items = running
     ? [
         {
-          label: `${Math.round(s.fps)}/${p.fps} fps`,
-          title: t('console.fps'),
-          tone:
-            s.fps === 0
-              ? 'plain'
-              : s.fps >= p.fps * 0.95
-                ? 'ok'
-                : s.fps >= p.fps * 0.8
-                  ? 'warn'
-                  : 'bad',
+          text: `${Math.round(s.fps)} fps`,
+          help: t('console.help.fps', { target: p.fps }),
+          tone: fpsTone(s),
         },
         {
-          label: s.speed > 0 ? `${s.speed.toFixed(2)}×` : '—×',
-          title: t('console.speed'),
-          tone: s.speed === 0 ? 'plain' : s.speed >= 0.97 ? 'ok' : s.speed >= 0.9 ? 'warn' : 'bad',
+          text: s.speed > 0 ? `${s.speed.toFixed(2)}×` : '—',
+          help: t('console.help.speed'),
+          tone: speedTone(s),
         },
-        {
-          label:
-            s.kbps > 0
-              ? `${(s.kbps / 1000).toFixed(1)} Mb/s`
-              : `${(p.videoKbps / 1000).toFixed(1)} Mb/s`,
-          title: t('console.bitrate'),
-          tone: 'plain',
-        },
+        ...(load !== null ? [{ text: `${load}%`, help: t('console.help.load') }] : []),
         ...(s.dropped > 0
           ? [
               {
-                label: t('console.droppedShort', { count: s.dropped }),
-                title: t('live.dropped', { count: s.dropped }),
+                text: `−${s.dropped}`,
+                help: t('live.dropped', { count: s.dropped }),
                 tone: 'warn' as const,
-              },
-            ]
-          : []),
-        { label: encoder, title: t('streaming.encoder'), tone: 'plain' },
-        ...(load !== null
-          ? [
-              {
-                label: t('console.loadShort', { load }),
-                title: t('console.cpu'),
-                tone: 'plain' as const,
               },
             ]
           : []),
       ]
     : [
         {
-          label: t(`streaming.modes.${p.mode}`),
-          title: t('streaming.performanceMode'),
-          tone: 'plain',
+          text: `${p.height}p${p.fps}`,
+          help: t('console.help.size', { mode: t(`streaming.modes.${p.mode}`) }),
         },
-        { label: `${p.height}p${p.fps}`, title: t('streaming.resolution'), tone: 'plain' },
-        {
-          label: `${(p.videoKbps / 1000).toFixed(1)} Mb/s`,
-          title: t('console.bitrate'),
-          tone: 'plain',
-        },
-        { label: encoder, title: t('streaming.encoder'), tone: 'plain' },
       ];
-  const look = {
-    ok: 'text-[var(--tally-preview)]',
-    warn: 'text-[var(--accent)]',
-    bad: 'text-[var(--tally-program)]',
-    plain: 'text-[var(--text-2)]',
-  };
+  return <Readings items={items} label={t('console.stats')} />;
+}
+
+/** Quieter details in the footer: bitrate and the encoder. */
+function FooterReadings({ s }: { s: StreamStatus }) {
+  const { t } = useTranslation();
+  const running = s.state !== 'idle' && s.state !== 'stopping';
+  const kbps = running && s.kbps > 0 ? s.kbps : s.profile.videoKbps;
   return (
-    <div
-      role="group"
-      aria-label={t('console.stats')}
-      className="flex flex-wrap items-center gap-1.5 border-b border-[var(--hairline)] px-3 py-2"
-    >
-      {chips.map((c) => (
-        <Typography
-          key={c.title}
-          size={11}
-          weight="semibold"
-          tone="inherit"
-          tabular
-          title={c.title}
-          className={`rounded-[5px] bg-[var(--surface-2)] px-1.5 py-0.5 shadow-[0_0_0_1px_var(--hairline)] ${look[c.tone]}`}
-        >
-          {c.label}
-        </Typography>
-      ))}
-    </div>
+    <Readings
+      label={t('console.details')}
+      className="min-w-0 flex-1 overflow-hidden"
+      items={[
+        {
+          text: `${(kbps / 1000).toFixed(1)} Mb/s`,
+          help: t('console.help.bitrate', { target: (s.profile.videoKbps / 1000).toFixed(1) }),
+        },
+        { text: ENCODER_NAMES[s.encoder] ?? s.encoder, help: t('console.help.encoder') },
+      ]}
+    />
   );
 }
 
@@ -723,6 +741,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
         <Typography as="h2" size={14} weight="semibold" tone="primary" className="flex-1">
           {t('console.title')}
         </Typography>
+        {s && s.available && <HeaderReadings s={s} />}
         <StatusPill s={s} />
         {mode === 'docked' ? (
           <>
@@ -751,7 +770,6 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           </IconButton>
         )}
       </header>
-      {s && s.available && <StatsStrip s={s} />}
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Going live and recording. */}
@@ -882,8 +900,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       </div>
 
       <footer className="flex shrink-0 items-center gap-1 border-t border-[var(--hairline)] px-3 py-2">
-        <CheckComputer showResult={false} />
-        <span className="flex-1" />
+        {s && s.available ? <FooterReadings s={s} /> : <span className="flex-1" />}
+        <CheckComputer compact />
         <IconButton
           size="sm"
           aria-label={t('live.openRecordings')}

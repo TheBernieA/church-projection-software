@@ -2059,7 +2059,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await live.getByRole('button', { name: 'Go live' }).click();
   await expect(live.getByRole('status')).toHaveText(/Live/, { timeout: 20_000 });
   await expect(live.getByText('Frame rate')).toBeVisible();
-  await expect(live.getByRole('group', { name: 'Stream readouts' })).toContainText(/\d+\/\d+ fps/);
+  await expect(live.getByRole('group', { name: 'Stream readouts' })).toContainText(/\d+ fps/);
   await expect
     .poll(async () => (await stream())?.health?.history.fps.length ?? 0, { timeout: 10_000 })
     .toBeGreaterThan(1);

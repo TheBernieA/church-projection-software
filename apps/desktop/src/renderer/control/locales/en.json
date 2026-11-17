@@ -1809,7 +1809,16 @@
     "stats": "Stream readouts",
     "droppedShort_one": "{{count}} dropped",
     "droppedShort_other": "{{count}} dropped",
-    "loadShort": "CPU {{load}}%"
+    "loadShort": "CPU {{load}}%",
+    "details": "Stream details",
+    "help": {
+      "fps": "Frames per second going out (target {{target}}). Green: smooth.",
+      "speed": "Encoder speed: 1.00× keeps up with real time; below 0.95× the computer is falling behind.",
+      "load": "Computer load: Lampstand and the encoder together (100% = one full core).",
+      "size": "Picture size and frame rate for the next start ({{mode}} mode).",
+      "bitrate": "Video bitrate (target {{target}} Mb/s): how much internet upload the stream uses.",
+      "encoder": "The video encoder in use (a hardware one saves the computer's effort)."
+    }
   },
   "benchmark": {
     "button": "Check this computer",
