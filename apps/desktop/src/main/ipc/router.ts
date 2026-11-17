@@ -1,7 +1,7 @@
 import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-const StreamWatchSchema = z.object({ fps: z.number().min(0).max(10), ready: z.boolean() });
+const StreamWatchSchema = z.object({ fps: z.number().min(0).max(60), ready: z.boolean() });
 import type { CommandBus, Result } from '@lampstand/core';
 import { toErrorShape } from '@lampstand/core';
 import {

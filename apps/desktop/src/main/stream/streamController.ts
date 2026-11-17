@@ -3,7 +3,15 @@ import { mkdir, stat } from 'node:fs/promises';
 import { cpus, setPriority, totalmem, constants as osConstants } from 'node:os';
 import { basename, join } from 'node:path';
 import type { Writable } from 'node:stream';
-import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  nativeImage,
+  sharedTexture,
+  webContents,
+  type IpcMainEvent,
+} from 'electron';
 import {
   resolvePerformance,
   type LiveState,
@@ -17,6 +25,8 @@ import {
 } from '@lampstand/core';
 import {
   Channels,
+  type EncodeConfig,
+  type EncoderReport,
   type Notice,
   type StreamConfig,
   type StreamDestinationStatus,
@@ -97,6 +107,7 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   recordingBytes: 0,
   error: null,
   ready: false,
+  pipeline: 'cpu',
   profile,
   advice: null,
   health: null,
@@ -129,7 +140,12 @@ interface Watcher {
   fps: number;
   ready: boolean;
   until: number;
+  /** When it was last sent a GPU frame (to keep to its rate). */
+  lastFrame: number;
 }
+
+/** The stream page's encoder, as a GPU frame receiver (window ids are positive). */
+const ENCODER_TARGET = -1;
 
 /**
  * Livestream and recording, done by Lampstand itself. A hidden (offscreen) stream window draws
@@ -185,17 +201,63 @@ export class StreamController {
     cpu: new Ring(),
   };
   private readonly watchers = new Map<number, Watcher>();
+  /** The stream window shares its picture as GPU textures (the GPU pipeline is possible). */
+  private winGpu = false;
+  /** The pipeline of the encoder that's running. */
+  private pipeline: 'gpu' | 'cpu' = 'cpu';
+  /** What the hardware encoder can do, by size and rate (as the stream page found). */
+  private readonly gpuCaps = new Map<string, boolean>();
+  private capsWaiters: (() => void)[] = [];
+  /** The hardware encoder failed this session: stay on the CPU pipeline. */
+  private gpuBroken = false;
+  /** Receivers with a GPU frame on its way (each takes one at a time). */
+  private readonly pending = new Set<number>();
+  /** GPU pipeline: the page's encoder counts, and chunks waiting for a keyframe. */
+  private pageEncoded = 0;
+  private pageDropped = 0;
+  private lastPageEncoded = 0;
+  private lastPageDropped = 0;
+  private waitForKey = false;
+  private videoSeen = false;
+  /** The stream page has loaded (it can take "start encoding"). */
+  private pageReady = false;
+  /** GPU encoding to start once the page is ready. */
+  private pendingEncode: EncodeConfig | null = null;
+  /** GPU pipeline: the page is encoding (sound is written only from then, on the same clock). */
+  private encodeLive = false;
+  private videoBytes = 0;
+  private videoChunks = 0;
+  private audioTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private readonly d: StreamDeps) {
     this.status = idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE);
     ipcMain.on(Channels.streamReady, (e) => {
       if (!this.fromStreamWindow(e)) return;
+      this.pageReady = true;
       this.sendConfig();
       e.sender.send(Channels.evLive, d.getLiveState());
+      // Encoding was asked for before the page had loaded: start it now.
+      if (this.pendingEncode) this.beginGpuEncode(this.pendingEncode);
     });
     ipcMain.on(Channels.streamAudio, (e, pcm: unknown) => {
       if (!this.fromStreamWindow(e) || !(pcm instanceof Float32Array)) return;
       this.writeAudio(Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength));
+    });
+    ipcMain.on(Channels.streamVideo, (e, data: unknown, key: unknown) => {
+      if (!this.fromStreamWindow(e)) return;
+      if (!this.videoSeen) {
+        this.videoSeen = true;
+        this.d.log.info('first encoded chunk', {
+          type: Object.prototype.toString.call(data),
+          bytes: data instanceof Uint8Array ? data.byteLength : -1,
+          key,
+        });
+      }
+      if (data instanceof Uint8Array) this.writeVideo(data, key === true);
+    });
+    ipcMain.on(Channels.streamEncoder, (e, r: EncoderReport) => {
+      if (!this.fromStreamWindow(e)) return;
+      this.onEncoderReport(r);
     });
     // Finish the recording properly before the app quits.
     app.on('before-quit', (e) => {
@@ -325,12 +387,21 @@ export class StreamController {
    * live is instant). Repeated every few seconds while it's open; silence ends it.
    */
   watch(sender: number, fps: number, ready: boolean): void {
+    const isNew = !this.watchers.has(sender);
     if (fps <= 0 && !ready) this.watchers.delete(sender);
-    else this.watchers.set(sender, { fps, ready, until: Date.now() + WATCH_TTL_MS });
+    else
+      this.watchers.set(sender, {
+        fps,
+        ready,
+        until: Date.now() + WATCH_TTL_MS,
+        lastFrame: this.watchers.get(sender)?.lastFrame ?? 0,
+      });
     this.watchTimer ??= setInterval(() => this.expireWatchers(), 2_000);
     this.syncWindow();
     this.syncPreview();
     this.sendConfig();
+    // A new console sees the picture at once, even when nothing on screen is moving.
+    if (isNew && fps > 0) setTimeout(() => this.repaint(), 50);
   }
 
   private expireWatchers(): void {
@@ -397,6 +468,9 @@ export class StreamController {
     this.winProfile = profile;
     const height = profile.height;
     const width = Math.round((height * 16) / 9);
+    // GPU pipeline when it can be: the picture stays on the GPU as shared textures.
+    const gpu = this.gpuPossible(width, height, profile.fps);
+    this.winGpu = gpu;
     const win = new BrowserWindow({
       show: false,
       width,
@@ -406,14 +480,18 @@ export class StreamController {
       paintWhenInitiallyHidden: true,
       backgroundColor: '#000000',
       webPreferences: secureWebPreferences('stream', {
-        offscreen: { deviceScaleFactor: 1 },
+        offscreen: gpu ? { useSharedTexture: true } : { deviceScaleFactor: 1 },
         backgroundThrottling: false,
         autoplayPolicy: 'no-user-gesture-required',
       }),
     });
     win.webContents.setFrameRate(profile.fps);
     this.d.windows.attachFollower(win, 'stream');
-    win.webContents.on('paint', (_e, _dirty, image) => {
+    win.webContents.on('paint', (e, _dirty, image) => {
+      if (gpu) {
+        this.onTexture(e.texture ?? null);
+        return;
+      }
       const sz = image.getSize();
       // Only the raw picture is kept (one copy); the preview is made from it when wanted.
       this.latest = (
@@ -428,9 +506,10 @@ export class StreamController {
       }
     });
     this.win = win;
-    this.black = Buffer.alloc(width * height * 4);
+    this.pageReady = false;
+    this.black = gpu ? null : Buffer.alloc(width * height * 4);
     void win.loadURL(rendererUrl('stream'));
-    this.setStatus({ ready: true, profile }, true);
+    this.setStatus({ ready: true, profile, pipeline: gpu ? 'gpu' : 'cpu' }, true);
     this.syncPreview();
   }
 
@@ -438,6 +517,8 @@ export class StreamController {
     const win = this.win;
     this.win = null;
     this.winProfile = null;
+    this.held?.done();
+    this.held = null;
     this.latest = null;
     this.black = null;
     this.syncPreview();
@@ -459,6 +540,14 @@ export class StreamController {
       meters: this.encoding || this.watchers.size > 0,
       // No microphones open until it goes live.
       mix: this.encoding,
+      probe: this.winGpu
+        ? {
+            width: Math.round((profile.height * 16) / 9),
+            height: profile.height,
+            fps: profile.fps,
+            kbps: profile.videoKbps,
+          }
+        : null,
       logo: this.d.logo(),
       standby: this.d.standby(),
     };
@@ -468,12 +557,14 @@ export class StreamController {
   /** The preview JPEG, only while a console watches (at the fastest rate any asks for). */
   private syncPreview(): void {
     const fps = Math.min(
-      this.profile().previewFps,
+      8,
+      this.profile().previewFps * 2,
       Math.max(0, ...[...this.watchers.values()].map((w) => w.fps)),
     );
     if (this.previewTimer) clearInterval(this.previewTimer);
     this.previewTimer = null;
-    if (!this.win || fps <= 0) return;
+    // GPU pipeline: consoles get the GPU frames themselves (onTexture), no JPEGs.
+    if (!this.win || this.winGpu || fps <= 0) return;
     this.previewTimer = setInterval(() => this.sendPreview(), 1000 / fps);
   }
 
@@ -487,6 +578,198 @@ export class StreamController {
       .resize({ width: 480, quality: 'good' })
       .toJPEG(62);
     this.d.windows.sendToControl(Channels.evStreamPreview, new Uint8Array(jpeg));
+  }
+
+  // ---------- The GPU pipeline ----------
+
+  private static capsKey(width: number, height: number, fps: number): string {
+    return `${width}x${height}@${fps}`;
+  }
+
+  /** Can the picture stay on the GPU for this size and rate? (Not known yet counts as yes.) */
+  private gpuPossible(width: number, height: number, fps: number): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!sharedTexture || this.gpuBroken) return false;
+    if (process.env.LAMPSTAND_STREAM_PIPELINE === 'cpu') return false;
+    if (this.d.getSettings().stream.quality.encoder !== 'auto') return false;
+    return this.gpuCaps.get(StreamController.capsKey(width, height, fps)) !== false;
+  }
+
+  /**
+   * A new stream picture, as a GPU texture: hand it to the stream page's encoder (while
+   * encoding on the GPU) and to each watching Live console (at the rate it asked for), then let
+   * it go. Nothing is copied to the CPU.
+   */
+  /** GPU frame hand-off counts (for the debug log). */
+  private readonly texStats = { paints: 0, sent: 0, done: 0, failed: 0, toEncoder: 0 };
+
+  private onTexture(tex: Electron.OffscreenSharedTexture | null): void {
+    if (!tex) return;
+    this.texStats.paints += 1;
+    const now = Date.now();
+    const lightCap = this.winProfile?.mode === 'light' ? 15 : 30;
+    // Watching consoles take one frame at a time at their own rate: a slow one only skips its
+    // own frames, and never holds up the encoder or keeps textures alive.
+    const targets: { id: number; frame: Electron.WebFrameMain }[] = [];
+    for (const [id, w] of this.watchers) {
+      const fps = Math.min(w.fps, lightCap);
+      if (fps <= 0 || this.pending.has(id) || now - w.lastFrame < 1000 / fps - 4) continue;
+      const wc = webContents.fromId(id);
+      if (!wc || wc.isDestroyed()) continue;
+      w.lastFrame = now;
+      targets.push({ id, frame: wc.mainFrame });
+    }
+    // The stream page always gets the picture (even before going live): the window paints only
+    // on change, so its encoder must already hold the latest one when encoding starts.
+    const toPage = this.winGpu && !!this.win && !this.win.isDestroyed();
+    if (!targets.length && !toPage) {
+      tex.release();
+      return;
+    }
+    let imported: Electron.SharedTextureImported;
+    try {
+      imported = sharedTexture.importSharedTexture({
+        textureInfo: tex.textureInfo,
+        allReferencesReleased: () => tex.release(),
+      });
+    } catch (err) {
+      tex.release();
+      this.d.log.warn('gpu texture import failed', { err: String(err) });
+      return;
+    }
+    let refs = targets.length + (toPage ? 1 : 0);
+    const done = (): void => {
+      if (--refs === 0) imported.release();
+    };
+    for (const t of targets) this.sendTexture(t.id, t.frame, imported, done);
+    if (toPage) {
+      if (!this.pending.has(ENCODER_TARGET)) this.sendToPage({ imported, done });
+      else {
+        // Busy: keep only the newest picture, and send it as soon as the last one arrives.
+        this.held?.done();
+        this.held = { imported, done };
+      }
+    }
+  }
+
+  /** The newest picture waiting for the stream page (one at most). */
+  private held: { imported: Electron.SharedTextureImported; done: () => void } | null = null;
+
+  private sendToPage(p: { imported: Electron.SharedTextureImported; done: () => void }): void {
+    const frame = this.win && !this.win.isDestroyed() ? this.win.webContents.mainFrame : null;
+    if (!frame) return p.done();
+    this.texStats.toEncoder += 1;
+    this.sendTexture(ENCODER_TARGET, frame, p.imported, () => {
+      p.done();
+      const next = this.held;
+      this.held = null;
+      if (next) this.sendToPage(next);
+    });
+  }
+
+  private sendTexture(
+    id: number,
+    frame: Electron.WebFrameMain,
+    imported: Electron.SharedTextureImported,
+    done: () => void,
+  ): void {
+    this.pending.add(id);
+    this.texStats.sent += 1;
+    void sharedTexture
+      .sendSharedTexture({ frame, importedSharedTexture: imported })
+      .then(
+        () => void (this.texStats.done += 1),
+        (err: unknown) => {
+          this.texStats.failed += 1;
+          if (process.env.LAMPSTAND_FFMPEG_DEBUG)
+            this.d.log.info('gpu send failed', { err: String(err), to: id });
+        },
+      )
+      .finally(() => {
+        this.pending.delete(id);
+        done();
+      });
+  }
+
+  /** Ask the stream window for a fresh picture (it otherwise paints only on change). */
+  private repaint(): void {
+    if (this.win && !this.win.isDestroyed()) this.win.webContents.invalidate();
+  }
+
+  private onEncoderReport(r: EncoderReport): void {
+    if (r.type === 'caps') {
+      const key = StreamController.capsKey(r.width, r.height, r.fps);
+      this.gpuCaps.set(key, r.hardware);
+      if (!r.hardware) this.d.log.info('no hardware encoding for this size', { key });
+      for (const w of this.capsWaiters.splice(0)) w();
+      // Can't do it in hardware: the waiting window comes back on the CPU pipeline.
+      if (!r.hardware && this.winGpu && !this.ff) {
+        this.closeWindow();
+        this.syncWindow();
+      }
+    } else if (r.type === 'stats') {
+      this.pageEncoded = r.encoded;
+      this.pageDropped = r.dropped;
+    } else {
+      this.d.log.warn('hardware encoder failed; carrying on with the standard encoder', {
+        message: r.message,
+      });
+      this.gpuBroken = true;
+      if (this.pipeline === 'gpu' && this.encoding) {
+        this.d.notice({ level: 'warning', key: 'streamGpuFallback' });
+        void this.restartOnCpu();
+      }
+    }
+  }
+
+  /** The GPU encoder failed mid-stream: carry on with ffmpeg encoding (a short gap). */
+  private async restartOnCpu(): Promise<void> {
+    await this.stopEncoder();
+    this.closeWindow();
+    this.openWindow();
+    if (this.want.record) this.part += 1;
+    await this.spawnEncoder();
+  }
+
+  /** Wait (briefly) to hear whether the hardware encoder can do this size. */
+  private async gpuCapsFor(width: number, height: number, fps: number): Promise<boolean> {
+    const key = StreamController.capsKey(width, height, fps);
+    if (!this.gpuCaps.has(key))
+      await new Promise<void>((resolve) => {
+        const t = setTimeout(resolve, 4_000);
+        this.capsWaiters.push(() => {
+          clearTimeout(t);
+          resolve();
+        });
+      });
+    return this.gpuCaps.get(key) === true;
+  }
+
+  /** An encoded H.264 chunk from the stream page: straight to ffmpeg (to be packaged). */
+  private writeVideo(data: Uint8Array, key: boolean): void {
+    const stdin = this.ff?.stdin;
+    if (this.pipeline !== 'gpu' || !stdin?.writable) return;
+    if (!this.encodeLive) {
+      // The first picture is out: picture and sound start together from here.
+      this.encodeLive = true;
+      this.encodeStart = performance.now();
+      this.audioBytes = 0;
+      this.startAudioClock();
+    }
+    if (this.waitForKey && !key) return;
+    this.waitForKey = false;
+    // ffmpeg has fallen far behind (a stalled network): drop and restart from a keyframe, so
+    // memory never grows and the picture recovers cleanly.
+    if (stdin.writableLength > 8 * 1024 * 1024) {
+      this.waitForKey = true;
+      this.pageDropped += 1;
+      this.win?.webContents.send(Channels.evEncode, { keyframe: true });
+      this.repaint();
+      return;
+    }
+    this.videoBytes += data.byteLength;
+    this.videoChunks += 1;
+    stdin.write(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
   }
 
   // ---------- The encoder ----------
@@ -563,10 +846,24 @@ export class StreamController {
       record = freeName(join(folder, recordingName(this.sessionStart ?? new Date(), this.part)));
     }
     if (!this.win) this.openWindow();
-    const profile = this.winProfile ?? this.profile();
-    const height = profile.height;
-    const width = Math.round((height * 16) / 9);
+    let profile = this.winProfile ?? this.profile();
+    let height = profile.height;
+    let width = Math.round((height * 16) / 9);
+    // GPU pipeline when the window shares textures and the hardware encoder can do this size;
+    // otherwise the window comes back on the CPU pipeline (frames copied to ffmpeg).
+    let gpu = this.winGpu && (await this.gpuCapsFor(width, height, profile.fps));
+    if (!this.encoding) return; // stopped while we waited
+    if (this.winGpu && !gpu) {
+      this.closeWindow();
+      this.openWindow();
+      gpu = false;
+      profile = this.winProfile ?? this.profile();
+      height = profile.height;
+      width = Math.round((height * 16) / 9);
+    }
+    this.pipeline = gpu ? 'gpu' : 'cpu';
     const args = buildArgs({
+      input: gpu ? 'h264' : 'raw',
       width,
       height,
       fps: profile.fps,
@@ -606,6 +903,7 @@ export class StreamController {
     });
     ff.on('exit', (code) => this.onExit(ff, encoder, code));
     this.d.log.info('encoder started', {
+      pipeline: this.pipeline,
       encoder,
       mode: profile.mode,
       destinations: urls.length,
@@ -621,7 +919,8 @@ export class StreamController {
         destinations,
         recordingPath: record,
         recordingBytes: 0,
-        encoder,
+        encoder: gpu ? 'webcodecs' : encoder,
+        pipeline: this.pipeline,
         profile,
         error: this.status.error === 'noDestinations' ? 'noDestinations' : null,
       },
@@ -629,14 +928,51 @@ export class StreamController {
     );
     if (this.want.stream && urls.length) this.d.notice({ level: 'info', key: 'streamStarting' });
     this.sendConfig();
-    this.startPump(profile.fps);
+    this.encodeStart = performance.now();
+    if (gpu) {
+      // The stream page encodes on the GPU from now (its clock and the sound's start together).
+      this.pageEncoded = 0;
+      this.pageDropped = 0;
+      this.lastPageEncoded = 0;
+      this.lastPageDropped = 0;
+      this.waitForKey = false;
+      this.videoBytes = 0;
+      this.videoChunks = 0;
+      const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
+      if (this.pageReady) this.beginGpuEncode(cfg);
+      else this.pendingEncode = cfg; // sent when the page has loaded
+    } else this.startPump(profile.fps);
     this.startHealth();
+  }
+
+  /**
+   * GPU pipeline: tell the stream page to start encoding, and start the sound's clock at the
+   * same moment, so picture and sound share time zero.
+   */
+  private beginGpuEncode(cfg: EncodeConfig): void {
+    this.pendingEncode = null;
+    if (!this.ff || !this.win || this.win.isDestroyed()) return;
+    this.win.webContents.send(Channels.evEncode, cfg);
+    // The sound's clock starts with the first encoded frame (see writeVideo).
+    this.encodeLive = false;
+  }
+
+  /** GPU pipeline: no frame pump in main, but the sound still follows the clock. */
+  private startAudioClock(): void {
+    if (this.audioTimer) clearInterval(this.audioTimer);
+    this.audioTimer = setInterval(() => this.topUpAudio(), 20);
+  }
+
+  /** Silence fills any gap, so the sound keeps to the clock and ffmpeg never waits for it. */
+  private topUpAudio(): void {
+    const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
+    const behind = due - this.audioBytes;
+    if (behind > BYTES_PER_SECOND * 0.08) this.writeAudio(Buffer.alloc(Math.floor(behind / 8) * 8));
   }
 
   /** Frames on wall-clock time, and sound topped up to the same clock (silence fills gaps). */
   private startPump(fps: number): void {
     this.pump?.stop();
-    this.encodeStart = performance.now();
     this.lastSent = 0;
     this.lastDropped = 0;
     this.pump = new FramePump(fps, {
@@ -648,17 +984,14 @@ export class StreamController {
         stdin.write(this.latest ?? this.black ?? Buffer.alloc(0));
         return true;
       },
-      afterTick: () => {
-        const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
-        const behind = due - this.audioBytes;
-        if (behind > BYTES_PER_SECOND * 0.08)
-          this.writeAudio(Buffer.alloc(Math.floor(behind / 8) * 8));
-      },
+      afterTick: () => this.topUpAudio(),
     });
     this.pump.begin();
   }
 
   private writeAudio(chunk: Buffer): void {
+    // GPU pipeline: nothing until the page is encoding (else the sound would start early).
+    if (this.pipeline === 'gpu' && !this.encodeLive) return;
     const out = this.audioOut;
     if (!out?.writable || out.writableNeedDrain) return;
     out.write(chunk);
@@ -678,12 +1011,37 @@ export class StreamController {
   }
 
   private async sampleHealth(): Promise<void> {
+    if (process.env.LAMPSTAND_FFMPEG_DEBUG)
+      this.d.log.info('gpu frames', {
+        ...this.texStats,
+        pageEncoded: this.pageEncoded,
+        pageDropped: this.pageDropped,
+        videoBytes: this.videoBytes,
+        videoChunks: this.videoChunks,
+        waitForKey: this.waitForKey,
+      });
+    if (process.env.LAMPSTAND_FFMPEG_DEBUG)
+      this.d.log.info('audio', {
+        bytes: this.audioBytes,
+        writable: this.audioOut?.writable,
+        needDrain: this.audioOut?.writableNeedDrain,
+        pending: this.audioOut?.writableLength,
+      });
+    if (!this.ff) return;
+    // Frames handed to the encoder, and dropped, since last time: counted by main's frame pump
+    // (CPU pipeline) or by the stream page's hardware encoder (GPU pipeline).
     const pump = this.pump;
-    if (!pump) return;
-    const sent = pump.framesSent - this.lastSent;
-    const dropped = pump.dropped - this.lastDropped;
-    this.lastSent = pump.framesSent;
-    this.lastDropped = pump.dropped;
+    const sentTotal = pump ? pump.framesSent : this.pageEncoded + this.pageDropped;
+    const droppedTotal = pump ? pump.dropped : this.pageDropped;
+    const sent = sentTotal - (pump ? this.lastSent : this.lastPageEncoded);
+    const dropped = droppedTotal - (pump ? this.lastDropped : this.lastPageDropped);
+    if (pump) {
+      this.lastSent = sentTotal;
+      this.lastDropped = droppedTotal;
+    } else {
+      this.lastPageEncoded = sentTotal;
+      this.lastPageDropped = droppedTotal;
+    }
     this.samples = [...this.samples.slice(-15), { speed: this.status.speed, sent, dropped }];
 
     const metrics = app.getAppMetrics();
@@ -691,7 +1049,7 @@ export class StreamController {
     const appCpu = metrics.reduce((a, m) => a + m.cpu.percentCPUUsage, 0);
     const appMemMB = Math.round(metrics.reduce((a, m) => a + m.memory.workingSetSize, 0) / 1024);
     const windowCpu = metrics.find((m) => m.pid === winPid)?.cpu.percentCPUUsage ?? 0;
-    const enc = this.ff?.pid ? await sampleProcess(this.ff.pid) : null;
+    const enc = this.ff.pid ? await sampleProcess(this.ff.pid) : null;
     const recordingBytes = this.status.recordingPath
       ? await stat(this.status.recordingPath).then(
           (s) => s.size,
@@ -705,10 +1063,10 @@ export class StreamController {
     this.history.cpu.push(Math.round(appCpu + (enc?.cpu ?? 0)));
     const struggling = isStruggling(this.samples) && this.profile().mode !== 'light';
     if (struggling && !this.status.advice)
-      this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: pump.dropped });
+      this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
     this.setStatus({
-      droppedLocal: pump.dropped,
-      dropped: pump.dropped + this.ffmpegDropped,
+      droppedLocal: droppedTotal,
+      dropped: droppedTotal + this.ffmpegDropped,
       recordingBytes,
       advice: struggling ? 'lighter' : this.status.advice,
       health: {
@@ -729,6 +1087,7 @@ export class StreamController {
 
   private onLog(line: string): void {
     if (!line.trim()) return;
+    if (process.env.LAMPSTAND_FFMPEG_DEBUG) this.d.log.info('ffmpeg', { line });
     const p = parseProgress(line);
     if (p) {
       const destinations = this.status.destinations.map((x) =>
@@ -742,7 +1101,7 @@ export class StreamController {
           fps: p.fps,
           kbps: p.kbps,
           speed: p.speed,
-          dropped: (this.pump?.dropped ?? 0) + p.dropped,
+          dropped: (this.pump?.dropped ?? this.pageDropped) + p.dropped,
           destinations,
         },
         first,
@@ -819,6 +1178,12 @@ export class StreamController {
     this.retry = null;
     this.pump?.stop();
     this.pump = null;
+    if (this.audioTimer) clearInterval(this.audioTimer);
+    this.audioTimer = null;
+    this.pendingEncode = null;
+    this.encodeLive = false;
+    if (this.pipeline === 'gpu' && this.win && !this.win.isDestroyed())
+      this.win.webContents.send(Channels.evEncode, null);
     const ff = this.ff;
     if (!ff) return;
     this.stopping = true;

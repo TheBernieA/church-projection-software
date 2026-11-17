@@ -64,6 +64,11 @@ export interface EncodeOptions {
   videoKbps: number;
   audioKbps: number;
   encoder: Encoder;
+  /**
+   * What arrives on stdin: raw BGRA frames to encode ('raw', the CPU pipeline), or H.264 already
+   * encoded on the GPU ('h264'), which is only packaged (no re-encoding).
+   */
+  input?: 'raw' | 'h264';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
   x264Preset?: 'ultrafast' | 'superfast' | 'veryfast' | 'faster';
   /** Full ingest URLs (keys included). */
@@ -134,6 +139,7 @@ export function videoCodecArgs(
  * to fail on its own) and to the recording (fragmented MP4, playable even after a crash).
  */
 export function buildArgs(o: EncodeOptions): string[] {
+  const gpu = o.input === 'h264';
   const outputs = [
     ...o.streams.map((u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize]${teeEscape(u)}`),
     ...(o.record
@@ -147,19 +153,43 @@ export function buildArgs(o: EncodeOptions): string[] {
     'info',
     '-stats_period',
     '1',
-    // Video: the stream window's frames.
+    // Video: the stream window's frames (raw), or its hardware-encoded H.264.
     '-thread_queue_size',
     '512',
-    '-f',
-    'rawvideo',
-    '-pix_fmt',
-    'bgra',
-    '-s',
-    `${o.width}x${o.height}`,
-    '-r',
-    String(o.fps),
-    '-i',
-    'pipe:0',
+    ...(gpu
+      ? // Start at once: the size is in the first keyframe (a still picture encodes so small
+        // that ffmpeg's usual 5 MB look-ahead would take minutes to fill).
+        [
+          '-probesize',
+          '32',
+          '-analyzeduration',
+          '0',
+          '-fflags',
+          '+genpts',
+          // Raw H.264 carries no times: stamp arrivals so ffmpeg reads the sound alongside (else
+          // it only ever reads video, and the sound pipe stalls). Output times come from the
+          // frame count below.
+          '-use_wallclock_as_timestamps',
+          '1',
+          '-f',
+          'h264',
+          '-framerate',
+          String(o.fps),
+          '-i',
+          'pipe:0',
+        ]
+      : [
+          '-f',
+          'rawvideo',
+          '-pix_fmt',
+          'bgra',
+          '-s',
+          `${o.width}x${o.height}`,
+          '-r',
+          String(o.fps),
+          '-i',
+          'pipe:0',
+        ]),
     // Sound: its mix, 48 kHz stereo float.
     '-thread_queue_size',
     '512',
@@ -175,14 +205,19 @@ export function buildArgs(o: EncodeOptions): string[] {
     '0:v',
     '-map',
     '1:a',
-    // Hardware encoders take NV12 natively (no second conversion inside the encoder).
-    '-pix_fmt',
-    takesNv12(o.encoder) ? 'nv12' : 'yuv420p',
-    '-r',
-    String(o.fps),
-    '-fps_mode',
-    'cfr',
-    ...videoCodecArgs(o),
+    ...(gpu
+      ? // Already encoded: copy it, stamping each frame's time from its number (raw H.264 has none).
+        ['-c:v', 'copy', '-bsf:v', `setts=pts=N/(${o.fps}*TB):dts=N/(${o.fps}*TB)`]
+      : [
+          // Hardware encoders take NV12 natively (no second conversion inside the encoder).
+          '-pix_fmt',
+          takesNv12(o.encoder) ? 'nv12' : 'yuv420p',
+          '-r',
+          String(o.fps),
+          '-fps_mode',
+          'cfr',
+          ...videoCodecArgs(o),
+        ]),
     '-c:a',
     'aac',
     '-b:a',

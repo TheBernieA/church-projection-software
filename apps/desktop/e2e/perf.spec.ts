@@ -71,14 +71,28 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
   await cmd('settings.update', { patch: { windowMode: true } });
   // The same size every run (Auto would pick for this computer).
   const mode = process.env.LAMPSTAND_PERF_MODE ?? 'balanced';
-  await control.evaluate(async (m) => {
-    const r = await window.lampstand.query('settings.get');
-    if (r.ok)
-      await window.lampstand.command({
-        type: 'settings.update',
-        payload: { patch: { stream: { ...r.value.stream, performance: m } } },
-      });
-  }, mode);
+  const custom = process.env.LAMPSTAND_PERF_CUSTOM; // e.g. "1080x60"
+  await control.evaluate(
+    async ([m, c]) => {
+      const r = await window.lampstand.query('settings.get');
+      if (!r.ok) return;
+      const [h, f] = (c ?? '').split('x').map(Number);
+      const stream = c
+        ? {
+            ...r.value.stream,
+            performance: 'custom',
+            quality: {
+              ...r.value.stream.quality,
+              height: h,
+              fps: f,
+              videoKbps: h >= 1080 ? 9000 : 4500,
+            },
+          }
+        : { ...r.value.stream, performance: m };
+      await window.lampstand.command({ type: 'settings.update', payload: { patch: { stream } } });
+    },
+    [mode, custom ?? null] as const,
+  );
   // A looping video on screen, with the fake camera picture-in-picture over it.
   await cmd('live.goLive', {
     media: {
@@ -128,7 +142,7 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
     await control.waitForTimeout(2000);
     const ps = execFileSync('ps', ['-axo', 'pid=,%cpu=,rss=,command='], { encoding: 'utf8' })
       .split('\n')
-      .find((l) => /ffmpeg/.test(l) && /pipe:0/.test(l));
+      .find((l) => /\/ffmpeg\s/.test(l) && /pipe:0/.test(l));
     const [, cpu, rss] = ps?.trim().split(/\s+/) ?? [];
     const metrics = await app.evaluate(({ app: a }) =>
       a.getAppMetrics().map((m) => ({ cpu: m.cpu.percentCPUUsage, mem: m.memory.workingSetSize })),
@@ -193,6 +207,9 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
     Math.round(Math.max(...samples.map((s) => s[k])));
   const result = {
     seconds: SECONDS,
+    pipeline: last?.pipeline,
+    mode: last?.profile.mode,
+    size: `${last?.profile.height}p${last?.profile.fps}`,
     ffmpegCpuAvg: avg('ffCpu'),
     ffmpegMemMB: peak('ffRss'),
     lampstandCpuAvg: avg('appCpu'),

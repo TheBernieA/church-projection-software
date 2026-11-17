@@ -175,7 +175,9 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   await app.close().catch(() => undefined);
-  rmSync(dir, { recursive: true, force: true });
+  // LAMPSTAND_KEEP=1 keeps the library and logs to look at after a run.
+  if (!process.env.LAMPSTAND_KEEP) rmSync(dir, { recursive: true, force: true });
+  else console.log('KEPT', dir);
 });
 
 /** Switch the workspace: Show/Edit/Reflow/Bible in the toolbar, Themes = Theme, Stage under More. */
@@ -2149,6 +2151,8 @@ test('Light mode: a smaller picture for modest computers', async () => {
   );
   await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
   expect((await status())?.profile).toMatchObject({ mode: 'light', height: 540 });
+  // This computer encodes on the GPU unless an ffmpeg encoder is chosen (the fallback below).
+  expect(['gpu', 'cpu']).toContain((await status())?.pipeline);
   await control.waitForTimeout(2_500);
   await control.evaluate(() =>
     window.lampstand.command({ type: 'stream.stop', payload: { record: true } }),
@@ -2174,6 +2178,39 @@ test('Light mode: a smaller picture for modest computers', async () => {
   ).trim();
   expect(size).toBe('960,540');
   await set('auto');
+});
+
+test('the standard (CPU) pipeline still records when an ffmpeg encoder is chosen', async () => {
+  const patchStream = (patch: object) =>
+    control.evaluate(async (p) => {
+      const r = await window.lampstand.query('settings.get');
+      if (r.ok)
+        await window.lampstand.command({
+          type: 'settings.update',
+          payload: {
+            patch: {
+              stream: { ...r.value.stream, ...p, quality: { ...r.value.stream.quality, ...p } },
+            },
+          },
+        });
+    }, patch);
+  const status = () =>
+    control.evaluate(async () => {
+      const r = await window.lampstand.query('stream.status');
+      return r.ok ? r.value : null;
+    });
+  await patchStream({ encoder: 'libx264' });
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.start', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
+  expect((await status())?.pipeline).toBe('cpu');
+  await control.waitForTimeout(2_000);
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.stop', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state).toBe('idle');
+  await patchStream({ encoder: 'auto' });
 });
 
 test('Easy view lists the words; Turn off live takes everything off the screen', async () => {

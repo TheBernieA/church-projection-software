@@ -51,6 +51,12 @@ export const Channels = {
   // Stream window (the livestream picture): its handshake and its sound.
   streamReady: 'stream:ready',
   streamAudio: 'stream:audio',
+  /** stream window → main: an encoded H.264 chunk (GPU pipeline). */
+  streamVideo: 'stream:video',
+  /** stream window → main: what its hardware encoder can do, its stats, or an error. */
+  streamEncoder: 'stream:encoder',
+  /** main → stream window: start (or stop, null) hardware encoding; or ask for a keyframe. */
+  evEncode: 'ev:encode',
   /** main → stream window: what to draw and mix. */
   evStreamConfig: 'ev:stream-config',
   /** output / stream window → main: its mix's levels (about 15 a second). */

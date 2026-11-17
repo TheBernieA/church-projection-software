@@ -5,16 +5,9 @@
  * next tick is aimed at the next frame's time, so lateness never adds up.
  */
 
-/** Frames that should have been sent by `now` (frame 0 at `start`), minus those already sent. */
-export function framesDue(startMs: number, nowMs: number, fps: number, sent: number): number {
-  return Math.max(0, Math.floor(((nowMs - startMs) * fps) / 1000) + 1 - sent);
-}
+import { framesDue, msToNextFrame } from '@lampstand/core';
 
-/** When the next frame is due, in ms from now. */
-export function msToNextFrame(startMs: number, nowMs: number, fps: number, sent: number): number {
-  const next = startMs + (sent * 1000) / fps;
-  return Math.max(0, next - nowMs);
-}
+export { framesDue, msToNextFrame };
 
 export interface PumpSink {
   /** Write one frame; false when the encoder's input is backed up (that frame is dropped). */

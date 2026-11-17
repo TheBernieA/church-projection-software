@@ -42,3 +42,14 @@ describe('stream performance', () => {
     expect(resolvePerformance(settings(), machine(6, 16, true)).mode).toBe('balanced');
   });
 });
+
+describe('H.264 level for the stream size', async () => {
+  const { avcCodecFor } = await import('./frameClock');
+  it('picks the smallest level that fits', () => {
+    expect(avcCodecFor(960, 540, 30)).toBe('avc1.64001f');
+    expect(avcCodecFor(1280, 720, 30)).toBe('avc1.64001f');
+    expect(avcCodecFor(1280, 720, 60)).toBe('avc1.640020');
+    expect(avcCodecFor(1920, 1080, 30)).toBe('avc1.640028');
+    expect(avcCodecFor(1920, 1080, 60)).toBe('avc1.64002a');
+  });
+});

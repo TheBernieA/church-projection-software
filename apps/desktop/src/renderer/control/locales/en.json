@@ -536,7 +536,8 @@
     "recordingSaved": "Recording saved: {{file}} (Live › Recordings opens the folder).",
     "streamReconnecting": "The stream dropped: reconnecting…",
     "streamDestinationFailed": "One stream destination stopped. The others carry on.",
-    "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again."
+    "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again.",
+    "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder."
   },
   "perf": {
     "fps": "Control FPS",
@@ -1584,9 +1585,9 @@
     "bitrate": "Video bitrate",
     "bitrateHelp": "Recommended: {{kbps}} kb/s. Your upload speed should be at least 1.5× this.",
     "encoder": "Encoder",
-    "encoderHelp": "Using: {{encoder}}.",
+    "encoderHelp": "In use: {{encoder}}. Automatic keeps the picture on the graphics card and uses its hardware encoder (smoothest, least effort). A specific encoder uses the standard path instead.",
     "encoders": {
-      "auto": "Automatic (best available)",
+      "auto": "Automatic (GPU hardware encoding when available)",
       "h264_videotoolbox": "Apple hardware",
       "h264_nvenc": "NVIDIA hardware",
       "h264_qsv": "Intel hardware",

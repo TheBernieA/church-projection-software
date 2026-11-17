@@ -234,6 +234,7 @@ export class NdiController {
       cameraLayer:
         f.feed.content === 'stream' ? streamCameraLayer(this.d.getSettings(), f.height) : null,
       meters: false,
+      probe: null,
       mix: f.feed.sound,
       logo: this.d.logo(),
       standby: this.d.standby(),

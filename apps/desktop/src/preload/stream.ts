@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { listen } from './listen';
+import { receiveGpuFrames } from './gpuFrames';
 import { Channels } from '@lampstand/ipc-contract/channels';
 import type { StreamApi } from '@lampstand/ipc-contract';
 
@@ -12,6 +13,10 @@ const api: StreamApi = {
   onConfig: (cb) => listen(Channels.evStreamConfig, cb),
   ready: () => ipcRenderer.send(Channels.streamReady),
   sendAudio: (pcm) => ipcRenderer.send(Channels.streamAudio, pcm),
+  onFrame: receiveGpuFrames(),
+  onEncode: (cb) => listen(Channels.evEncode, cb),
+  sendVideo: (data, key) => ipcRenderer.send(Channels.streamVideo, data, key),
+  reportEncoder: (r) => ipcRenderer.send(Channels.streamEncoder, r),
   sendMeters: (m) => ipcRenderer.send(Channels.meters, m),
 };
 

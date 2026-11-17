@@ -178,6 +178,8 @@ export interface ControlApi {
    * ready before going live when `ready`. Repeat every few seconds while watching.
    */
   streamWatch(fps: number, ready: boolean): void;
+  /** GPU pipeline: the stream picture, full motion, while this window watches (close each). */
+  onStreamFrame(cb: (frame: GpuFrame) => void): void;
   /** The stream picture as a small JPEG, while this window watches (`streamWatch`). */
   onStreamPreview(cb: (jpeg: Uint8Array) => void): () => void;
   /** The Live console window opened (true) or closed (false). */
@@ -212,6 +214,11 @@ export interface StreamStatus {
   recordingPath: string | null;
   /** The last problem, as an i18n key under `stream.errors.*`. */
   error: string | null;
+  /**
+   * How frames reach the encoder: 'gpu' (shared GPU textures, the computer's hardware encoder
+   * via WebCodecs; ffmpeg only packages them) or 'cpu' (frames copied to ffmpeg, which encodes).
+   */
+  pipeline: 'gpu' | 'cpu';
   /** The stream window is open (live, recording, or getting ready to go live). */
   ready: boolean;
   /** Size, rate and effort in use (or that the next start will use). */
@@ -257,6 +264,8 @@ export interface StreamConfig {
   };
   /** The stream's own camera, with its saved settings (capture size capped at the stream's). */
   cameraLayer: VideoInputLayer | null;
+  /** GPU pipeline: check the hardware encoder can do this (the page reports back to main). */
+  probe: EncodeConfig | null;
   /** Make the sound mix (off while just getting ready: no microphones open). */
   mix: boolean;
   /** A see-through picture (alpha), for the NDI words feed. */
@@ -267,8 +276,39 @@ export interface StreamConfig {
   standby: Standby;
 }
 
+/**
+ * A picture on the GPU, as the preloads hand it over: a WebCodecs `VideoFrame` (typed loosely
+ * here so the main process, which has no DOM types, can share this file). Close it when done.
+ */
+export interface GpuFrame {
+  readonly displayWidth: number;
+  readonly displayHeight: number;
+  close(): void;
+}
+
+/** Hardware encoding settings for the stream page (GPU pipeline). */
+export interface EncodeConfig {
+  width: number;
+  height: number;
+  fps: number;
+  kbps: number;
+}
+
+/** What the stream page tells main about its hardware encoder. */
+export type EncoderReport =
+  | { type: 'caps'; width: number; height: number; fps: number; hardware: boolean }
+  | { type: 'stats'; encoded: number; dropped: number }
+  | { type: 'error'; message: string };
+
 /** API exposed to the (offscreen) stream window: it draws and sends its sound. */
 export interface StreamApi {
+  /** GPU pipeline: each new stream picture, as a frame on the GPU (close it when done). */
+  onFrame(cb: (frame: GpuFrame) => void): void;
+  /** Start encoding with these settings, stop (null), or make the next frame a keyframe. */
+  onEncode(cb: (cmd: EncodeConfig | { keyframe: true } | null) => void): () => void;
+  /** An encoded H.264 chunk (Annex B). */
+  sendVideo(data: Uint8Array, key: boolean): void;
+  reportEncoder(r: EncoderReport): void;
   onLiveState(cb: (s: LiveState) => void): () => void;
   onConfig(cb: (c: StreamConfig) => void): () => void;
   ready(): void;

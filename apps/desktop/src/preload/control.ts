@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { listen } from './listen';
+import { receiveGpuFrames } from './gpuFrames';
 // Names only (no schemas): keeps the sandboxed preload tiny.
 import { Channels, QUERY_NAMES, type QueryName } from '@lampstand/ipc-contract/channels';
 import type { ControlApi } from '@lampstand/ipc-contract';
@@ -33,6 +34,7 @@ const api: ControlApi = {
   onNdi: (cb) => listen(Channels.evNdi, cb),
   onLiveConsole: (cb) => listen(Channels.evLiveConsole, cb),
   onStreamPreview: (cb) => listen(Channels.evStreamPreview, cb),
+  onStreamFrame: receiveGpuFrames(),
   streamWatch: (fps, ready) => ipcRenderer.send(Channels.streamWatch, { fps, ready }),
   platform: process.platform,
 } as ControlApi;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   Circle,
@@ -483,6 +483,7 @@ const ENCODER_NAMES: Record<string, string> = {
   h264_qsv: 'Quick Sync',
   h264_amf: 'AMF',
   libx264: 'x264',
+  webcodecs: 'GPU · hardware encoder',
 };
 
 type Tone = 'ok' | 'warn' | 'bad' | 'plain';
@@ -709,8 +710,10 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
   const [showReady, setShowReady] = useState(() => readPref(READY_KEY, true));
   const canReady = s?.profile.allowReady ?? true;
   const running = !!s && s.state !== 'idle';
+  const previewCanvas = useRef<HTMLCanvasElement>(null);
   const preview = useStreamPreview(
-    running || (showReady && canReady) ? 4 : 0,
+    previewCanvas,
+    running || (showReady && canReady) ? 30 : 0,
     showReady && canReady,
   );
 
@@ -842,9 +845,13 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           <div
             className={`relative aspect-video w-full overflow-hidden rounded-[8px] bg-black ${s?.streaming ? 'shadow-[0_0_0_2px_var(--tally-program)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
           >
-            {preview ? (
-              <img src={preview} alt={t('live.preview')} className="h-full w-full object-contain" />
-            ) : (
+            <canvas
+              ref={previewCanvas}
+              role="img"
+              aria-label={t('live.preview')}
+              className={`h-full w-full object-contain ${preview ? '' : 'invisible'}`}
+            />
+            {!preview && (
               <Typography
                 as="div"
                 size={12}

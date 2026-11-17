@@ -11,6 +11,7 @@ import { AudioPlayer, buildVideoInput, MixerEngine, SceneRenderer } from '@lamps
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 import pcmTapUrl from './pcmTap.worklet.js?url';
+import { StreamEncoder } from './encoder';
 
 /**
  * The livestream picture and sound, drawn offscreen (main encodes what it paints). Layers, back
@@ -138,7 +139,18 @@ const tapReady = ctx.audioWorklet.addModule(pcmTapUrl).then(() => {
   tap.connect(mute).connect(ctx.destination);
 });
 
+// GPU pipeline: the hardware encoder (frames never leave the GPU).
+const encoder = new StreamEncoder(api);
+let probed = '';
+
 api.onConfig((c) => {
+  if (c.probe) {
+    const key = JSON.stringify(c.probe);
+    if (key !== probed) {
+      probed = key;
+      void encoder.probe(c.probe);
+    }
+  }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
   if (c.meters && !config?.meters)
     mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus }));

@@ -4,6 +4,44 @@ Lampstand streams the service to YouTube, Facebook or any RTMP(S) service, and r
 file, by itself — no OBS. The toolbar's **Live** button opens the controls; **Settings ›
 Streaming** sets it up.
 
+## Two pipelines
+
+**GPU (the default where available).** The stream window renders offscreen with
+`useSharedTexture`, so each picture stays on the graphics card. Main imports each texture
+(`sharedTexture.importSharedTexture`) and passes it back to the stream page, and to any watching
+Live console, as a `VideoFrame` (`sendSharedTexture`). The page's `StreamEncoder`
+(`renderer/stream/encoder.ts`) encodes on a steady frame clock with **WebCodecs `VideoEncoder`
+using the hardware H.264 encoder** (VideoToolbox on macOS, Media Foundation on Windows). The
+encoded Annex B chunks go to main and on to ffmpeg, which only **packages** them
+(`-c:v copy`, timed by frame number with `setts`) and encodes the sound. Nothing is copied to the
+CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
+
+- Raw H.264 has no timestamps. Input packets are stamped on arrival
+  (`-use_wallclock_as_timestamps`) only so ffmpeg reads the sound alongside them. Without it,
+  ffmpeg reads only video and the sound pipe stalls.
+- `-probesize 32`: the size is in the first keyframe, and a still picture encodes so small that
+  the usual 5 MB look-ahead would take minutes.
+- The window paints only on change, so the page always receives the newest picture: main holds at
+  most one picture while the last is still on its way. Encoding can start on a still screen.
+- Start is sent once the page has loaded. The frame clock, and main's sound clock (on the first
+  chunk), start when the encoder produces its first frame, so its warm-up never shifts the sync.
+- Used when `sharedTexture` exists, the page reports hardware support for the size and rate
+  (`VideoEncoder.isConfigSupported`), the encoder setting is Automatic, and
+  `LAMPSTAND_STREAM_PIPELINE` isn't `cpu`. If the hardware encoder fails mid-stream, the session
+  carries on with the CPU pipeline (recording part 2).
+
+**CPU (the fallback).** Main reads each painted frame into memory and writes raw BGRA to ffmpeg on
+a frame clock; ffmpeg converts and encodes. The preview is small JPEGs.
+
+Measured at 1080p60 on an M-series Mac (30 s, a playing video plus a camera PiP):
+
+| | ffmpeg CPU | fps | dropped | A/V drift |
+| --- | --- | --- | --- | --- |
+| GPU | 0.4 % | 59.7 | 0 | −32 ms |
+| CPU | 35.6 % | 60.3 | 0 | −66 ms |
+
+At 720p30: GPU 0.3 % (0 dropped, −90 ms); CPU 10 %.
+
 ## How it works
 
 ```
