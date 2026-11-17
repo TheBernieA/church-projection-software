@@ -45,15 +45,31 @@ export const isStreamKey = (key: string): boolean =>
  * is kept.
  */
 export function cleanStreamKey(input: string): string {
-  let k = input.replace(/[\s\u200B-\u200D\u2060\uFEFF\u00AD]/g, '');
-  if (/^rtmps?:\/\//i.test(k)) {
+  // Keep only printable ASCII: drops spaces, line breaks, invisible characters, and anything
+  // exotic a web page slipped in.
+  let k = input.replace(/[^\x21-\x7e]/g, '');
+  // An address (or part of one) was pasted: the key is what follows the last slash.
+  if (k.includes('/')) {
+    k = k.replace(/\/+$/, '');
     k = k.slice(k.lastIndexOf('/') + 1);
-    // Only the server address was pasted ("…/live2", YouTube's "Stream URL"): there's no key.
+    // Only the server address ("…/live2", YouTube's "Stream URL"): there's no key in it.
     if (['', 'live', 'live2', 'rtmp', 'app'].includes(k.toLowerCase()) || k.includes(':'))
       return '';
+    if (/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(k)) return ''; // just a host name
   }
-  return k;
+  return k.replace(/\\/g, '');
 }
+
+/**
+ * What a rejected paste looked like, without its content: letters as "a", digits as "9", other
+ * characters kept (so the log can show "aaaa://a.aaaa.aaa/aaaa9" but never a key).
+ */
+export const pasteShape = (input: string): string =>
+  input
+    .slice(0, 120)
+    .replace(/[a-z]/gi, 'a')
+    .replace(/[0-9]/g, '9')
+    .replace(/[^\x20-\x7e]/g, '?');
 
 /**
  * Could this be a key for that service? Catches the common mix-ups (the "Stream URL" pasted as

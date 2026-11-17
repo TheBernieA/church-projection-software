@@ -32,7 +32,7 @@ import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
 import { NdiController } from '../ndi/ndiController';
-import { cleanStreamKey, isStreamKey, plausibleKey } from '../stream/ffmpegArgs';
+import { cleanStreamKey, isStreamKey, pasteShape, plausibleKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
 import { MediaLibrary } from '../library/mediaLibrary';
@@ -437,12 +437,28 @@ export class AppController {
         if (key === null || key.trim() === '') await this.secrets.delete(keyName(destinationId));
         else {
           const k = cleanStreamKey(key);
-          if (!isStreamKey(k))
+          if (!isStreamKey(k)) {
+            // What it looked like (never its content), to see why a paste was refused.
+            this.log.warn('stream key refused', {
+              shape: pasteShape(key),
+              cleanedLength: k.length,
+            });
             throw new AppError(
               'invalid-key',
-              'That doesn’t look like a stream key. Paste only the key (not the server address).',
+              k === '' && /[/:]/.test(key)
+                ? 'That is the server address (“Stream URL”), not the key. Copy “Stream key” instead: it looks like abcd-efgh-ijkl-mnop-qrst.'
+                : k === ''
+                  ? 'Nothing usable was pasted. Copy “Stream key” again and paste it here.'
+                  : 'That is too long to be a stream key. Copy only “Stream key”.',
             );
+          }
           const kind = settings.get().stream.destinations.find((d) => d.id === destinationId)?.kind;
+          if (kind && !plausibleKey(kind, k))
+            this.log.warn('stream key refused', {
+              kind,
+              shape: pasteShape(key),
+              cleanedLength: k.length,
+            });
           if (kind === 'youtube' && !plausibleKey(kind, k))
             throw new AppError(
               'invalid-key',

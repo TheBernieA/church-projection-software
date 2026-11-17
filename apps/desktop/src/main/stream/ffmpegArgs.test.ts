@@ -9,6 +9,7 @@ import {
   isStreamKey,
   isStreamUrl,
   parseProgress,
+  pasteShape,
   pickEncoder,
   plausibleKey,
   recordingName,
@@ -106,6 +107,12 @@ describe('pasted stream keys', () => {
       cleanStreamKey('rtmps://live-api-s.facebook.com:443/rtmp/FB-123-0-Ab?s_bl=1&s_psm=1'),
     ).toBe('FB-123-0-Ab?s_bl=1&s_psm=1');
     expect(isStreamKey(cleanStreamKey('FB-123-0-Ab?s_bl=1&s_psm=1'))).toBe(true);
+    // Odd pastes still give the key: part of an address, smart quotes, a backslash.
+    expect(cleanStreamKey('live2/abcd-efgh-ijkl-mnop')).toBe('abcd-efgh-ijkl-mnop');
+    expect(cleanStreamKey('“abcd-efgh-ijkl-mnop”')).toBe('abcd-efgh-ijkl-mnop');
+    expect(cleanStreamKey('a.rtmp.youtube.com/live2')).toBe('');
+    expect(cleanStreamKey('rtmp://a.rtmp.youtube.com')).toBe('');
+    expect(pasteShape('rtmp://a.b.com/live2/ab12-cd34')).toBe('aaaa://a.a.aaa/aaaa9/aa99-aa99');
     // The "Stream URL" alone is not a key.
     expect(cleanStreamKey('rtmp://a.rtmp.youtube.com/live2')).toBe('');
     expect(cleanStreamKey('rtmps://a.rtmps.youtube.com:443/live2/')).toBe('');
