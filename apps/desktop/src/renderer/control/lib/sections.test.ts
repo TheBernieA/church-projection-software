@@ -9,6 +9,7 @@ import {
   sectionCanMove,
   sectionDropBoundary,
   sectionEnd,
+  sectionHeaderAt,
   sectionIsEmpty,
 } from './sections';
 
@@ -92,5 +93,11 @@ describe('adding to a section', () => {
     // An edit that adds nothing is left alone.
     const rename = (xs: ServiceItem[]): ServiceItem[] => xs.slice(1);
     expect(idsOf(intoSection('Word', rename)(filled))).toBe('a b Word Response c');
+  });
+
+  it('knows which heading a row falls under', () => {
+    expect(sectionHeaderAt(filled, 2)?.id).toBe('Worship');
+    expect(sectionHeaderAt(filled, 3)?.id).toBe('Word');
+    expect(sectionHeaderAt([song('x'), ...filled], 0)).toBeNull();
   });
 });

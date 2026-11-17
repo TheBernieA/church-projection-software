@@ -1,8 +1,8 @@
 import type { MouseEvent } from 'react';
-import { Film, Globe, Image as ImageIcon } from 'lucide-react';
+import { Film, Globe, Image as ImageIcon, Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Scene } from '@lampstand/core';
-import { TallyTag, Typography, Button } from '@lampstand/ui';
+import { TallyTag, Typography, Button, IconButton } from '@lampstand/ui';
 import { groupColor } from '../../lib/slides';
 import { SceneView } from '../SceneView';
 import { type PresentableSlide } from '../../types';
@@ -96,15 +96,39 @@ export function SlideCard({
   onClick,
   onDoubleClick,
   onContextMenu,
+  onEdit,
 }: CardProps & {
   scene: Scene;
   hint?: string;
   onContextMenu: (e: MouseEvent) => void;
+  /** Editable slides show a pencil that opens them in Edit. */
+  onEdit?: () => void;
 }) {
+  const { t } = useTranslation();
   const label = useStateLabel(slide, state);
   const color = groupColor(slide.group);
   return (
-    <li>
+    <li className="group/slide relative">
+      {onEdit && (
+        <IconButton
+          size="2xs"
+          variant="bare"
+          aria-label={
+            state === 'live'
+              ? t('slides.editLive', { n: index + 1 })
+              : t('slides.edit', { n: index + 1 })
+          }
+          title={
+            state === 'live'
+              ? t('slides.editLive', { n: index + 1 })
+              : t('slides.edit', { n: index + 1 })
+          }
+          onClick={onEdit}
+          className="absolute left-1.5 top-1.5 z-[1] flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover/slide:opacity-100"
+        >
+          <Pencil size={12} />
+        </IconButton>
+      )}
       <Button
         variant="bare"
 

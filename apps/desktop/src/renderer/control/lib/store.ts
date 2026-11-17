@@ -1,4 +1,3 @@
-import { insertInSection } from './sections';
 import { publishMeters } from './meters';
 import { create } from 'zustand';
 import type { BookId, ServiceItem, ServicePlan } from '@lampstand/core';
@@ -23,7 +22,6 @@ export const useStore = create<ControlState>((set) => ({
   stream: null,
   ndi: null,
   selectedItemId: null,
-  addTarget: null,
   adhoc: null,
   previewCursor: null,
   editCursor: null,
@@ -226,13 +224,9 @@ export function patchItem<T extends ServiceItem>(
   else updateItem<T>(item.id, apply);
 }
 
-/**
- * Add an item (usually from the library or quick bar) to the service and select it: at the end
- * of the section chosen with "Add here", else at the end of the playlist.
- */
+/** Append an item (usually from the library or quick bar) to the service and select it. */
 export function addItemToService(item: ServiceItem): void {
-  const target = get().addTarget;
-  editItems((items) => insertInSection(items, target, [item]));
+  editItems((items) => [...items, item]);
   patch({ adhoc: null, selectedItemId: item.id });
 }
 
@@ -255,7 +249,6 @@ export async function openService(id: string): Promise<void> {
   patch({
     service: service ?? null,
     selectedItemId: null,
-    addTarget: null,
     adhoc: null,
     previewCursor: null,
   });

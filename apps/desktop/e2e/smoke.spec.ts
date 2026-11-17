@@ -239,6 +239,9 @@ const servicePlan = async () => {
 };
 
 /** Add something to the service plan from its "+ Add" menu. */
+/** A slide card's own button (not the pencil beside it that opens it in Edit). */
+const SLIDE = /^(?!Edit slide)/;
+
 const addToPlan = async (name: string) => {
   await (await servicePlan()).getByRole('button', { name: 'Add', exact: true }).click();
   await control.getByRole('menuitem', { name, exact: true }).click();
@@ -424,7 +427,11 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
   await expect(control.getByRole('list', { name: 'Slide list' })).toBeVisible();
   await mode('Show');
   await (await servicePlan()).getByText('Test Song').first().click();
-  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: SLIDE })
+    .first()
+    .click();
   await expect
     .poll(() =>
       out
@@ -448,7 +455,11 @@ test('text bar: formatting the selected song reaches the output; Use theme remov
     'aria-pressed',
     'true',
   );
-  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: SLIDE })
+    .first()
+    .click();
   const style = () =>
     out
       .locator('.ls-text')
@@ -462,7 +473,11 @@ test('text bar: formatting the selected song reaches the output; Use theme remov
   // Use theme removes the item's formatting.
   await bar.getByRole('button', { name: 'Use theme' }).click();
   await expect(bar.getByRole('button', { name: 'Use theme' })).toBeDisabled();
-  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: SLIDE })
+    .first()
+    .click();
   await expect.poll(style).not.toBe('left italic');
   await bar.getByRole('button', { name: 'Close text bar' }).click();
   await expect(bar).toBeHidden();
@@ -738,7 +753,11 @@ test('web page: shown over the output in an isolated view; Black screen takes it
   await expect(control.getByText('Use a full secure address')).toBeVisible(); // not saved
   await address.fill('https://example.com/');
   await mode('Show');
-  await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: SLIDE })
+    .first()
+    .click();
   await expect.poll(views).toBe(before + 1);
   await expect(
     control.locator('figure').filter({ hasText: 'Live' }).locator('.ls-web-url'),
@@ -2379,7 +2398,7 @@ test('Easy view lists the words; Turn off live takes everything off the screen',
   });
 });
 
-test('playlists: fill a section from the library, then delete the playlist', async () => {
+test('playlists: fill a section, add and edit slides (live edits wait), delete the playlist', async () => {
   const library = control.getByRole('region', { name: 'Library' });
   await library.getByRole('button', { name: 'New playlist' }).click();
   await expect(library.getByRole('button', { name: 'New service', exact: true })).toBeVisible();
@@ -2392,29 +2411,50 @@ test('playlists: fill a section from the library, then delete the playlist', asy
   }
   const bands = show.locator('[data-section="New section"]');
   await expect(bands).toHaveCount(2);
-  await expect(bands.first()).toContainText('Nothing in this section yet');
-  // "Add here" on the first section, then pick a song in the library.
-  await bands
+  const emptyPlaceholders = show.getByRole('button', { name: /^Nothing in this section yet/ });
+  await expect(emptyPlaceholders).toHaveCount(2);
+  // The "+" at the end of the first section adds text slides into it (before the second).
+  await show
+    .getByRole('button', { name: /^Nothing in this section yet/ })
     .first()
-    .getByRole('button', { name: 'Add songs, verses and media to New section' })
     .click();
-  await library.getByRole('button', { name: 'Songs', exact: true }).click();
-  await library
-    .getByRole('button', { name: /Test Song/ })
-    .first()
-    .dblclick();
-  await expect
-    .poll(async () => {
-      const r = await control.evaluate(async () => {
-        const st = await window.lampstand.query('settings.get');
-        if (!st.ok || !st.value.lastServiceId) return null;
-        const plan = await window.lampstand.query('services.get', { id: st.value.lastServiceId });
-        return plan.ok && plan.value ? plan.value.items.map((i) => i.kind).join(' ') : null;
-      });
-      return r;
-    })
-    .toBe('header song header');
-  await expect(bands.first()).not.toContainText('Nothing in this section yet');
+  await control.getByRole('menuitem', { name: 'Slides', exact: true }).click();
+  const kinds = () =>
+    control.evaluate(async () => {
+      const st = await window.lampstand.query('settings.get');
+      if (!st.ok || !st.value.lastServiceId) return null;
+      const plan = await window.lampstand.query('services.get', { id: st.value.lastServiceId });
+      return plan.ok && plan.value
+        ? plan.value.items
+            .map((i) => (i.kind === 'presentation' ? `slides×${i.slides.length}` : i.kind))
+            .join(' ')
+        : null;
+    });
+  await expect.poll(kinds).toBe('header slides×1 header');
+  await expect(emptyPlaceholders).toHaveCount(1);
+  await expect(
+    show.getByRole('button', { name: 'Add to New section', exact: false }),
+  ).not.toHaveCount(0);
+  // The "+" card at the end of the item adds a second slide (and opens it in Edit).
+  const textItem = show.getByRole('region', { name: 'Text slides' });
+  await textItem.getByRole('button', { name: 'Add a slide to Text slides' }).click();
+  await expect.poll(kinds).toBe('header slides×2 header');
+  await mode('Show');
+  // Edit a slide while it is live: the room keeps the old words until Update live.
+  const out = await outputPage();
+  await textItem.getByRole('button', { name: /^Slide 1/ }).click();
+  await expect(out.locator('.ls-text').last()).toContainText(/type your text here/i);
+  await textItem.getByRole('listitem').first().hover();
+  await textItem.getByRole('button', { name: /^Edit slide 1/ }).click();
+  await control.getByLabel('Text', { exact: true }).fill('Edited while live');
+  const updateLive = control.getByRole('button', { name: 'Update live' });
+  await expect(updateLive).toBeVisible();
+  await control.waitForTimeout(400);
+  await expect(out.locator('.ls-text').last()).not.toContainText('Edited while live');
+  await updateLive.click();
+  await expect(out.locator('.ls-text').last()).toContainText(/edited while live/i);
+  await expect(updateLive).toHaveCount(0);
+  await mode('Show');
   await control.screenshot({ path: 'test-results/43-section-add.png' });
   // Delete the playlist from its own menu: the other playlist opens in its place.
   const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
@@ -2437,12 +2477,15 @@ test('playlists: fill a section from the library, then delete the playlist', asy
 
 test('output survives a control renderer crash', async () => {
   const out = await outputPage();
+  // Whatever is on screen must stay there while the control window is gone.
+  const before = (await out.locator('.ls-text').last().textContent()) ?? '';
+  expect(before.length).toBeGreaterThan(0);
   await app.evaluate(({ BrowserWindow }) => {
     const ctl = BrowserWindow.getAllWindows().find((w) => w.getTitle() === 'Lampstand');
     ctl?.webContents.forcefullyCrashRenderer();
   });
   await new Promise((r) => setTimeout(r, 1500));
-  await expect(out.locator('.ls-text')).toContainText('For God so loved the world');
+  await expect(out.locator('.ls-text').last()).toHaveText(before);
   // The control window is reloaded automatically.
   await expect
     .poll(

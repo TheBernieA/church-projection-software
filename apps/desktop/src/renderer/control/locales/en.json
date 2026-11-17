@@ -54,12 +54,10 @@
       "countdown": "Counts down to the start, full screen.",
       "web": "Show a secure web page on the outputs."
     },
-    "addHere": "Add here",
-    "addHereOf": "Add songs, verses and media to {{name}}",
-    "addingHere": "Adding here",
-    "addingHereHelp": "Songs, verses and media you pick in the library now go into this section. Click again to stop.",
     "addToSection": "Add to {{name}}",
-    "sectionEmpty": "Nothing in this section yet. Click “Add here” and pick from the library, drag things onto it, or use + for slides, countdowns and more."
+    "sectionEmpty": "Nothing in this section yet.",
+    "addSlide": "Add a slide",
+    "addSlideOf": "Add a slide to {{name}}"
   },
   "library": {
     "title": "Library",
@@ -133,7 +131,7 @@
     "count_other": "{{count}} slides",
     "arrangement": "Arrangement",
     "size": "Slide size",
-    "quickEditHint": "Right-click to edit this slide",
+    "quickEditHint": "Click the pencil (or right-click) to edit this slide",
     "order": "Section order",
     "translation": "Translation",
     "noTranslation": "No translation",
@@ -145,7 +143,9 @@
     "view": "Slide view",
     "viewGrid": "Grid",
     "viewEasy": "Easy",
-    "itemSlides": "{{title}} slides"
+    "itemSlides": "{{title}} slides",
+    "edit": "Edit slide {{n}}",
+    "editLive": "Edit slide {{n}}: the screen keeps showing it as it is until you press Update live"
   },
   "monitor": {
     "preview": "Preview",
@@ -197,7 +197,10 @@
     "dragToMove": "Drag to move it, or onto … to tuck it away",
     "layersLabel": "Layers",
     "onTheStrip": "On the strip",
-    "resetStrip": "Reset the strip"
+    "resetStrip": "Reset the strip",
+    "liveEdited": "Edited since it went live",
+    "liveEditedHelp": "This slide was changed while it was on screen. The room still sees the old version until you update it.",
+    "updateLive": "Update live"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -821,7 +824,7 @@
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
-          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. To fill a section, click “Add here” on its coloured band and pick songs or verses in the library (they go into that section until you click it again), drag things onto the band, or use the band’s + for slides and countdowns. Drag to reorder; a section moves with everything under it. The … beside a playlist’s name duplicates or deletes it."
+          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. To fill a section, click the “+ Add to…” placeholder at its end (or the + on its coloured band), or drag things onto the band. A text item ends with a “+” card for another slide. Drag to reorder; a section moves with everything under it. The … beside a playlist’s name duplicates or deletes it."
         },
         "verse": {
           "q": "Put a Bible verse on screen",

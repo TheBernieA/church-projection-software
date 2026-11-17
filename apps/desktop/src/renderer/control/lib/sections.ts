@@ -120,3 +120,15 @@ export function intoSection(headerId: string, edit: Edit): Edit {
     );
   };
 }
+
+/** The heading a row falls under (itself, for a heading); null before the first heading. */
+export function sectionHeaderAt(
+  items: readonly ServiceItem[],
+  index: number,
+): Extract<ServiceItem, { kind: 'header' }> | null {
+  for (let i = index; i >= 0; i--) {
+    const it = items[i];
+    if (it?.kind === 'header') return it;
+  }
+  return null;
+}

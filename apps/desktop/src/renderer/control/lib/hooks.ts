@@ -8,8 +8,9 @@ import {
   type ServiceItem,
   type Settings,
   type Standby,
+  type ContentLayer,
 } from '@lampstand/core';
-import { findItem, loadMissingChapters, saveSettings } from './actions';
+import { findItem, loadMissingChapters, refreshLiveSlide, saveSettings } from './actions';
 import { buildItemSlides } from './slides';
 import { useStore } from './store';
 import { type ItemSlides, type SlideContext } from '../types';
@@ -165,4 +166,28 @@ export function useWidth<T extends HTMLElement = HTMLDivElement>(): [RefObject<T
     return () => ro.disconnect();
   }, []);
   return [ref, width];
+}
+
+/** What of a slide's words the room sees (its key and timings aside). */
+const shown = (c: ContentLayer | null | undefined): string =>
+  c
+    ? JSON.stringify([c.blocks, c.objects, c.reference, c.copyright, c.theme.id, c.theme.updatedAt])
+    : '';
+
+/**
+ * The live slide was edited after it went on screen: the room still sees the old version. Edits
+ * never reach the screen by themselves (an operator can fix a typo calmly); `update` puts the
+ * new version up, in place, without a transition.
+ */
+export function useLiveEdited(): { edited: boolean; update: () => void } {
+  const cursor = useStore((s) => s.liveCursor);
+  const program = useStore((s) => s.live?.program.content ?? null);
+  const item = useStore((s) =>
+    cursor ? (s.service?.items.find((i) => i.id === cursor.itemId) ?? null) : null,
+  );
+  const { slides } = useItemSlides(item);
+  const slide = cursor ? slides[cursor.index] : undefined;
+  const now = slide?.action.kind === 'content' ? slide.action.content : null;
+  const edited = !!now && !!program && now.key === program.key && shown(now) !== shown(program);
+  return { edited, update: () => void (cursor && refreshLiveSlide(cursor.itemId)) };
 }

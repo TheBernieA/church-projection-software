@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   AlignLeft,
   Clock3,
@@ -11,8 +11,16 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ServiceItem } from '@lampstand/core';
-import { Button, IconButton, Segmented, Slider, Typography, percent } from '@lampstand/ui';
+import { newId, type ServiceItem } from '@lampstand/core';
+import {
+  Button,
+  IconButton,
+  Segmented,
+  Slider,
+  Typography,
+  percent,
+  typographyClass,
+} from '@lampstand/ui';
 import {
   goLiveSlide,
   runOnAnnouncementsLayer,
@@ -22,9 +30,9 @@ import {
 import { feature } from '../../lib/features';
 import { useItemSlides } from '../../lib/hooks';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
-import { insertInSection, sectionIsEmpty } from '../../lib/sections';
+import { insertInSection, intoSection, sectionHeaderAt } from '../../lib/sections';
 import { itemTitle, sectionColor } from '../../lib/slides';
-import { editItems, openDialog, useStore } from '../../lib/store';
+import { editItems, openDialog, updateItem, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { KindTile } from '../kindIcons';
 import { AddMenu, SectionAdd } from '../ServicePanel';
@@ -59,18 +67,15 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
 
 /**
  * A section's coloured band: its name, "Add here" and "+" on the right. Things dragged from
- * the library onto it go into the section; an empty section says how to fill it.
+ * the library onto it go into the section.
  */
 function SectionBand({
   header,
-  empty,
   update,
 }: {
   header: Extract<ServiceItem, { kind: 'header' }>;
-  empty: boolean;
   update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
 }) {
-  const { t } = useTranslation();
   const [dropping, setDropping] = useState(false);
   return (
     <div
@@ -113,12 +118,77 @@ function SectionBand({
         </Typography>
         <SectionAdd header={header} update={update} />
       </div>
-      {empty && (
-        <Typography as="p" size={12} tone="muted" leading="snug" className="px-3 py-3">
-          {t('service.sectionEmpty')}
-        </Typography>
-      )}
     </div>
+  );
+}
+
+/**
+ * The end of a section: a "+" to add slides, a song, a countdown and the rest into it (an empty
+ * section says so first).
+ */
+function SectionPlaceholder({
+  header,
+  empty,
+  update,
+}: {
+  header: Extract<ServiceItem, { kind: 'header' }>;
+  empty: boolean;
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="px-3 pb-3 pt-1">
+      <AddMenu
+        update={(fn) => update(intoSection(header.id, fn))}
+        trigger={
+          <Button
+            variant="bare"
+            className={`flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-dashed border-[var(--hairline-strong)] text-[var(--text-3)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${typographyClass({ size: 12, weight: 'medium' })}`}
+          >
+            <Plus size={14} />
+            {empty
+              ? `${t('service.sectionEmpty')} ${t('service.addToSection', { name: header.label })}`
+              : t('service.addToSection', { name: header.label })}
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
+/** The last card of a text item: "+" adds a slide and opens it in Edit. */
+function AddSlideCard({ item, list }: { item: ServiceItem; list: boolean }) {
+  const { t } = useTranslation();
+  const title = item.kind === 'presentation' ? item.title : t('service.kind.announcements');
+  const add = (): void => {
+    if (item.kind !== 'presentation' && item.kind !== 'announcements') return;
+    const index = item.slides.length;
+    updateItem(item.id, (x) =>
+      x.kind === 'presentation' || x.kind === 'announcements'
+        ? { ...x, slides: [...x.slides, { id: newId(), title: '', body: '' }] }
+        : x,
+    );
+    useStore.setState({
+      selectedItemId: item.id,
+      editCursor: { itemId: item.id, index },
+      mode: 'edit',
+    });
+  };
+  return (
+    <li>
+      <Button
+        variant="bare"
+        aria-label={t('service.addSlideOf', { name: title })}
+        title={t('service.addSlide')}
+        onClick={add}
+        className={`flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-[3px] border border-dashed border-[var(--hairline-strong)] text-[var(--text-3)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${
+          list ? 'h-10 flex-row' : 'aspect-video h-auto'
+        } ${typographyClass({ size: 12, weight: 'medium' })}`}
+      >
+        <Plus size={list ? 14 : 22} />
+        {t('service.addSlide')}
+      </Button>
+    </li>
   );
 }
 
@@ -169,6 +239,7 @@ function ItemSection({
     select();
     void goLiveSlide(item, i);
   };
+  const addsSlides = item.kind === 'presentation' || item.kind === 'announcements';
   const quickEdit = (i: number): void => {
     if (!editable(item)) return;
     useStore.setState({
@@ -269,6 +340,7 @@ function ItemSection({
               onDoubleClick={() => live(i)}
             />
           ))}
+          {addsSlides && <AddSlideCard item={item} list />}
         </ol>
       ) : (
         <ol
@@ -286,6 +358,7 @@ function ItemSection({
               hint={editable(item) ? t('slides.quickEditHint') : undefined}
               onClick={() => click(i)}
               onDoubleClick={() => live(i)}
+              onEdit={editable(item) ? () => quickEdit(i) : undefined}
               onContextMenu={(e) => {
                 if (!editable(item)) return;
                 e.preventDefault();
@@ -293,6 +366,7 @@ function ItemSection({
               }}
             />
           ))}
+          {addsSlides && <AddSlideCard item={item} list={false} />}
         </ol>
       )}
     </section>
@@ -333,35 +407,47 @@ export function PlaylistView() {
         {items.length === 0 && (
           <EmptyState icon={<ListPlus size={28} strokeWidth={1.5} />} title={t('service.empty')} />
         )}
-        {items.map((item) =>
-          item.kind === 'header' ? (
-            <SectionBand
-              key={item.id}
-              header={item}
-              empty={sectionIsEmpty(items, item.id)}
+        {items.map((item, i) => {
+          // The section this row belongs to, and whether it is that section's last row.
+          const header = sectionHeaderAt(items, i);
+          const next = items[i + 1];
+          const endsSection = !!header && (!next || next.kind === 'header');
+          const placeholder = endsSection && (
+            <SectionPlaceholder
+              key={`${header.id}:add`}
+              header={header}
+              empty={item.kind === 'header'}
               update={update}
             />
+          );
+          return item.kind === 'header' ? (
+            <Fragment key={item.id}>
+              <SectionBand header={item} update={update} />
+              {placeholder}
+            </Fragment>
           ) : (
-            <ItemSection
-              key={item.id}
-              item={item}
-              selected={selected === item.id}
-              easy={easy}
-              thumbSize={thumb.size}
-              onLibraryDrop={(dropped) => {
-                update((xs) => {
-                  const at = xs.findIndex((x) => x.id === item.id);
-                  return [...xs.slice(0, at), dropped, ...xs.slice(at)];
-                });
-                useStore.setState({ selectedItemId: dropped.id, adhoc: null });
-              }}
-              register={(el) => {
-                if (el) sections.current.set(item.id, el);
-                else sections.current.delete(item.id);
-              }}
-            />
-          ),
-        )}
+            <Fragment key={item.id}>
+              <ItemSection
+                item={item}
+                selected={selected === item.id}
+                easy={easy}
+                thumbSize={thumb.size}
+                onLibraryDrop={(dropped) => {
+                  update((xs) => {
+                    const at = xs.findIndex((x) => x.id === item.id);
+                    return [...xs.slice(0, at), dropped, ...xs.slice(at)];
+                  });
+                  useStore.setState({ selectedItemId: dropped.id, adhoc: null });
+                }}
+                register={(el) => {
+                  if (el) sections.current.set(item.id, el);
+                  else sections.current.delete(item.id);
+                }}
+              />
+              {placeholder}
+            </Fragment>
+          );
+        })}
       </div>
       <div className="flex h-9 shrink-0 items-center gap-3 border-t border-[var(--divider)] bg-[var(--surface-1)] px-2">
         <AddMenu

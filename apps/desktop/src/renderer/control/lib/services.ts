@@ -43,7 +43,7 @@ export async function deleteService(id: string, name: string): Promise<void> {
   if (state.service?.id === id) {
     const other = state.services.find((s) => s.id !== id && !s.isTemplate);
     if (other) await openService(other.id);
-    else useStore.setState({ service: null, selectedItemId: null, addTarget: null, adhoc: null });
+    else useStore.setState({ service: null, selectedItemId: null, adhoc: null });
   }
   await attempt(async () => {
     await cmd('service.delete', { id });

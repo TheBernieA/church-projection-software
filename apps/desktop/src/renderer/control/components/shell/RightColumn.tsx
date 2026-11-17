@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   Megaphone,
   PanelBottom,
+  Pencil,
   MessageSquareText,
   Play,
   Snowflake,
@@ -53,7 +54,7 @@ import {
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
-import { useHasMainOutput, useStandby } from '../../lib/hooks';
+import { useHasMainOutput, useLiveEdited, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import { MediaTransport } from '../MediaTransport';
@@ -266,6 +267,34 @@ function LowerThirdRow() {
   );
 }
 
+/** The live slide was edited: say so, and put the new version up only when asked. */
+function LiveEditedBar() {
+  const { t } = useTranslation();
+  const { edited, update } = useLiveEdited();
+  if (!edited) return null;
+  return (
+    <div
+      role="status"
+      className="flex items-center gap-2 rounded-[var(--radius-control)] bg-[var(--accent-soft)] py-1.5 pl-2.5 pr-1.5"
+    >
+      <Pencil size={13} aria-hidden className="shrink-0 text-[var(--accent)]" />
+      <Typography
+        size={12}
+        weight="medium"
+        tone="primary"
+        title={t('monitor.liveEditedHelp')}
+        className="min-w-0 flex-1"
+        truncate
+      >
+        {t('monitor.liveEdited')}
+      </Typography>
+      <Button size="xs" variant="primary" onClick={update}>
+        {t('monitor.updateLive')}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * The transport under the monitor drives the video on screen, or the one waiting in Preview
  * (played silently, so the operator can check it). With both, a Live / Preview switch picks.
@@ -463,6 +492,7 @@ export function RightColumn() {
               {p.content?.label ?? mediaName ?? ''}
             </Typography>
           </div>
+          <LiveEditedBar />
           <div className="flex gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               {screen === 'audience' ? (
