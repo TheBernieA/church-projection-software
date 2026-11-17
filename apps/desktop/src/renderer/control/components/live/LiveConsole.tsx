@@ -972,7 +972,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
         )}
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      {/* Always in view: going live, recording and the picture. The options scroll beneath. */}
+      <div className="shrink-0">
         {/* Going live and recording. */}
         <div className="flex flex-col gap-2 px-4 py-3.5">
           {s && !s.available ? (
@@ -1066,7 +1067,9 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
             )}
           </div>
         </div>
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto">
         <DestinationsPanel s={s} st={st} />
         <QuickSettings
           s={s}
