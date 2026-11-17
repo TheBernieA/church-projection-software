@@ -205,6 +205,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* What the stream shows comes first: it is what changes most during a service. */}
+        <PicturePanel st={st} />
         <DestinationsPanel s={s} st={st} />
         <QuickSettings
           s={s}
@@ -213,7 +215,6 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           canReady={canReady}
           onReady={toggleReady}
         />
-        <PicturePanel st={st} />
         <SoundPanel />
         {s && <HealthPanel s={s} />}
 
