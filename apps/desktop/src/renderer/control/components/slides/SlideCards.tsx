@@ -1,8 +1,9 @@
 import type { MouseEvent } from 'react';
-import { Film, Globe, Image as ImageIcon, Pencil } from 'lucide-react';
+import { Film, Globe, Image as ImageIcon, Pencil, Wallpaper } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { Scene } from '@lampstand/core';
 import { TallyTag, Typography, Button, IconButton } from '@lampstand/ui';
+import { putBehindWords } from '../../lib/actions';
 import { groupColor } from '../../lib/slides';
 import { SceneView } from '../SceneView';
 import { type PresentableSlide } from '../../types';
@@ -127,6 +128,22 @@ export function SlideCard({
           className="absolute left-1.5 top-1.5 z-[1] flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover/slide:opacity-100"
         >
           <Pencil size={12} />
+        </IconButton>
+      )}
+      {/* A picture or video slide can go behind the words instead of over everything. */}
+      {slide.action.kind === 'media' && (
+        <IconButton
+          size="2xs"
+          variant="bare"
+          aria-label={`${t('mediaBin.behindWords')}: ${slide.label}`}
+          title={t('mediaBin.behindWords')}
+          onClick={() => {
+            if (slide.action.kind === 'media') void putBehindWords(slide.action.media);
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="absolute left-1.5 top-1.5 z-[1] flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover/slide:opacity-100"
+        >
+          <Wallpaper size={13} />
         </IconButton>
       )}
       <Button

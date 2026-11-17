@@ -2449,6 +2449,14 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   await expect(out.locator('.ls-layer-media img')).toHaveCount(1);
   await bin.getByRole('button', { name: 'Use behind the words: Seed image' }).click();
   await expect(out.locator('.ls-layer-media img')).toHaveCount(0);
+  // The same from the picture's slide in the middle.
+  await bin.getByRole('button', { name: 'Show now: Seed image' }).click();
+  await expect(out.locator('.ls-layer-media img')).toHaveCount(1);
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: 'Use behind the words: Seed image' })
+    .click();
+  await expect(out.locator('.ls-layer-media img')).toHaveCount(0);
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));

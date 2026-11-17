@@ -483,3 +483,16 @@ export function addVideoCountdown(mediaId: string | null): void {
   });
   useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
 }
+
+/**
+ * A picture or video as the background, with the slide's words on top (unlike showing it as
+ * media, which takes the whole screen). If it is on screen as media, it moves behind the words.
+ */
+export async function putBehindWords(media: { mediaId: string; kind: string }): Promise<void> {
+  await setBackground(
+    media.kind === 'video'
+      ? { kind: 'video', mediaId: media.mediaId, loop: true }
+      : { kind: 'image', mediaId: media.mediaId },
+  );
+  if (get().live?.program.media?.mediaId === media.mediaId) await clearLayer('media');
+}

@@ -45,13 +45,7 @@ import {
   percent,
 } from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
-import {
-  addVideoCountdown,
-  clearLayer,
-  openAdhoc,
-  openPick,
-  setBackground,
-} from '../../lib/actions';
+import { addVideoCountdown, openAdhoc, openPick, putBehindWords } from '../../lib/actions';
 import { playAudio, probeDuration } from '../../lib/audio';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import { previewTrack } from '../../lib/audioPreview';
@@ -263,20 +257,6 @@ function openProps(m: MediaItem) {
 }
 
 /**
- * A picture or video as the background: the slide's words (lyrics, verses) stay on top of it,
- * unlike showing it as media, which takes the whole screen.
- */
-async function putBehindWords(m: MediaItem): Promise<void> {
-  await setBackground(
-    m.kind === 'video'
-      ? { kind: 'video', mediaId: m.id, loop: true }
-      : { kind: 'image', mediaId: m.id },
-  );
-  // Already on screen as media (covering the words): it moves behind them instead.
-  if (useStore.getState().live?.program.media?.mediaId === m.id) await clearLayer('media');
-}
-
-/**
  * The tile's own play button (on hover): audio plays in the room, a video or picture goes on
  * screen now. The rest of the tile only opens it.
  */
@@ -298,7 +278,7 @@ function PlayNow({ m }: { m: MediaItem }) {
           title={behind}
           onClick={(e) => {
             e.stopPropagation();
-            void putBehindWords(m);
+            void putBehindWords({ mediaId: m.id, kind: m.kind });
           }}
           onDoubleClick={(e) => e.stopPropagation()}
           className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[opacity,transform,background-color] hover:scale-105 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover:opacity-100"
@@ -425,7 +405,10 @@ function TileMenu({
             </DropdownMenu.Item>
           )}
           {m.kind !== 'audio' && (
-            <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void putBehindWords(m)}>
+            <DropdownMenu.Item
+              className={ITEM_CLASS}
+              onSelect={() => void putBehindWords({ mediaId: m.id, kind: m.kind })}
+            >
               <Wallpaper size={14} />
               {t('mediaBin.behindWords')}
             </DropdownMenu.Item>
