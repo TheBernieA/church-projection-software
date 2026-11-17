@@ -5,10 +5,11 @@
  */
 import { existsSync } from 'node:fs';
 
-export type DestinationKind = 'youtube' | 'facebook' | 'custom';
+export type DestinationKind = 'youtube' | 'facebook' | 'custom' | 'direct';
+type ServiceKind = Exclude<DestinationKind, 'custom' | 'direct'>;
 
 /** Where each kind of service takes a stream (the key is appended). */
-export const INGEST: Record<Exclude<DestinationKind, 'custom'>, string> = {
+export const INGEST: Record<ServiceKind, string> = {
   // RTMPS on port 443: encrypted, and it gets through networks that block RTMP's port 1935.
   youtube: 'rtmps://a.rtmps.youtube.com:443/live2',
   facebook: 'rtmps://live-api-s.facebook.com:443/rtmp',
@@ -32,6 +33,44 @@ export function isStreamUrl(url: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** A direct link's address: srt://host:port or udp://host:port (options may follow a "?"). */
+export function isDirectUrl(url: string): boolean {
+  if (!/^(srt|udp):\/\/[\x21-\x7e]+$/i.test(url)) return false;
+  try {
+    // Read as http so the host and port are parsed the standard way.
+    const u = new URL(url.replace(/^(srt|udp):/i, 'http:'));
+    const port = Number(u.port);
+    return u.hostname.length > 0 && port > 0 && port < 65536 && u.pathname === '/' && !u.username;
+  } catch {
+    return false;
+  }
+}
+
+/** Which protocol a destination address uses ('rtmp' covers rtmps). */
+export const protocolOf = (url: string): 'srt' | 'udp' | 'rtmp' =>
+  /^srt:/i.test(url) ? 'srt' : /^udp:/i.test(url) ? 'udp' : 'rtmp';
+
+/**
+ * A direct link's address with what a low-delay link needs, unless the address already says:
+ * network packets sized for MPEG-TS, and for SRT, calling the receiver with a 120 ms window for
+ * resending lost packets (ffmpeg takes it in microseconds).
+ */
+export function directUrl(url: string): string {
+  const [base = '', query = ''] = url.trim().split('?');
+  const given = new Set(query.split('&').map((p) => p.split('=')[0]));
+  const wanted: [string, string][] =
+    protocolOf(base) === 'srt'
+      ? [
+          ['mode', 'caller'],
+          ['latency', '120000'],
+          ['pkt_size', '1316'],
+        ]
+      : [['pkt_size', '1316']];
+  const add = wanted.filter(([k]) => !given.has(k)).map(([k, v]) => `${k}=${v}`);
+  const all = [query, ...add].filter(Boolean).join('&');
+  return all ? `${base}?${all}` : base;
 }
 
 /** A stream key: printable, no spaces or slashes (it goes at the end of a URL). */
@@ -87,7 +126,9 @@ export function plausibleKey(kind: DestinationKind, key: string): boolean {
 
 /** An ffmpeg log line with any stream key hidden (the last part of an rtmp(s) address). */
 export const redactKeys = (line: string): string =>
-  line.replace(/(rtmps?:\/\/[^\s'"|\]]*\/)[^\s'"|\]/]+/gi, '$1•••');
+  line
+    .replace(/(rtmps?:\/\/[^\s'"|\]]*\/)[^\s'"|\]/]+/gi, '$1•••')
+    .replace(/(passphrase=)[^\s'"|\]&]+/gi, '$1•••');
 
 /**
  * Why a destination stopped, in ffmpeg's words: the tee's own reason ("Broken pipe",
@@ -110,7 +151,7 @@ export function destinationFailure(line: string, before: readonly string[]): str
  * A second way in, tried when the first can't connect: YouTube over plain RTMP (port 1935) when
  * RTMPS on 443 fails (some older TLS setups or proxies), and the other way round.
  */
-export const INGEST_FALLBACK: Partial<Record<Exclude<DestinationKind, 'custom'>, string>> = {
+export const INGEST_FALLBACK: Partial<Record<ServiceKind, string>> = {
   youtube: 'rtmp://a.rtmp.youtube.com/live2',
 };
 
@@ -121,6 +162,7 @@ export function destinationUrl(
   key: string | null,
   alt = false,
 ): string {
+  if (kind === 'direct') return directUrl(url);
   const fallback = kind === 'custom' ? undefined : INGEST_FALLBACK[kind];
   const base = (kind === 'custom' ? url : alt && fallback ? fallback : INGEST[kind]).replace(
     /\/+$/,
@@ -158,7 +200,7 @@ export interface EncodeOptions {
   input?: 'raw' | 'flv';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
   x264Preset?: 'ultrafast' | 'superfast' | 'veryfast' | 'faster';
-  /** Full ingest URLs (keys included). */
+  /** Full destination URLs (keys included): RTMP(S) services, and SRT/UDP direct links. */
   streams: string[];
   /** Recording file path, or null. */
   record: string | null;
@@ -220,6 +262,16 @@ export function videoCodecArgs(
 }
 
 /**
+ * How each kind of destination is packaged. Services take FLV over RTMP; direct links take
+ * MPEG-TS (H.264 in the form it needs, timestamps only 0.1 s ahead of the clock so the receiver
+ * has no reason to wait). Each may fail on its own.
+ */
+const STREAM_OPTIONS = {
+  flv: '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]',
+  ts: '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:bsfs/v=h264_mp4toannexb]',
+} as const;
+
+/**
  * ffmpeg's arguments: raw BGRA frames on stdin (pipe:0), sent at a steady frame rate (the last
  * frame repeats when nothing changed), and float PCM on fd 3, timed by its sample count; encode
  * once; send to every stream (FLV, each allowed
@@ -230,8 +282,7 @@ export function buildArgs(o: EncodeOptions): string[] {
   const outputs = [
     // Each packet goes out at once: no batching in the muxer, none in the network stack.
     ...o.streams.map(
-      (u) =>
-        `[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]${teeEscape(u)}`,
+      (u) => `${STREAM_OPTIONS[protocolOf(u) === 'rtmp' ? 'flv' : 'ts']}${teeEscape(u)}`,
     ),
     ...(o.record
       ? [`[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]${teeEscape(o.record)}`]

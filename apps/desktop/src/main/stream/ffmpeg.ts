@@ -33,6 +33,20 @@ export function findFfmpeg(): string | null {
   return candidates.find((p) => existsSync(p)) ?? null;
 }
 
+let protocols: Promise<string[]> | null = null;
+
+/** The protocols this ffmpeg can send over (asked once): 'rtmp', 'srt', 'udp'… */
+export function probeProtocols(ffmpeg: string): Promise<string[]> {
+  protocols ??= new Promise((resolve) => {
+    execFile(ffmpeg, ['-hide_banner', '-protocols'], { timeout: 10_000 }, (err, stdout) => {
+      if (err) return resolve([]);
+      const out = stdout.split(/Output:/i)[1] ?? '';
+      resolve(out.split(/\s+/).filter(Boolean));
+    });
+  });
+  return protocols;
+}
+
 let encoders: Promise<string[]> | null = null;
 
 /** The H.264 encoders this ffmpeg has (asked once). */

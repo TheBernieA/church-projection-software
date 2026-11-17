@@ -4,9 +4,16 @@ import { IdSchema } from './common';
 /** A place the stream goes. Its key is stored encrypted on this computer, never here. */
 export const StreamDestinationSchema = z.object({
   id: IdSchema,
-  kind: z.enum(['youtube', 'facebook', 'custom']),
+  /**
+   * 'direct' is a direct link to a receiver you run (OBS, vMix, VLC, a decoder box): SRT or
+   * MPEG-TS over UDP, with well under a second of delay and no service in between.
+   */
+  kind: z.enum(['youtube', 'facebook', 'custom', 'direct']),
   name: z.string().min(1).max(60),
-  /** Custom destinations: the RTMP(S) ingest address (the key is added after it). */
+  /**
+   * Custom destinations: the RTMP(S) ingest address (the key is added after it). Direct links:
+   * the receiver's address (srt://host:port or udp://host:port).
+   */
   url: z.string().max(500).default(''),
   enabled: z.boolean().default(true),
 });

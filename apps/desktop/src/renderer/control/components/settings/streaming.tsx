@@ -64,7 +64,9 @@ export function DestinationRow({
                 ? '#d43b30'
                 : dest.kind === 'facebook'
                   ? '#2f6ad9'
-                  : '#555b6e',
+                  : dest.kind === 'direct'
+                    ? '#1f8a70'
+                    : '#555b6e',
           }}
         >
           {t(`streaming.kinds.${dest.kind}`)}
@@ -90,6 +92,21 @@ export function DestinationRow({
           <Trash2 size={14} />
         </IconButton>
       </div>
+      {dest.kind === 'direct' && (
+        <>
+          <DeferredInput
+            aria-label={t('streaming.directUrl')}
+            placeholder="srt://192.168.1.50:9000"
+            value={dest.url}
+            maxLength={500}
+            onCommit={(url) => onChange({ url: url.trim() })}
+            className="field !h-8 w-full"
+          />
+          <Typography as="p" size={11} tone="muted">
+            {t('streaming.directHelp')}
+          </Typography>
+        </>
+      )}
       {dest.kind === 'custom' && (
         <DeferredInput
           aria-label={t('streaming.url')}
@@ -100,35 +117,39 @@ export function DestinationRow({
           className="field !h-8 w-full"
         />
       )}
-      <div className="flex items-center gap-2">
-        <KeyRound size={14} className="shrink-0 text-[var(--text-3)]" />
-        <input
-          type="password"
-          autoComplete="off"
-          aria-label={t('streaming.keyOf', { name: dest.name })}
-          placeholder={hasKey ? t('streaming.keyReplace') : t('streaming.keyPlaceholder')}
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && key.trim() && void saveKey(key)}
-          className="field !h-8 flex-1"
-        />
-        <Button
-          size="xs"
-          variant="primary"
-          disabled={!key.trim()}
-          onClick={() => void saveKey(key)}
-        >
-          {t('streaming.saveKey')}
-        </Button>
-        {hasKey && (
-          <Button size="xs" variant="ghost" onClick={() => void saveKey(null)}>
-            {t('streaming.forgetKey')}
-          </Button>
-        )}
-      </div>
-      <Typography as="p" size={11} tone="muted">
-        {hasKey ? t('streaming.keyStored') : t(`streaming.keyHelp.${dest.kind}`)}
-      </Typography>
+      {dest.kind !== 'direct' && (
+        <>
+          <div className="flex items-center gap-2">
+            <KeyRound size={14} className="shrink-0 text-[var(--text-3)]" />
+            <input
+              type="password"
+              autoComplete="off"
+              aria-label={t('streaming.keyOf', { name: dest.name })}
+              placeholder={hasKey ? t('streaming.keyReplace') : t('streaming.keyPlaceholder')}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && key.trim() && void saveKey(key)}
+              className="field !h-8 flex-1"
+            />
+            <Button
+              size="xs"
+              variant="primary"
+              disabled={!key.trim()}
+              onClick={() => void saveKey(key)}
+            >
+              {t('streaming.saveKey')}
+            </Button>
+            {hasKey && (
+              <Button size="xs" variant="ghost" onClick={() => void saveKey(null)}>
+                {t('streaming.forgetKey')}
+              </Button>
+            )}
+          </div>
+          <Typography as="p" size={11} tone="muted">
+            {hasKey ? t('streaming.keyStored') : t(`streaming.keyHelp.${dest.kind}`)}
+          </Typography>
+        </>
+      )}
     </section>
   );
 }
@@ -188,7 +209,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         footnote={t('streaming.destinationsHelp')}
         action={
           <span className="flex gap-1">
-            {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+            {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
               <Button
                 key={k}
                 size="xs"

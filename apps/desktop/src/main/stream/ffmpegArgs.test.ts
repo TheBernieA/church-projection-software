@@ -5,6 +5,8 @@ import {
   destinationFailure,
   redactKeys,
   destinationUrl,
+  directUrl,
+  isDirectUrl,
   freeName,
   isStreamKey,
   isStreamUrl,
@@ -180,5 +182,53 @@ describe('progress and names', () => {
     const at = new Date(2026, 10, 16, 9, 5);
     expect(recordingName(at)).toBe('Lampstand 2026-11-16 09-05.mp4');
     expect(recordingName(at, 2)).toBe('Lampstand 2026-11-16 09-05 part 2.mp4');
+  });
+});
+
+describe('direct links', () => {
+  it('accepts SRT and UDP addresses with a host and port', () => {
+    expect(isDirectUrl('srt://192.168.1.50:9000')).toBe(true);
+    expect(isDirectUrl('udp://overflow.local:5000?ttl=4')).toBe(true);
+    expect(isDirectUrl('srt://192.168.1.50')).toBe(false);
+    expect(isDirectUrl('rtmp://a/live')).toBe(false);
+    expect(isDirectUrl('udp://host:99999')).toBe(false);
+    expect(isDirectUrl('srt://host:9000 extra')).toBe(false);
+  });
+
+  it('adds low-delay options, keeping what the address already says', () => {
+    expect(directUrl('udp://10.0.0.2:9000')).toBe('udp://10.0.0.2:9000?pkt_size=1316');
+    expect(directUrl('srt://10.0.0.2:9000')).toBe(
+      'srt://10.0.0.2:9000?mode=caller&latency=120000&pkt_size=1316',
+    );
+    expect(directUrl('srt://10.0.0.2:9000?latency=400000&passphrase=secretsecret')).toBe(
+      'srt://10.0.0.2:9000?latency=400000&passphrase=secretsecret&mode=caller&pkt_size=1316',
+    );
+    expect(destinationUrl('direct', 'udp://10.0.0.2:9000', 'ignored')).toBe(
+      'udp://10.0.0.2:9000?pkt_size=1316',
+    );
+  });
+
+  it('packages a direct link as MPEG-TS, beside an RTMP service', () => {
+    const args = buildArgs({
+      width: 1280,
+      height: 720,
+      fps: 30,
+      videoKbps: 3500,
+      audioKbps: 160,
+      encoder: 'libx264',
+      streams: ['rtmp://a/live2/k1', 'udp://10.0.0.2:9000?pkt_size=1316'],
+      record: null,
+    });
+    const tee = args.at(-1) ?? '';
+    expect(tee.split('|')[0]).toMatch(/^\[f=flv:/);
+    expect(tee.split('|')[1]).toBe(
+      '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:bsfs/v=h264_mp4toannexb]udp://10.0.0.2:9000?pkt_size=1316',
+    );
+  });
+
+  it('hides an SRT passphrase in log lines', () => {
+    expect(redactKeys('srt://h:9000?passphrase=secretsecret&mode=caller')).toBe(
+      'srt://h:9000?passphrase=•••&mode=caller',
+    );
   });
 });

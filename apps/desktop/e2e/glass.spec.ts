@@ -15,6 +15,8 @@ test.skip(!process.env.LAMPSTAND_GLASS, 'set LAMPSTAND_GLASS=1 to measure');
 test.setTimeout(240_000);
 
 const FLIPS = Number(process.env.LAMPSTAND_GLASS_FLIPS ?? 20);
+/** 'rtmp' (as to a streaming service) or 'udp' (a direct link). */
+const LINK = process.env.LAMPSTAND_GLASS_LINK === 'udp' ? 'udp' : 'rtmp';
 
 test('livestream glass-to-glass delay to a local RTMP server', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'lampstand-glass-'));
@@ -51,24 +53,25 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     }),
   );
   // The server: decodes each frame the moment it arrives, down to 2×2 grey pixels.
-  const port = 19361;
+  // A port of its own each run (the last run's receiver may not have let go of its port yet).
+  const port = 19361 + Math.floor(Math.random() * 500);
+  const address = LINK === 'udp' ? `udp://127.0.0.1:${port}` : `rtmp://127.0.0.1:${port}/live/test`;
   const server = spawn('ffmpeg', [
     '-v',
-    'error',
+    'warning',
     '-fflags',
     'nobuffer',
     '-flags',
     'low_delay',
     '-probesize',
-    '32768',
+    LINK === 'udp' ? '1000000' : '32768',
     '-analyzeduration',
-    '0',
+    LINK === 'udp' ? '1000000' : '0',
     '-threads',
     '1',
-    '-listen',
-    '1',
+    ...(LINK === 'udp' ? [] : ['-listen', '1']),
     '-i',
-    `rtmp://127.0.0.1:${port}/live/test`,
+    address,
     '-an',
     '-vf',
     'scale=2:2,format=gray',
@@ -91,6 +94,8 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
       rest = rest.subarray(4);
     }
   });
+  const serverLog: string[] = [];
+  server.stderr.on('data', (d: Buffer) => serverLog.push(d.toString()));
   await new Promise((r) => setTimeout(r, 800));
 
   const env = {
@@ -115,7 +120,7 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     .toBe(true);
   const custom = process.env.LAMPSTAND_PERF_CUSTOM ?? '1080x30';
   await control.evaluate(
-    async ([c, p]) => {
+    async ([c, url, link]) => {
       const r = await window.lampstand.query('settings.get');
       if (!r.ok) return;
       const [h, f] = c.split('x').map(Number);
@@ -131,9 +136,9 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
               destinations: [
                 {
                   id: 'd1',
-                  kind: 'custom',
+                  kind: link === 'udp' ? 'direct' : 'custom',
                   name: 'Local',
-                  url: `rtmp://127.0.0.1:${p}/live/test`,
+                  url,
                   enabled: true,
                 },
               ],
@@ -142,7 +147,7 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
         },
       });
     },
-    [custom, port] as const,
+    [custom, address, LINK] as const,
   );
   await cmd('live.goLive', {
     media: {
@@ -176,7 +181,7 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
   await cmd('stream.stop', { stream: true });
   await control.waitForTimeout(1500);
   await app.close();
-  server.kill();
+  server.kill('SIGKILL');
 
   // Each flip: the first frame after the command whose brightness has started to move (the
   // black-out is a 300 ms fade, so its first step is what's timed, not its end).
@@ -190,6 +195,7 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     .filter((x): x is number => x !== null);
   const sorted = [...delays].sort((a, b) => a - b);
   const result = {
+    link: LINK,
     size: custom,
     pipeline: last?.pipeline,
     frames: frames.length,
@@ -201,5 +207,6 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     delays,
   };
   console.log('GLASS', JSON.stringify(result));
+  if (!frames.length) console.log('RECEIVER', serverLog.join('').slice(0, 1500));
   expect(delays.length).toBeGreaterThan(FLIPS / 2);
 });

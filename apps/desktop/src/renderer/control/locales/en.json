@@ -1536,8 +1536,11 @@
     "kinds": {
       "youtube": "YouTube",
       "facebook": "Facebook",
-      "custom": "Custom RTMP"
+      "custom": "Custom RTMP",
+      "direct": "Direct link"
     },
+    "directUrl": "Receiver's address (SRT or UDP)",
+    "directHelp": "Straight to a receiver you run (OBS, vMix, VLC, a decoder box), with well under a second of delay. Type the receiver's address: srt://192.168.1.50:9000, or udp://192.168.1.50:9000 on the same network. The receiver listens on that port.",
     "destName": "Name",
     "enabledOf": "Stream to {{name}}",
     "remove": "Remove {{name}}",

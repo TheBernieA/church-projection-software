@@ -38,17 +38,19 @@ import { secureWebPreferences } from '../security/hardening';
 import type { SecretStore } from '../secrets/secretStore';
 import type { WindowManager } from '../windows/windowManager';
 import { type Logger } from '../types';
-import { findFfmpeg, probeEncoders } from './ffmpeg';
+import { findFfmpeg, probeEncoders, probeProtocols } from './ffmpeg';
 import {
   buildArgs,
   destinationFailure,
   destinationUrl,
   freeName,
   redactKeys,
+  isDirectUrl,
   isStreamUrl,
   parseProgress,
   pickEncoder,
   plausibleKey,
+  protocolOf,
   recordingName,
   type Encoder,
 } from './ffmpegArgs';
@@ -860,7 +862,26 @@ export class StreamController {
     const urls: string[] = [];
     const status: StreamDestinationStatus[] = [];
     if (!this.want.stream) return { urls, status };
+    const ffmpeg = findFfmpeg();
+    const protocols = ffmpeg ? await probeProtocols(ffmpeg) : [];
     for (const dest of this.d.getSettings().stream.destinations.filter((x) => x.enabled)) {
+      if (dest.kind === 'direct') {
+        // A direct link (SRT or UDP) to a receiver: no key, no service in between.
+        const address = dest.url.trim();
+        const reason = !isDirectUrl(address)
+          ? 'The address should look like srt://192.168.1.50:9000 or udp://192.168.1.50:9000.'
+          : !protocols.includes(protocolOf(address))
+            ? 'The ffmpeg on this computer was built without SRT. Use a udp:// address, or install an ffmpeg that has SRT.'
+            : null;
+        if (reason) {
+          status.push({ id: dest.id, name: dest.name, state: 'failed', reason });
+          continue;
+        }
+        this.d.log.info('destination', { id: dest.id, kind: dest.kind });
+        urls.push(destinationUrl(dest.kind, address, null));
+        status.push({ id: dest.id, name: dest.name, state: 'connecting' });
+        continue;
+      }
       const key = await this.d.secrets.get(keyName(dest.id));
       const needsKey = dest.kind !== 'custom';
       const url = destinationUrl(dest.kind, dest.url, key, this.altIngest.has(dest.id));

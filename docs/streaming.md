@@ -216,3 +216,21 @@ pieces and lets players buffer a few of them. On YouTube that is roughly 15–30
 5–10 s on Low and 2–5 s on Ultra low (YouTube Studio › Stream settings › Stream latency). No
 encoder can go below the service's floor over RTMP. A sub-second picture needs a different way of
 delivering it (NDI on the local network; SRT or WebRTC to a receiver you run).
+
+## Direct links (SRT, UDP)
+
+A destination of kind **Direct link** sends straight to a receiver you run (OBS, vMix, VLC, a
+decoder box) instead of a streaming service: `srt://host:port` or `udp://host:port`. It goes out as
+MPEG-TS beside any RTMP destinations (the same encoded video, no second encode), and can fail on
+its own without stopping the others.
+
+- **UDP**: same network only (no resending of lost packets). Works with any ffmpeg. Measured
+  glass to glass on this Mac with `LAMPSTAND_GLASS=1 LAMPSTAND_GLASS_LINK=udp`: about 0.2–0.4 s.
+- **SRT**: across the internet too (lost packets are resent within 120 ms; change it with
+  `?latency=` in microseconds; `?passphrase=` encrypts). Lampstand calls the receiver, which
+  listens. Needs an ffmpeg built with SRT (`ffmpeg -protocols` lists `srt`); without it the
+  destination says so and the rest of the stream carries on.
+
+Receiving: in OBS, add a Media Source, untick "Local file", and set Input to `udp://@:9000` or
+`srt://:9000?mode=listener`. In VLC: Open Network, `udp://@:9000` (lower "network caching" in its
+options, which is 1 s by default). The receiver's own buffer is then most of the delay.

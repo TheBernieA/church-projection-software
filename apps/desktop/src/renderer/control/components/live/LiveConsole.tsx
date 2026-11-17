@@ -362,7 +362,7 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
             </DropdownMenu.Trigger>
             <DropdownMenu.Portal>
               <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
-                {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+                {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
                   <DropdownMenu.Item key={k} className={ITEM_CLASS} onSelect={() => add(k)}>
                     {t(`streaming.kinds.${k}`)}
                   </DropdownMenu.Item>
@@ -379,7 +379,7 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
             {t('console.noDestinations')}
           </Typography>
           <div className="flex flex-wrap gap-1.5">
-            {(['youtube', 'facebook', 'custom'] as const).map((k) => (
+            {(['youtube', 'facebook', 'custom', 'direct'] as const).map((k) => (
               <Button
                 key={k}
                 size="xs"
@@ -398,7 +398,7 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
             const going = s?.destinations.find((x) => x.id === d.id);
             const state = going?.state;
             const reason = going?.reason;
-            const needsKey = d.kind !== 'custom' && !keys[d.id];
+            const needsKey = d.kind !== 'custom' && d.kind !== 'direct' && !keys[d.id];
             const expanded = open === d.id;
             return (
               <li
