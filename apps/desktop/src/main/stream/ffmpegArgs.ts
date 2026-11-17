@@ -71,9 +71,26 @@ export function destinationFailure(line: string, before: readonly string[]): str
   return redactKeys(text).slice(0, 300);
 }
 
-/** The full ingest address for a destination. */
-export function destinationUrl(kind: DestinationKind, url: string, key: string | null): string {
-  const base = (kind === 'custom' ? url : INGEST[kind]).replace(/\/+$/, '');
+/**
+ * A second way in, tried when the first can't connect: YouTube over plain RTMP (port 1935) when
+ * RTMPS on 443 fails (some older TLS setups or proxies), and the other way round.
+ */
+export const INGEST_FALLBACK: Partial<Record<Exclude<DestinationKind, 'custom'>, string>> = {
+  youtube: 'rtmp://a.rtmp.youtube.com/live2',
+};
+
+/** The full ingest address for a destination (its fallback address with `alt`). */
+export function destinationUrl(
+  kind: DestinationKind,
+  url: string,
+  key: string | null,
+  alt = false,
+): string {
+  const fallback = kind === 'custom' ? undefined : INGEST_FALLBACK[kind];
+  const base = (kind === 'custom' ? url : alt && fallback ? fallback : INGEST[kind]).replace(
+    /\/+$/,
+    '',
+  );
   return key ? `${base}/${key}` : base;
 }
 

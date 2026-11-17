@@ -221,6 +221,8 @@ export class StreamController {
   private lastPageDropped = 0;
   private waitForKey = false;
   private videoSeen = false;
+  /** Destinations using their fallback address this session (the first couldn't connect). */
+  private readonly altIngest = new Set<string>();
   /** The stream page has loaded (it can take "start encoding"). */
   private pageReady = false;
   /** GPU encoding to start once the page is ready. */
@@ -297,6 +299,7 @@ export class StreamController {
     if (!before.stream && !before.record) {
       this.sessionStart = new Date();
       this.part = 1;
+      this.altIngest.clear();
       this.samples = [];
       for (const r of Object.values(this.history)) r.clear();
       this.status = { ...this.status, restarts: 0, error: null, advice: null };
@@ -805,7 +808,7 @@ export class StreamController {
     for (const dest of this.d.getSettings().stream.destinations.filter((x) => x.enabled)) {
       const key = await this.d.secrets.get(keyName(dest.id));
       const needsKey = dest.kind !== 'custom';
-      const url = destinationUrl(dest.kind, dest.url, key);
+      const url = destinationUrl(dest.kind, dest.url, key, this.altIngest.has(dest.id));
       if ((needsKey && !key) || !isStreamUrl(url)) {
         status.push({ id: dest.id, name: dest.name, state: 'failed' });
         continue;
@@ -1147,10 +1150,26 @@ export class StreamController {
     // Stopped on its own while wanted: restart (a hardware encoder that fails at once is
     // dropped for libx264), with backoff, a limited number of times.
     const quick = Date.now() - this.spawnedAt < 5_000;
-    this.d.log.warn('encoder stopped', { code, tail: this.lastStderr.slice(-4).join(' | ') });
+    this.d.log.warn('encoder stopped', { code, tail: this.lastStderr.slice(-20) });
     if (quick && encoder !== 'libx264' && this.lastStderr.some((l) => l.includes(encoder))) {
       this.brokenEncoders.add(encoder);
       void this.spawnEncoder();
+      return;
+    }
+    // It stopped at once because a destination couldn't connect (with no recording, nothing
+    // else keeps it going): try that destination's other address once, then say why and stop,
+    // instead of reconnecting forever.
+    if (quick && this.want.stream && !this.want.record && this.connectFailed()) {
+      if (this.tryFallbackIngest()) return;
+      const reason = destinationFailure(this.lastStderr.at(-1) ?? '', this.lastStderr.slice(-12));
+      this.setStatus({
+        destinations: this.status.destinations.map((x) => ({
+          ...x,
+          state: 'failed' as const,
+          reason: reason || x.reason,
+        })),
+      });
+      this.fail('destinationFailed');
       return;
     }
     const n = this.status.restarts;
@@ -1179,6 +1198,28 @@ export class StreamController {
         void this.spawnEncoder();
       }
     }, wait);
+  }
+
+  /** ffmpeg's last lines say an output couldn't be opened (a connection that didn't happen). */
+  private connectFailed(): boolean {
+    return this.lastStderr.some((l) =>
+      /error opening output|could not open|could not write header|nothing was written|connection refused|input\/output error|handshake|tls|ssl|server error|end of file/i.test(
+        l,
+      ),
+    );
+  }
+
+  /** Switch destinations that have a second address to it, and start again (once each). */
+  private tryFallbackIngest(): boolean {
+    const dests = this.d.getSettings().stream.destinations.filter((d) => d.enabled);
+    const switching = dests.filter((d) => d.kind === 'youtube' && !this.altIngest.has(d.id));
+    if (!switching.length) return false;
+    for (const d of switching) this.altIngest.add(d.id);
+    this.d.log.warn('destination could not connect; trying its other address', {
+      ids: switching.map((d) => d.id),
+    });
+    void this.spawnEncoder();
+    return true;
   }
 
   private async stopEncoder(): Promise<void> {
@@ -1217,8 +1258,14 @@ export class StreamController {
     this.pump?.stop();
     this.pump = null;
     this.stopHealth();
+    // Destinations that failed keep their reason, so the console can say why.
+    const failed = this.status.destinations.filter((d) => d.state === 'failed');
     this.setStatus(
-      { ...idle(this.status.available, this.status.encoder, this.profile()), error },
+      {
+        ...idle(this.status.available, this.status.encoder, this.profile()),
+        error,
+        destinations: failed,
+      },
       true,
     );
     this.syncWindow();
