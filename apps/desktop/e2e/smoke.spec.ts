@@ -484,6 +484,10 @@ test('settings: category pages, installed Bible packages', async () => {
   await expect(control.locator('[data-tour]')).toHaveCount(6);
   await control.locator('[data-howto="verse"] summary').click();
   await expect(control.locator('[data-howto="verse"]')).toContainText('jn 3 16');
+  // Going live: the stream set-up recipes, including the low-delay direct link.
+  await control.locator('[data-howto="direct"] summary').click();
+  await expect(control.locator('[data-howto="direct"]')).toContainText('udp://192.168.1.50:9000');
+  await expect(control.locator('[data-howto="youtube"]')).toHaveCount(1);
   const index = control.getByTestId('feature-index');
   await expect(index.locator('[data-feature="reflow"]')).toBeVisible();
   await index.getByLabel('Find a feature').fill('chord');

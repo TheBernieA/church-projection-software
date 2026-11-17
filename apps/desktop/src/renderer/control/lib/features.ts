@@ -390,6 +390,18 @@ export const FEATURES: Feature[] = [
     'Stream',
     'Stream the output straight to YouTube, Facebook, Resi or any RTMP service.',
   ),
+  f(
+    'direct-link',
+    'capture',
+    'Direct link (SRT, UDP)',
+    'Send the stream straight to OBS, vMix, VLC or a decoder in another room, with well under a second of delay.',
+  ),
+  f(
+    'live-console',
+    'capture',
+    'Live console',
+    'The outgoing picture, destinations, sound and health readings in one panel, docked or in its own window.',
+  ),
 
   // Remote & integrations
   f('ccli', 'integrations', 'CCLI licence on slides', 'Your licence number on song credits.'),

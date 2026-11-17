@@ -648,7 +648,9 @@
       "outputs": "Open Outputs",
       "packages": "Bibles & hymnals",
       "shortcuts": "All shortcuts",
-      "library": "Backups"
+      "library": "Backups",
+      "streaming": "Streaming settings",
+      "ndi": "NDI"
     },
     "quickBar": "Find anything fast",
     "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter shows it (or previews it with Preview first on); Shift+Enter always shows it now.",
@@ -695,6 +697,48 @@
       "media": {
         "title": "Media bin",
         "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides."
+      }
+    },
+    "live": {
+      "title": "Going live",
+      "help": "Streaming and recording the service, from the first stream to the low-delay links.",
+      "items": {
+        "youtube": {
+          "q": "Stream to YouTube or Facebook",
+          "a": "1. Click Live in the toolbar to open the Live console, then Add under Destinations and pick YouTube or Facebook.\n2. In YouTube Studio › Go live › Stream, copy the “Stream key” (the copy button beside the key, not the “Stream URL”). On Facebook: Live video › Streaming software.\n3. Paste it into the destination and click Save key. Keys are stored encrypted on this computer and never shown again.\n4. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key."
+        },
+        "console": {
+          "q": "Use the Live console",
+          "a": "Live in the toolbar docks the console beside the output; Own window moves it to another display. The picture is exactly what goes out. The top bar shows the frame rate, encoder speed (1.00× keeps up), the sending delay and the computer’s load; the bottom bar shows the bitrate and the encoder. Hover any reading to see what it means. Red or amber readings mean the computer or the internet connection is struggling."
+        },
+        "picture": {
+          "q": "Choose what the stream shows and hears",
+          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
+        },
+        "record": {
+          "q": "Record the service",
+          "a": "Click Record in the Live console: it records with or without streaming. Settings › Streaming can record every time you go live. The file stays playable even if the computer stops unexpectedly."
+        },
+        "slow": {
+          "q": "Stream from an older or slower computer",
+          "a": "Settings › Streaming › Performance. Click “Check this computer” for a 10-second test, and leave the mode on Auto to use its answer. Light (540p) suits older laptops and slow internet, Balanced (720p) most churches, Quality (1080p) a recent computer with a good upload. If the computer struggles mid-stream, the console offers Switch to Light: a two-second pause, and the stream carries on."
+        },
+        "delay": {
+          "q": "Cut the delay viewers see",
+          "a": "Lampstand sends each frame about 0.2 seconds after it is drawn; the console’s delay reading shows this live, and it climbs only if your upload can’t keep up. The rest is added by the streaming service. On YouTube, before going live, open YouTube Studio › Stream settings › Stream latency and pick Ultra low-latency (about 2–5 seconds; Low is 5–10, Normal 15–30). Judge the delay on the public watch page: the preview inside YouTube Studio lags more. For under a second, use a direct link or NDI (below)."
+        },
+        "direct": {
+          "q": "Send to another room with almost no delay (direct link)",
+          "a": "A direct link goes straight to a receiver you run (OBS, vMix, VLC, a decoder box) instead of a service, with well under a second of delay. It can run beside YouTube.\n1. On the receiving computer in OBS: add a Media Source, untick “Local file”, and set Input to udp://@:9000. In VLC: Open Network, udp://@:9000, and lower “network caching” in its options.\n2. In the Live console, Add › Direct link, and type the receiver’s address with the same port, e.g. udp://192.168.1.50:9000.\n3. Go live.\nUDP is for the same network. For a link across the internet use SRT (srt://address:9000, with the receiver set to srt://:9000?mode=listener); it resends lost packets, and needs an ffmpeg built with SRT on this computer."
+        },
+        "ndi": {
+          "q": "Send to vMix, OBS or NDI gear on the network",
+          "a": "Install NDI Tools (free) on this computer, then open Settings › NDI and turn on a feed: the program, the words alone over transparency (to key over cameras), or the stream picture. In vMix, OBS (with the NDI plugin) or NDI Studio Monitor, add an NDI source and pick this computer’s feed by name. NDI stays on the local network and is the lowest-delay way to feed a video mixer."
+        },
+        "trouble": {
+          "q": "Fix a stream that won’t start or keeps stopping",
+          "a": "A destination that says Stopped shows why when you hover it. “Key needed” or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it. Can’t connect: check the internet connection; Lampstand tries YouTube’s second address by itself. Picture jumps or readings turn red: the upload or the computer can’t keep up, so pick a lighter Performance mode. Click Retry to bring a stopped destination back without ending the stream."
+        }
       }
     },
     "howto": {

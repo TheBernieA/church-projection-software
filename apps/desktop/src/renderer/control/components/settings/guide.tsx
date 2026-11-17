@@ -7,6 +7,7 @@ import {
   LayoutGrid,
   Monitor,
   PanelLeft,
+  Radio,
   PanelTop,
   SlidersHorizontal,
   HardDriveDownload,
@@ -190,6 +191,61 @@ const HOWTO = [
   'backup',
   'undo',
 ];
+/** Going live, from the first stream to the low-delay links. */
+const LIVE_HOWTO = [
+  'youtube',
+  'console',
+  'picture',
+  'record',
+  'slow',
+  'delay',
+  'direct',
+  'ndi',
+  'trouble',
+];
+
+/** A list of recipes that open on a click. */
+function Recipes({
+  group,
+  ids,
+  values,
+}: {
+  group: string;
+  ids: string[];
+  values: Record<string, string>;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {ids.map((id) => (
+        <details key={id} className="group px-4 py-2.5" data-howto={id}>
+          <Typography
+            as="summary"
+            variant="label"
+            className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden"
+          >
+            <ChevronRight
+              size={14}
+              aria-hidden
+              className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
+            />
+            {t(`guide.${group}.items.${id}.q`)}
+          </Typography>
+          <Typography
+            as="p"
+            size={12}
+            tone="secondary"
+            leading="relaxed"
+            className="mt-1.5 whitespace-pre-line pl-[22px]"
+          >
+            {t(`guide.${group}.items.${id}.a`, values)}
+          </Typography>
+        </details>
+      ))}
+    </>
+  );
+}
+
 const QUICK_EXAMPLES = ['jn 3 16', 'Romans 8:28-39', '#23', 'amazing grace'];
 
 /** In-app guide: a getting-started checklist that reflects real state, plus the essentials. */
@@ -269,31 +325,29 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
       </Group>
 
       <Group title={t('guide.howto.title')} footnote={t('guide.howto.help')}>
-        {HOWTO.map((id) => (
-          <details key={id} className="group px-4 py-2.5" data-howto={id}>
-            <Typography
-              as="summary"
-              variant="label"
-              className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden"
+        <Recipes group="howto" ids={HOWTO} values={keyNames} />
+      </Group>
+
+      <Group
+        title={t('guide.live.title')}
+        footnote={t('guide.live.help')}
+        action={
+          <span className="flex gap-1">
+            <Button
+              size="xs"
+              variant="ghost"
+              icon={<Radio size={13} />}
+              onClick={() => goTo('streaming')}
             >
-              <ChevronRight
-                size={14}
-                aria-hidden
-                className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
-              />
-              {t(`guide.howto.items.${id}.q`)}
-            </Typography>
-            <Typography
-              as="p"
-              size={12}
-              tone="secondary"
-              leading="relaxed"
-              className="mt-1.5 pl-[22px]"
-            >
-              {t(`guide.howto.items.${id}.a`, keyNames)}
-            </Typography>
-          </details>
-        ))}
+              {t('guide.open.streaming')}
+            </Button>
+            <Button size="xs" variant="ghost" onClick={() => goTo('ndi')}>
+              {t('guide.open.ndi')}
+            </Button>
+          </span>
+        }
+      >
+        <Recipes group="live" ids={LIVE_HOWTO} values={keyNames} />
       </Group>
 
       <Group
