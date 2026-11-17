@@ -500,24 +500,9 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
       }
     >
       {st.destinations.length === 0 && (
-        <div className="flex flex-col items-start gap-2">
-          <Typography as="p" size={12} tone="muted" leading="snug">
-            {t('console.noDestinations')}
-          </Typography>
-          <div className="flex flex-wrap gap-1.5">
-            {ADD_KINDS.map((k) => (
-              <Button
-                key={k}
-                size="xs"
-                variant="secondary"
-                icon={<Plus size={12} />}
-                onClick={() => add(k)}
-              >
-                {t(`streaming.kinds.${k}`)}
-              </Button>
-            ))}
-          </div>
-        </div>
+        <Typography as="p" size={12} tone="muted" leading="snug">
+          {t('console.noDestinations')}
+        </Typography>
       )}
       <ul className="flex flex-col gap-1">
         {st.destinations.map((d) => {

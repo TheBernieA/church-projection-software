@@ -1909,7 +1909,7 @@
     "switchLight": "Switch to Light",
     "recordingTitle": "Recording",
     "addDestination": "Add",
-    "noDestinations": "Add where the stream goes: a service such as YouTube (paste its stream key), or a direct link to another room.",
+    "noDestinations": "Nowhere to stream yet. Use Add to choose a service such as YouTube, or a direct link to another room.",
     "keyNeeded": "Key needed",
     "addressNeeded": "Address needed",
     "remove": "Remove",
