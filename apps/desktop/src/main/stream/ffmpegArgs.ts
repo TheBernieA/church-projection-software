@@ -9,14 +9,14 @@ export type DestinationKind = 'youtube' | 'facebook' | 'custom' | 'direct';
 type ServiceKind = Exclude<DestinationKind, 'custom' | 'direct'>;
 
 /** Where each kind of service takes a stream (the key is appended). */
-export const INGEST: Record<ServiceKind, string> = {
+const INGEST: Record<ServiceKind, string> = {
   // RTMPS on port 443: encrypted, and it gets through networks that block RTMP's port 1935.
   youtube: 'rtmps://a.rtmps.youtube.com:443/live2',
   facebook: 'rtmps://live-api-s.facebook.com:443/rtmp',
 };
 
 /** H.264 encoders we know how to drive, best first per platform; libx264 always works. */
-export const ENCODER_PREFERENCE = [
+const ENCODER_PREFERENCE = [
   'h264_videotoolbox',
   'h264_nvenc',
   'h264_qsv',
@@ -151,7 +151,7 @@ export function destinationFailure(line: string, before: readonly string[]): str
  * A second way in, tried when the first can't connect: YouTube over plain RTMP (port 1935) when
  * RTMPS on 443 fails (some older TLS setups or proxies), and the other way round.
  */
-export const INGEST_FALLBACK: Partial<Record<ServiceKind, string>> = {
+const INGEST_FALLBACK: Partial<Record<ServiceKind, string>> = {
   youtube: 'rtmp://a.rtmp.youtube.com/live2',
 };
 

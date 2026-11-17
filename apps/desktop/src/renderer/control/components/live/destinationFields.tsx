@@ -55,7 +55,7 @@ export function parseDirect(url: string): {
   };
 }
 
-export const formatDirect = (p: ReturnType<typeof parseDirect>): string =>
+const formatDirect = (p: ReturnType<typeof parseDirect>): string =>
   `${p.protocol}://${p.host}${p.port ? `:${p.port}` : ''}${p.query ? `?${p.query}` : ''}`;
 
 /** A direct link: which kind, and the receiver's address and port. */

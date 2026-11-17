@@ -1,6 +1,6 @@
 import type { Writable } from 'node:stream';
 
-export const SAMPLE_RATE = 48_000;
+const SAMPLE_RATE = 48_000;
 /** Stereo float32. */
 export const BYTES_PER_SECOND = SAMPLE_RATE * 2 * 4;
 const FRAME_BYTES = 8;

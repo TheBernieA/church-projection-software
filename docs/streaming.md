@@ -247,3 +247,27 @@ lower-third theme, then the screens' lower-third theme, then the slide's own.
 The alternate output (role `secondary`) can be a key feed for a video mixer
 (`settings.keyFeed.mode`): `keyFeedScene` keeps the words, messages and props over flat green,
 blue or black, applied after the Look so the colour is always there. Untested on a real mixer.
+
+## Where the code is
+
+Main process (`apps/desktop/src/main/stream/`):
+
+| File | What it holds |
+|---|---|
+| `streamController.ts` | The session: start/stop, the stream window, ffmpeg's life, status |
+| `ffmpegArgs.ts` | ffmpeg's command line, addresses, stream keys, progress lines (pure) |
+| `destinations.ts` | Each destination's address, or why it can't start (pure) |
+| `audioClock.ts` | The sound kept to the clock: silence for gaps, late batches dropped |
+| `textureRelay.ts` | GPU pipeline: each picture to the encoder and the watching consoles |
+| `framePump.ts` | CPU pipeline: frames to ffmpeg on wall-clock time |
+| `backlog.ts`, `flv.ts`, `health.ts`, `benchmark.ts` | Video waiting for ffmpeg; FLV tags; CPU sampling; "Check this computer" |
+
+Stream page (`renderer/stream/`): `main.ts` (the picture and the mix), `wordsLayout.ts` (lower
+third sums), `encoder.ts` + `encoder.worker.ts` (the hardware encoder).
+
+Live console (`renderer/control/components/live/`): `LiveConsole.tsx` (the frame),
+`DestinationsPanel`, `QuickSettings`, `PicturePanel`, `SoundPanel`, `readings.tsx` (status pill,
+readouts, health), `destinationFields.tsx` (shared with Settings), `consoleParts.tsx`. Choices
+shown in both the console and Settings are listed once in `lib/streamOptions.ts`.
+
+Measurements share `e2e/streamHarness.ts` (`perf`, `latency`, `glass` specs).

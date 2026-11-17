@@ -1,8 +1,8 @@
-import { _electron as electron, expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { launch, setStream, tempLibrary, waitLive } from './streamHarness';
 
 /**
  * Glass-to-glass sending delay (not part of the normal run): LAMPSTAND_GLASS=1.
@@ -19,10 +19,8 @@ const FLIPS = Number(process.env.LAMPSTAND_GLASS_FLIPS ?? 20);
 const LINK = process.env.LAMPSTAND_GLASS_LINK === 'udp' ? 'udp' : 'rtmp';
 
 test('livestream glass-to-glass delay to a local RTMP server', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'lampstand-glass-'));
-  const media = join(dir, 'library', 'media');
-  mkdirSync(join(media, '.meta'), { recursive: true });
-  const white = join(media, 'white.png');
+  const lib = tempLibrary('glass');
+  const white = join(lib.dir, 'white.png');
   execFileSync('ffmpeg', [
     '-v',
     'error',
@@ -34,23 +32,9 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     '1',
     white,
   ]);
-  const now = new Date().toISOString();
-  writeFileSync(
-    join(media, '.meta', 'white.media.json'),
-    JSON.stringify({
-      id: 'white',
-      schemaVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-      name: 'White',
-      kind: 'image',
-      fileName: 'white.png',
-      mimeType: 'image/png',
-      sizeBytes: statSync(white).size,
-      hasThumbnail: false,
-      isBackground: false,
-      tags: [],
-    }),
+  lib.add(
+    { id: 'white', name: 'White', kind: 'image', fileName: 'white.png', mimeType: 'image/png' },
+    readFileSync(white),
   );
   // The server: decodes each frame the moment it arrives, down to 2×2 grey pixels.
   // A port of its own each run (the last run's receiver may not have let go of its port yet).
@@ -98,57 +82,22 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
   server.stderr.on('data', (d: Buffer) => serverLog.push(d.toString()));
   await new Promise((r) => setTimeout(r, 800));
 
-  const env = {
-    ...process.env,
-    LAMPSTAND_USER_DATA: join(dir, 'user'),
-    LAMPSTAND_LIBRARY: join(dir, 'library'),
-    LAMPSTAND_RECORDINGS: join(dir, 'recordings'),
-    NODE_ENV: 'test',
-  };
-  delete env.ELECTRON_RUN_AS_NODE;
-  delete env.ELECTRON_RENDERER_URL;
-  const app = await electron.launch({ args: ['.'], cwd: join(__dirname, '..'), env });
-  const control = await app.firstWindow();
-  await control.waitForLoadState('domcontentloaded');
-  const cmd = (type: string, payload: unknown) =>
-    control.evaluate(([t, p]) => window.lampstand.command({ type: t, payload: p }), [
-      type,
-      payload,
-    ] as const);
-  await expect
-    .poll(async () => (await control.evaluate(() => window.lampstand.query('settings.get'))).ok)
-    .toBe(true);
+  const l = await launch(lib);
+  const { app, control, cmd, status } = l;
   const custom = process.env.LAMPSTAND_PERF_CUSTOM ?? '1080x30';
-  await control.evaluate(
-    async ([c, url, link]) => {
-      const r = await window.lampstand.query('settings.get');
-      if (!r.ok) return;
-      const [h, f] = c.split('x').map(Number);
-      await window.lampstand.command({
-        type: 'settings.update',
-        payload: {
-          patch: {
-            windowMode: true,
-            stream: {
-              ...r.value.stream,
-              performance: 'custom',
-              quality: { ...r.value.stream.quality, height: h, fps: f, videoKbps: 6000 },
-              destinations: [
-                {
-                  id: 'd1',
-                  kind: link === 'udp' ? 'direct' : 'custom',
-                  name: 'Local',
-                  url,
-                  enabled: true,
-                },
-              ],
-            },
-          },
-        },
-      });
-    },
-    [custom, address, LINK] as const,
-  );
+  await setStream(control, {
+    custom,
+    videoKbps: 6000,
+    destinations: [
+      {
+        id: 'd1',
+        kind: LINK === 'udp' ? 'direct' : 'custom',
+        name: 'Local',
+        url: address,
+        enabled: true,
+      },
+    ],
+  });
   await cmd('live.goLive', {
     media: {
       mediaId: 'white',
@@ -162,11 +111,7 @@ test('livestream glass-to-glass delay to a local RTMP server', async () => {
     },
   });
   await cmd('stream.start', { stream: true });
-  const status = async () => {
-    const r = await control.evaluate(() => window.lampstand.query('stream.status'));
-    return r.ok ? r.value : null;
-  };
-  await expect.poll(async () => (await status())?.state, { timeout: 20_000 }).toBe('live');
+  await waitLive(l);
   await control.waitForTimeout(5000);
 
   const flips: { at: number; bright: boolean }[] = [];

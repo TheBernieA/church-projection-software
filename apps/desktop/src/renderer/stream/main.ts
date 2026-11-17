@@ -127,24 +127,26 @@ function draw(): void {
   document.body.classList.toggle('has-words', showWords && !!program.content);
   // A lower third sits left, centre or right, whatever the theme says (full-screen words
   // stay as their theme has them).
-  const lower = pic.words === 'lowerThird';
-  document.body.classList.toggle('words-left', lower && pic.wordsAlign === 'left');
-  document.body.classList.toggle('words-right', lower && pic.wordsAlign === 'right');
-  document.body.classList.toggle('words-center', lower && pic.wordsAlign === 'center');
+  for (const align of ALIGNS)
+    document.body.classList.toggle(
+      `words-${align}`,
+      pic.words === 'lowerThird' && pic.wordsAlign === align,
+    );
   placeWords();
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);
   mix.sync(config.mix ? latest.mixer : silent(latest.mixer));
 }
 
+/** The words are being drawn with a theme laid out as a lower third. */
+let themed = false;
+const ALIGNS = ['left', 'center', 'right'] as const;
+
 /**
  * Lower third: size the words and sit them near the bottom. The newest slide's text box is
  * measured where the theme laid it out (layout boxes, so a transition in progress doesn't
  * matter), then the whole words layer is scaled and moved to put it in the band.
  */
-/** The words are being drawn with a theme laid out as a lower third. */
-let themed = false;
-
 function placeWords(): void {
   const layer = $('words').querySelector<HTMLElement>('.ls-layer-content');
   const band = $('band');

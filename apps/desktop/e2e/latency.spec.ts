@@ -1,8 +1,16 @@
-import { _electron as electron, expect, test } from '@playwright/test';
+import { test } from '@playwright/test';
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  addSeedClip,
+  launch,
+  SEED_CLIP_LIVE,
+  setStream,
+  tempLibrary,
+  toneWav,
+  waitLive,
+} from './streamHarness';
 
 /**
  * Sending latency (not part of the normal run): LAMPSTAND_LATENCY=1.
@@ -16,67 +24,14 @@ test.setTimeout(240_000);
 const SECONDS = Number(process.env.LAMPSTAND_LATENCY_SECONDS ?? 40);
 
 test('livestream sending latency to a local RTMP server', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'lampstand-lat-'));
-  const media = join(dir, 'library', 'media');
-  mkdirSync(join(media, '.meta'), { recursive: true });
-  const clip = readFileSync(join(__dirname, 'fixtures', 'clip.mp4'));
-  writeFileSync(join(media, 'seed-clip.mp4'), clip);
-  const now = new Date().toISOString();
-  writeFileSync(
-    join(media, '.meta', 'seed-clip.media.json'),
-    JSON.stringify({
-      id: 'seed-clip',
-      schemaVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-      name: 'Seed clip',
-      kind: 'video',
-      fileName: 'seed-clip.mp4',
-      mimeType: 'video/mp4',
-      sizeBytes: clip.length,
-      hasThumbnail: false,
-      isBackground: false,
-      tags: [],
-    }),
-  );
+  const lib = tempLibrary('lat');
+  const dir = lib.dir;
+  addSeedClip(lib);
   // A 90 s tone for the Audio tab, so the stream has real sound to carry.
-  {
-    const rate = 8000;
-    const n = rate * 90;
-    const wav = Buffer.alloc(44 + n * 2);
-    wav.write('RIFF', 0);
-    wav.writeUInt32LE(36 + n * 2, 4);
-    wav.write('WAVEfmt ', 8);
-    wav.writeUInt32LE(16, 16);
-    wav.writeUInt16LE(1, 20);
-    wav.writeUInt16LE(1, 22);
-    wav.writeUInt32LE(rate, 24);
-    wav.writeUInt32LE(rate * 2, 28);
-    wav.writeUInt16LE(2, 32);
-    wav.writeUInt16LE(16, 34);
-    wav.write('data', 36);
-    wav.writeUInt32LE(n * 2, 40);
-    for (let i = 0; i < n; i++)
-      wav.writeInt16LE(Math.round(Math.sin((2 * Math.PI * 440 * i) / rate) * 8000), 44 + i * 2);
-    writeFileSync(join(media, 'tone.wav'), wav);
-    writeFileSync(
-      join(media, '.meta', 'tone.media.json'),
-      JSON.stringify({
-        id: 'tone',
-        schemaVersion: 1,
-        createdAt: now,
-        updatedAt: now,
-        name: 'Tone',
-        kind: 'audio',
-        fileName: 'tone.wav',
-        mimeType: 'audio/wav',
-        sizeBytes: wav.length,
-        hasThumbnail: false,
-        isBackground: false,
-        tags: [],
-      }),
-    );
-  }
+  lib.add(
+    { id: 'tone', name: 'Tone', kind: 'audio', fileName: 'tone.wav', mimeType: 'audio/wav' },
+    toneWav(90),
+  );
   // The server: ffmpeg receives RTMP and hands the FLV straight on; we time each tag's arrival.
   const port = 19360;
   const server = spawn('ffmpeg', [
@@ -119,85 +74,29 @@ test('livestream sending latency to a local RTMP server', async () => {
   });
   await new Promise((r) => setTimeout(r, 800));
 
-  const env = {
-    ...process.env,
-    LAMPSTAND_USER_DATA: join(dir, 'user'),
-    LAMPSTAND_LIBRARY: join(dir, 'library'),
-    LAMPSTAND_RECORDINGS: join(dir, 'recordings'),
-    NODE_ENV: 'test',
-  };
-  delete env.ELECTRON_RUN_AS_NODE;
-  delete env.ELECTRON_RENDERER_URL;
-  const app = await electron.launch({
-    args: ['.', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-    cwd: join(__dirname, '..'),
-    env,
+  const l = await launch(lib, [
+    '--use-fake-device-for-media-stream',
+    '--use-fake-ui-for-media-stream',
+  ]);
+  const { app, control, cmd } = l;
+  await setStream(control, {
+    custom: process.env.LAMPSTAND_PERF_CUSTOM ?? '1080x60',
+    videoKbps: 6000,
+    recordWhileStreaming: true,
+    destinations: [
+      {
+        id: 'd1',
+        kind: 'custom',
+        name: 'Local',
+        url: `rtmp://127.0.0.1:${port}/live/test`,
+        enabled: true,
+      },
+    ],
   });
-  const control = await app.firstWindow();
-  await control.waitForLoadState('domcontentloaded');
-  const cmd = (type: string, payload: unknown) =>
-    control.evaluate(([t, p]) => window.lampstand.command({ type: t, payload: p }), [
-      type,
-      payload,
-    ] as const);
-  await expect
-    .poll(async () => (await control.evaluate(() => window.lampstand.query('settings.get'))).ok)
-    .toBe(true);
-  const custom = process.env.LAMPSTAND_PERF_CUSTOM ?? '1080x60';
-  await control.evaluate(
-    async ([c, p]) => {
-      const r = await window.lampstand.query('settings.get');
-      if (!r.ok) return;
-      const [h, f] = c.split('x').map(Number);
-      await window.lampstand.command({
-        type: 'settings.update',
-        payload: {
-          patch: {
-            windowMode: true,
-            stream: {
-              ...r.value.stream,
-              performance: 'custom',
-              quality: { ...r.value.stream.quality, height: h, fps: f, videoKbps: 6000 },
-              recording: { ...r.value.stream.recording, recordWhileStreaming: true },
-              destinations: [
-                {
-                  id: 'd1',
-                  kind: 'custom',
-                  name: 'Local',
-                  url: `rtmp://127.0.0.1:${p}/live/test`,
-                  enabled: true,
-                },
-              ],
-            },
-          },
-        },
-      });
-    },
-    [custom, port] as const,
-  );
-  await cmd('live.goLive', {
-    media: {
-      mediaId: 'seed-clip',
-      kind: 'video',
-      fit: 'cover',
-      loop: true,
-      muted: false,
-      volume: 1,
-      playing: true,
-      position: 0,
-    },
-  });
+  await cmd('live.goLive', SEED_CLIP_LIVE);
   await cmd('live.audio', { action: 'play', mediaId: 'tone' });
   await cmd('stream.start', { stream: true });
-  await expect
-    .poll(
-      async () => {
-        const r = await control.evaluate(() => window.lampstand.query('stream.status'));
-        return r.ok ? r.value.state : null;
-      },
-      { timeout: 20_000 },
-    )
-    .toBe('live');
+  await waitLive(l);
   if (process.env.LAMPSTAND_LATENCY_STALL) {
     // A stalled upload: the server stops reading for 4 s, 12 s in, then carries on.
     await control.waitForTimeout(12_000);

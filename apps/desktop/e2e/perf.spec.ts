@@ -1,8 +1,15 @@
-import { _electron as electron, expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import {
+  addSeedClip,
+  launch,
+  SEED_CLIP_LIVE,
+  setStream,
+  tempLibrary,
+  waitLive,
+} from './streamHarness';
 
 /**
  * Livestream performance measurement (not part of the normal run): LAMPSTAND_PERF=1.
@@ -16,96 +23,21 @@ test.setTimeout(180_000);
 const SECONDS = Number(process.env.LAMPSTAND_PERF_SECONDS ?? 30);
 
 test('livestream performance: 720p30 recording of a video with a camera', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'lampstand-perf-'));
-  const media = join(dir, 'library', 'media');
-  mkdirSync(join(media, '.meta'), { recursive: true });
-  const clip = readFileSync(join(__dirname, 'fixtures', 'clip.mp4'));
-  writeFileSync(join(media, 'seed-clip.mp4'), clip);
-  const now = new Date().toISOString();
-  writeFileSync(
-    join(media, '.meta', 'seed-clip.media.json'),
-    JSON.stringify({
-      id: 'seed-clip',
-      schemaVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-      name: 'Seed clip',
-      kind: 'video',
-      fileName: 'seed-clip.mp4',
-      mimeType: 'video/mp4',
-      sizeBytes: clip.length,
-      hasThumbnail: false,
-      isBackground: false,
-      tags: [],
-    }),
-  );
-  const env = {
-    ...process.env,
-    LAMPSTAND_USER_DATA: join(dir, 'user'),
-    LAMPSTAND_LIBRARY: join(dir, 'library'),
-    LAMPSTAND_RECORDINGS: join(dir, 'recordings'),
-    NODE_ENV: 'test',
-  };
-  delete env.ELECTRON_RUN_AS_NODE;
-  delete env.ELECTRON_RENDERER_URL;
-  const app = await electron.launch({
-    args: ['.', '--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'],
-    cwd: join(__dirname, '..'),
-    env,
-  });
-  const control = await app.firstWindow();
-  await control.waitForLoadState('domcontentloaded');
-  const cmd = (type: string, payload: unknown) =>
-    control.evaluate(([t, p]) => window.lampstand.command({ type: t, payload: p }), [
-      type,
-      payload,
-    ] as const);
-  const status = () =>
-    control.evaluate(async () => {
-      const r = await window.lampstand.query('stream.status');
-      return r.ok ? r.value : null;
-    });
-  await expect
-    .poll(async () => (await control.evaluate(() => window.lampstand.query('settings.get'))).ok)
-    .toBe(true);
-  await cmd('settings.update', { patch: { windowMode: true } });
+  const lib = tempLibrary('perf');
+  addSeedClip(lib);
+  const dir = lib.dir;
+  const l = await launch(lib, [
+    '--use-fake-device-for-media-stream',
+    '--use-fake-ui-for-media-stream',
+  ]);
+  const { app, control, cmd, status } = l;
   // The same size every run (Auto would pick for this computer).
-  const mode = process.env.LAMPSTAND_PERF_MODE ?? 'balanced';
-  const custom = process.env.LAMPSTAND_PERF_CUSTOM; // e.g. "1080x60"
-  await control.evaluate(
-    async ([m, c]) => {
-      const r = await window.lampstand.query('settings.get');
-      if (!r.ok) return;
-      const [h, f] = (c ?? '').split('x').map(Number);
-      const stream = c
-        ? {
-            ...r.value.stream,
-            performance: 'custom',
-            quality: {
-              ...r.value.stream.quality,
-              height: h,
-              fps: f,
-              videoKbps: h >= 1080 ? 9000 : 4500,
-            },
-          }
-        : { ...r.value.stream, performance: m };
-      await window.lampstand.command({ type: 'settings.update', payload: { patch: { stream } } });
-    },
-    [mode, custom ?? null] as const,
-  );
-  // A looping video on screen, with the fake camera picture-in-picture over it.
-  await cmd('live.goLive', {
-    media: {
-      mediaId: 'seed-clip',
-      kind: 'video',
-      fit: 'cover',
-      loop: true,
-      muted: false,
-      volume: 1,
-      playing: true,
-      position: 0,
-    },
+  await setStream(control, {
+    custom: process.env.LAMPSTAND_PERF_CUSTOM ?? null, // e.g. "1080x60"
+    mode: process.env.LAMPSTAND_PERF_MODE ?? 'balanced',
   });
+  // A looping video on screen, with the fake camera picture-in-picture over it.
+  await cmd('live.goLive', SEED_CLIP_LIVE);
   const camera = await control.evaluate(async () => {
     await navigator.mediaDevices.getUserMedia({ video: true });
     const d = (await navigator.mediaDevices.enumerateDevices()).find(
@@ -127,7 +59,7 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
       },
     });
   await cmd('stream.start', { record: true });
-  await expect.poll(async () => (await status())?.state, { timeout: 20_000 }).toBe('live');
+  await waitLive(l);
 
   const samples: {
     ffCpu: number;

@@ -14,6 +14,15 @@ import { useInputDevices } from '../../lib/inputs';
 import { attempt, closeDialog, openDialog, useStore } from '../../lib/store';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { lowerThirdThemes } from '../../lib/slides';
+import {
+  BACKGROUNDS,
+  choices,
+  NONE,
+  PERFORMANCE_MODES,
+  WORDS_ALIGNS,
+  WORDS_MODES,
+  WORDS_SIZE,
+} from '../../lib/streamOptions';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
 import { Select } from '../Select';
@@ -22,7 +31,6 @@ import { CheckComputer } from '../live/CheckComputer';
 import { DestinationFields, KindBadge } from '../live/destinationFields';
 
 type Update = (patch: Partial<Settings>) => void;
-const NONE = 'none';
 const ENCODERS = ['auto', 'h264_videotoolbox', 'h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264'];
 
 /** One destination: its name, on/off, and what it needs (a key, an address). */
@@ -242,11 +250,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             label={t('streaming.words')}
             value={st.picture.words}
             onChange={(words) => set({ picture: { ...st.picture, words } })}
-            options={[
-              { value: 'lowerThird', label: t('streaming.lowerThird') },
-              { value: 'full', label: t('streaming.fullScreen') },
-              { value: 'none', label: t('streaming.off') },
-            ]}
+            options={choices(WORDS_MODES, t)}
           />
         </Row>
         {st.picture.words === 'lowerThird' && (
@@ -273,10 +277,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
               label={t('streaming.wordsAlign')}
               value={st.picture.wordsAlign}
               onChange={(wordsAlign) => set({ picture: { ...st.picture, wordsAlign } })}
-              options={(['left', 'center', 'right'] as const).map((a) => ({
-                value: a,
-                label: t(`streaming.align.${a}`),
-              }))}
+              options={choices(WORDS_ALIGNS, t)}
             />
           </Row>
         )}
@@ -293,9 +294,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
               <Row label={t('streaming.wordsSize')} description={t('streaming.wordsSizeHelp')}>
                 <Slider
                   aria-label={t('streaming.wordsSize')}
-                  min={25}
-                  max={100}
-                  step={5}
+                  {...WORDS_SIZE}
                   value={st.picture.wordsSize}
                   format={(v) => `${v}%`}
                   className="w-56"
@@ -312,11 +311,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             label={t('streaming.background')}
             value={st.picture.background}
             onChange={(background) => set({ picture: { ...st.picture, background } })}
-            options={[
-              { value: 'program', label: t('streaming.bgProgram') },
-              { value: 'camera', label: t('streaming.bgCamera') },
-              { value: 'black', label: t('streaming.bgBlack') },
-            ]}
+            options={choices(BACKGROUNDS, t)}
           />
         </Row>
         <Row label={t('streaming.camera')} description={t('streaming.cameraHelp')}>
@@ -409,7 +404,7 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             label={t('streaming.performanceMode')}
             value={st.performance}
             onChange={(performance) => set({ performance })}
-            options={(['auto', 'light', 'balanced', 'quality', 'custom'] as const).map((m) => ({
+            options={PERFORMANCE_MODES.map((m) => ({
               value: m,
               label: t(`streaming.modes.${m}`),
             }))}

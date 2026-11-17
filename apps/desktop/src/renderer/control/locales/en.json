@@ -1605,9 +1605,7 @@
     "onAir": "Livestreaming now",
     "recording": "Recording now",
     "badgeLive": "Live",
-    "badgeRec": "Rec",
     "preview": "What the stream shows",
-    "previewIdle": "The stream’s picture shows here while you stream or record.",
     "starting": "Starting…",
     "noFfmpeg": "Lampstand needs its video encoder (ffmpeg) to stream and record, and couldn’t find it on this computer.",
     "goLive": "Go live",
@@ -1619,10 +1617,8 @@
     "noDestinations": "Add where to stream (YouTube, Facebook…) in Stream settings first.",
     "openRecordings": "Recordings",
     "settings": "Stream settings…",
-    "stats": "{{fps}} fps · {{kbps}} kb/s · {{speed}}×",
     "dropped_one": "{{count}} frame dropped",
     "dropped_other": "{{count}} frames dropped",
-    "struggling": "The computer can’t keep up: try 720p or a lower bitrate.",
     "dest": {
       "connecting": "Connecting…",
       "ok": "Live",
@@ -1634,8 +1630,7 @@
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
       "reconnecting": "Reconnecting…",
       "encoderStopped": "The encoder stopped and couldn’t restart."
-    },
-    "statsShort": "{{fps}} fps · {{speed}}× speed"
+    }
   },
   "streaming": {
     "destinations": "Where it streams",
@@ -1731,12 +1726,6 @@
     "cameraHelp": "Used when “Behind the words” is Camera.",
     "noCamera": "No camera",
     "sound": "What it sounds like",
-    "soundHelp": "Speak or play into a microphone to see its level.",
-    "room": "Room audio",
-    "roomHelp": "Tracks from the Audio tab and the sound of videos.",
-    "roomLevel": "Room audio level",
-    "micOf": "Include {{name}}",
-    "micLevel": "{{name}} level",
     "quality": "Quality",
     "qualityHelp": "720p at 30 fps suits most church internet connections.",
     "qualityLive": "Changes apply the next time you go live or record.",
@@ -1929,7 +1918,6 @@
   "console": {
     "title": "Live",
     "popOut": "Open the Live console in its own window",
-    "popOutShort": "Own window",
     "dock": "Back into the main window",
     "close": "Close the Live console",
     "state": {
@@ -1987,9 +1975,6 @@
     "recordWithStream": "Record whenever I go live",
     "editDestination": "Stream key and settings for {{name}}",
     "stats": "Stream readouts",
-    "droppedShort_one": "{{count}} dropped",
-    "droppedShort_other": "{{count}} dropped",
-    "loadShort": "CPU {{load}}%",
     "details": "Stream details",
     "help": {
       "fps": "Frames per second going out (target {{target}}). Green: smooth.",
