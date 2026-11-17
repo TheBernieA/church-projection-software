@@ -211,6 +211,11 @@ export interface StreamStatus {
   speed: number;
   /** Frames the encoder couldn't take in time. */
   dropped: number;
+  /**
+   * How far behind live the stream is as it leaves this computer, in ms (null until known).
+   * What a viewer sees is this plus the streaming service's own delay.
+   */
+  delayMs: number | null;
   destinations: StreamDestinationStatus[];
   /** The file being written, if recording. */
   recordingPath: string | null;
@@ -299,7 +304,13 @@ export interface EncodeConfig {
 /** What the stream page tells main about its hardware encoder. */
 export type EncoderReport =
   | { type: 'caps'; width: number; height: number; fps: number; hardware: boolean }
-  | { type: 'stats'; encoded: number; dropped: number }
+  | {
+      type: 'stats';
+      encoded: number;
+      dropped: number;
+      /** How long the encoder took per frame over the last second, in ms (average). */
+      encodeMs: number;
+    }
   | { type: 'error'; message: string };
 
 /** API exposed to the (offscreen) stream window: it draws and sends its sound. */

@@ -192,3 +192,27 @@ with only the hardware encoders avoids the GPL if that matters for distribution.
 - e2e: records a live slide (checks h264 + aac, duration, a non-black frame) and streams to a local
   RTMP server started by the test (`ffmpeg -listen 1`), set up through Settings › Streaming and
   started from the Live panel.
+
+## How much delay Lampstand adds (and what it can't change)
+
+Measured glass to glass with `e2e/glass.spec.ts` (`LAMPSTAND_GLASS=1`): a picture changes in
+Lampstand, and a local RTMP server decodes the stream as it arrives. From the command to the first
+decoded frame that shows it: **about 0.2 s** at 1080p30 and 1080p60 (drawing, capture, hardware
+encoding, packaging, sending, decoding).
+
+What keeps it there:
+
+- each frame and each piece of sound is sent the moment it's ready (`flush_packets`,
+  `tcp_nodelay`, half-second input queues);
+- sound is never short of the clock (its first batches wait for ffmpeg rather than being dropped),
+  so ffmpeg doesn't hold video back to wait for it;
+- when a destination can't keep up, video skips ahead to a keyframe rather than queueing.
+
+The Live console's delay reading (and `delayMs` in the log's "stream health" lines) shows this live:
+ffmpeg's lag behind the clock, plus a frame's wait and the encoder's time.
+
+Everything after that belongs to the streaming service, which re-encodes the stream, cuts it into
+pieces and lets players buffer a few of them. On YouTube that is roughly 15–30 s on Normal latency,
+5–10 s on Low and 2–5 s on Ultra low (YouTube Studio › Stream settings › Stream latency). No
+encoder can go below the service's floor over RTMP. A sub-second picture needs a different way of
+delivering it (NDI on the local network; SRT or WebRTC to a receiver you run).

@@ -46,7 +46,7 @@ describe('stream encoder arguments', () => {
     const out = a.at(-1) ?? '';
     expect(out.split('|')).toHaveLength(3);
     expect(out).toContain(
-      '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1]rtmp://a/live2/k1',
+      '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]rtmp://a/live2/k1',
     );
   });
 

@@ -228,8 +228,10 @@ export function videoCodecArgs(
 export function buildArgs(o: EncodeOptions): string[] {
   const gpu = o.input === 'flv';
   const outputs = [
+    // Each packet goes out at once: no batching in the muxer, none in the network stack.
     ...o.streams.map(
-      (u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1]${teeEscape(u)}`,
+      (u) =>
+        `[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]${teeEscape(u)}`,
     ),
     ...(o.record
       ? [`[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]${teeEscape(o.record)}`]

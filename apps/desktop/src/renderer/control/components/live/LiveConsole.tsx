@@ -578,6 +578,20 @@ function HeaderReadings({ s }: { s: StreamStatus }) {
           help: t('console.help.speed'),
           tone: speedTone(s),
         },
+        ...(s.delayMs !== null
+          ? [
+              {
+                text: `${(s.delayMs / 1000).toFixed(1)} s`,
+                help: t('console.help.delay'),
+                tone:
+                  s.delayMs > 2500
+                    ? ('bad' as const)
+                    : s.delayMs > 1000
+                      ? ('warn' as const)
+                      : undefined,
+              },
+            ]
+          : []),
         ...(load !== null ? [{ text: `${load}%`, help: t('console.help.load') }] : []),
         ...(s.dropped > 0
           ? [

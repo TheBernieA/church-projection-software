@@ -106,6 +106,7 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   kbps: 0,
   speed: 0,
   dropped: 0,
+  delayMs: null,
   droppedLocal: 0,
   destinations: [],
   recordingPath: null,
@@ -247,6 +248,11 @@ export class StreamController {
   /** GPU pipeline: the page is encoding (sound is written only from then, on the same clock). */
   private encodeLive = false;
   private videoBytes = 0;
+  /** When the bitrate was last worked out, and the video bytes sent by then. */
+  private rateAt = 0;
+  private rateBytes = 0;
+  /** GPU pipeline: the hardware encoder's time per frame (ms), from the page. */
+  private encodeMs = 0;
   private videoChunks = 0;
   private audioTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -746,6 +752,7 @@ export class StreamController {
     } else if (r.type === 'stats') {
       this.pageEncoded = r.encoded;
       this.pageDropped = r.dropped;
+      this.encodeMs = r.encodeMs;
     } else {
       this.d.log.warn('hardware encoder failed; carrying on with the standard encoder', {
         message: r.message,
@@ -1005,6 +1012,8 @@ export class StreamController {
       this.flvOpen = false;
       this.backlog.reset();
       this.videoBytes = 0;
+      this.rateAt = 0;
+      this.rateBytes = 0;
       this.videoChunks = 0;
       const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
       if (this.pageReady) this.beginGpuEncode(cfg);
@@ -1076,7 +1085,10 @@ export class StreamController {
       }
     }
     const out = this.audioOut;
-    if (!out?.writable || out.writableNeedDrain) return false;
+    // Up to half a second may wait for ffmpeg (it opens the sound a moment after the picture:
+    // dropping those first batches would leave the sound short for the whole stream, and ffmpeg
+    // holding every video frame back until the sound catches up).
+    if (!out?.writable || out.writableLength > BYTES_PER_SECOND / 2) return false;
     out.write(chunk);
     this.audioBytes += chunk.length;
     return true;
@@ -1103,6 +1115,7 @@ export class StreamController {
         fps: this.status.fps,
         speed: this.status.speed,
         kbps: this.status.kbps,
+        delayMs: this.status.delayMs,
         encoded: this.pageEncoded,
         dropped: this.pump?.dropped ?? this.pageDropped,
         audioLeadMs: Math.round(
@@ -1200,11 +1213,31 @@ export class StreamController {
       );
       const first = this.status.state === 'starting' && p.time > 1;
       this.ffmpegDropped = p.dropped;
+      // How far behind live the stream leaves here: time since the first frame, less the
+      // stream time ffmpeg has sent on (it grows when a destination can't keep up), plus what
+      // comes before ffmpeg: a frame's wait for its turn and the encoder's time.
+      const delayMs =
+        this.encodeStart && p.time > 1
+          ? Math.max(0, Math.round(performance.now() - this.encodeStart - p.time * 1000)) +
+            (this.pipeline === 'gpu' ? Math.round(1000 / (p.fps || 30)) + this.encodeMs : 0)
+          : null;
+      // ffmpeg gives no bitrate when it sends to several places at once: count our own bytes.
+      const at = performance.now();
+      const kbps =
+        p.kbps > 0
+          ? p.kbps
+          : this.pipeline === 'gpu' && this.rateAt
+            ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt)) +
+              this.d.getSettings().stream.quality.audioKbps
+            : this.status.kbps;
+      this.rateAt = at;
+      this.rateBytes = this.videoBytes;
       this.setStatus(
         {
           state: p.time > 1 ? 'live' : this.status.state,
           fps: p.fps,
-          kbps: p.kbps,
+          kbps,
+          delayMs,
           speed: p.speed,
           dropped: (this.pump?.dropped ?? this.pageDropped) + p.dropped,
           destinations,

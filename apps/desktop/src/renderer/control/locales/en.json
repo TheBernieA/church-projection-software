@@ -1815,6 +1815,7 @@
     "help": {
       "fps": "Frames per second going out (target {{target}}). Green: smooth.",
       "speed": "Encoder speed: 1.00× keeps up with real time; below 0.95× the computer is falling behind.",
+      "delay": "Sending delay: how far behind live the stream is when it leaves this computer. Viewers see this plus the service's own delay (on YouTube, set Stream latency to “Ultra low-latency” in YouTube Studio for the shortest).",
       "load": "Computer load: Lampstand and the encoder together (100% = one full core).",
       "size": "Picture size and frame rate for the next start ({{mode}} mode).",
       "bitrate": "Video bitrate (target {{target}} Mb/s): how much internet upload the stream uses.",

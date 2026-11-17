@@ -59,6 +59,19 @@ let lastKey = 0;
 let avcC: Uint8Array | null = null;
 /** The encoder has produced its first frame: the clock runs from then. */
 let started = false;
+/** When each frame went into the encoder (by timestamp), to time how long it takes. */
+const sentAt = new Map<number, number>();
+let encodeSum = 0;
+let encodeCount = 0;
+
+function encode(enc: VideoEncoder, timestamp: number, key: boolean): void {
+  if (!latest) return;
+  const frame = new VideoFrame(latest, { timestamp });
+  if (sentAt.size > 120) sentAt.clear(); // frames the encoder never gave back
+  sentAt.set(timestamp, performance.now());
+  enc.encode(frame, { keyFrame: key });
+  frame.close();
+}
 
 const report = (r: EncoderReport): void =>
   scope.postMessage({ t: 'report', r } satisfies WorkerOut);
@@ -98,6 +111,12 @@ function begin(c: EncodeConfig): void {
       const data = new Uint8Array(chunk.byteLength);
       chunk.copyTo(data);
       encoded += 1;
+      const at = sentAt.get(chunk.timestamp);
+      if (at !== undefined) {
+        sentAt.delete(chunk.timestamp);
+        encodeSum += performance.now() - at;
+        encodeCount += 1;
+      }
       const d = meta?.decoderConfig?.description;
       if (d) {
         const view = ArrayBuffer.isView(d)
@@ -130,7 +149,15 @@ function begin(c: EncodeConfig): void {
   avcC = null;
   started = false;
   first();
-  stats = setInterval(() => report({ type: 'stats', encoded, dropped }), 1000);
+  sentAt.clear();
+  encodeSum = 0;
+  encodeCount = 0;
+  stats = setInterval(() => {
+    const encodeMs = encodeCount ? Math.round(encodeSum / encodeCount) : 0;
+    encodeSum = 0;
+    encodeCount = 0;
+    report({ type: 'stats', encoded, dropped, encodeMs });
+  }, 1000);
 }
 
 /** The first frame (a keyframe), as soon as there's a picture; the clock waits for it. */
@@ -141,9 +168,7 @@ function first(): void {
     timer = setTimeout(first, 10);
     return;
   }
-  const frame = new VideoFrame(latest, { timestamp: 0 });
-  enc.encode(frame, { keyFrame: true });
-  frame.close();
+  encode(enc, 0, true);
   sent = 1;
   wantKey = false;
 }
@@ -173,9 +198,7 @@ function tick(): void {
     const key = wantKey || n - lastKey >= c.fps * 2;
     if (key) lastKey = n;
     wantKey = false;
-    const frame = new VideoFrame(latest, { timestamp: Math.round((n * 1e6) / c.fps) });
-    enc.encode(frame, { keyFrame: key });
-    frame.close();
+    encode(enc, Math.round((n * 1e6) / c.fps), key);
   }
   timer = setTimeout(tick, Math.max(1, msToNextFrame(start, performance.now(), c.fps, sent)));
 }

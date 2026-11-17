@@ -1,8 +1,8 @@
 /**
- * Collects the stream's sound mix and hands it to the page in ~21 ms batches of interleaved
+ * Collects the stream's sound mix and hands it to the page in ~11 ms batches of interleaved
  * stereo float32 (the page sends them on to the encoder). It passes nothing through.
  */
-const FRAMES = 1024;
+const FRAMES = 512;
 
 class PcmTap extends AudioWorkletProcessor {
   constructor() {
