@@ -194,6 +194,8 @@ export interface StreamDestinationStatus {
   id: string;
   name: string;
   state: 'connecting' | 'ok' | 'failed';
+  /** Why it stopped, in the encoder's words (stream key hidden). */
+  reason?: string;
 }
 
 /** The livestream / recording, as the control window sees it (sent on every change). */

@@ -395,7 +395,9 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
       ) : (
         <ul className="flex flex-col gap-1.5">
           {st.destinations.map((d) => {
-            const state = s?.destinations.find((x) => x.id === d.id)?.state;
+            const going = s?.destinations.find((x) => x.id === d.id);
+            const state = going?.state;
+            const reason = going?.reason;
             const needsKey = d.kind !== 'custom' && !keys[d.id];
             const expanded = open === d.id;
             return (
@@ -413,7 +415,7 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
                     {d.name}
                   </Typography>
                   {state ? (
-                    <Typography size={11} tone="muted">
+                    <Typography size={11} tone="muted" title={reason}>
                       {t(`live.dest.${state}`)}
                     </Typography>
                   ) : (
@@ -449,6 +451,17 @@ function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: StreamSettin
                     }
                   />
                 </div>
+                {state === 'failed' && reason && (
+                  <Typography
+                    as="p"
+                    size={11}
+                    tone="inherit"
+                    leading="snug"
+                    className="mt-1 break-words pl-[18px] text-[var(--tally-program)]"
+                  >
+                    {reason}
+                  </Typography>
+                )}
                 {expanded && (
                   <div className="-mx-1.5">
                     <DestinationRow

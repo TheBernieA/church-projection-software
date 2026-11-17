@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildArgs,
   cleanStreamKey,
+  destinationFailure,
+  redactKeys,
   destinationUrl,
   freeName,
   isStreamKey,
@@ -73,6 +75,26 @@ describe('stream encoder arguments', () => {
   });
 });
 
+describe('destination failures', () => {
+  it('says why, with the key hidden', () => {
+    const before = [
+      'frame=  30 fps= 30 q=-1.0 size=N/A time=00:00:01.00',
+      '[rtmp @ 0x1] Server error: Stream key rtmp://a.rtmp.youtube.com/live2/abcd-efgh rejected',
+    ];
+    const why = destinationFailure(
+      '[tee @ 0x2] Slave muxer #0 failed: Input/output error, continuing with 1/2 slaves.',
+      before,
+    );
+    expect(why).toBe(
+      'Server error: Stream key rtmp://a.rtmp.youtube.com/live2/••• rejected — Input/output error',
+    );
+    expect(why).not.toContain('abcd-efgh');
+    expect(
+      redactKeys("Slave '[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/FB-1?s=2' failed"),
+    ).toBe("Slave '[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/•••' failed");
+  });
+});
+
 describe('pasted stream keys', () => {
   it('cleans up keys as people paste them', () => {
     expect(cleanStreamKey('  abcd-efgh-ijkl-mnop-qrst\n')).toBe('abcd-efgh-ijkl-mnop-qrst');
@@ -107,7 +129,7 @@ describe('encoder choice', () => {
 describe('destinations', () => {
   it('builds ingest URLs', () => {
     expect(destinationUrl('youtube', '', 'abc-123')).toBe(
-      'rtmp://a.rtmp.youtube.com/live2/abc-123',
+      'rtmps://a.rtmps.youtube.com:443/live2/abc-123',
     );
     expect(destinationUrl('facebook', '', 'FB1')).toBe(
       'rtmps://live-api-s.facebook.com:443/rtmp/FB1',

@@ -9,7 +9,8 @@ export type DestinationKind = 'youtube' | 'facebook' | 'custom';
 
 /** Where each kind of service takes a stream (the key is appended). */
 export const INGEST: Record<Exclude<DestinationKind, 'custom'>, string> = {
-  youtube: 'rtmp://a.rtmp.youtube.com/live2',
+  // RTMPS on port 443: encrypted, and it gets through networks that block RTMP's port 1935.
+  youtube: 'rtmps://a.rtmps.youtube.com:443/live2',
   facebook: 'rtmps://live-api-s.facebook.com:443/rtmp',
 };
 
@@ -47,6 +48,27 @@ export function cleanStreamKey(input: string): string {
   let k = input.replace(/[\s\u200B-\u200D\u2060\uFEFF\u00AD]/g, '');
   if (/^rtmps?:\/\//i.test(k)) k = k.slice(k.lastIndexOf('/') + 1);
   return k;
+}
+
+/** An ffmpeg log line with any stream key hidden (the last part of an rtmp(s) address). */
+export const redactKeys = (line: string): string =>
+  line.replace(/(rtmps?:\/\/[^\s'"|\]]*\/)[^\s'"|\]/]+/gi, '$1•••');
+
+/**
+ * Why a destination stopped, in ffmpeg's words: the tee's own reason ("Broken pipe",
+ * "Input/output error") and the RTMP server's message just before it, if any. Keys hidden.
+ */
+export function destinationFailure(line: string, before: readonly string[]): string {
+  const after = line.split(/failed:/i)[1] ?? '';
+  const own = after.split(', continuing')[0]?.trim() ?? '';
+  const server = [...before]
+    .reverse()
+    .find(
+      (l) =>
+        /rtmp|server|error|denied|refused|unauthor|reset|timed out/i.test(l) && !/^frame=/.test(l),
+    );
+  const text = [server?.replace(/^\[[^\]]+\]\s*/, ''), own].filter(Boolean).join(' — ');
+  return redactKeys(text).slice(0, 300);
 }
 
 /** The full ingest address for a destination. */

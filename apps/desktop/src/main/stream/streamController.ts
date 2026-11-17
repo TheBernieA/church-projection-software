@@ -41,8 +41,10 @@ import { type Logger } from '../types';
 import { findFfmpeg, probeEncoders } from './ffmpeg';
 import {
   buildArgs,
+  destinationFailure,
   destinationUrl,
   freeName,
+  redactKeys,
   isStreamUrl,
   parseProgress,
   pickEncoder,
@@ -1087,7 +1089,7 @@ export class StreamController {
 
   private onLog(line: string): void {
     if (!line.trim()) return;
-    if (process.env.LAMPSTAND_FFMPEG_DEBUG) this.d.log.info('ffmpeg', { line });
+    if (process.env.LAMPSTAND_FFMPEG_DEBUG) this.d.log.info('ffmpeg', { line: redactKeys(line) });
     const p = parseProgress(line);
     if (p) {
       const destinations = this.status.destinations.map((x) =>
@@ -1110,16 +1112,22 @@ export class StreamController {
         this.d.notice({ level: 'info', key: 'streamLive' });
       return;
     }
-    this.lastStderr = [...this.lastStderr.slice(-30), line];
+    const before = this.lastStderr;
+    this.lastStderr = [...this.lastStderr.slice(-30), redactKeys(line)];
     // tee: "Slave muxer #N failed: …" (that destination is dropped; the rest carry on).
     const slave = /Slave muxer #(\d+) failed/i.exec(line);
     if (slave) {
       const id = this.slaves[Number(slave[1])];
-      this.d.log.warn('stream destination failed', { id });
+      const reason = destinationFailure(line, before.slice(-8));
+      this.d.log.warn('stream destination failed', {
+        id,
+        reason,
+        context: before.slice(-6),
+      });
       this.setStatus(
         {
           destinations: this.status.destinations.map((x) =>
-            x.id === id ? { ...x, state: 'failed' as const } : x,
+            x.id === id ? { ...x, state: 'failed' as const, reason } : x,
           ),
           error: 'destinationFailed',
         },
