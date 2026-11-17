@@ -45,7 +45,13 @@ import {
   percent,
 } from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
-import { addVideoCountdown, openAdhoc, openPick, setBackground } from '../../lib/actions';
+import {
+  addVideoCountdown,
+  clearLayer,
+  openAdhoc,
+  openPick,
+  setBackground,
+} from '../../lib/actions';
 import { playAudio, probeDuration } from '../../lib/audio';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import { previewTrack } from '../../lib/audioPreview';
@@ -260,12 +266,14 @@ function openProps(m: MediaItem) {
  * A picture or video as the background: the slide's words (lyrics, verses) stay on top of it,
  * unlike showing it as media, which takes the whole screen.
  */
-function putBehindWords(m: MediaItem): Promise<void> {
-  return setBackground(
+async function putBehindWords(m: MediaItem): Promise<void> {
+  await setBackground(
     m.kind === 'video'
       ? { kind: 'video', mediaId: m.id, loop: true }
       : { kind: 'image', mediaId: m.id },
   );
+  // Already on screen as media (covering the words): it moves behind them instead.
+  if (useStore.getState().live?.program.media?.mediaId === m.id) await clearLayer('media');
 }
 
 /**
@@ -275,11 +283,13 @@ function putBehindWords(m: MediaItem): Promise<void> {
 function PlayNow({ m }: { m: MediaItem }) {
   const { t } = useTranslation();
   const live = useIsLive(m.id);
-  if (live) return null; // already on screen (its LIVE tag sits in this corner)
   const label = m.kind === 'audio' ? t('mediaBin.playRoom') : t('mediaBin.showNow');
   const behind = t('mediaBin.behindWords');
   return (
-    <span className="pointer-events-none absolute left-0 right-0 top-0 flex aspect-video items-end justify-end gap-1.5 p-1.5">
+    // Live media keeps "behind the words" (to move it there), sitting above its LIVE tag.
+    <span
+      className={`pointer-events-none absolute left-0 right-0 top-0 flex aspect-video items-end justify-end gap-1.5 p-1.5 ${live ? 'pb-8' : ''}`}
+    >
       {m.kind !== 'audio' && (
         <IconButton
           size="sm"
@@ -296,21 +306,23 @@ function PlayNow({ m }: { m: MediaItem }) {
           <Wallpaper size={14} />
         </IconButton>
       )}
-      <IconButton
-        size="sm"
-        variant="bare"
-        aria-label={`${label}: ${m.name}`}
-        title={label}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (m.kind === 'audio') void playAudio(m.id);
-          else void openAdhoc(asItem(m), 'live');
-        }}
-        onDoubleClick={(e) => e.stopPropagation()}
-        className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[opacity,transform,background-color] hover:scale-105 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover:opacity-100"
-      >
-        <Play size={14} fill="currentColor" />
-      </IconButton>
+      {!live && (
+        <IconButton
+          size="sm"
+          variant="bare"
+          aria-label={`${label}: ${m.name}`}
+          title={label}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (m.kind === 'audio') void playAudio(m.id);
+            else void openAdhoc(asItem(m), 'live');
+          }}
+          onDoubleClick={(e) => e.stopPropagation()}
+          className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[opacity,transform,background-color] hover:scale-105 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Play size={14} fill="currentColor" />
+        </IconButton>
+      )}
     </span>
   );
 }

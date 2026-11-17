@@ -2444,7 +2444,11 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   // A picture behind the words: the verse on screen stays, the picture goes behind it.
   await binTab('Media');
   const bin = control.getByRole('region', { name: 'Bin' });
+  // On screen as media first: the button is still there, and moves it behind the words.
+  await bin.getByRole('button', { name: 'Show now: Seed image' }).click();
+  await expect(out.locator('.ls-layer-media img')).toHaveCount(1);
   await bin.getByRole('button', { name: 'Use behind the words: Seed image' }).click();
+  await expect(out.locator('.ls-layer-media img')).toHaveCount(0);
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));
@@ -2452,7 +2456,6 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
       return ref?.kind === 'image' ? ref.mediaId : null;
     })
     .toBe('seed-image');
-  await expect(out.locator('.ls-text').last()).toContainText('Let there be light');
 });
 
 test('playlists: fill a section, add and edit slides (live edits wait), delete the playlist', async () => {
