@@ -22,6 +22,7 @@ export function sampleService(hymnIds: string[]): ServicePlan {
         kind: 'announcements',
         title: 'Welcome',
         loopIntervalSec: 8,
+        autoAdvance: true,
         slides: [
           { id: newId(), title: 'Welcome', body: 'We are glad you are here.' },
           { id: newId(), title: 'Connect', body: 'Visit the welcome desk after the service.' },

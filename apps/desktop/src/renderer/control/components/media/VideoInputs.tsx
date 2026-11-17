@@ -9,8 +9,10 @@ import {
   RotateCcw,
   Settings2,
   Video,
+  Clapperboard,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { usePaneSize } from '../shell/Splitter';
 import { Button, IconButton, Typography } from '@lampstand/ui';
 import {
   rescanDevices,
@@ -317,6 +319,8 @@ export function VideoInputs() {
   // Cameras switched off in Settings › Video stay out of the way here.
   const devices = all?.filter((d) => !saved[d.deviceId]?.hidden) ?? null;
   const hiddenCount = (all?.length ?? 0) - (devices?.length ?? 0);
+  // The switcher (Preview, Program, Cut, Auto) folds away so the cameras get the room.
+  const switcher = usePaneSize('inputSwitcher', 1, 0, 1);
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
@@ -337,6 +341,19 @@ export function VideoInputs() {
           {t('inputs.videoHint')}
         </Typography>
         <CameraSwitcher className="w-56 shrink-0" />
+        {devices && devices.length > 0 && (
+          <Button
+            size="xs"
+            variant={switcher.size === 1 ? 'subtle' : 'ghost'}
+            aria-pressed={switcher.size === 1}
+            icon={<Clapperboard size={13} />}
+            title={t('inputs.switcherHelp')}
+            onClick={() => switcher.commit(switcher.size === 1 ? 0 : 1)}
+            className="shrink-0"
+          >
+            {t('inputs.switcher')}
+          </Button>
+        )}
         <Button
           size="xs"
           variant="ghost"
@@ -356,7 +373,7 @@ export function VideoInputs() {
           {hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')}
         </Button>
       </div>
-      {devices && devices.length > 0 && <SwitcherBar devices={devices} />}
+      {devices && devices.length > 0 && switcher.size === 1 && <SwitcherBar devices={devices} />}
       <CameraAccess className="mx-4 mt-3" />
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         {devices && devices.length === 0 ? (

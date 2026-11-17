@@ -933,11 +933,13 @@ test('media protocol serves byte ranges, so long videos can seek', async () => {
 
 test('click goes live: a video from the bin plays on every output; Turn off live clears it', async () => {
   await binTab('Media');
-  // Clicks go live by default: one click puts the clip on screen, no Preview step.
-  await control
-    .getByRole('region', { name: 'Bin' })
-    .getByRole('button', { name: 'Seed clip', exact: true })
-    .click();
+  // A click on the tile only opens it (nothing changes on screen)...
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).click();
+  await control.waitForTimeout(400);
+  await expect((await outputPage()).locator('.ls-layer-media video')).toHaveCount(0);
+  // ...its play button puts it on screen.
+  await bin.getByRole('button', { name: 'Show now: Seed clip' }).click();
   let out = await outputPage();
   let outVideo = out.locator('.ls-layer-media video');
   await expect(outVideo).toHaveCount(1);
@@ -1122,7 +1124,7 @@ test('video cues: play in Preview, wait for Play, playback options trim the clip
 
   // "Wait for Play": a clip that goes live sits on its first frame until Play.
   await setSetting({ mediaAutoplay: false });
-  await bin.getByRole('button', { name: 'Seed clip', exact: true }).click();
+  await bin.getByRole('button', { name: 'Show now: Seed clip' }).click();
   await expect(outVideo).toHaveCount(1);
   await control.waitForTimeout(800);
   expect(await outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
@@ -2398,6 +2400,46 @@ test('Easy view lists the words; Turn off live takes everything off the screen',
   await expect(out.locator('.ls-text')).toContainText('For God so loved the world', {
     timeout: 10_000,
   });
+});
+
+test('words edit in place on the canvas; Bible picks wait; announcements can stop looping', async () => {
+  await mode('Show');
+  // Double-click the slide in Edit: its words open right on the canvas.
+  await (await servicePlan()).getByText('Text slides').last().click();
+  await mode('Edit');
+  const canvas = control.getByTestId('slide-canvas');
+  await canvas.dblclick({ position: { x: 24, y: 24 } });
+  const words = control.getByRole('dialog', { name: 'Edit the words on this slide' });
+  await words.getByLabel('Text', { exact: true }).fill('Typed on the slide');
+  await words.getByRole('button', { name: 'Done' }).click();
+  await expect(words).toHaveCount(0);
+  await expect(canvas.locator('.ls-text').last()).toContainText('Typed on the slide');
+
+  // A verse picked in the Bible opens in the slides; the room keeps what it sees.
+  const out = await outputPage();
+  const onScreen = (await out.locator('.ls-text').last().textContent()) ?? '';
+  await mode('Bible');
+  const bible = control.getByRole('region', { name: 'Bible' });
+  const genesis = bible.getByRole('button', { name: 'Genesis', exact: true });
+  if (await genesis.count()) await genesis.click();
+  await bible.getByRole('button', { name: /^3 And God said, Let there be light/ }).click();
+  await expect(control.getByRole('list', { name: 'Slide list' })).toContainText(
+    'Let there be light',
+  );
+  await control.waitForTimeout(400);
+  await expect(out.locator('.ls-text').last()).toHaveText(onScreen);
+  // Double-click shows it now.
+  await bible.getByRole('button', { name: /^3 And God said, Let there be light/ }).dblclick();
+  await expect(out.locator('.ls-text').last()).toContainText('Let there be light');
+
+  // The Welcome announcements say they loop, and can be told to stay on each slide.
+  await mode('Show');
+  await (await servicePlan()).getByText('Welcome').first().click();
+  const loop = control.getByRole('button', { name: /^Loops every \d+ s$/ }).first();
+  await expect(loop).toBeVisible();
+  await loop.click();
+  await expect(control.getByRole('button', { name: 'Stays on each slide' }).first()).toBeVisible();
+  await control.getByRole('button', { name: 'Stays on each slide' }).first().click();
 });
 
 test('playlists: fill a section, add and edit slides (live edits wait), delete the playlist', async () => {

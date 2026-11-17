@@ -128,7 +128,7 @@ export function SwitcherBar({ devices }: { devices: InputDevice[] }) {
       aria-label={t('switcher.title')}
       className="flex shrink-0 gap-3 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 py-2.5"
     >
-      <div className="flex min-w-0 max-w-[560px] flex-1 gap-3">
+      <div className="flex min-w-0 max-w-[400px] flex-1 gap-3">
         <BusMonitor
           scene={previewScene}
           tone="preview"

@@ -323,7 +323,7 @@ function stopAnnouncements(): void {
 }
 function scheduleAnnouncements(item: ServiceItem, index: number): void {
   stopAnnouncements();
-  if (item.kind !== 'announcements' || item.slides.length < 2) return;
+  if (item.kind !== 'announcements' || item.slides.length < 2 || !item.autoAdvance) return;
   loopTimer = setTimeout(() => {
     const cur = get().liveCursor;
     if (cur?.itemId !== item.id || cur.index !== index) return;
@@ -349,6 +349,17 @@ export function clickGoesLive(kind?: ServiceItem['kind']): boolean {
   const s = get().settings;
   if (!s || s.clickGoesLive) return true;
   return !!kind && s.liveEditingKinds.includes(kind);
+}
+
+/**
+ * A pick from the Bible or the media bin. It reaches the screen at once only when the operator
+ * chose that (Bible › "Click shows it now"). Otherwise it never interrupts the room: with
+ * Preview first on it loads Preview, else it opens in the slides, ready to show.
+ */
+export function openPick(item: ServiceItem): Promise<void> {
+  const s = get().settings;
+  const safe = s?.clickGoesLive === false ? 'preview' : 'select';
+  return openAdhoc(item, s?.pickShowsNow ? 'preview' : safe);
 }
 
 /** A slide was clicked: show it, or load Preview, following {@link clickGoesLive}. */

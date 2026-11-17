@@ -12,6 +12,7 @@ import { Button, IconButton, TallyTag, Typography } from '@lampstand/ui';
 import { useTranslation } from 'react-i18next';
 import { useInService, useSelectedItem } from '../../lib/hooks';
 import { KindTile } from '../kindIcons';
+import { LoopToggle } from '../LoopToggle';
 import { useStore } from '../../lib/store';
 import { selectSlide } from '../../lib/textSlides';
 import type {} from '../../lib/objects';
@@ -120,6 +121,7 @@ function EditorHeader({
           LIVE
         </TallyTag>
       )}
+      <LoopToggle item={item} />
       <span className="flex-1" />
       <Button
         size="sm"

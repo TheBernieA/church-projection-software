@@ -65,12 +65,14 @@ export function onPreviewChange(l: () => void): () => void {
 }
 
 /** Start listening to a track (from the start, or from `position`). */
-export function previewTrack(mediaId: string, position = 0): void {
+/** Load a track in the operator's own player; it plays (in headphones) only when asked. */
+export function previewTrack(mediaId: string, position = 0, play = true): void {
   const a = audio();
   if (state.mediaId !== mediaId) a.src = mediaUrl(mediaId);
   a.currentTime = position;
   set({ mediaId, position });
-  void a.play().catch(() => set({ playing: false }));
+  if (play) void a.play().catch(() => set({ playing: false }));
+  else a.pause();
 }
 
 export function togglePreview(): void {

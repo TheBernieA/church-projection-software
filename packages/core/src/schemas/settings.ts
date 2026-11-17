@@ -116,6 +116,12 @@ export const SettingsSchema = z
      * clicks load Preview and Go live (Space) sends it.
      */
     clickGoesLive: z.boolean().default(true),
+    /**
+     * Picking a verse in the Bible or a picture or video in the media bin puts it on screen at
+     * once. Off (the default): it opens in the slides, and a click there shows it, so a pick
+     * never interrupts what the room is watching.
+     */
+    pickShowsNow: z.boolean().default(false),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
     /** The video switcher (Media › Video input): what a click does, the Auto transition, PiP. */

@@ -30,6 +30,7 @@ import {
   Timer,
   Trash2,
   X,
+  Play,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, newId, type MediaItem, type ServiceItem } from '@lampstand/core';
@@ -43,7 +44,7 @@ import {
   percent,
 } from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
-import { addVideoCountdown, openAdhoc } from '../../lib/actions';
+import { addVideoCountdown, openAdhoc, openPick } from '../../lib/actions';
 import { playAudio, probeDuration } from '../../lib/audio';
 import { useKnownDuration } from '../../lib/mediaDurations';
 import { previewTrack } from '../../lib/audioPreview';
@@ -234,20 +235,54 @@ function MediaName({ m, className }: { m: MediaItem; className: string }) {
   );
 }
 
-/** Click shows it (audio: listen first, here), double-click adds it to the plan, drag it anywhere. */
+/**
+ * A click opens it without touching the screen or the room: audio is loaded in the Audio tab
+ * (paused), pictures and videos open in the slides (or show at once with "Click shows it now").
+ * Double-click adds it to the plan; drag it anywhere. The tile's play button acts at once.
+ */
 function openProps(m: MediaItem) {
   if (m.kind === 'audio')
     return {
       onClick: () => {
         useStore.setState({ controlsTab: 'audio' });
-        previewTrack(m.id);
+        previewTrack(m.id, 0, false);
       },
     };
   return {
-    onClick: () => void openAdhoc(asItem(m), 'preview'),
+    onClick: () => void openPick(asItem(m)),
     onDoubleClick: () => addItemToService({ ...asItem(m), id: newId() }),
     ...libraryDragSource(() => asItem(m)),
   };
+}
+
+/**
+ * The tile's own play button (on hover): audio plays in the room, a video or picture goes on
+ * screen now. The rest of the tile only opens it.
+ */
+function PlayNow({ m }: { m: MediaItem }) {
+  const { t } = useTranslation();
+  const live = useIsLive(m.id);
+  if (live) return null; // already on screen (its LIVE tag sits in this corner)
+  const label = m.kind === 'audio' ? t('mediaBin.playRoom') : t('mediaBin.showNow');
+  return (
+    <span className="pointer-events-none absolute left-0 right-0 top-0 flex aspect-video items-end justify-end p-1.5">
+      <IconButton
+        size="sm"
+        variant="bare"
+        aria-label={`${label}: ${m.name}`}
+        title={label}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (m.kind === 'audio') void playAudio(m.id);
+          else void openAdhoc(asItem(m), 'live');
+        }}
+        onDoubleClick={(e) => e.stopPropagation()}
+        className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[opacity,transform,background-color] hover:scale-105 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover:opacity-100"
+      >
+        <Play size={14} fill="currentColor" />
+      </IconButton>
+    </span>
+  );
 }
 
 /** Inside a playlist, dropping media on an entry places it there (reorder, or add). */
@@ -506,6 +541,7 @@ function MediaTile({
           className="mt-1.5 block transition-colors group-hover/tile:text-[var(--text-1)]"
         />
       </Button>
+      <PlayNow m={m} />
       <FavouriteStar m={m} onPicture />
       <TileMenu m={m} playlistId={playlistId} onPicture />
     </li>

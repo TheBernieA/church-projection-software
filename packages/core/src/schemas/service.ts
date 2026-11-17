@@ -67,6 +67,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     title: z.string().max(200),
     slides: z.array(TextSlideSchema).max(500),
     loopIntervalSec: z.number().int().min(2).max(600),
+    /** While live, move to the next slide every `loopIntervalSec` (off: stay until clicked). */
+    autoAdvance: z.boolean().default(true),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),

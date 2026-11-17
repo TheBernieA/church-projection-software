@@ -46,3 +46,12 @@ export function moveSlide(item: TextItem, from: number, to: number): void {
   if (to < 0 || to >= item.slides.length || from === to) return;
   edit(item, moveItem(item.slides, from, to), to);
 }
+
+/** Change one slide's own words (title, body); typing groups keystrokes into one undo step. */
+export function patchSlide(item: TextItem, index: number, p: Partial<TextSlide>): void {
+  updateItem<TextItem>(
+    item.id,
+    (x) => ({ ...x, slides: x.slides.map((s, i) => (i === index ? { ...s, ...p } : s)) }),
+    { typing: true },
+  );
+}

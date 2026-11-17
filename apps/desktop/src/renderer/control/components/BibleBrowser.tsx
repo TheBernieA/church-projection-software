@@ -3,11 +3,11 @@ import { ChevronLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, parseBibleMarkup, type BookId, type ServiceItem } from '@lampstand/core';
 import { BOOKS, bookName } from '@lampstand/scripture';
-import { openAdhoc } from '../lib/actions';
+import { openAdhoc, openPick, saveSettings } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
-import { Typography, Button, typographyClass } from '@lampstand/ui';
+import { Typography, Button, Switch, typographyClass } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -40,6 +40,7 @@ export function BibleBrowser() {
     return { from: p.start.verse, to: p.end.verse };
   }, [adhoc, book, chapter]);
 
+  const showsNow = useStore((s) => !!s.settings?.pickShowsNow);
   const pick = (v: number, e: React.MouseEvent, live: boolean): void => {
     if (!book) return;
     let from = v;
@@ -54,7 +55,7 @@ export function BibleBrowser() {
       passage: { start: { book, chapter, verse: from }, end: { book, chapter, verse: to } },
       versionIds: [versionId],
     };
-    void openAdhoc(item, live ? 'live' : 'preview');
+    void (live ? openAdhoc(item, 'live') : openPick(item));
   };
 
   const chapters = book
@@ -147,9 +148,21 @@ export function BibleBrowser() {
                 </Button>
               ))}
             </div>
-            <Typography as="p" variant="caption" leading="snug" className="pb-2 pt-2">
-              {t('bible.hint')}
-            </Typography>
+            <div className="flex items-start gap-3 pb-2 pt-2">
+              <Typography as="p" variant="caption" leading="snug" className="min-w-0 flex-1">
+                {showsNow ? t('bible.hintNow') : t('bible.hint')}
+              </Typography>
+              <label className="flex shrink-0 items-center gap-2">
+                <Typography size={11} tone="secondary">
+                  {t('bible.showsNow')}
+                </Typography>
+                <Switch
+                  label={t('bible.showsNowHelp')}
+                  checked={showsNow}
+                  onChange={(on) => void saveSettings({ pickShowsNow: on })}
+                />
+              </label>
+            </div>
           </div>
           <ol className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
             {(verses ?? []).map((text, i) => {

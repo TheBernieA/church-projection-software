@@ -238,7 +238,6 @@ export function ServicePanel() {
                     {item.label}
                   </Button>
                 )}
-                <SectionAdd header={item} update={update} />
                 <ItemMenu index={i} items={items} update={update} item={item} bg="band" />
               </li>
             );

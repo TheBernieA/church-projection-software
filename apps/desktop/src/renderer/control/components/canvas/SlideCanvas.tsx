@@ -7,6 +7,7 @@ import { editObjects, patchObject, snap } from '../../lib/objects';
 import { useStore } from '../../lib/store';
 import { mediaUrl } from '../../../shared/mediaUrl';
 import { SceneView } from '../SceneView';
+import { InlineText, type InlineTarget } from './InlineText';
 import { type TextItem } from '../../types';
 import { CANVAS } from '../../constants';
 
@@ -74,6 +75,12 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
   const selected = useStore((s) => s.editObjectId);
   const [host, scale] = useCanvasScale();
   const [drag, setDrag] = useState<Drag | null>(null);
+  // The in-place editor belongs to one slide: moving to another closes it.
+  const here = `${item.id}:${index}`;
+  const [editing, setEditing] = useState<{ at: string; target: InlineTarget } | null>(null);
+  const inline = editing?.at === here ? editing.target : null;
+  const setInline = (target: InlineTarget | null): void =>
+    setEditing(target ? { at: here, target } : null);
   const objects = item.slides[index]?.objects ?? [];
   const shown = drag ? objects.map((o) => (o.id === drag.id ? drag.current : o)) : objects;
 
@@ -140,6 +147,8 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
       aria-label={t('canvas.label')}
       onKeyDown={onKey}
       onPointerDown={() => select(null)}
+      // Double-click the slide to edit its words in place (a text box: its own words).
+      onDoubleClick={() => setInline({ kind: 'slide' })}
       className="relative aspect-video w-full overflow-hidden rounded-[4px] shadow-[0_0_0_1px_var(--hairline-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
       data-testid="slide-canvas"
     >
@@ -174,6 +183,10 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
                 aria-pressed={isSel}
                 data-object={o.id}
                 onPointerDown={(e) => start(e, o, 'move')}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  setInline(o.kind === 'text' ? { kind: 'object', id: o.id } : { kind: 'slide' });
+                }}
                 className="absolute cursor-move"
                 style={{
                   left: o.x,
@@ -206,6 +219,17 @@ export function SlideCanvas({ item, index }: { item: TextItem; index: number }) 
           );
         })}
       </div>
+      {inline && (
+        <InlineText
+          item={item}
+          index={index}
+          target={inline}
+          onClose={() => {
+            setInline(null);
+            host.current?.focus();
+          }}
+        />
+      )}
     </div>
   );
 }

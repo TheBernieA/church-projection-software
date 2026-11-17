@@ -78,7 +78,10 @@
     "chapter": "Chapter {{n}}",
     "ot": "Old Testament",
     "nt": "New Testament",
-    "hint": "Click a verse to preview. Shift-click to select a range. Double-click to show it now."
+    "hint": "Click a verse to open it in the slides, then click the slide to show it. Shift-click selects a range. Double-click shows it now.",
+    "hintNow": "Click a verse to show it now. Shift-click selects a range.",
+    "showsNow": "Click shows it now",
+    "showsNowHelp": "Clicking a verse (or a picture or video in the media bin) puts it on screen at once"
   },
   "media": {
     "add": "Add media",
@@ -1047,7 +1050,7 @@
     "forward": "Forward",
     "backward": "Back",
     "delete": "Delete",
-    "hint": "Drag to move · corners to resize · Alt: no snapping · arrows nudge",
+    "hint": "Double-click the words to edit them · drag to move · corners to resize · arrows nudge",
     "properties": "Object properties",
     "backToSlide": "Slide text",
     "text": "Text",
@@ -1089,7 +1092,10 @@
     "nextSlide": "Next slide (Page Down)",
     "untitled": "Slide {{n}}",
     "noPictures": "No pictures in the library yet.",
-    "importPicture": "Import a picture…"
+    "importPicture": "Import a picture…",
+    "editWords": "Edit the words on this slide",
+    "inlineHint": "Changes save as you type. Esc or ⌘↩ to close.",
+    "done": "Done"
   },
   "import": {
     "button": "Import",
@@ -1269,7 +1275,9 @@
     "list": "List",
     "renameMedia": "Rename {{name}}",
     "noFavourites": "No favourites yet. Hover over any media and click the star to keep it here.",
-    "makeCountdown": "Make a countdown with it"
+    "makeCountdown": "Make a countdown with it",
+    "playRoom": "Play in the room",
+    "showNow": "Show now"
   },
   "playback": {
     "title": "Playback options: {{name}}",
@@ -1373,7 +1381,11 @@
   },
   "announce": {
     "run": "Loop on the announcements layer",
-    "stop": "Stop the announcements layer"
+    "stop": "Stop the announcements layer",
+    "loopOn": "Loops every {{s}} s",
+    "loopOff": "Stays on each slide",
+    "loopOnHelp": "While live, these slides move on every {{s}} seconds by themselves. Click to stay on each slide until you click the next.",
+    "loopOffHelp": "Click to move on to the next slide by itself while live."
   },
   "audio": {
     "nowPlaying": "Room audio",
@@ -1474,10 +1486,10 @@
       "allow": "Allow camera access",
       "openSettings": "Open privacy settings"
     },
-    "switcher": "Camera",
+    "switcher": "Switcher",
     "switcherLabel": "Camera on screen",
     "switcherOff": "Off",
-    "switcherHelp": "Cut straight to another camera, each with its own settings below.",
+    "switcherHelp": "Show or hide Preview, Program, Cut and Auto (hide it to see your cameras bigger)",
     "switchTitle": "Switching",
     "switchHelp": "While a camera is on screen, the same switch sits under the Live monitor, and in Media › Video input.",
     "micAccess": {
