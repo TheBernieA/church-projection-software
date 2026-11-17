@@ -123,6 +123,9 @@ function draw(): void {
     content: showWords ? worded.content : null,
     announcement: showWords ? program.announcement : null,
   });
+  // Behind the words is the camera or black: the projector's pictures and videos stay off the
+  // stream (a video keeps playing, unseen, so its sound still reaches the stream mix).
+  back.setMediaHidden(pic.background !== 'program');
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
   // A lower third sits left, centre or right, whatever the theme says (full-screen words

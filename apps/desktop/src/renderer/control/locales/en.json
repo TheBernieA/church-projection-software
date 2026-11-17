@@ -1279,7 +1279,8 @@
     "noFavourites": "No favourites yet. Hover over any media and click the star to keep it here.",
     "makeCountdown": "Make a countdown with it",
     "playRoom": "Play in the room",
-    "showNow": "Show now"
+    "showNow": "Show now",
+    "behindWords": "Use behind the words"
   },
   "playback": {
     "title": "Playback options: {{name}}",

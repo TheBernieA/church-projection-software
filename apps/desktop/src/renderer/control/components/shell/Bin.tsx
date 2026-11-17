@@ -61,7 +61,8 @@ const Count = ({ n }: { n: number }) =>
 
 function SectionHeading({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div className="flex h-7 items-center justify-between pl-3 pr-1.5 pt-1.5">
+    // Sticky: the heading stays in view while its list scrolls under it.
+    <div className="sticky top-0 z-[1] flex h-7 shrink-0 items-center justify-between bg-[var(--surface-1)] pl-3 pr-1.5 pt-1.5">
       <Typography as="h2" variant="overline">
         {title}
       </Typography>

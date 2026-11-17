@@ -2440,6 +2440,19 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   await loop.click();
   await expect(control.getByRole('button', { name: 'Stays on each slide' }).first()).toBeVisible();
   await control.getByRole('button', { name: 'Stays on each slide' }).first().click();
+
+  // A picture behind the words: the verse on screen stays, the picture goes behind it.
+  await binTab('Media');
+  const bin = control.getByRole('region', { name: 'Bin' });
+  await bin.getByRole('button', { name: 'Use behind the words: Seed image' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      const ref = r.ok ? r.value.program.background?.ref : null;
+      return ref?.kind === 'image' ? ref.mediaId : null;
+    })
+    .toBe('seed-image');
+  await expect(out.locator('.ls-text').last()).toContainText('Let there be light');
 });
 
 test('playlists: fill a section, add and edit slides (live edits wait), delete the playlist', async () => {
