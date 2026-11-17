@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildArgs,
+  cleanStreamKey,
   destinationUrl,
   freeName,
   isStreamKey,
@@ -69,6 +70,19 @@ describe('stream encoder arguments', () => {
 
   it('escapes tee specials', () => {
     expect(teeEscape('a|b[c]\\d')).toBe('a\\|b\\[c\\]\\\\d');
+  });
+});
+
+describe('pasted stream keys', () => {
+  it('cleans up keys as people paste them', () => {
+    expect(cleanStreamKey('  abcd-efgh-ijkl-mnop-qrst\n')).toBe('abcd-efgh-ijkl-mnop-qrst');
+    expect(cleanStreamKey('abcd-efgh\u200B-ijkl')).toBe('abcd-efgh-ijkl');
+    expect(cleanStreamKey('abcd efgh')).toBe('abcdefgh');
+    expect(cleanStreamKey('rtmp://a.rtmp.youtube.com/live2/abcd-efgh-ijkl')).toBe('abcd-efgh-ijkl');
+    expect(
+      cleanStreamKey('rtmps://live-api-s.facebook.com:443/rtmp/FB-123-0-Ab?s_bl=1&s_psm=1'),
+    ).toBe('FB-123-0-Ab?s_bl=1&s_psm=1');
+    expect(isStreamKey(cleanStreamKey('FB-123-0-Ab?s_bl=1&s_psm=1'))).toBe(true);
   });
 });
 

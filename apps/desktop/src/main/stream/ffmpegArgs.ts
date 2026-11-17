@@ -37,6 +37,18 @@ export function isStreamUrl(url: string): boolean {
 export const isStreamKey = (key: string): boolean =>
   /^[\x21-\x7e]{1,300}$/.test(key) && !/[/\\]/.test(key);
 
+/**
+ * A stream key as people paste it, cleaned up: line breaks, spaces and invisible characters
+ * (zero-width spaces, which web pages often carry along when copied) are removed, and when the
+ * whole address was pasted ("rtmp://a.rtmp.youtube.com/live2/abcd-…") only the key at its end
+ * is kept.
+ */
+export function cleanStreamKey(input: string): string {
+  let k = input.replace(/[\s\u200B-\u200D\u2060\uFEFF\u00AD]/g, '');
+  if (/^rtmps?:\/\//i.test(k)) k = k.slice(k.lastIndexOf('/') + 1);
+  return k;
+}
+
 /** The full ingest address for a destination. */
 export function destinationUrl(kind: DestinationKind, url: string, key: string | null): string {
   const base = (kind === 'custom' ? url : INGEST[kind]).replace(/\/+$/, '');

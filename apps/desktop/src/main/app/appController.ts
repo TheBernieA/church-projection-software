@@ -32,7 +32,7 @@ import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
 import { NdiController } from '../ndi/ndiController';
-import { isStreamKey } from '../stream/ffmpegArgs';
+import { cleanStreamKey, isStreamKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
 import { MediaLibrary } from '../library/mediaLibrary';
@@ -436,9 +436,12 @@ export class AppController {
       handle: async ({ destinationId, key }) => {
         if (key === null || key.trim() === '') await this.secrets.delete(keyName(destinationId));
         else {
-          const k = key.trim();
+          const k = cleanStreamKey(key);
           if (!isStreamKey(k))
-            throw new AppError('invalid-key', 'That stream key has spaces or slashes in it.');
+            throw new AppError(
+              'invalid-key',
+              'That doesn’t look like a stream key. Paste only the key (not the server address).',
+            );
           await this.secrets.set(keyName(destinationId), k);
         }
         return { result: null };
