@@ -2097,7 +2097,7 @@ test('Live console: pops out into its own window, records from there, docks back
   const youtube = live.getByRole('listitem').filter({ hasText: 'YouTube' });
   await expect(youtube.getByText('Key needed')).toBeVisible();
   const keyField = live.getByLabel('Stream key for YouTube');
-  await keyField.fill('abcd-1234-efgh');
+  await keyField.fill('abcd-1234-efgh-5678-ijkl');
   await keyField.press('Enter');
   await expect(youtube.getByText('Key needed')).toHaveCount(0);
   await youtube.getByRole('button', { name: /^Stream key and settings for YouTube/ }).click();
@@ -2178,6 +2178,30 @@ test('Light mode: a smaller picture for modest computers', async () => {
   ).trim();
   expect(size).toBe('960,540');
   await set('auto');
+});
+
+test('the encoder restarts cleanly if it stops mid-recording', async () => {
+  const status = () =>
+    control.evaluate(async () => {
+      const r = await window.lampstand.query('stream.status');
+      return r.ok ? r.value : null;
+    });
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.start', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
+  // The encoder dies (as when a connection drops): Lampstand starts it again by itself, and
+  // the new one gets a fresh stream from a keyframe (it used to get leftovers and quit).
+  execFileSync('pkill', ['-f', `ffmpeg.*pipe:0.*${dir.split('/').pop() ?? ''}`]);
+  await expect.poll(async () => (await status())?.restarts, { timeout: 10_000 }).toBe(1);
+  await expect.poll(async () => (await status())?.state, { timeout: 20_000 }).toBe('live');
+  await control.waitForTimeout(2_000);
+  expect((await status())?.restarts).toBe(1);
+  expect((await status())?.recordingPath).toContain('part 2');
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'stream.stop', payload: { record: true } }),
+  );
+  await expect.poll(async () => (await status())?.state).toBe('idle');
 });
 
 test('the standard (CPU) pipeline still records when an ffmpeg encoder is chosen', async () => {

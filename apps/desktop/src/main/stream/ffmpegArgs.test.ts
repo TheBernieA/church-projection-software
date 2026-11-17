@@ -10,6 +10,7 @@ import {
   isStreamUrl,
   parseProgress,
   pickEncoder,
+  plausibleKey,
   recordingName,
   teeEscape,
   type EncodeOptions,
@@ -105,6 +106,13 @@ describe('pasted stream keys', () => {
       cleanStreamKey('rtmps://live-api-s.facebook.com:443/rtmp/FB-123-0-Ab?s_bl=1&s_psm=1'),
     ).toBe('FB-123-0-Ab?s_bl=1&s_psm=1');
     expect(isStreamKey(cleanStreamKey('FB-123-0-Ab?s_bl=1&s_psm=1'))).toBe(true);
+    // The "Stream URL" alone is not a key.
+    expect(cleanStreamKey('rtmp://a.rtmp.youtube.com/live2')).toBe('');
+    expect(cleanStreamKey('rtmps://a.rtmps.youtube.com:443/live2/')).toBe('');
+    expect(plausibleKey('youtube', 'abcd-efgh-ijkl-mnop-qrst')).toBe(true);
+    expect(plausibleKey('youtube', 'live2')).toBe(false);
+    expect(plausibleKey('youtube', 'abcdefgh')).toBe(false);
+    expect(plausibleKey('custom', 'x')).toBe(true);
   });
 });
 

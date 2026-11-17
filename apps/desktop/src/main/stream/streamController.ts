@@ -48,6 +48,7 @@ import {
   isStreamUrl,
   parseProgress,
   pickEncoder,
+  plausibleKey,
   recordingName,
   type Encoder,
 } from './ffmpegArgs';
@@ -754,6 +755,9 @@ export class StreamController {
   private writeVideo(data: Uint8Array, key: boolean): void {
     const stdin = this.ff?.stdin;
     if (this.pipeline !== 'gpu' || !stdin?.writable) return;
+    // Every (re)start begins at a keyframe: it carries the picture size ffmpeg needs first.
+    if (this.waitForKey && !key) return;
+    this.waitForKey = false;
     if (!this.encodeLive) {
       // The first picture is out: picture and sound start together from here.
       this.encodeLive = true;
@@ -761,8 +765,6 @@ export class StreamController {
       this.audioBytes = 0;
       this.startAudioClock();
     }
-    if (this.waitForKey && !key) return;
-    this.waitForKey = false;
     // ffmpeg has fallen far behind (a stalled network): drop and restart from a keyframe, so
     // memory never grows and the picture recovers cleanly.
     if (stdin.writableLength > 8 * 1024 * 1024) {
@@ -813,6 +815,19 @@ export class StreamController {
         status.push({ id: dest.id, name: dest.name, state: 'failed' });
         continue;
       }
+      // A saved key that can't be right (e.g. the "Stream URL" was pasted as the key): say so
+      // now, rather than let the service hang up on it.
+      if (key && !plausibleKey(dest.kind, key)) {
+        this.d.log.warn('saved stream key looks wrong', { id: dest.id, length: key.length });
+        status.push({
+          id: dest.id,
+          name: dest.name,
+          state: 'failed',
+          reason: 'The saved stream key doesn’t look right for this service. Paste the key again.',
+        });
+        continue;
+      }
+      this.d.log.info('destination', { id: dest.id, kind: dest.kind, keyLength: key?.length ?? 0 });
       urls.push(url);
       status.push({ id: dest.id, name: dest.name, state: 'connecting' });
     }
@@ -940,7 +955,7 @@ export class StreamController {
       this.pageDropped = 0;
       this.lastPageEncoded = 0;
       this.lastPageDropped = 0;
-      this.waitForKey = false;
+      this.waitForKey = true;
       this.videoBytes = 0;
       this.videoChunks = 0;
       const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
@@ -1146,6 +1161,13 @@ export class StreamController {
     this.ff = null;
     this.audioOut = null;
     this.pump?.stop();
+    // The page stops encoding too: the next start is a fresh stream from a keyframe.
+    if (this.audioTimer) clearInterval(this.audioTimer);
+    this.audioTimer = null;
+    this.pendingEncode = null;
+    this.encodeLive = false;
+    if (this.pipeline === 'gpu' && this.win && !this.win.isDestroyed())
+      this.win.webContents.send(Channels.evEncode, null);
     if (this.stopping) return;
     // Stopped on its own while wanted: restart (a hardware encoder that fails at once is
     // dropped for libx264), with backoff, a limited number of times.

@@ -32,7 +32,7 @@ import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
 import { NdiController } from '../ndi/ndiController';
-import { cleanStreamKey, isStreamKey } from '../stream/ffmpegArgs';
+import { cleanStreamKey, isStreamKey, plausibleKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
 import { dailyBackup } from '../library/backup';
 import { MediaLibrary } from '../library/mediaLibrary';
@@ -441,6 +441,17 @@ export class AppController {
             throw new AppError(
               'invalid-key',
               'That doesn’t look like a stream key. Paste only the key (not the server address).',
+            );
+          const kind = settings.get().stream.destinations.find((d) => d.id === destinationId)?.kind;
+          if (kind === 'youtube' && !plausibleKey(kind, k))
+            throw new AppError(
+              'invalid-key',
+              'That isn’t a YouTube stream key. In YouTube Studio › Go live › Stream, copy “Stream key” (like abcd-efgh-ijkl-mnop-qrst), not “Stream URL”.',
+            );
+          if (kind === 'facebook' && !plausibleKey(kind, k))
+            throw new AppError(
+              'invalid-key',
+              'That is too short to be a Facebook stream key. Copy “Stream key” from Facebook’s Live setup.',
             );
           await this.secrets.set(keyName(destinationId), k);
         }

@@ -46,8 +46,27 @@ export const isStreamKey = (key: string): boolean =>
  */
 export function cleanStreamKey(input: string): string {
   let k = input.replace(/[\s\u200B-\u200D\u2060\uFEFF\u00AD]/g, '');
-  if (/^rtmps?:\/\//i.test(k)) k = k.slice(k.lastIndexOf('/') + 1);
+  if (/^rtmps?:\/\//i.test(k)) {
+    k = k.slice(k.lastIndexOf('/') + 1);
+    // Only the server address was pasted ("…/live2", YouTube's "Stream URL"): there's no key.
+    if (['', 'live', 'live2', 'rtmp', 'app'].includes(k.toLowerCase()) || k.includes(':'))
+      return '';
+  }
   return k;
+}
+
+/**
+ * Could this be a key for that service? Catches the common mix-ups (the "Stream URL" pasted as
+ * the key, a few stray characters) without knowing the exact format: YouTube's keys are groups
+ * of letters and digits joined by dashes, 16 characters or more.
+ */
+export function plausibleKey(kind: DestinationKind, key: string): boolean {
+  if (kind === 'youtube') {
+    const groups = key.split('-');
+    return key.length >= 16 && groups.length >= 2 && groups.every((g) => /^[a-z0-9]+$/i.test(g));
+  }
+  if (kind === 'facebook') return key.length >= 16;
+  return true;
 }
 
 /** An ffmpeg log line with any stream key hidden (the last part of an rtmp(s) address). */

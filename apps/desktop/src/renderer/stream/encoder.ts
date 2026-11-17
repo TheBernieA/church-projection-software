@@ -65,10 +65,13 @@ export class StreamEncoder {
   }
 
   private begin(c: EncodeConfig): void {
-    void this.stop();
+    // A restart: drop the old encoder at once (no flush), so none of its leftover frames reach
+    // the new ffmpeg ahead of the new stream's first keyframe.
+    void this.stop(false);
     this.config = c;
     const encoder = new VideoEncoder({
       output: (chunk) => {
+        if (this.encoder !== encoder) return; // from an encoder that's been replaced
         const data = new Uint8Array(chunk.byteLength);
         chunk.copyTo(data);
         this.encoded += 1;
@@ -148,7 +151,7 @@ export class StreamEncoder {
     );
   }
 
-  async stop(): Promise<void> {
+  async stop(flush = true): Promise<void> {
     if (this.timer) clearTimeout(this.timer);
     if (this.stats) clearInterval(this.stats);
     this.timer = null;
@@ -156,7 +159,7 @@ export class StreamEncoder {
     const enc = this.encoder;
     this.encoder = null;
     this.config = null;
-    if (enc && enc.state === 'configured') {
+    if (flush && enc && enc.state === 'configured') {
       try {
         await enc.flush();
       } catch {
