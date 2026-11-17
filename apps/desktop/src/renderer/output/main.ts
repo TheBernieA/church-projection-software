@@ -1,4 +1,13 @@
-import { applyLook, lookLayersFor, withWordsTheme, type LiveState } from '@lampstand/core';
+import {
+  applyLook,
+  keyFeedScene,
+  lookLayersFor,
+  withKindThemes,
+  withWordsTheme,
+  type KeyFeedMode,
+  type LiveState,
+  type ResolvedKindThemes,
+} from '@lampstand/core';
 import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
@@ -18,6 +27,8 @@ let info = { label: 'Output', width: 1920, height: 1080, audio: false };
 let role: 'main' | 'secondary' | 'stage' | 'none' = 'main';
 let pattern: HTMLElement | null = null;
 let latest: LiveState | null = null;
+let themes: ResolvedKindThemes = {};
+let key: KeyFeedMode = 'off';
 let ready = false;
 /** Room audio plays from the main output only. */
 let audio: RoomAudio | null = null;
@@ -33,11 +44,14 @@ function draw(state: LiveState): void {
   const silentVideo =
     info.audio && !!layers && !layers.includes('media') && state.program.media?.kind === 'video';
   // Lower-third mode: the audience screens draw the words with its theme.
-  const program =
+  let program =
     role === 'main' || role === 'secondary'
       ? withWordsTheme(state.program, state.lowerThird)
       : state.program;
-  renderer.render(applyLook(program, silentVideo ? [...layers, 'media'] : layers));
+  // The alternate output: its own themes, and (as a key feed) words only over a flat colour.
+  program = applyLook(withKindThemes(program, themes), silentVideo ? [...layers, 'media'] : layers);
+  // After the Look, so the key colour is there whatever layers the Look shows.
+  renderer.render(key === 'off' ? program : keyFeedScene(program, key));
   renderer.setMediaHidden(silentVideo);
   const showPattern = state.testPatterns.includes(outputId) || state.testPatterns.includes('*');
   if (showPattern && !pattern) {
@@ -53,6 +67,8 @@ function draw(state: LiveState): void {
 api.onInfo((i) => {
   outputId = i.outputId;
   role = i.role;
+  themes = i.themes;
+  key = i.key;
   info = { label: i.label, width: i.width, height: i.height, audio: i.audio };
   if (!renderer) {
     renderer = new SceneRenderer(host, {

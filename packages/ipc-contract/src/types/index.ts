@@ -1,10 +1,12 @@
 import type {
   BibleVersionInfo,
   BookId,
+  KeyFeedMode,
   LiveState,
   MediaItem,
   MediaPlaylist,
   OutputRole,
+  ResolvedKindThemes,
   Result,
   ServicePlan,
   Settings,
@@ -66,6 +68,10 @@ export interface OutputInfo {
   mask: ScreenMask | null;
   /** Stage screens: the layout they show (Stage workspace). */
   stageLayout: StageLayout;
+  /** Themes this output uses instead of each slide's own, by kind of slide. */
+  themes: ResolvedKindThemes;
+  /** A key feed for a video mixer: words only, over this flat colour ('off': the full picture). */
+  key: KeyFeedMode;
 }
 
 export interface ServiceSummary {
@@ -277,6 +283,8 @@ export interface StreamConfig {
     wordsAlign: 'theme' | 'left' | 'center' | 'right';
     wordsTheme: string | null;
   };
+  /** Themes the stream uses instead of each slide's own, by kind of slide. */
+  kindThemes: ResolvedKindThemes;
   /** Lower third: the theme to draw the words with (resolved from `picture.wordsTheme`). */
   wordsTheme: Theme | null;
   /** The stream's own camera, with its saved settings (capture size capped at the stream's). */

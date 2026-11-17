@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { AppWindow, Grid3x3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { OutputRole } from '@lampstand/core';
+import { KEY_COLORS, type KeyFeedMode, type OutputRole } from '@lampstand/core';
 import { Button, Segmented, Switch, Typography } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
-import { refresh, useStore } from '../lib/store';
+import { closeDialog, refresh, useStore } from '../lib/store';
 import { EMPTY_LIST } from '../constants';
 import { assignDisplay } from './shell/ScreensMenu';
 import { Dialog } from './Dialog';
@@ -52,6 +52,68 @@ function PatternButton({
  * nothing) and a test pattern; then the rehearsal window. The toolbar's Audience and Stage
  * menus do the same for one kind of screen at a time.
  */
+/**
+ * The alternate (HDMI) output as a key feed for a video mixer: the words and props only, over a
+ * flat colour the mixer removes. Its themes are chosen in Themes › Alternate.
+ */
+function KeyFeed({ hasAlternate }: { hasAlternate: boolean }) {
+  const { t } = useTranslation();
+  const mode = useStore((s) => s.settings?.keyFeed.mode ?? 'off');
+  return (
+    <section
+      aria-label={t('outputs.key.title')}
+      className="mt-4 flex flex-col gap-2.5 rounded-[var(--radius-card)] bg-[var(--surface-2)] px-4 py-3.5 shadow-[var(--shadow-1)]"
+    >
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden
+          className="h-11 w-[72px] shrink-0 rounded-[4px] shadow-[0_0_0_1.5px_var(--hairline-strong)]"
+          style={{ background: mode === 'off' ? 'var(--surface-0)' : KEY_COLORS[mode] }}
+        />
+        <div className="min-w-0 flex-1">
+          <Typography as="p" size={13} weight="semibold" tone="primary">
+            {t('outputs.key.title')}
+          </Typography>
+          <Typography as="p" size={11} tone="muted" leading="snug">
+            {t('outputs.key.help')}
+          </Typography>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <Segmented<KeyFeedMode>
+          label={t('outputs.key.mode')}
+          value={mode}
+          onChange={(m) => void saveSettings({ keyFeed: { mode: m } })}
+          options={(['off', 'green', 'blue', 'black'] as const).map((m) => ({
+            value: m,
+            label: t(`outputs.key.modes.${m}`),
+          }))}
+        />
+        <Typography size={11} tone="muted" className="min-w-0 flex-1">
+          {t(`outputs.key.modeHelp.${mode}`)}
+        </Typography>
+      </div>
+      {!hasAlternate && (
+        <Typography as="p" size={11} tone="inherit" className="text-[var(--accent)]">
+          {t('outputs.key.noAlternate')}
+        </Typography>
+      )}
+      <div>
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={() => {
+            closeDialog();
+            useStore.setState({ mode: 'themes' });
+          }}
+        >
+          {t('outputs.key.themes')}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export function OutputsDialog() {
   const { t } = useTranslation();
   const open = useStore((s) => s.dialog === 'outputs');
@@ -161,6 +223,7 @@ export function OutputsDialog() {
           />
         </li>
       </ul>
+      <KeyFeed hasAlternate={displays.some((d) => d.role === 'secondary')} />
       <details className="mt-4 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
         <Typography
           as="summary"
@@ -171,9 +234,7 @@ export function OutputsDialog() {
         >
           {t('outputs.more')}
         </Typography>
-        <SoonList
-          ids={['ndi', 'sdi', 'alpha-key', 'syphon', 'edge-blend', 'output-adjust', 'multiview']}
-        />
+        <SoonList ids={['ndi', 'sdi', 'syphon', 'edge-blend', 'output-adjust', 'multiview']} />
       </details>
     </Dialog>
   );

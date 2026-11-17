@@ -1,6 +1,7 @@
 import {
   applyLook,
   lookLayersFor,
+  withKindThemes,
   withWordsTheme,
   type LiveState,
   type Mixer,
@@ -102,10 +103,14 @@ function draw(): void {
   const showWords = pic.words !== 'none';
   // A lower third drawn with a theme made for it: the stream's own choice, else the one the
   // screens are using (lower-third mode). Without one, the slide's own theme is made smaller.
+  // The stream's own theme for this kind of slide (Themes workspace) comes first.
+  const own = withKindThemes(program, config.kindThemes);
   const worded =
-    pic.words === 'lowerThird'
-      ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
-      : program;
+    own !== program
+      ? own
+      : pic.words === 'lowerThird'
+        ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
+        : program;
   themed = worded.content?.theme.layout === 'lower-third';
   words.render({
     ...worded,

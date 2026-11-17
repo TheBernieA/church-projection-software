@@ -11,6 +11,7 @@ import type {
   MediaKind,
   Migration,
   OutputRole,
+  ResolvedKindThemes,
   ScreenVisual,
   ServicePlan,
   Settings,
@@ -191,6 +192,8 @@ export interface WindowManagerDeps {
   getLiveState: () => LiveState;
   logo: () => ScreenVisual;
   standby: () => Standby;
+  /** The alternate output's own themes, by kind of slide. */
+  alternateThemes: () => ResolvedKindThemes;
   onDisplaysChanged: () => void;
   onNewDisplay: (label: string) => void;
   /** The Live console window moved or was resized (to reopen it there). */

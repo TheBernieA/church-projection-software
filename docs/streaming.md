@@ -234,3 +234,16 @@ its own without stopping the others.
 Receiving: in OBS, add a Media Source, untick "Local file", and set Input to `udp://@:9000` or
 `srt://:9000?mode=listener`. In VLC: Open Network, `udp://@:9000` (lower "network caching" in its
 options, which is 1 s by default). The receiver's own buffer is then most of the delay.
+
+## Themes per output, and the key feed
+
+Themes are chosen per output and kind of slide (Themes workspace): the main screens
+(`settings.defaultThemes`), the alternate HDMI output and the stream (`settings.outputThemes`).
+Main looks the ids up and sends the themes themselves to the output windows (`OutputInfo.themes`)
+and the stream page (`StreamConfig.kindThemes`); `withKindThemes` swaps a slide's theme for its
+kind. Order of precedence on the stream: its theme for that kind, then (in lower-third mode) its
+lower-third theme, then the screens' lower-third theme, then the slide's own.
+
+The alternate output (role `secondary`) can be a key feed for a video mixer
+(`settings.keyFeed.mode`): `keyFeedScene` keeps the words, messages and props over flat green,
+blue or black, applied after the Look so the colour is always there. Untested on a real mixer.

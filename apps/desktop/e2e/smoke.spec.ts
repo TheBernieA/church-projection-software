@@ -389,12 +389,32 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
   await control.screenshot({ path: 'test-results/05d-theme-effects.png' });
   await editor.getByRole('button', { name: 'Save theme' }).click();
   // Make it the lyrics theme, then show a song slide.
-  await control
-    .getByRole('region', { name: 'Themes' })
-    .locator('div.overflow-hidden')
-    .filter({ hasText: 'Glow test' })
-    .getByRole('button', { name: 'Lyrics' })
+  const themes = control.getByRole('region', { name: 'Themes' });
+  await themes
+    .getByRole('radiogroup', { name: 'For' })
+    .getByRole('radio', { name: 'Lyrics' })
     .click();
+  await themes.getByRole('button', { name: 'Use Glow test' }).click();
+  await expect(themes.locator('[data-selected="true"]')).toContainText('Glow test');
+  // The alternate (HDMI) output takes a theme of its own: a lower third for a video mixer.
+  await themes
+    .getByRole('radiogroup', { name: 'Output' })
+    .getByRole('radio', { name: 'Alternate (HDMI)' })
+    .click();
+  await themes
+    .getByRole('radiogroup', { name: 'Layout' })
+    .getByRole('radio', { name: 'Lower third' })
+    .click();
+  await themes.getByRole('button', { name: 'Use Stream lower third' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? r.value.outputThemes.alternate.lyrics : null;
+    })
+    .toBe('theme-stream-lower-third');
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/05e-themes-outputs.png' });
+  await themes.getByRole('button', { name: 'Same as the main screens' }).click();
   await mode('Show');
   await (await servicePlan()).getByText('Test Song').first().click();
   await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
@@ -540,6 +560,18 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
   await expect(control.getByRole('menuitem', { name: 'Edit the stage layout' })).toBeVisible();
   await control.getByRole('menuitem', { name: 'Output settings…' }).click();
   const dialog = control.getByRole('dialog', { name: 'Outputs' });
+  // The alternate output as a key feed for a video mixer: words over green.
+  const keyFeed = dialog.getByRole('region', { name: /key feed for a video mixer/ });
+  await keyFeed.getByRole('radio', { name: 'Green' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? r.value.keyFeed.mode : null;
+    })
+    .toBe('green');
+  await expect(keyFeed).toContainText('chroma key');
+  await control.screenshot({ path: 'test-results/08a-outputs-key.png' });
+  await keyFeed.getByRole('radio', { name: 'Full picture' }).click();
   await expect(dialog.getByRole('radio', { name: 'Stage' }).first()).toBeVisible();
   await expect(dialog.getByRole('switch', { name: /Rehearsal/ })).toHaveAttribute(
     'aria-checked',

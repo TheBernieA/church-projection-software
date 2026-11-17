@@ -277,6 +277,9 @@ export class WindowManager {
       logo: this.d.logo(),
       standby: this.d.standby(),
       mask: this.maskFor(o.role),
+      // The alternate (secondary) output: its own themes, and the key feed for a video mixer.
+      themes: o.role === 'secondary' ? this.d.alternateThemes() : {},
+      key: o.role === 'secondary' ? this.d.getSettings().keyFeed.mode : 'off',
       stageLayout: resolveStageLayout(
         this.d.getSettings().stageLayouts,
         this.d.getSettings().stageLayoutId,

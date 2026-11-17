@@ -231,6 +231,27 @@
     "translationSection": "Translation"
   },
   "theme": {
+    "output": "Output",
+    "outputs": { "main": "Main screens", "alternate": "Alternate (HDMI)", "stream": "Stream" },
+    "outputHelp": {
+      "main": "The theme the audience screens use for {{kind}} slides. An item with its own theme keeps it.",
+      "alternate": "The alternate HDMI output can draw {{kind}} slides in a theme of its own, such as a lower third for a video mixer. It follows the main screens until you pick one.",
+      "stream": "The stream can draw {{kind}} slides in a theme of its own, whatever the projector shows. It follows the main screens until you pick one."
+    },
+    "for": "For",
+    "layoutFilter": "Layout",
+    "layouts": { "full": "Full screen", "lowerThird": "Lower third" },
+    "useTheme": "Use {{name}}",
+    "sameAsMain": "Same as the main screens",
+    "builtInGroup": "Built-in",
+    "library_one": "Your library ({{count}})",
+    "library_other": "Your library ({{count}})",
+    "libraryEmpty": "No themes of your own with this layout yet. Duplicate a built-in theme to change it, or import one from a file.",
+    "noneForLayout": "No built-in themes with this layout.",
+    "import": "Import theme",
+    "imported": "Theme “{{name}}” added to your library.",
+    "importFailed": "That file isn't a Lampstand theme.",
+    "exportOf": "Export {{name}} to a file",
     "title": "Edit theme",
     "name": "Name",
     "font": "Font",
@@ -307,7 +328,7 @@
     "role": {
       "main": "Main output",
       "stage": "Stage display",
-      "secondary": "Secondary output",
+      "secondary": "Alternate output",
       "none": "Not used"
     },
     "control": "This screen (operator)",
@@ -322,7 +343,7 @@
     "roleHelp": {
       "main": "Lyrics, scripture and media for the room.",
       "stage": "Current and next slide, clock and notes for the speaker.",
-      "secondary": "A copy of the audience screen, e.g. a lobby TV.",
+      "secondary": "A second feed over HDMI: a lobby TV, or a key feed for a video mixer.",
       "none": "This screen shows nothing."
     },
     "none": "No output",
@@ -332,8 +353,22 @@
     "roleShort": {
       "main": "Audience",
       "stage": "Stage",
-      "secondary": "Copy",
+      "secondary": "Alternate",
       "none": "Off"
+    },
+    "key": {
+      "title": "Alternate output: key feed for a video mixer",
+      "help": "Send the words alone over HDMI to a mixer (ATEM, vMix, a hardware switcher), which lays them over its cameras.",
+      "mode": "Key feed background",
+      "modes": { "off": "Full picture", "green": "Green", "blue": "Blue", "black": "Black" },
+      "modeHelp": {
+        "off": "The alternate output shows everything the audience screens show.",
+        "green": "Words and props over green: use a chroma key on the mixer.",
+        "blue": "Words and props over blue: use a chroma key on the mixer (when green is in the picture).",
+        "black": "Words and props over black: use a luma key on the mixer."
+      },
+      "noAlternate": "No display is set to Alternate yet. Give your HDMI output the Alternate role above.",
+      "themes": "Choose its themes"
     },
     "roleOf": "What {{name}} shows"
   },
@@ -743,6 +778,10 @@
           "q": "Show a lower third on the projector too",
           "a": "Under the output monitor, click the lower-third button (beside Black, Logo and Freeze) and pick a theme. The audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you choose Off. The stream follows it unless you pick a different theme for the stream."
         },
+        "keyFeed": {
+          "q": "Send the words to a video mixer over HDMI (key feed)",
+          "a": "1. Plug the mixer into this computer’s HDMI output, open Outputs (the Audience light in the toolbar) and give that display the Alternate role.\n2. Under “Alternate output: key feed for a video mixer”, pick Green or Blue (chroma key on the mixer) or Black (luma key). The output then carries only the words and props over that colour.\n3. Click “Choose its themes” and, under Alternate (HDMI), pick a lower-third theme for Scripture, Lyrics and Text.\nOn an ATEM, use an upstream chroma or luma key with this input as the source. For a clean alpha channel instead, use the NDI “Words” feed."
+        },
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
           "a": "A destination that says Stopped shows why when you hover it. “Key needed” or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it. Can’t connect: check the internet connection; Lampstand tries YouTube’s second address by itself. Picture jumps or readings turn red: the upload or the computer can’t keep up, so pick a lighter Performance mode. Click Retry to bring a stopped destination back without ending the stream."
@@ -807,7 +846,7 @@
         },
         "themes": {
           "q": "Change how the words look",
-          "a": "Theme in the toolbar opens Themes. Duplicate a built-in theme to change fonts, colours, effects (shadow, glow, outline) and the background, and choose which theme each kind of slide uses."
+          "a": "Theme in the toolbar opens Themes. Choose the output (Main screens, Alternate HDMI, or Stream), the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third), then click a theme to use it there; the one in use is ticked. The alternate output and the stream follow the main screens until you give them a theme of their own. Duplicate a built-in theme to change its fonts, colours, effects and background; Import theme and the export button move themes between computers."
         },
         "text": {
           "q": "Change one song’s font or colour",

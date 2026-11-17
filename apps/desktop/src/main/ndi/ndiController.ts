@@ -1,7 +1,15 @@
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
-import type { LiveState, NdiFeed, ScreenVisual, Settings, Standby, Theme } from '@lampstand/core';
+import type {
+  LiveState,
+  NdiFeed,
+  ResolvedKindThemes,
+  ScreenVisual,
+  Settings,
+  Standby,
+  Theme,
+} from '@lampstand/core';
 import { Channels, type NdiStatus, type StreamConfig } from '@lampstand/ipc-contract';
 import { isTrustedFrameUrl } from '../ipc/router';
 import { rendererUrl } from '../security/protocols';
@@ -20,6 +28,7 @@ export interface NdiDeps {
   logo: () => ScreenVisual;
   standby: () => Standby;
   wordsTheme: () => Theme | null;
+  kindThemes: () => ResolvedKindThemes;
   onStatus: (s: NdiStatus) => void;
 }
 
@@ -243,6 +252,7 @@ export class NdiController {
       height: f.height,
       ...pictureOf(f.feed, this.d.getSettings()),
       wordsTheme: f.feed.content === 'stream' ? this.d.wordsTheme() : null,
+      kindThemes: f.feed.content === 'stream' ? this.d.kindThemes() : {},
       cameraLayer:
         f.feed.content === 'stream' ? streamCameraLayer(this.d.getSettings(), f.height) : null,
       meters: false,

@@ -17,6 +17,8 @@ import {
   type AuditEntry,
   type Song,
   type ScreenVisual,
+  type KindThemes,
+  type ResolvedKindThemes,
   type Standby,
   type Theme,
 } from '@lampstand/core';
@@ -92,14 +94,36 @@ export class AppController {
   private standby: Standby = this.logo;
   /** The theme chosen for the stream's lower third, looked up from its id. */
   private wordsTheme: Theme | null = null;
+  /** Each output's own themes by kind of slide, looked up from their ids. */
+  private outputThemes: { alternate: ResolvedKindThemes; stream: ResolvedKindThemes } = {
+    alternate: {},
+    stream: {},
+  };
 
-  /** Look the stream's lower-third theme up again (the choice or the theme itself changed). */
+  /** Look the outputs' themes up again (a choice or a theme itself changed). */
   private async refreshWordsTheme(): Promise<void> {
-    const id = this.s.settings.get().stream.picture.wordsTheme;
-    const all = id ? [...STARTER_THEMES, ...(await this.s.themes.list())] : [];
-    const next = all.find((t) => t.id === id) ?? null;
-    if (JSON.stringify(next) === JSON.stringify(this.wordsTheme)) return;
-    this.wordsTheme = next;
+    const settings = this.s.settings.get();
+    const all = [...STARTER_THEMES, ...(await this.s.themes.list())];
+    const find = (id: string | null | undefined): Theme | null =>
+      (id ? all.find((t) => t.id === id) : null) ?? null;
+    const byKind = (ids: KindThemes): ResolvedKindThemes => {
+      const out: ResolvedKindThemes = {};
+      for (const kind of ['scripture', 'lyrics', 'text'] as const) {
+        const theme = find(ids[kind]);
+        if (theme) out[kind] = theme;
+      }
+      return out;
+    };
+    const words = find(settings.stream.picture.wordsTheme);
+    const themes = {
+      alternate: byKind(settings.outputThemes.alternate),
+      stream: byKind(settings.outputThemes.stream),
+    };
+    if (JSON.stringify([words, themes]) === JSON.stringify([this.wordsTheme, this.outputThemes]))
+      return;
+    this.wordsTheme = words;
+    this.outputThemes = themes;
+    this.windows.refreshOutputInfo();
     this.stream.settingsChanged();
     this.ndi.settingsChanged();
   }
@@ -187,6 +211,7 @@ export class AppController {
       getLiveState: () => live.get(),
       logo: () => this.logo,
       standby: () => this.standby,
+      alternateThemes: () => this.outputThemes.alternate,
       onDisplaysChanged: () => this.windows.sendToControl(Channels.evDisplays),
       onNewDisplay: (label) => this.notice({ level: 'info', key: 'newDisplay', params: { label } }),
       onLiveConsoleBounds: (b) => {
@@ -222,6 +247,7 @@ export class AppController {
       logo: () => this.logo,
       standby: () => this.standby,
       wordsTheme: () => this.wordsTheme,
+      kindThemes: () => this.outputThemes.stream,
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
@@ -234,6 +260,7 @@ export class AppController {
       logo: () => this.logo,
       standby: () => this.standby,
       wordsTheme: () => this.wordsTheme,
+      kindThemes: () => this.outputThemes.stream,
       onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
     });
     this.ndi.settingsChanged();
@@ -317,6 +344,7 @@ export class AppController {
       settings.get().audio.roomOutput,
       settings.get().stageLayouts,
       settings.get().stageLayoutId,
+      settings.get().keyFeed,
     ]);
     settings.onChange((next) => {
       const masks = JSON.stringify([
@@ -325,6 +353,7 @@ export class AppController {
         next.audio.roomOutput,
         next.stageLayouts,
         next.stageLayoutId,
+        next.keyFeed,
       ]);
       if (masks !== maskKey) {
         maskKey = masks;

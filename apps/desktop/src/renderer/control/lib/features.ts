@@ -268,9 +268,8 @@ export const FEATURES: Feature[] = [
   f(
     'alpha-key',
     'screens',
-    'Alpha key / key & fill',
-    'Clean lyric graphics for a video switcher.',
-    'soon',
+    'Key feed for a video mixer',
+    'The alternate HDMI output sends the words alone over green, blue or black, in their own themes, for a mixer to key over cameras (Outputs).',
   ),
   f(
     'multiview',

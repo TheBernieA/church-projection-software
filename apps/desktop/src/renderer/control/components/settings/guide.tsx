@@ -202,6 +202,7 @@ const LIVE_HOWTO = [
   'delay',
   'direct',
   'ndi',
+  'keyFeed',
   'trouble',
 ];
 

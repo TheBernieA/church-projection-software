@@ -17,6 +17,7 @@ import {
   type LiveState,
   type MachineInfo,
   type PerformanceMode,
+  type ResolvedKindThemes,
   type ScreenVisual,
   type Settings,
   type Standby,
@@ -72,6 +73,8 @@ export interface StreamDeps {
   standby: () => Standby;
   /** The theme chosen for the stream's lower third (resolved from its id), or null. */
   wordsTheme: () => Theme | null;
+  /** Themes the stream uses instead of each slide's own, by kind of slide. */
+  kindThemes: () => ResolvedKindThemes;
   onStatus: (s: StreamStatus) => void;
   notice: (n: Notice) => void;
 }
@@ -593,6 +596,7 @@ export class StreamController {
       height: profile.height,
       picture: s.picture,
       wordsTheme: this.d.wordsTheme(),
+      kindThemes: this.d.kindThemes(),
       cameraLayer: streamCameraLayer(settings, profile.height),
       transparent: false,
       // Meters only while someone can see them (a console, or the mixer while live).

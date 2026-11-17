@@ -62,6 +62,15 @@ export const LookLayerSchema = z.enum([
 export type LookLayer = z.infer<typeof LookLayerSchema>;
 const LAYER_COUNT = LookLayerSchema.options.length;
 
+/** A theme id for each kind of slide (any may be left out). */
+export const KindThemesSchema = z.object({
+  scripture: z.string().max(64).optional(),
+  lyrics: z.string().max(64).optional(),
+  text: z.string().max(64).optional(),
+});
+export type KindThemes = z.infer<typeof KindThemesSchema>;
+export type KeyFeedMode = 'off' | 'green' | 'blue' | 'black';
+
 /**
  * A Look: which layers each kind of screen shows ("Lobby": secondary screens show only the
  * background and announcements). Switching looks is instant and live.
@@ -129,6 +138,23 @@ export const SettingsSchema = z
       }),
     /** Each camera's settings, by device id (Settings › Video, the camera's "…" menu). */
     cameras: z.record(z.string().max(300), CameraSettingsSchema).default({}),
+    /**
+     * Themes an output uses instead of the main screens' (Themes workspace), per kind of slide.
+     * Empty: the same as the main screens.
+     */
+    outputThemes: z
+      .object({
+        alternate: KindThemesSchema.default({}),
+        stream: KindThemesSchema.default({}),
+      })
+      .default({ alternate: {}, stream: {} }),
+    /**
+     * The alternate (HDMI) output as a key feed for a video mixer: only the words and props,
+     * over a flat colour the mixer removes (green or blue: chroma key; black: luma key).
+     */
+    keyFeed: z
+      .object({ mode: z.enum(['off', 'green', 'blue', 'black']).default('off') })
+      .default({ mode: 'off' }),
     /** NDI feeds (Settings › NDI). */
     ndi: z.object({ feeds: z.array(NdiFeedSchema).max(4).default([]) }).default({ feeds: [] }),
     /** The sound desk (channels, buses). Absent in older settings: made from `stream.sound`. */

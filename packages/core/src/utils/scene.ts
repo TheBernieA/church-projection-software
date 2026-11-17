@@ -59,6 +59,40 @@ export function withWordsTheme(scene: Scene, theme: Theme | null | undefined): S
   return { ...scene, content: { ...scene.content, theme } };
 }
 
+/** The kinds of slide a theme can be chosen for. */
+export type ThemeKind = 'scripture' | 'lyrics' | 'text';
+/** Themes by kind of slide (looked up from their ids), for one output. */
+export type ResolvedKindThemes = Partial<Record<ThemeKind, Theme>>;
+
+/** Which theme choice a slide falls under (countdowns and the rest count as text). */
+export const themeKindOf = (kind: string): ThemeKind =>
+  kind === 'scripture' || kind === 'lyrics' ? kind : 'text';
+
+/** A scene with its words in this output's theme for that kind of slide, if it has one. */
+export function withKindThemes(scene: Scene, themes: ResolvedKindThemes | null | undefined): Scene {
+  const theme = themes && scene.content ? themes[themeKindOf(scene.content.kind)] : undefined;
+  return theme ? withWordsTheme(scene, theme) : scene;
+}
+
+/** The flat colour behind a key feed (what the video mixer removes). */
+export const KEY_COLORS = { green: '#00B140', blue: '#0047BB', black: '#000000' } as const;
+
+/**
+ * A scene as a key feed for a video mixer: the words, messages and props only, over a flat
+ * colour. Pictures, video and cameras are left out (the mixer has its own).
+ */
+export function keyFeedScene(scene: Scene, mode: keyof typeof KEY_COLORS): Scene {
+  return {
+    ...scene,
+    background: { ref: { kind: 'color', color: KEY_COLORS[mode] } },
+    media: null,
+    input: null,
+    inputNext: null,
+    pip: null,
+    web: null,
+  };
+}
+
 /** The layers a Look shows on a kind of screen (null: no Look applies, everything shows). */
 export function lookLayersFor(look: Look | null | undefined, role: string): LookLayer[] | null {
   return look && (role === 'main' || role === 'secondary') ? look[role] : null;
