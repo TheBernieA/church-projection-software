@@ -233,7 +233,7 @@ const servicePlan = async () => {
   if ((await plan.count()) === 0)
     await control
       .getByRole('region', { name: 'Library' })
-      .getByRole('button', { name: 'Sample Sunday service' })
+      .getByRole('button', { name: 'Sample Sunday service', exact: true })
       .click();
   return plan;
 };
@@ -2377,6 +2377,62 @@ test('Easy view lists the words; Turn off live takes everything off the screen',
   await expect(out.locator('.ls-text')).toContainText('For God so loved the world', {
     timeout: 10_000,
   });
+});
+
+test('playlists: fill a section from the library, then delete the playlist', async () => {
+  const library = control.getByRole('region', { name: 'Library' });
+  await library.getByRole('button', { name: 'New playlist' }).click();
+  await expect(library.getByRole('button', { name: 'New service', exact: true })).toBeVisible();
+  await mode('Show');
+  // A section, then a second one after it: what's added to the first must land before the second.
+  const show = control.getByRole('region', { name: 'Slides', exact: true });
+  for (let i = 0; i < 2; i++) {
+    await show.getByRole('button', { name: 'Add', exact: true }).click();
+    await control.getByRole('menuitem', { name: 'Section', exact: true }).click();
+  }
+  const bands = show.locator('[data-section="New section"]');
+  await expect(bands).toHaveCount(2);
+  await expect(bands.first()).toContainText('Nothing in this section yet');
+  // "Add here" on the first section, then pick a song in the library.
+  await bands
+    .first()
+    .getByRole('button', { name: 'Add songs, verses and media to New section' })
+    .click();
+  await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  await library
+    .getByRole('button', { name: /Test Song/ })
+    .first()
+    .dblclick();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(async () => {
+        const st = await window.lampstand.query('settings.get');
+        if (!st.ok || !st.value.lastServiceId) return null;
+        const plan = await window.lampstand.query('services.get', { id: st.value.lastServiceId });
+        return plan.ok && plan.value ? plan.value.items.map((i) => i.kind).join(' ') : null;
+      });
+      return r;
+    })
+    .toBe('header song header');
+  await expect(bands.first()).not.toContainText('Nothing in this section yet');
+  await control.screenshot({ path: 'test-results/43-section-add.png' });
+  // Delete the playlist from its own menu: the other playlist opens in its place.
+  const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
+  control.once('dialog', accept);
+  await library.getByRole('button', { name: 'New service', exact: true }).hover();
+  await library.getByRole('button', { name: 'Options for New service' }).click();
+  await control.getByRole('menuitem', { name: 'Delete playlist' }).click();
+  await expect(library.getByRole('button', { name: 'New service', exact: true })).toHaveCount(0);
+  await expect
+    .poll(async () =>
+      control.evaluate(async () => {
+        const st = await window.lampstand.query('settings.get');
+        if (!st.ok || !st.value.lastServiceId) return null;
+        const plan = await window.lampstand.query('services.get', { id: st.value.lastServiceId });
+        return plan.ok && plan.value ? plan.value.name : null;
+      }),
+    )
+    .toBe('Sample Sunday service');
 });
 
 test('output survives a control renderer crash', async () => {

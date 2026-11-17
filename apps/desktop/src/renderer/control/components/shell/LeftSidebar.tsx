@@ -1,7 +1,9 @@
-import { BookMarked, ListMusic, Music2, Plus } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { BookMarked, Copy, ListMusic, MoreHorizontal, Music2, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createService } from '../../lib/services';
+import { createService, deleteService, duplicateService } from '../../lib/services';
+import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { openDialog, openService, useStore } from '../../lib/store';
 import { ServicePanel } from '../ServicePanel';
 import { SongList } from '../SongList';
@@ -57,6 +59,42 @@ function OutlineRow({
   );
 }
 
+/** A playlist's own menu (shown on hover, and while it is the open one): duplicate, delete. */
+function PlaylistMenu({ id, name, selected }: { id: string; name: string; selected: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <IconButton
+          size="3xs"
+          variant="quiet"
+          aria-label={t('sidebar.playlistMenu', { name })}
+          className={`absolute right-4 top-1/2 -translate-y-1/2 opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100 ${
+            selected ? '!text-white opacity-100' : ''
+          }`}
+        >
+          <MoreHorizontal size={14} />
+        </IconButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_CLASS}>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void duplicateService(id)}>
+            <Copy size={14} />
+            {t('sidebar.duplicate')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            className={`${ITEM_CLASS} !text-[var(--tally-program)]`}
+            onSelect={() => void deleteService(id, name)}
+          >
+            <Trash2 size={14} />
+            {t('sidebar.delete')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
 /**
  * Left sidebar, operator-console style: an outline of libraries and playlists on top, and
  * below it the contents of whichever is selected (a library's songs, or the playlist's items).
@@ -106,18 +144,23 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
             {t('sidebar.noPlaylists')}
           </Typography>
         )}
-        {playlists.map((p) => (
-          <OutlineRow
-            key={p.id}
-            icon={<ListMusic size={14} />}
-            label={p.name}
-            selected={view === 'playlist' && current === p.id}
-            onClick={() => {
-              useStore.setState({ sidebarView: 'playlist' });
-              if (current !== p.id) void openService(p.id);
-            }}
-          />
-        ))}
+        {playlists.map((p) => {
+          const selected = view === 'playlist' && current === p.id;
+          return (
+            <div key={p.id} className="group relative">
+              <OutlineRow
+                icon={<ListMusic size={14} />}
+                label={p.name}
+                selected={selected}
+                onClick={() => {
+                  useStore.setState({ sidebarView: 'playlist' });
+                  if (current !== p.id) void openService(p.id);
+                }}
+              />
+              <PlaylistMenu id={p.id} name={p.name} selected={selected} />
+            </div>
+          );
+        })}
       </div>
       <Splitter axis="y" pane={outline} label={t('layout.resizeLibrary')} />
       <div className="flex min-h-0 flex-1 flex-col pt-2">

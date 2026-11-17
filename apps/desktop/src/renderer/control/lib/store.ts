@@ -1,3 +1,4 @@
+import { insertInSection } from './sections';
 import { publishMeters } from './meters';
 import { create } from 'zustand';
 import type { BookId, ServiceItem, ServicePlan } from '@lampstand/core';
@@ -22,6 +23,7 @@ export const useStore = create<ControlState>((set) => ({
   stream: null,
   ndi: null,
   selectedItemId: null,
+  addTarget: null,
   adhoc: null,
   previewCursor: null,
   editCursor: null,
@@ -160,7 +162,11 @@ export async function refresh(
         const current = get().service?.id ?? get().settings?.lastServiceId ?? services[0]?.id;
         if (current && !pendingSave) {
           const service = await q('services.get', { id: current });
-          patch({ service: service ?? null });
+          // While that was read, another playlist may have been opened, or this one edited:
+          // then what was read is stale, and showing it would undo what the user just did.
+          const open = get().service?.id;
+          if ((open === undefined || open === current) && !hasPendingSave())
+            patch({ service: service ?? null });
         }
       }),
     );
@@ -220,9 +226,13 @@ export function patchItem<T extends ServiceItem>(
   else updateItem<T>(item.id, apply);
 }
 
-/** Append an item (usually from the library or quick bar) to the service and select it. */
+/**
+ * Add an item (usually from the library or quick bar) to the service and select it: at the end
+ * of the section chosen with "Add here", else at the end of the playlist.
+ */
 export function addItemToService(item: ServiceItem): void {
-  editItems((items) => [...items, item]);
+  const target = get().addTarget;
+  editItems((items) => insertInSection(items, target, [item]));
   patch({ adhoc: null, selectedItemId: item.id });
 }
 
@@ -242,7 +252,13 @@ export async function flushServiceSave(): Promise<void> {
 export async function openService(id: string): Promise<void> {
   await flushServiceSave();
   const service = await q('services.get', { id });
-  patch({ service: service ?? null, selectedItemId: null, adhoc: null, previewCursor: null });
+  patch({
+    service: service ?? null,
+    selectedItemId: null,
+    addTarget: null,
+    adhoc: null,
+    previewCursor: null,
+  });
   await cmd('settings.update', { patch: { lastServiceId: id } });
 }
 

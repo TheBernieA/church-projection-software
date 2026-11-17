@@ -118,6 +118,8 @@ export interface ControlState {
   ndi: NdiStatus | null;
   /** Item shown in the slide grid: from the service, or ad-hoc from the library/quick bar. */
   selectedItemId: string | null;
+  /** The section (heading id) that songs, verses and media picked from the library go into. */
+  addTarget: string | null;
   adhoc: ServiceItem | null;
   previewCursor: Cursor | null;
   /** Slide selected for editing in the inspector. */

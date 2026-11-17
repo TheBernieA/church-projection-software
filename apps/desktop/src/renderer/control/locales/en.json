@@ -53,7 +53,13 @@
       "presentation": "Your own slides: text, shapes and pictures.",
       "countdown": "Counts down to the start, full screen.",
       "web": "Show a secure web page on the outputs."
-    }
+    },
+    "addHere": "Add here",
+    "addHereOf": "Add songs, verses and media to {{name}}",
+    "addingHere": "Adding here",
+    "addingHereHelp": "Songs, verses and media you pick in the library now go into this section. Click again to stop.",
+    "addToSection": "Add to {{name}}",
+    "sectionEmpty": "Nothing in this section yet. Click “Add here” and pick from the library, drag things onto it, or use + for slides, countdowns and more."
   },
   "library": {
     "title": "Library",
@@ -815,7 +821,7 @@
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
-          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. Drag to reorder; a section moves with everything under it."
+          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. To fill a section, click “Add here” on its coloured band and pick songs or verses in the library (they go into that section until you click it again), drag things onto the band, or use the band’s + for slides and countdowns. Drag to reorder; a section moves with everything under it. The … beside a playlist’s name duplicates or deletes it."
         },
         "verse": {
           "q": "Put a Bible verse on screen",
@@ -1139,7 +1145,13 @@
     "newPlaylist": "New playlist",
     "items_one": "{{count}} item",
     "items_other": "{{count}} items",
-    "noPlaylists": "No playlists yet"
+    "noPlaylists": "No playlists yet",
+    "playlistMenu": "Options for {{name}}",
+    "duplicate": "Duplicate",
+    "delete": "Delete playlist",
+    "confirmDelete": "Delete the playlist “{{name}}”? Its songs and media stay in the library.",
+    "deleted": "“{{name}}” deleted. Undo brings it back.",
+    "copyOf": "{{name}} copy"
   },
   "showControls": {
     "label": "Show controls",

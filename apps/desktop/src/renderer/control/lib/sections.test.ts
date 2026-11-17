@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ServiceItem } from '@lampstand/core';
 import {
+  insertInSection,
+  intoSection,
   moveSectionBy,
   moveSectionTo,
   sectionBounds,
   sectionCanMove,
   sectionDropBoundary,
+  sectionEnd,
+  sectionIsEmpty,
 } from './sections';
 
 const h = (id: string): ServiceItem => ({ id, kind: 'header', label: id });
@@ -47,5 +51,46 @@ describe('service sections', () => {
     expect(ids(moveSectionBy(plan, 6, 1))).toBe(ids(plan)); // already last
     expect(sectionCanMove(plan, 1)).toEqual({ up: false, down: true });
     expect(sectionCanMove(plan, 6)).toEqual({ up: true, down: false });
+  });
+});
+
+const head = (id: string): ServiceItem => ({ id, kind: 'header', label: id });
+const song = (id: string): ServiceItem => ({ id, kind: 'song', songId: id });
+const idsOf = (xs: ServiceItem[]): string => xs.map((x) => x.id).join(' ');
+const filled = [head('Worship'), song('a'), song('b'), head('Word'), head('Response'), song('c')];
+
+describe('adding to a section', () => {
+  it('finds where a section ends', () => {
+    expect(sectionEnd(filled, 'Worship')).toBe(3);
+    expect(sectionEnd(filled, 'Word')).toBe(4);
+    expect(sectionEnd(filled, 'Response')).toBe(6);
+    expect(sectionEnd(filled, 'gone')).toBe(-1);
+    expect(sectionEnd(filled, 'a')).toBe(-1); // not a heading
+  });
+
+  it('knows an empty section', () => {
+    expect(sectionIsEmpty(filled, 'Word')).toBe(true);
+    expect(sectionIsEmpty(filled, 'Worship')).toBe(false);
+  });
+
+  it('adds at the end of a section, or the end of the playlist without one', () => {
+    expect(idsOf(insertInSection(filled, 'Word', [song('x')]))).toBe(
+      'Worship a b Word x Response c',
+    );
+    expect(idsOf(insertInSection(filled, 'Worship', [song('x'), song('y')]))).toBe(
+      'Worship a b x y Word Response c',
+    );
+    expect(idsOf(insertInSection(filled, null, [song('x')]))).toBe('Worship a b Word Response c x');
+    expect(idsOf(insertInSection(filled, 'gone', [song('x')]))).toBe(
+      'Worship a b Word Response c x',
+    );
+  });
+
+  it('moves what an edit appended into the section', () => {
+    const append = (xs: ServiceItem[]): ServiceItem[] => [...xs, song('x')];
+    expect(idsOf(intoSection('Word', append)(filled))).toBe('Worship a b Word x Response c');
+    // An edit that adds nothing is left alone.
+    const rename = (xs: ServiceItem[]): ServiceItem[] => xs.slice(1);
+    expect(idsOf(intoSection('Word', rename)(filled))).toBe('a b Word Response c');
   });
 });

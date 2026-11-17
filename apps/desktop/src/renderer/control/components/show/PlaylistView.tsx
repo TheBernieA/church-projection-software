@@ -22,11 +22,12 @@ import {
 import { feature } from '../../lib/features';
 import { useItemSlides } from '../../lib/hooks';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
+import { insertInSection, sectionIsEmpty } from '../../lib/sections';
 import { itemTitle, sectionColor } from '../../lib/slides';
 import { editItems, openDialog, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { KindTile } from '../kindIcons';
-import { AddMenu } from '../ServicePanel';
+import { AddMenu, SectionAdd } from '../ServicePanel';
 import { editable, thumbScene } from '../SlideGrid';
 import { SongControls } from '../SongControls';
 import { ItemBackground } from '../ItemBackground';
@@ -53,6 +54,71 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
         className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--soon)]"
       />
     </Typography>
+  );
+}
+
+/**
+ * A section's coloured band: its name, "Add here" and "+" on the right. Things dragged from
+ * the library onto it go into the section; an empty section says how to fill it.
+ */
+function SectionBand({
+  header,
+  empty,
+  update,
+}: {
+  header: Extract<ServiceItem, { kind: 'header' }>;
+  empty: boolean;
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+}) {
+  const { t } = useTranslation();
+  const [dropping, setDropping] = useState(false);
+  return (
+    <div
+      data-section={header.label}
+      onDragOver={(e) => {
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        setDropping(false);
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        const dropped = readLibraryDrop(e);
+        if (!dropped) return;
+        update((xs) => insertInSection(xs, header.id, [dropped]));
+        useStore.setState({ selectedItemId: dropped.id, adhoc: null });
+      }}
+      className={dropping ? 'shadow-[inset_0_0_0_2px_var(--select)]' : ''}
+    >
+      <div
+        className="flex h-9 items-center gap-2 px-3"
+        style={{ background: sectionColor(header.label) }}
+      >
+        <Typography
+          as="div"
+          size={15}
+          tone="white"
+          weight="semibold"
+          role="heading"
+          aria-level={2}
+          truncate
+          className="min-w-0 flex-1"
+        >
+          {header.label}
+        </Typography>
+        <SectionAdd header={header} update={update} />
+      </div>
+      {empty && (
+        <Typography as="p" size={12} tone="muted" leading="snug" className="px-3 py-3">
+          {t('service.sectionEmpty')}
+        </Typography>
+      )}
+    </div>
   );
 }
 
@@ -269,19 +335,12 @@ export function PlaylistView() {
         )}
         {items.map((item) =>
           item.kind === 'header' ? (
-            <Typography
-              as="div"
-              size={15}
-              tone="white"
-              weight="semibold"
+            <SectionBand
               key={item.id}
-              role="heading"
-              aria-level={2}
-              className="flex h-9 items-center px-3"
-              style={{ background: sectionColor(item.label) }}
-            >
-              {item.label}
-            </Typography>
+              header={item}
+              empty={sectionIsEmpty(items, item.id)}
+              update={update}
+            />
           ) : (
             <ItemSection
               key={item.id}

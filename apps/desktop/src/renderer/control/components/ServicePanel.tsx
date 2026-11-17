@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  CornerDownRight,
   FileUp,
   Globe,
   GripVertical,
@@ -21,6 +22,7 @@ import { importSlides } from '../lib/importSlides';
 import { itemTitle, sectionColor } from '../lib/slides';
 import { moveItem as move } from '../lib/array';
 import { isLibraryDrag, readLibraryDrop } from '../lib/libraryDrag';
+import { intoSection } from '../lib/sections';
 import {
   moveSectionBy,
   moveSectionTo,
@@ -237,6 +239,7 @@ export function ServicePanel() {
                     {item.label}
                   </Button>
                 )}
+                <SectionAdd header={item} update={update} compact />
                 <ItemMenu index={i} items={items} update={update} item={item} bg="band" />
               </li>
             );
@@ -330,6 +333,55 @@ export function ServicePanel() {
  * The add menu for the playlist: what can be added (section,
  * text slides, countdown, web page, import), each with a line saying what it is.
  */
+/**
+ * A section's ways in: "Add here" makes it the place library picks go (click again to stop),
+ * and "+" adds slides, a countdown and the rest straight into it.
+ */
+export function SectionAdd({
+  header,
+  update,
+  compact = false,
+}: {
+  header: Extract<ServiceItem, { kind: 'header' }>;
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+  /** Icons only (the narrow plan list). */
+  compact?: boolean;
+}) {
+  const { t } = useTranslation();
+  const adding = useStore((s) => s.addTarget === header.id);
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <Button
+        size="3xs"
+        variant="bare"
+        aria-pressed={adding}
+        aria-label={t('service.addHereOf', { name: header.label })}
+        title={t('service.addingHereHelp')}
+        onClick={() => useStore.setState({ addTarget: adding ? null : header.id })}
+        className={`flex h-5 cursor-pointer items-center gap-1 rounded-[4px] px-1.5 ${typographyClass({ size: 11, weight: 'semibold' })} ${
+          adding ? 'bg-white text-[#14161f]' : 'bg-black/20 text-white hover:bg-black/35'
+        }`}
+      >
+        <CornerDownRight size={11} />
+        {!compact && (adding ? t('service.addingHere') : t('service.addHere'))}
+      </Button>
+      <AddMenu
+        update={(fn) => update(intoSection(header.id, fn))}
+        trigger={
+          <IconButton
+            size="3xs"
+            variant="bare"
+            aria-label={t('service.addToSection', { name: header.label })}
+            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-[4px] bg-black/20 text-white hover:bg-black/35"
+          >
+            <Plus size={12} />
+          </IconButton>
+        }
+      />
+    </span>
+  );
+}
+
 export function AddMenu({
   update,
   trigger,
