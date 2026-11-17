@@ -1,7 +1,8 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
-  Check,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   Church,
   Film,
   Image as ImageIcon,
@@ -23,12 +24,15 @@ import {
   makeScene,
   overlayGroup,
   sceneIsVisible,
+  themeAligned,
+  themeAlignOf,
   withWordsTheme,
   type Layer,
   type MediaLayer,
   type RestorableLayer,
   type Scene,
   type Standby,
+  type Theme,
 } from '@lampstand/core';
 import {
   Button,
@@ -38,6 +42,7 @@ import {
   IconButton,
   typographyClass,
   Segmented,
+  Switch,
 } from '@lampstand/ui';
 import {
   clearLayer,
@@ -48,7 +53,6 @@ import {
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
-import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { useHasMainOutput, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -138,56 +142,127 @@ function MaskButton({
   );
 }
 
+const LT_THEME_KEY = 'lampstand.lowerThird.theme';
+const LT_ALIGN_KEY = 'lampstand.lowerThird.align';
+type Align = 'left' | 'center' | 'right';
+
+function remembered(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function remember(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* this session only */
+  }
+}
+
 /**
- * Lower-third mode for the audience screens: the words drawn along the bottom with a theme
- * made for it (over a camera or a video), switched on and off here like a mask.
+ * Lower third on the audience screens: a switch, the theme it uses and where it sits. On, every
+ * slide's words are drawn along the bottom in that theme (over a camera or a video) until it is
+ * switched off. The theme and position are remembered for next time.
  */
-function LowerThirdButton() {
+function LowerThirdRow() {
   const { t } = useTranslation();
   const current = useStore((s) => s.live?.lowerThird ?? null);
   const themes = useStore((s) => s.themes);
   const choices = useMemo(() => lowerThirdThemes(themes), [themes]);
+  const [themeId, setThemeId] = useState<string | null>(() => remembered(LT_THEME_KEY));
+  const [align, setAlign] = useState<Align | null>(() => {
+    const a = remembered(LT_ALIGN_KEY);
+    return a === 'left' || a === 'center' || a === 'right' ? a : null;
+  });
+  // What's on screen wins over what was remembered (another window may have set it).
+  const theme = choices.find((th) => th.id === (current?.id ?? themeId)) ?? choices[0] ?? null;
+  const position: Align = current
+    ? themeAlignOf(current)
+    : (align ?? (theme ? themeAlignOf(theme) : 'center'));
+  if (!theme) return null;
+  const apply = (th: Theme, a: Align): void => void setLowerThird(themeAligned(th, a));
   return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <Button
-          size="xs"
-          variant="subtle"
-          aria-pressed={!!current}
-          aria-label={t('monitor.lowerThird')}
-          title={
-            current ? t('monitor.lowerThirdOn', { name: current.name }) : t('monitor.lowerThird')
-          }
-          icon={<PanelBottom size={13} />}
-          className={
-            current ? '!bg-[var(--accent)] !text-[var(--accent-ink)]' : '!text-[var(--text-2)]'
-          }
+    <section
+      aria-label={t('monitor.lowerThird')}
+      className={`flex flex-col gap-2 rounded-[var(--radius-control)] px-2.5 py-2 ${
+        current ? 'bg-[var(--accent-soft)]' : 'bg-[var(--surface-2)]'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <PanelBottom
+          size={14}
+          aria-hidden
+          className={current ? 'text-[var(--accent)]' : 'text-[var(--text-3)]'}
         />
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={4} className={`${MENU_CLASS} w-[240px]`}>
-          <DropdownMenu.Label className="px-2 pb-1 pt-1.5">
-            <Typography size={11} tone="muted" leading="snug">
-              {t('monitor.lowerThirdHelp')}
-            </Typography>
-          </DropdownMenu.Label>
-          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void setLowerThird(null)}>
-            <span className="w-4 shrink-0">{!current && <Check size={13} />}</span>
-            {t('monitor.lowerThirdOff')}
-          </DropdownMenu.Item>
-          {choices.map((th) => (
-            <DropdownMenu.Item
-              key={th.id}
-              className={ITEM_CLASS}
-              onSelect={() => void setLowerThird(th)}
-            >
-              <span className="w-4 shrink-0">{current?.id === th.id && <Check size={13} />}</span>
-              {th.name}
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+        <div className="min-w-0 flex-1">
+          <Typography as="p" size={12} weight="semibold" tone="primary">
+            {t('monitor.lowerThird')}
+          </Typography>
+          <Typography as="p" size={11} tone="muted" truncate>
+            {current ? t('monitor.lowerThirdOn') : t('monitor.lowerThirdHelp')}
+          </Typography>
+        </div>
+        <Switch
+          label={t('monitor.lowerThird')}
+          checked={!!current}
+          onChange={(on) => (on ? apply(theme, position) : void setLowerThird(null))}
+        />
+      </div>
+      {current && (
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <Select<string>
+              size="sm"
+              aria-label={t('monitor.lowerThirdTheme')}
+              value={theme.id}
+              onChange={(id) => {
+                const next = choices.find((th) => th.id === id);
+                if (!next) return;
+                // A new theme starts where it was designed to sit.
+                const a = themeAlignOf(next);
+                setThemeId(id);
+                setAlign(a);
+                remember(LT_THEME_KEY, id);
+                remember(LT_ALIGN_KEY, a);
+                apply(next, a);
+              }}
+              options={choices.map((th) => ({ value: th.id, label: th.name }))}
+            />
+          </div>
+          <Segmented<Align>
+            label={t('monitor.lowerThirdPosition')}
+            value={position}
+            onChange={(a) => {
+              setAlign(a);
+              remember(LT_ALIGN_KEY, a);
+              apply(theme, a);
+            }}
+            options={[
+              {
+                value: 'left',
+                label: '',
+                name: t('streaming.align.left'),
+                icon: <AlignLeft size={14} />,
+              },
+              {
+                value: 'center',
+                label: '',
+                name: t('streaming.align.center'),
+                icon: <AlignCenter size={14} />,
+              },
+              {
+                value: 'right',
+                label: '',
+                name: t('streaming.align.right'),
+                icon: <AlignRight size={14} />,
+              },
+            ]}
+          />
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -482,7 +557,6 @@ export function RightColumn() {
             ]}
           />
           <span className="flex-1" />
-          <LowerThirdButton />
           <MaskButton
             on={p.masks.black}
             onClick={() => void toggleMask('black')}
@@ -505,6 +579,7 @@ export function RightColumn() {
             hint={displayCombo(keys.freeze)}
           />
         </div>
+        <LowerThirdRow />
         {p.input && <CameraSwitcher />}
         <VideoControls
           program={p.media?.kind === 'video' ? p.media : null}

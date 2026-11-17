@@ -125,10 +125,12 @@ function draw(): void {
   });
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle('has-words', showWords && !!program.content);
-  // Left, centre or right moves the words whatever the theme says.
-  document.body.classList.toggle('words-left', showWords && pic.wordsAlign === 'left');
-  document.body.classList.toggle('words-right', showWords && pic.wordsAlign === 'right');
-  document.body.classList.toggle('words-center', showWords && pic.wordsAlign === 'center');
+  // A lower third sits left, centre or right, whatever the theme says (full-screen words
+  // stay as their theme has them).
+  const lower = pic.words === 'lowerThird';
+  document.body.classList.toggle('words-left', lower && pic.wordsAlign === 'left');
+  document.body.classList.toggle('words-right', lower && pic.wordsAlign === 'right');
+  document.body.classList.toggle('words-center', lower && pic.wordsAlign === 'center');
   placeWords();
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);

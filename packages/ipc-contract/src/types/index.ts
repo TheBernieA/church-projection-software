@@ -279,7 +279,7 @@ export interface StreamConfig {
     /** Lower third: fit the words to the band automatically, or use `wordsSize` (%). */
     wordsAuto: boolean;
     wordsSize: number;
-    /** 'theme': where the theme puts them. */
+    /** Lower third only. 'theme' (where the theme puts them) is for feeds that don't move words. */
     wordsAlign: 'theme' | 'left' | 'center' | 'right';
     wordsTheme: string | null;
   };

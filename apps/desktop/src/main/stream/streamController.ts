@@ -102,7 +102,7 @@ const DEFAULT_PROFILE: StreamProfile = resolvePerformance(
       background: 'program',
       wordsAuto: true,
       wordsSize: 60,
-      wordsAlign: 'theme',
+      wordsAlign: 'center',
       wordsTheme: null,
     },
     sound: { room: true, roomGain: 1, mics: [] },

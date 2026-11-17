@@ -70,6 +70,17 @@ function useItemSubtitle(): (item: ServiceItem) => string {
 }
 
 /** Service plan (playlist) with drag-and-drop ordering (§16 P0). */
+/**
+ * Pick an item in the plan. From the Themes workspace this goes back to Show, where the
+ * item's slides are (Themes has nothing to show for one item).
+ */
+const selectItem = (id: string): void =>
+  useStore.setState((s) => ({
+    selectedItemId: id,
+    adhoc: null,
+    ...(s.mode === 'themes' ? { mode: 'show' as const } : {}),
+  }));
+
 export function ServicePanel() {
   const { t } = useTranslation();
   const service = useStore((s) => s.service);
@@ -123,7 +134,7 @@ export function ServicePanel() {
       const at = over ?? items.length;
       if (item) {
         update((xs) => [...xs.slice(0, at), item, ...xs.slice(at)]);
-        useStore.setState({ selectedItemId: item.id, adhoc: null });
+        selectItem(item.id);
       }
     } else if (drag !== null && over !== null) {
       const from = drag;
@@ -261,7 +272,7 @@ export function ServicePanel() {
                   variant="bare"
 
                   className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
-                  onClick={() => useStore.setState({ selectedItemId: item.id, adhoc: null })}
+                  onClick={() => selectItem(item.id)}
                   aria-current={isSel}
                 >
                   <KindTile kind={item.kind} size={20} />

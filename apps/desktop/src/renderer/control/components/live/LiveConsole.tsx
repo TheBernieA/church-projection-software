@@ -26,6 +26,7 @@ import {
   MIN_DB,
   newId,
   secondsSince,
+  themeAlignOf,
   type StreamDestination,
   type StreamSettings,
 } from '@lampstand/core';
@@ -258,7 +259,14 @@ function PicturePanel({ st }: { st: StreamSettings }) {
               size="sm"
               aria-label={t('streaming.wordsTheme')}
               value={pic.wordsTheme ?? OWN_THEME}
-              onChange={(id) => set({ wordsTheme: id === OWN_THEME ? null : id })}
+              onChange={(id) => {
+                // A theme brings its own position; Position can still move it afterwards.
+                const picked = lowerThirds.find((th) => th.id === id);
+                set({
+                  wordsTheme: picked ? picked.id : null,
+                  ...(picked ? { wordsAlign: themeAlignOf(picked) } : {}),
+                });
+              }}
               options={[
                 { value: OWN_THEME, label: t('streaming.wordsThemeOwn') },
                 ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
@@ -266,13 +274,13 @@ function PicturePanel({ st }: { st: StreamSettings }) {
             />
           </PictureRow>
         )}
-        {pic.words !== 'none' && (
+        {pic.words === 'lowerThird' && (
           <PictureRow label={t('streaming.wordsAlign')}>
             <Segmented<StreamSettings['picture']['wordsAlign']>
               label={t('streaming.wordsAlign')}
               value={pic.wordsAlign}
               onChange={(wordsAlign) => set({ wordsAlign })}
-              options={(['theme', 'left', 'center', 'right'] as const).map((a) => ({
+              options={(['left', 'center', 'right'] as const).map((a) => ({
                 value: a,
                 label: t(`streaming.align.${a}`),
               }))}

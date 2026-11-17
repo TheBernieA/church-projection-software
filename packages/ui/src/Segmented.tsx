@@ -4,7 +4,8 @@ import { Button } from './Button';
 
 export interface SegmentedProps<T extends string> {
   value: T;
-  options: { value: T; label: string; icon?: ReactNode }[];
+  /** `name`: what an icon-only option is called (its label is then left empty). */
+  options: { value: T; label: string; icon?: ReactNode; name?: string }[];
   onChange: (v: T) => void;
   label: string;
   /** Shown, but can't be changed just now. */
@@ -33,6 +34,8 @@ export function Segmented<T extends string>({
           role="radio"
           disabled={disabled}
           aria-checked={value === o.value}
+          aria-label={o.name}
+          title={o.name}
           onClick={() => onChange(o.value)}
           className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] px-3 transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
             value === o.value

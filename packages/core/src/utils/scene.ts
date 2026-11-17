@@ -59,6 +59,19 @@ export function withWordsTheme(scene: Scene, theme: Theme | null | undefined): S
   return { ...scene, content: { ...scene.content, theme } };
 }
 
+/** A theme with its words (and reference) put left, centre or right. */
+export function themeAligned(theme: Theme, align: 'left' | 'center' | 'right'): Theme {
+  return {
+    ...theme,
+    text: { ...theme.text, align },
+    reference: { ...theme.reference, align },
+  };
+}
+
+/** Where a theme puts its words across the picture (justified counts as left). */
+export const themeAlignOf = (theme: Theme): 'left' | 'center' | 'right' =>
+  theme.text.align === 'right' ? 'right' : theme.text.align === 'center' ? 'center' : 'left';
+
 /** The kinds of slide a theme can be chosen for. */
 export type ThemeKind = 'scripture' | 'lyrics' | 'text';
 /** Themes by kind of slide (looked up from their ids), for one output. */

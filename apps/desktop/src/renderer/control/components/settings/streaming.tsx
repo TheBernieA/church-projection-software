@@ -267,13 +267,13 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             </div>
           </Row>
         )}
-        {st.picture.words !== 'none' && (
+        {st.picture.words === 'lowerThird' && (
           <Row label={t('streaming.wordsAlign')} description={t('streaming.wordsAlignHelp')}>
             <Segmented<StreamSettings['picture']['wordsAlign']>
               label={t('streaming.wordsAlign')}
               value={st.picture.wordsAlign}
               onChange={(wordsAlign) => set({ picture: { ...st.picture, wordsAlign } })}
-              options={(['theme', 'left', 'center', 'right'] as const).map((a) => ({
+              options={(['left', 'center', 'right'] as const).map((a) => ({
                 value: a,
                 label: t(`streaming.align.${a}`),
               }))}

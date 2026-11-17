@@ -394,27 +394,34 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
     .getByRole('radiogroup', { name: 'For' })
     .getByRole('radio', { name: 'Lyrics' })
     .click();
+  // Clicking a theme asks where to use it: every output, or just one.
   await themes.getByRole('button', { name: 'Use Glow test' }).click();
+  await control.getByRole('menuitem', { name: 'All outputs' }).click();
   await expect(themes.locator('[data-selected="true"]')).toContainText('Glow test');
-  // The alternate (HDMI) output takes a theme of its own: a lower third for a video mixer.
-  await themes
-    .getByRole('radiogroup', { name: 'Output' })
-    .getByRole('radio', { name: 'Alternate (HDMI)' })
-    .click();
+  // Only the alternate (HDMI) output takes a lower third, for a video mixer.
   await themes
     .getByRole('radiogroup', { name: 'Layout' })
     .getByRole('radio', { name: 'Lower third' })
     .click();
   await themes.getByRole('button', { name: 'Use Stream lower third' }).click();
+  await control.getByRole('menuitem', { name: 'Alternate (HDMI)' }).click();
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('settings.get'));
       return r.ok ? r.value.outputThemes.alternate.lyrics : null;
     })
     .toBe('theme-stream-lower-third');
+  await expect(themes.locator('[data-output="alternate"]')).toContainText('Stream lower third');
+  await expect(themes.locator('[data-output="stream"]')).toContainText('follows main');
   await control.waitForTimeout(300);
   await control.screenshot({ path: 'test-results/05e-themes-outputs.png' });
-  await themes.getByRole('button', { name: 'Same as the main screens' }).click();
+  await themes
+    .locator('[data-output="alternate"]')
+    .getByRole('button', { name: 'Follow main' })
+    .click();
+  // Picking an item in the plan leaves Themes for Show.
+  await (await servicePlan()).getByText('Test Song').first().click();
+  await expect(control.getByRole('list', { name: 'Slide list' })).toBeVisible();
   await mode('Show');
   await (await servicePlan()).getByText('Test Song').first().click();
   await control.getByRole('list', { name: 'Slide list' }).getByRole('button').first().click();
@@ -2138,7 +2145,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBe('left false');
   await control.waitForTimeout(700);
   await control.screenshot({ path: 'test-results/41a-live-words.png' });
-  await shows.getByRole('radio', { name: 'Theme' }).click();
+  await shows.getByRole('radio', { name: 'Centre' }).click();
   await shows.getByRole('button', { name: 'Auto', exact: true }).click();
   // The stream's lower third in a theme made for it.
   await shows.getByRole('combobox', { name: 'Theme' }).click();
@@ -2146,21 +2153,20 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await control.waitForTimeout(900);
   await control.screenshot({ path: 'test-results/41d-live-words-theme.png' });
   // Lower-third mode on the audience screens: the words move to the bottom in that theme.
-  await control.getByRole('button', { name: 'Lower third on the screens' }).click();
-  await control.getByRole('menuitem', { name: 'Modern lower third' }).click();
-  await expect
-    .poll(async () => (await control.evaluate(() => window.lampstand.query('live.get'))).ok)
-    .toBe(true);
+  const lowerThird = control.getByRole('region', { name: 'Lower third on the screens' });
+  await lowerThird.getByRole('switch', { name: 'Lower third on the screens' }).click();
+  await lowerThird.getByRole('combobox', { name: 'Lower-third theme' }).click();
+  await control.getByRole('option', { name: 'Modern lower third' }).click();
+  await lowerThird.getByRole('radio', { name: 'Right' }).click();
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));
-      return r.ok ? (r.value.lowerThird?.name ?? null) : null;
+      return r.ok ? `${r.value.lowerThird?.name} ${r.value.lowerThird?.text.align}` : null;
     })
-    .toBe('Modern lower third');
+    .toBe('Modern lower third right');
   await control.waitForTimeout(700);
   await control.screenshot({ path: 'test-results/41e-screens-lower-third.png' });
-  await control.getByRole('button', { name: 'Lower third on the screens' }).click();
-  await control.getByRole('menuitem', { name: /^Off/ }).click();
+  await lowerThird.getByRole('switch', { name: 'Lower third on the screens' }).click();
   await shows.getByRole('combobox', { name: 'Theme' }).click();
   await control.getByRole('option', { name: /Each slide/ }).click();
   await live.getByRole('button', { name: 'End stream' }).click();

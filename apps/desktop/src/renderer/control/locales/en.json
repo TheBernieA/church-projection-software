@@ -150,9 +150,10 @@
     "logo": "Logo",
     "freeze": "Freeze",
     "lowerThird": "Lower third on the screens",
-    "lowerThirdOn": "Lower third on the screens: {{name}}",
-    "lowerThirdOff": "Off (each slide's own theme)",
-    "lowerThirdHelp": "Show the words along the bottom of the audience screens, in a lower-third theme.",
+    "lowerThirdOn": "Words show along the bottom of the audience screens.",
+    "lowerThirdHelp": "Show every slide's words along the bottom instead.",
+    "lowerThirdTheme": "Lower-third theme",
+    "lowerThirdPosition": "Lower-third position",
     "stageMessage": "Message to stage",
     "send": "Send",
     "clearMessage": "Clear",
@@ -231,18 +232,29 @@
     "translationSection": "Translation"
   },
   "theme": {
-    "output": "Output",
-    "outputs": { "main": "Main screens", "alternate": "Alternate (HDMI)", "stream": "Stream" },
-    "outputHelp": {
-      "main": "The theme the audience screens use for {{kind}} slides. An item with its own theme keeps it.",
-      "alternate": "The alternate HDMI output can draw {{kind}} slides in a theme of its own, such as a lower third for a video mixer. It follows the main screens until you pick one.",
-      "stream": "The stream can draw {{kind}} slides in a theme of its own, whatever the projector shows. It follows the main screens until you pick one."
+    "outputs": {
+      "main": "Main screens",
+      "alternate": "Alternate (HDMI)",
+      "stream": "Stream"
     },
+    "outputsShort": {
+      "main": "Main",
+      "alternate": "Alternate",
+      "stream": "Stream"
+    },
+    "inUse": "Themes in use for {{kind}} slides",
+    "followsMain": "follows main",
+    "followMain": "Follow main",
+    "howTo": "Click a theme to use it for {{kind}} slides, on every output or just one. An item with its own theme keeps it.",
+    "useOn": "Use for {{kind}} slides on",
+    "allOutputs": "All outputs",
     "for": "For",
     "layoutFilter": "Layout",
-    "layouts": { "full": "Full screen", "lowerThird": "Lower third" },
+    "layouts": {
+      "full": "Full screen",
+      "lowerThird": "Lower third"
+    },
     "useTheme": "Use {{name}}",
-    "sameAsMain": "Same as the main screens",
     "builtInGroup": "Built-in",
     "library_one": "Your library ({{count}})",
     "library_other": "Your library ({{count}})",
@@ -360,7 +372,12 @@
       "title": "Alternate output: key feed for a video mixer",
       "help": "Send the words alone over HDMI to a mixer (ATEM, vMix, a hardware switcher), which lays them over its cameras.",
       "mode": "Key feed background",
-      "modes": { "off": "Full picture", "green": "Green", "blue": "Blue", "black": "Black" },
+      "modes": {
+        "off": "Full picture",
+        "green": "Green",
+        "blue": "Blue",
+        "black": "Black"
+      },
       "modeHelp": {
         "off": "The alternate output shows everything the audience screens show.",
         "green": "Words and props over green: use a chroma key on the mixer.",
@@ -752,7 +769,7 @@
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Theme draws the lower third in a theme made for it (Stream lower third, Modern lower third, or your own with the Lower third layout). Position puts the words left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
+          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Theme draws the lower third in a theme made for it (Stream lower third, Modern lower third, or your own with the Lower third layout). Position puts the lower third left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
@@ -776,11 +793,11 @@
         },
         "screens": {
           "q": "Show a lower third on the projector too",
-          "a": "Under the output monitor, click the lower-third button (beside Black, Logo and Freeze) and pick a theme. The audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you choose Off. The stream follows it unless you pick a different theme for the stream."
+          "a": "Under the output monitor, switch on “Lower third on the screens”. Pick its theme and where it sits (left, centre or right). The audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you switch it off; your theme and position are remembered. The stream follows it unless the stream has a theme of its own."
         },
         "keyFeed": {
           "q": "Send the words to a video mixer over HDMI (key feed)",
-          "a": "1. Plug the mixer into this computer’s HDMI output, open Outputs (the Audience light in the toolbar) and give that display the Alternate role.\n2. Under “Alternate output: key feed for a video mixer”, pick Green or Blue (chroma key on the mixer) or Black (luma key). The output then carries only the words and props over that colour.\n3. Click “Choose its themes” and, under Alternate (HDMI), pick a lower-third theme for Scripture, Lyrics and Text.\nOn an ATEM, use an upstream chroma or luma key with this input as the source. For a clean alpha channel instead, use the NDI “Words” feed."
+          "a": "1. Plug the mixer into this computer’s HDMI output, open Outputs (the Audience light in the toolbar) and give that display the Alternate role.\n2. Under “Alternate output: key feed for a video mixer”, pick Green or Blue (chroma key on the mixer) or Black (luma key). The output then carries only the words and props over that colour.\n3. Click “Choose its themes”, pick Lower third, then click a theme and choose Alternate (HDMI), for Scripture, Lyrics and Text.\nOn an ATEM, use an upstream chroma or luma key with this input as the source. For a clean alpha channel instead, use the NDI “Words” feed."
         },
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
@@ -846,7 +863,7 @@
         },
         "themes": {
           "q": "Change how the words look",
-          "a": "Theme in the toolbar opens Themes. Choose the output (Main screens, Alternate HDMI, or Stream), the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third), then click a theme to use it there; the one in use is ticked. The alternate output and the stream follow the main screens until you give them a theme of their own. Duplicate a built-in theme to change its fonts, colours, effects and background; Import theme and the export button move themes between computers."
+          "a": "Theme in the toolbar opens Themes. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third), then click a theme and say where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream. The strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Duplicate a built-in theme to change its fonts, colours, effects and background; Import theme and the export button move themes between computers."
         },
         "text": {
           "q": "Change one song’s font or colour",
@@ -1685,9 +1702,8 @@
     "pictureHelp": "The stream can show something different from the projector: e.g. the camera with the lyrics as a lower third.",
     "words": "The words",
     "wordsAlign": "Position",
-    "wordsAlignHelp": "Where the words sit across the picture: where the theme puts them, or left, centre or right.",
+    "wordsAlignHelp": "Where the lower third sits across the picture. Picking a theme starts it where the theme was designed to sit.",
     "align": {
-      "theme": "Theme",
       "left": "Left",
       "center": "Centre",
       "right": "Right"
