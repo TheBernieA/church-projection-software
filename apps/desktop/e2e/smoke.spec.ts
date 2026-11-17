@@ -2500,8 +2500,14 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
   await expect(updateLive).toHaveCount(0);
   await mode('Show');
   await control.screenshot({ path: 'test-results/43-section-add.png' });
-  // Delete the playlist from its own menu: the other playlist opens in its place.
   const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
+  // Deleting a section takes everything in it (after a confirmation).
+  const plan = await servicePlan();
+  await plan.locator('li').filter({ hasText: 'New section' }).first().hover();
+  control.once('dialog', accept);
+  await plan.getByRole('button', { name: 'Delete section and everything in it' }).first().click();
+  await expect.poll(kinds).toBe('header');
+  // Delete the playlist from its own menu: the other playlist opens in its place.
   control.once('dialog', accept);
   await library.getByRole('button', { name: 'New service', exact: true }).hover();
   await library.getByRole('button', { name: 'Options for New service' }).click();

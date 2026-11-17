@@ -43,7 +43,6 @@
     "moveSectionUp": "Move section up",
     "moveSectionDown": "Move section down",
     "duplicateSection": "Duplicate section",
-    "removeHeading": "Remove heading (keeps its items)",
     "templateSaved": "Template saved.",
     "syncSoon": "Planning & sync",
     "webTitle": "Web page",
@@ -57,7 +56,10 @@
     "addToSection": "Add to {{name}}",
     "sectionEmpty": "Nothing in this section yet.",
     "addSlide": "Add a slide",
-    "addSlideOf": "Add a slide to {{name}}"
+    "addSlideOf": "Add a slide to {{name}}",
+    "removeSection": "Delete section and everything in it",
+    "confirmRemoveSection_one": "Delete the section “{{name}}” and the {{count}} item in it? Undo brings them back.",
+    "confirmRemoveSection_other": "Delete the section “{{name}}” and the {{count}} items in it? Undo brings them back."
   },
   "library": {
     "title": "Library",

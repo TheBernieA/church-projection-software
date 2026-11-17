@@ -534,11 +534,27 @@ function ItemMenu({
       <IconButton
         size="xs"
         variant="danger"
-        aria-label={isSection ? t('service.removeHeading') : t('service.remove')}
+        aria-label={isSection ? t('service.removeSection') : t('service.remove')}
         onClick={() => {
-          update((xs) => xs.filter((x) => x.id !== item.id));
-          if (useStore.getState().selectedItemId === item.id)
-            useStore.setState({ selectedItemId: null });
+          // A heading takes its whole section with it (Undo brings it all back).
+          const [start, end] = isSection ? sectionBounds(items, index) : [index, index + 1];
+          const gone = items.slice(start, end);
+          const inside = gone.length - 1;
+          if (
+            isSection &&
+            inside > 0 &&
+            !window.confirm(
+              t('service.confirmRemoveSection', {
+                name: item.label,
+                count: inside,
+              }),
+            )
+          )
+            return;
+          const ids = new Set(gone.map((x) => x.id));
+          update((xs) => xs.filter((x) => !ids.has(x.id)));
+          const sel = useStore.getState().selectedItemId;
+          if (sel && ids.has(sel)) useStore.setState({ selectedItemId: null });
         }}
       >
         <Trash2 size={14} />
