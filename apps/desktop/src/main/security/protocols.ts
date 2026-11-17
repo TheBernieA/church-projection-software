@@ -12,7 +12,15 @@ export function registerSchemes(): void {
     { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
     {
       scheme: MEDIA_SCHEME,
-      privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true },
+      // corsEnabled: our own windows may read media as well as play it. A mixer (WebAudio)
+      // only gets the sound of media it's allowed to read; otherwise it gets silence.
+      privileges: {
+        standard: true,
+        secure: true,
+        stream: true,
+        supportFetchAPI: true,
+        corsEnabled: true,
+      },
     },
   ]);
 }
@@ -53,8 +61,28 @@ export function handleMediaProtocol(
     const file = await resolveInside(found.root, found.rel);
     if (!file) return new Response('Not found', { status: 404 });
     // Byte ranges are served by hand: <video> seeking needs real 206 responses.
-    return fileResponse(file, req.headers.get('range'));
+    const res = await fileResponse(file, req.headers.get('range'));
+    // Only our own pages may read it (the app bundle, or the dev server in development).
+    const origin = allowedOrigin(req.headers.get('origin'));
+    if (origin) {
+      res.headers.set('Access-Control-Allow-Origin', origin);
+      res.headers.set('Vary', 'Origin');
+    }
+    return res;
   });
+}
+
+/** The request's origin, if it's one of ours (else null: no cross-origin reading). */
+export function allowedOrigin(origin: string | null): string | null {
+  if (!origin) return null;
+  if (origin === `${APP_SCHEME}://bundle`) return origin;
+  const dev = process.env.ELECTRON_RENDERER_URL;
+  try {
+    if (dev && new URL(dev).origin === origin) return origin;
+  } catch {
+    /* not a URL */
+  }
+  return null;
 }
 
 export function rendererUrl(page: 'control' | 'output' | 'stage' | 'stream', query = ''): string {

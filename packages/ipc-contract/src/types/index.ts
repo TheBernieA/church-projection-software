@@ -308,8 +308,11 @@ export interface StreamApi {
   onFrame(cb: (frame: GpuFrame) => void): void;
   /** Start encoding with these settings, stop (null), or make the next frame a keyframe. */
   onEncode(cb: (cmd: EncodeConfig | { keyframe: true } | null) => void): () => void;
-  /** An encoded H.264 chunk (Annex B). */
-  sendVideo(data: Uint8Array, key: boolean): void;
+  /**
+   * An encoded H.264 frame (AVCC), with when it was made (µs since encoding started) and, on
+   * keyframes, the encoder's configuration record (avcC).
+   */
+  sendVideo(data: Uint8Array, key: boolean, timestampUs: number, config?: Uint8Array): void;
   reportEncoder(r: EncoderReport): void;
   onLiveState(cb: (s: LiveState) => void): () => void;
   onConfig(cb: (c: StreamConfig) => void): () => void;

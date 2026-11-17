@@ -10,7 +10,9 @@ import type { StreamApi, StreamConfig } from '@lampstand/ipc-contract';
 import { AudioPlayer, buildVideoInput, MixerEngine, SceneRenderer } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
-import pcmTapUrl from './pcmTap.worklet.js?url';
+// A real file, never inlined: the security policy doesn't run scripts from data: addresses
+// (inlined, the tap failed to load and the stream had no sound).
+import pcmTapUrl from './pcmTap.worklet.js?url&no-inline';
 import { StreamEncoder } from './encoder';
 
 /**
@@ -167,7 +169,10 @@ api.onLiveState((s) => {
   draw();
 });
 
-void Promise.all([fontsReady(), tapReady.catch(() => undefined)]).then(() => {
+void Promise.all([
+  fontsReady(),
+  tapReady.catch((err: unknown) => console.error('stream sound tap failed:', String(err))),
+]).then(() => {
   void ctx.resume();
   api.ready();
 });

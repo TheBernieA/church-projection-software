@@ -152,9 +152,10 @@ export interface EncodeOptions {
   encoder: Encoder;
   /**
    * What arrives on stdin: raw BGRA frames to encode ('raw', the CPU pipeline), or H.264 already
-   * encoded on the GPU ('h264'), which is only packaged (no re-encoding).
+   * encoded on the GPU, in FLV with each frame's real timestamp ('flv'), which is only packaged
+   * (no re-encoding).
    */
-  input?: 'raw' | 'h264';
+  input?: 'raw' | 'flv';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
   x264Preset?: 'ultrafast' | 'superfast' | 'veryfast' | 'faster';
   /** Full ingest URLs (keys included). */
@@ -225,7 +226,7 @@ export function videoCodecArgs(
  * to fail on its own) and to the recording (fragmented MP4, playable even after a crash).
  */
 export function buildArgs(o: EncodeOptions): string[] {
-  const gpu = o.input === 'h264';
+  const gpu = o.input === 'flv';
   const outputs = [
     ...o.streams.map((u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize]${teeEscape(u)}`),
     ...(o.record
@@ -243,27 +244,9 @@ export function buildArgs(o: EncodeOptions): string[] {
     '-thread_queue_size',
     '512',
     ...(gpu
-      ? // Start at once: the size is in the first keyframe (a still picture encodes so small
-        // that ffmpeg's usual 5 MB look-ahead would take minutes to fill).
-        [
-          '-probesize',
-          '32',
-          '-analyzeduration',
-          '0',
-          '-fflags',
-          '+genpts',
-          // Raw H.264 carries no times: stamp arrivals so ffmpeg reads the sound alongside (else
-          // it only ever reads video, and the sound pipe stalls). Output times come from the
-          // frame count below.
-          '-use_wallclock_as_timestamps',
-          '1',
-          '-f',
-          'h264',
-          '-framerate',
-          String(o.fps),
-          '-i',
-          'pipe:0',
-        ]
+      ? // Encoded frames in FLV, each with its real time. Start at once (the picture size is in
+        // the first tag), and don't hold packets back to study them.
+        ['-probesize', '1024', '-analyzeduration', '0', '-f', 'flv', '-i', 'pipe:0']
       : [
           '-f',
           'rawvideo',
@@ -292,8 +275,8 @@ export function buildArgs(o: EncodeOptions): string[] {
     '-map',
     '1:a',
     ...(gpu
-      ? // Already encoded: copy it, stamping each frame's time from its number (raw H.264 has none).
-        ['-c:v', 'copy', '-bsf:v', `setts=pts=N/(${o.fps}*TB):dts=N/(${o.fps}*TB)`]
+      ? // Already encoded, already timed: copy it.
+        ['-c:v', 'copy']
       : [
           // Hardware encoders take NV12 natively (no second conversion inside the encoder).
           '-pix_fmt',
@@ -314,6 +297,11 @@ export function buildArgs(o: EncodeOptions): string[] {
     '2',
     '-flags',
     '+global_header',
+    // Send each packet as soon as it's ready (no batching in the muxers).
+    '-flush_packets',
+    '1',
+    '-max_interleave_delta',
+    '500000',
     '-f',
     'tee',
     outputs.join('|'),

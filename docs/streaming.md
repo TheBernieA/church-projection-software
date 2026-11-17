@@ -16,11 +16,13 @@ encoded Annex B chunks go to main and on to ffmpeg, which only **packages** them
 (`-c:v copy`, timed by frame number with `setts`) and encodes the sound. Nothing is copied to the
 CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
 
-- Raw H.264 has no timestamps. Input packets are stamped on arrival
-  (`-use_wallclock_as_timestamps`) only so ffmpeg reads the sound alongside them. Without it,
-  ffmpeg reads only video and the sound pipe stalls.
-- `-probesize 32`: the size is in the first keyframe, and a still picture encodes so small that
-  the usual 5 MB look-ahead would take minutes.
+- Each encoded frame goes to ffmpeg as an **FLV video tag carrying its real timestamp**
+  (`main/stream/flv.ts`; WebCodecs gives AVCC frames and the avcC record). ffmpeg starts at once
+  and never guesses times, and a skipped frame leaves a gap in time instead of slowing the
+  video's clock. (Raw H.264 timed by frame number arrived in bursts of up to 0.5 s, and every
+  dropped frame put the picture permanently behind the sound.)
+- The sound is timed by counting samples, so it's kept to the clock both ways: silence fills a
+  gap, and a batch that arrives after its gap was filled is dropped.
 - The window paints only on change, so the page always receives the newest picture: main holds at
   most one picture while the last is still on its way. Encoding can start on a still screen.
 - Start is sent once the page has loaded. The frame clock, and main's sound clock (on the first
@@ -76,6 +78,20 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries); a recording carries on as "part 2". Quitting the app finishes the recording first.
+
+## Sound that reaches the mixers
+
+A WebAudio mixer only gets the sound of media it may *read*. Library media is served on its own
+scheme (`lampstand-media:`), so that scheme is CORS-enabled, its responses allow our own origin
+(`allowedOrigin`), and media elements that feed a mixer set `crossOrigin = 'anonymous'`
+(`AudioPlayer`, `buildMedia`). Without this the room and the stream got silence. The stream's
+PCM tap worklet is built as a real file (`?url&no-inline`): inlined as a `data:` URL, the
+security policy refused to load it. e2e checks the Room meter moves and the recording isn't
+silent.
+
+Sending latency is measured by `LAMPSTAND_LATENCY=1 pnpm exec playwright test e2e/latency.spec.ts`
+(a local RTMP server; arrival time against each packet's timestamp). A line of stream health
+goes to the log every 10 s while running.
 
 ## Performance modes
 

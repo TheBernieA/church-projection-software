@@ -52,6 +52,7 @@ import {
   recordingName,
   type Encoder,
 } from './ffmpegArgs';
+import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
 import { FramePump } from './framePump';
 import { isStruggling, Ring, sampleProcess, type HealthSample } from './health';
 import { pickBenchmarkMode, runBenchmark, type BenchmarkRun } from './benchmark';
@@ -221,6 +222,16 @@ export class StreamController {
   private lastPageEncoded = 0;
   private lastPageDropped = 0;
   private waitForKey = false;
+  /** GPU pipeline: the FLV stream to this ffmpeg has been opened, and its time zero. */
+  private flvOpen = false;
+  private flvBase = 0;
+  /** Sound dropped because it had run ahead of the clock (bytes), for the log. */
+  private audioDropped = 0;
+  private audioPadded = 0;
+  private healthTicks = 0;
+  private pcmSeen = 0;
+  private pcmBad = 0;
+  private pcmType = '';
   private videoSeen = false;
   /** Destinations using their fallback address this session (the first couldn't connect). */
   private readonly altIngest = new Set<string>();
@@ -245,21 +256,31 @@ export class StreamController {
       if (this.pendingEncode) this.beginGpuEncode(this.pendingEncode);
     });
     ipcMain.on(Channels.streamAudio, (e, pcm: unknown) => {
-      if (!this.fromStreamWindow(e) || !(pcm instanceof Float32Array)) return;
+      if (!this.fromStreamWindow(e)) return;
+      this.pcmSeen += 1;
+      if (!(pcm instanceof Float32Array)) {
+        this.pcmBad += 1;
+        this.pcmType = Object.prototype.toString.call(pcm);
+        return;
+      }
       this.writeAudio(Buffer.from(pcm.buffer, pcm.byteOffset, pcm.byteLength));
     });
-    ipcMain.on(Channels.streamVideo, (e, data: unknown, key: unknown) => {
-      if (!this.fromStreamWindow(e)) return;
-      if (!this.videoSeen) {
-        this.videoSeen = true;
-        this.d.log.info('first encoded chunk', {
-          type: Object.prototype.toString.call(data),
-          bytes: data instanceof Uint8Array ? data.byteLength : -1,
-          key,
-        });
-      }
-      if (data instanceof Uint8Array) this.writeVideo(data, key === true);
-    });
+    ipcMain.on(
+      Channels.streamVideo,
+      (e, data: unknown, key: unknown, timestampUs: unknown, config: unknown) => {
+        if (!this.fromStreamWindow(e) || !(data instanceof Uint8Array)) return;
+        if (!this.videoSeen) {
+          this.videoSeen = true;
+          this.d.log.info('first encoded chunk', { bytes: data.byteLength });
+        }
+        this.writeVideo(
+          data,
+          key === true,
+          typeof timestampUs === 'number' ? timestampUs / 1000 : 0,
+          config instanceof Uint8Array ? config : null,
+        );
+      },
+    );
     ipcMain.on(Channels.streamEncoder, (e, r: EncoderReport) => {
       if (!this.fromStreamWindow(e)) return;
       this.onEncoderReport(r);
@@ -503,6 +524,14 @@ export class StreamController {
       this.latest = (
         sz.width === width && sz.height === height ? image : image.resize({ width, height })
       ).toBitmap();
+    });
+    // Problems inside the stream page (it has no window to show them) go to the log.
+    win.webContents.on('console-message', (e) => {
+      if (
+        (e.level === 'warning' || e.level === 'error') &&
+        !e.message.startsWith('Loading the font')
+      )
+        this.d.log.warn('stream page', { level: e.level, message: e.message.slice(0, 400) });
     });
     win.webContents.on('render-process-gone', () => {
       this.d.log.warn('stream window crashed; reopening');
@@ -751,12 +780,22 @@ export class StreamController {
     return this.gpuCaps.get(key) === true;
   }
 
-  /** An encoded H.264 chunk from the stream page: straight to ffmpeg (to be packaged). */
-  private writeVideo(data: Uint8Array, key: boolean): void {
+  /**
+   * An encoded frame from the stream page: on to ffmpeg as an FLV tag with the frame's real
+   * time (ffmpeg only packages it). The stream opens with the FLV header and the encoder's
+   * configuration, at a keyframe.
+   */
+  private writeVideo(data: Uint8Array, key: boolean, ms: number, config: Uint8Array | null): void {
     const stdin = this.ff?.stdin;
     if (this.pipeline !== 'gpu' || !stdin?.writable) return;
     // Every (re)start begins at a keyframe: it carries the picture size ffmpeg needs first.
     if (this.waitForKey && !key) return;
+    if (!this.flvOpen) {
+      if (!config) return; // a keyframe without its configuration: wait for the next
+      stdin.write(Buffer.concat([FLV_HEADER, flvSequenceHeader(config)]));
+      this.flvOpen = true;
+      this.flvBase = ms; // this stream's time zero
+    }
     this.waitForKey = false;
     if (!this.encodeLive) {
       // The first picture is out: picture and sound start together from here.
@@ -776,7 +815,7 @@ export class StreamController {
     }
     this.videoBytes += data.byteLength;
     this.videoChunks += 1;
-    stdin.write(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+    stdin.write(flvFrame(data, key, ms - this.flvBase));
   }
 
   // ---------- The encoder ----------
@@ -883,7 +922,7 @@ export class StreamController {
     }
     this.pipeline = gpu ? 'gpu' : 'cpu';
     const args = buildArgs({
-      input: gpu ? 'h264' : 'raw',
+      input: gpu ? 'flv' : 'raw',
       width,
       height,
       fps: profile.fps,
@@ -956,6 +995,7 @@ export class StreamController {
       this.lastPageEncoded = 0;
       this.lastPageDropped = 0;
       this.waitForKey = true;
+      this.flvOpen = false;
       this.videoBytes = 0;
       this.videoChunks = 0;
       const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
@@ -987,7 +1027,11 @@ export class StreamController {
   private topUpAudio(): void {
     const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
     const behind = due - this.audioBytes;
-    if (behind > BYTES_PER_SECOND * 0.08) this.writeAudio(Buffer.alloc(Math.floor(behind / 8) * 8));
+    if (behind > BYTES_PER_SECOND * 0.08) {
+      const bytes = Math.floor(behind / 8) * 8;
+      this.audioPadded += bytes;
+      this.writeAudio(Buffer.alloc(bytes), true);
+    }
   }
 
   /** Frames on wall-clock time, and sound topped up to the same clock (silence fills gaps). */
@@ -1009,9 +1053,19 @@ export class StreamController {
     this.pump.begin();
   }
 
-  private writeAudio(chunk: Buffer): void {
+  private writeAudio(chunk: Buffer, silence = false): void {
     // GPU pipeline: nothing until the page is encoding (else the sound would start early).
     if (this.pipeline === 'gpu' && !this.encodeLive) return;
+    // The sound is timed by counting samples, so it must match the clock both ways: silence
+    // fills a gap, and sound that arrives after its gap was filled (a late batch) is dropped,
+    // or every hiccup would push the sound later for the rest of the stream.
+    if (!silence && this.encodeStart) {
+      const due = ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND;
+      if (this.audioBytes - due > BYTES_PER_SECOND * 0.12) {
+        this.audioDropped += chunk.length;
+        return;
+      }
+    }
     const out = this.audioOut;
     if (!out?.writable || out.writableNeedDrain) return;
     out.write(chunk);
@@ -1031,6 +1085,29 @@ export class StreamController {
   }
 
   private async sampleHealth(): Promise<void> {
+    // A line every 10 s while running, so a problem stream can be understood afterwards.
+    this.healthTicks += 1;
+    if (this.healthTicks % 5 === 0)
+      this.d.log.info('stream health', {
+        pipeline: this.pipeline,
+        fps: this.status.fps,
+        speed: this.status.speed,
+        kbps: this.status.kbps,
+        encoded: this.pageEncoded,
+        dropped: this.pump?.dropped ?? this.pageDropped,
+        audioLeadMs: Math.round(
+          ((this.audioBytes - ((performance.now() - this.encodeStart) / 1000) * BYTES_PER_SECOND) /
+            BYTES_PER_SECOND) *
+            1000,
+        ),
+        audioPaddedMs: Math.round((this.audioPadded / BYTES_PER_SECOND) * 1000),
+        audioDroppedMs: Math.round((this.audioDropped / BYTES_PER_SECOND) * 1000),
+        pendingVideoBytes: this.ff?.stdin?.writableLength ?? 0,
+        pcmSeen: this.pcmSeen,
+        pcmBad: this.pcmBad,
+        pcmType: this.pcmType,
+        audioNeedDrain: this.audioOut?.writableNeedDrain,
+      });
     if (process.env.LAMPSTAND_FFMPEG_DEBUG)
       this.d.log.info('gpu frames', {
         ...this.texStats,

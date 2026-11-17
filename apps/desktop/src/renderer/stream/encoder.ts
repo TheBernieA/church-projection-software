@@ -12,7 +12,8 @@ export function encoderConfig(c: EncodeConfig, hardware: boolean): VideoEncoderC
     bitrateMode: 'constant',
     latencyMode: 'realtime',
     hardwareAcceleration: hardware ? 'prefer-hardware' : 'prefer-software',
-    avc: { format: 'annexb' },
+    // AVCC frames plus a configuration record: main wraps them in FLV with real timestamps.
+    avc: { format: 'avc' },
   };
 }
 
@@ -34,6 +35,8 @@ export class StreamEncoder {
   private encoded = 0;
   private dropped = 0;
   private wantKey = true;
+  /** The encoder's configuration record (picture size, profile), sent with each keyframe. */
+  private avcC: Uint8Array | null = null;
   /** The encoder has produced its first frame: the clock runs from then. */
   private started = false;
 
@@ -70,12 +73,21 @@ export class StreamEncoder {
     void this.stop(false);
     this.config = c;
     const encoder = new VideoEncoder({
-      output: (chunk) => {
+      output: (chunk, meta) => {
         if (this.encoder !== encoder) return; // from an encoder that's been replaced
         const data = new Uint8Array(chunk.byteLength);
         chunk.copyTo(data);
         this.encoded += 1;
-        this.api.sendVideo(data, chunk.type === 'key');
+        const d = meta?.decoderConfig?.description;
+        if (d) {
+          // A copy of the configuration record (it may be a view onto a larger buffer).
+          const view = ArrayBuffer.isView(d)
+            ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
+            : new Uint8Array(d);
+          this.avcC = new Uint8Array(view);
+        }
+        const key = chunk.type === 'key';
+        this.api.sendVideo(data, key, chunk.timestamp, key ? (this.avcC ?? undefined) : undefined);
         // The hardware encoder takes a moment to start: the frame clock (and main's sound
         // clock, on this first chunk) start only now, so none of that wait shifts the sync.
         if (!this.started) {
@@ -96,6 +108,7 @@ export class StreamEncoder {
     this.encoded = 0;
     this.dropped = 0;
     this.wantKey = true;
+    this.avcC = null;
     this.started = false;
     this.first();
     this.stats = setInterval(() => {

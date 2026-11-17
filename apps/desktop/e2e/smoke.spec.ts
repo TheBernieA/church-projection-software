@@ -5,7 +5,7 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { execFileSync, spawn } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
   mkdirSync,
   mkdtempSync,
@@ -1953,8 +1953,19 @@ test('recording: Lampstand records the stream picture and sound to a file', asyn
   await control.keyboard.type('jn 3 16');
   await expect(control.getByRole('option').first()).toContainText('John 3:16');
   await control.keyboard.press('Shift+Enter');
+  // A looping track too, so the recording has real sound (checked below).
+  await cmd('live.audio', { action: 'play', mediaId: 'seed-tone-b', loop: true });
   await cmd('stream.start', { record: true });
   await expect.poll(async () => (await status())?.state, { timeout: 15_000 }).toBe('live');
+  // The room hears it too: the Room mix's meter moves (it reads the main output's real mix).
+  await control.getByRole('button', { name: 'Show or hide the mixer' }).click();
+  const roomMeter = control
+    .getByRole('region', { name: 'Mixer' })
+    .getByRole('meter', { name: 'Room meter' });
+  await expect
+    .poll(async () => Number(await roomMeter.getAttribute('aria-valuenow')), { timeout: 10_000 })
+    .toBeGreaterThan(-50);
+  await control.getByRole('button', { name: 'Close the mixer' }).click();
   await control.waitForTimeout(3_000);
   const s = await status();
   expect(s?.recording).toBe(true);
@@ -2005,6 +2016,16 @@ test('recording: Lampstand records the stream picture and sound to a file', asyn
   ]);
   const mean = gray.reduce((a, b) => a + b, 0) / gray.length;
   expect(mean).toBeGreaterThan(8);
+  // And it isn't silent: the track's sound went through the stream mix into the file. (It used
+  // to be pure silence: the sound tap and the media's sound were both blocked.)
+  const volume = spawnSync(
+    'ffmpeg',
+    ['-v', 'info', '-i', path, '-af', 'volumedetect', '-vn', '-f', 'null', '-'],
+    { encoding: 'utf8' },
+  ).stderr;
+  const meanDb = Number(/mean_volume: ([-\d.]+) dB/.exec(volume)?.[1] ?? -99);
+  expect(meanDb).toBeGreaterThan(-45);
+  await cmd('live.audio', { action: 'stop' });
 });
 
 test('livestream: set up a destination, go live from the Live console, end it', async () => {

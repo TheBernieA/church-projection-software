@@ -15,7 +15,8 @@ const api: StreamApi = {
   sendAudio: (pcm) => ipcRenderer.send(Channels.streamAudio, pcm),
   onFrame: receiveGpuFrames(),
   onEncode: (cb) => listen(Channels.evEncode, cb),
-  sendVideo: (data, key) => ipcRenderer.send(Channels.streamVideo, data, key),
+  sendVideo: (data, key, timestampUs, config) =>
+    ipcRenderer.send(Channels.streamVideo, data, key, timestampUs, config),
   reportEncoder: (r) => ipcRenderer.send(Channels.streamEncoder, r),
   sendMeters: (m) => ipcRenderer.send(Channels.meters, m),
 };

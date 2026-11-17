@@ -17,6 +17,8 @@ export class AudioPlayer {
     private readonly mediaUrl: (id: string) => string,
   ) {
     this.el = doc.createElement('audio');
+    // Read with permission (CORS): a mixer gets silence from media it may only play.
+    this.el.crossOrigin = 'anonymous';
     this.el.preload = 'auto';
   }
 

@@ -205,6 +205,8 @@ export function buildMedia(
     wrap.append(img);
   } else {
     const v = el(doc, 'video', '', { ...FILL, objectFit: m.fit });
+    // Read with permission (CORS): a mixer gets silence from media it may only play.
+    v.crossOrigin = 'anonymous';
     v.src = media.mediaUrl(m.mediaId);
     v.playsInline = true;
     v.preload = mode === 'thumbnail' ? 'metadata' : 'auto';

@@ -62,14 +62,15 @@ describe('stream encoder arguments', () => {
     expect(buildArgs({ ...base, width: 960, height: 540 }).join(' ')).toContain('-s 960x540');
   });
 
-  it('packages GPU-encoded H.264 without re-encoding, timed by frame number', () => {
-    const a = buildArgs({ ...base, fps: 60, input: 'h264', record: '/tmp/r.mp4' }).join(' ');
-    expect(a).toContain('-use_wallclock_as_timestamps 1 -f h264 -framerate 60 -i pipe:0');
-    expect(a).toContain('-probesize 32 -analyzeduration 0');
-    expect(a).toContain('-c:v copy -bsf:v setts=pts=N/(60*TB):dts=N/(60*TB)');
+  it('packages GPU-encoded video (FLV, already timed) without re-encoding', () => {
+    const a = buildArgs({ ...base, fps: 60, input: 'flv', record: '/tmp/r.mp4' }).join(' ');
+    expect(a).toContain('-probesize 1024 -analyzeduration 0 -f flv -i pipe:0');
+    expect(a).toContain('-c:v copy');
     expect(a).not.toContain('rawvideo');
     expect(a).not.toContain('-pix_fmt');
+    expect(a).not.toContain('setts');
     expect(a).toContain('-c:a aac');
+    expect(a).toContain('-flush_packets 1');
   });
 
   it('escapes tee specials', () => {
