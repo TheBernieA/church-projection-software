@@ -308,197 +308,207 @@ export function StageMode() {
   );
 
   return (
-    <div className="flex min-h-0 flex-1" data-testid="stage-mirror">
-      {/* Layouts. */}
-      <aside
-        aria-label={t('stageLayouts.list')}
-        className="flex w-56 shrink-0 flex-col gap-2 border-r border-[var(--divider)] bg-[var(--surface-1)] p-3"
+    // Three columns; in a narrow workspace they stack (layouts, the layout, what to add) and scroll.
+    <div className="@container flex min-h-0 flex-1 flex-col">
+      <div
+        className="flex min-h-0 flex-1 @max-[760px]:flex-col @max-[760px]:overflow-y-auto"
+        data-testid="stage-mirror"
       >
-        <Typography as="h2" variant="overline" className="px-1">
-          {t('stageLayouts.list')}
-        </Typography>
-        <ul className="flex flex-col gap-0.5">
-          {all.map(({ l, preset: p }) => (
-            <LayoutRow
-              key={l.id}
-              layout={l}
-              preset={p}
-              selected={l.id === layout.id}
-              inUse={l.id === inUseId}
-              onPick={() => {
-                setEditId(l.id);
-                setSelected(null);
-                setDraft(null);
-              }}
-            />
-          ))}
-        </ul>
-        <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={duplicate}>
-          {t('stageLayouts.new')}
-        </Button>
-        <span className="flex-1" />
-        <SoonFeature id="stage-app" icon={<Smartphone size={14} />} />
-      </aside>
-
-      {/* The layout, live. */}
-      <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {preset ? (
-            <Typography
-              size={15}
-              weight="semibold"
-              tone="primary"
-              className="flex items-center gap-2"
-            >
-              {layout.name}
-              <Typography size={11} tone="muted" weight="regular">
-                {t('stageLayouts.presetHint')}
-              </Typography>
-            </Typography>
-          ) : (
-            <DeferredInput
-              aria-label={t('stageLayouts.name')}
-              value={layout.name}
-              maxLength={60}
-              onCommit={(name) => name.trim() && save({ ...layout, name: name.trim() })}
-              className="field !h-8 w-64"
-            />
-          )}
-          <span className="flex-1" />
-          <Button size="sm" variant="ghost" icon={<Copy size={14} />} onClick={duplicate}>
-            {preset ? t('stageLayouts.duplicateToEdit') : t('stageLayouts.duplicate')}
-          </Button>
-          {!preset && (
-            <IconButton
-              size="xs"
-              variant="danger"
-              aria-label={t('stageLayouts.delete', { name: layout.name })}
-              onClick={remove}
-            >
-              <Trash2 size={14} />
-            </IconButton>
-          )}
-          <Button
-            size="sm"
-            variant={layout.id === inUseId ? 'subtle' : 'primary'}
-            icon={<MonitorPlay size={14} />}
-            disabled={layout.id === inUseId}
-            onClick={() => void saveSettings({ stageLayoutId: layout.id })}
-          >
-            {layout.id === inUseId ? t('stageLayouts.onStage') : t('stageLayouts.use')}
-          </Button>
-        </div>
-        <div className="relative aspect-video w-full overflow-hidden rounded-[6px] bg-black shadow-[0_0_0_1px_var(--hairline-strong)]">
-          <StagePreview layout={layout} editing={!preset} />
-          {!preset && (
-            <EditBoxes
-              elements={layout.elements}
-              selected={selected}
-              onSelect={setSelected}
-              onChange={patchElement}
-              onRemove={removeElement}
-            />
-          )}
-        </div>
-        <Typography as="p" variant="caption">
-          {preset ? t('stageLayouts.presetHelp') : t('stageLayouts.editHelp')}
-        </Typography>
-      </div>
-
-      {/* Elements. */}
-      {!preset && (
+        {/* Layouts. */}
         <aside
-          aria-label={t('stageLayouts.elements')}
-          className="flex w-60 shrink-0 flex-col gap-3 overflow-y-auto border-l border-[var(--divider)] bg-[var(--surface-1)] p-3"
+          aria-label={t('stageLayouts.list')}
+          className="flex w-56 shrink-0 flex-col gap-2 border-r border-[var(--divider)] bg-[var(--surface-1)] p-3 @max-[760px]:w-full @max-[760px]:border-r-0 @max-[760px]:border-b"
         >
           <Typography as="h2" variant="overline" className="px-1">
-            {t('stageLayouts.add')}
+            {t('stageLayouts.list')}
           </Typography>
-          <div className="grid grid-cols-2 gap-1.5">
-            {KINDS.map((k) => (
-              <Button
-                key={k}
-                size="xs"
-                variant="subtle"
-                icon={<Plus size={12} />}
-                onClick={() => addElement(k)}
-                className="!justify-start"
-              >
-                {t(`stageLayouts.kinds.${k}`)}
-              </Button>
+          <ul className="flex flex-col gap-0.5 @max-[760px]:grid @max-[760px]:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] @max-[760px]:gap-1">
+            {all.map(({ l, preset: p }) => (
+              <LayoutRow
+                key={l.id}
+                layout={l}
+                preset={p}
+                selected={l.id === layout.id}
+                inUse={l.id === inUseId}
+                onPick={() => {
+                  setEditId(l.id);
+                  setSelected(null);
+                  setDraft(null);
+                }}
+              />
             ))}
-          </div>
-          {element ? (
-            <section className="flex flex-col gap-3 border-t border-[var(--divider)] pt-3">
-              <div className="flex items-center gap-2">
-                <Pencil size={13} className="text-[var(--text-3)]" />
-                <Typography size={13} weight="semibold" tone="primary" className="flex-1">
-                  {t(`stageLayouts.kinds.${element.kind}`)}
-                </Typography>
-                <IconButton
-                  size="2xs"
-                  variant="quiet"
-                  aria-label={t('stageLayouts.removeElement')}
-                  onClick={() => {
-                    save({
-                      ...layout,
-                      elements: layout.elements.filter((x) => x.id !== element.id),
-                    });
-                    setSelected(null);
-                  }}
-                >
-                  <X size={14} />
-                </IconButton>
-              </div>
-              {element.kind === 'text' && (
-                <DeferredInput
-                  aria-label={t('stageLayouts.textOf')}
-                  value={element.text ?? ''}
-                  maxLength={300}
-                  onCommit={(text) => patchElement(element.id, { text }, true)}
-                  className="field !h-8 w-full"
-                />
-              )}
-              {element.kind !== 'current' && element.kind !== 'next' && (
-                <label className="flex flex-col gap-1">
-                  <Typography size={12} tone="secondary">
-                    {t('stageLayouts.size')}
-                  </Typography>
-                  <Slider
-                    aria-label={t('stageLayouts.size')}
-                    min={0.4}
-                    max={4}
-                    step={0.1}
-                    value={element.size}
-                    format={(v) => `${Math.round(v * 100)}%`}
-                    onChange={(e) =>
-                      patchElement(element.id, { size: Number(e.currentTarget.value) }, false)
-                    }
-                    onPointerUp={(e) =>
-                      patchElement(element.id, { size: Number(e.currentTarget.value) }, true)
-                    }
-                    onKeyUp={(e) =>
-                      patchElement(element.id, { size: Number(e.currentTarget.value) }, true)
-                    }
-                  />
-                </label>
-              )}
-              <Typography as="p" size={11} tone="muted" tabular>
-                {t('stageLayouts.position', {
-                  x: Math.round(element.x),
-                  y: Math.round(element.y),
-                  w: Math.round(element.w),
-                  h: Math.round(element.h),
-                })}
-              </Typography>
-            </section>
-          ) : (
-            <Typography as="p" variant="caption" className="border-t border-[var(--divider)] pt-3">
-              {t('stageLayouts.selectHint')}
-            </Typography>
-          )}
+          </ul>
+          <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={duplicate}>
+            {t('stageLayouts.new')}
+          </Button>
+          <span className="flex-1 @max-[760px]:hidden" />
+          <SoonFeature id="stage-app" icon={<Smartphone size={14} />} />
         </aside>
-      )}
+
+        {/* The layout, live. */}
+        <div className="flex min-w-0 flex-1 flex-col gap-3 overflow-y-auto p-4 @max-[760px]:flex-none @max-[760px]:overflow-visible">
+          <div className="flex flex-wrap items-center gap-2">
+            {preset ? (
+              <Typography
+                size={15}
+                weight="semibold"
+                tone="primary"
+                className="flex items-center gap-2"
+              >
+                {layout.name}
+                <Typography size={11} tone="muted" weight="regular">
+                  {t('stageLayouts.presetHint')}
+                </Typography>
+              </Typography>
+            ) : (
+              <DeferredInput
+                aria-label={t('stageLayouts.name')}
+                value={layout.name}
+                maxLength={60}
+                onCommit={(name) => name.trim() && save({ ...layout, name: name.trim() })}
+                className="field !h-8 w-64"
+              />
+            )}
+            <span className="flex-1" />
+            <Button size="sm" variant="ghost" icon={<Copy size={14} />} onClick={duplicate}>
+              {preset ? t('stageLayouts.duplicateToEdit') : t('stageLayouts.duplicate')}
+            </Button>
+            {!preset && (
+              <IconButton
+                size="xs"
+                variant="danger"
+                aria-label={t('stageLayouts.delete', { name: layout.name })}
+                onClick={remove}
+              >
+                <Trash2 size={14} />
+              </IconButton>
+            )}
+            <Button
+              size="sm"
+              variant={layout.id === inUseId ? 'subtle' : 'primary'}
+              icon={<MonitorPlay size={14} />}
+              disabled={layout.id === inUseId}
+              onClick={() => void saveSettings({ stageLayoutId: layout.id })}
+            >
+              {layout.id === inUseId ? t('stageLayouts.onStage') : t('stageLayouts.use')}
+            </Button>
+          </div>
+          <div className="relative aspect-video w-full overflow-hidden rounded-[6px] bg-black shadow-[0_0_0_1px_var(--hairline-strong)]">
+            <StagePreview layout={layout} editing={!preset} />
+            {!preset && (
+              <EditBoxes
+                elements={layout.elements}
+                selected={selected}
+                onSelect={setSelected}
+                onChange={patchElement}
+                onRemove={removeElement}
+              />
+            )}
+          </div>
+          <Typography as="p" variant="caption">
+            {preset ? t('stageLayouts.presetHelp') : t('stageLayouts.editHelp')}
+          </Typography>
+        </div>
+
+        {/* Elements. */}
+        {!preset && (
+          <aside
+            aria-label={t('stageLayouts.elements')}
+            className="flex w-60 shrink-0 flex-col gap-3 overflow-y-auto border-l border-[var(--divider)] bg-[var(--surface-1)] p-3 @max-[760px]:w-full @max-[760px]:overflow-visible @max-[760px]:border-l-0 @max-[760px]:border-t"
+          >
+            <Typography as="h2" variant="overline" className="px-1">
+              {t('stageLayouts.add')}
+            </Typography>
+            <div className="grid grid-cols-2 gap-1.5">
+              {KINDS.map((k) => (
+                <Button
+                  key={k}
+                  size="xs"
+                  variant="subtle"
+                  icon={<Plus size={12} />}
+                  onClick={() => addElement(k)}
+                  className="!justify-start"
+                >
+                  {t(`stageLayouts.kinds.${k}`)}
+                </Button>
+              ))}
+            </div>
+            {element ? (
+              <section className="flex flex-col gap-3 border-t border-[var(--divider)] pt-3">
+                <div className="flex items-center gap-2">
+                  <Pencil size={13} className="text-[var(--text-3)]" />
+                  <Typography size={13} weight="semibold" tone="primary" className="flex-1">
+                    {t(`stageLayouts.kinds.${element.kind}`)}
+                  </Typography>
+                  <IconButton
+                    size="2xs"
+                    variant="quiet"
+                    aria-label={t('stageLayouts.removeElement')}
+                    onClick={() => {
+                      save({
+                        ...layout,
+                        elements: layout.elements.filter((x) => x.id !== element.id),
+                      });
+                      setSelected(null);
+                    }}
+                  >
+                    <X size={14} />
+                  </IconButton>
+                </div>
+                {element.kind === 'text' && (
+                  <DeferredInput
+                    aria-label={t('stageLayouts.textOf')}
+                    value={element.text ?? ''}
+                    maxLength={300}
+                    onCommit={(text) => patchElement(element.id, { text }, true)}
+                    className="field !h-8 w-full"
+                  />
+                )}
+                {element.kind !== 'current' && element.kind !== 'next' && (
+                  <label className="flex flex-col gap-1">
+                    <Typography size={12} tone="secondary">
+                      {t('stageLayouts.size')}
+                    </Typography>
+                    <Slider
+                      aria-label={t('stageLayouts.size')}
+                      min={0.4}
+                      max={4}
+                      step={0.1}
+                      value={element.size}
+                      format={(v) => `${Math.round(v * 100)}%`}
+                      onChange={(e) =>
+                        patchElement(element.id, { size: Number(e.currentTarget.value) }, false)
+                      }
+                      onPointerUp={(e) =>
+                        patchElement(element.id, { size: Number(e.currentTarget.value) }, true)
+                      }
+                      onKeyUp={(e) =>
+                        patchElement(element.id, { size: Number(e.currentTarget.value) }, true)
+                      }
+                    />
+                  </label>
+                )}
+                <Typography as="p" size={11} tone="muted" tabular>
+                  {t('stageLayouts.position', {
+                    x: Math.round(element.x),
+                    y: Math.round(element.y),
+                    w: Math.round(element.w),
+                    h: Math.round(element.h),
+                  })}
+                </Typography>
+              </section>
+            ) : (
+              <Typography
+                as="p"
+                variant="caption"
+                className="border-t border-[var(--divider)] pt-3"
+              >
+                {t('stageLayouts.selectHint')}
+              </Typography>
+            )}
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

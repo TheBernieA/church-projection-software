@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Button, IconButton, TallyTag, Typography } from '@lampstand/ui';
 import { useTranslation } from 'react-i18next';
-import { useInService, useSelectedItem } from '../../lib/hooks';
+import { useInService, useSelectedItem, useSize } from '../../lib/hooks';
 import { KindTile } from '../kindIcons';
 import { LoopToggle } from '../LoopToggle';
 import { useStore } from '../../lib/store';
@@ -27,11 +27,22 @@ import { WebEditor } from './WebEditor';
 import { usePaneSize } from '../shell/Splitter';
 import { type TextItem } from '../../types';
 
-/** Whether the Edit workspace's right-hand inspector is showing (remembered between sessions). */
-function useInspector() {
+/** Narrower than this, the inspector floats over the slide (see SlideInspector) instead of beside it. */
+const FLOAT_BELOW = 720;
+
+/**
+ * Whether the Edit workspace's right-hand inspector is showing. Beside the slide it's remembered
+ * between sessions; floating over it (a narrow workspace) it starts closed, so the slide shows.
+ */
+function useInspector(width: number) {
   const pane = usePaneSize('editInspector', 1, 0, 1);
-  const open = pane.size === 1;
-  return { open, toggle: () => pane.commit(open ? 0 : 1) };
+  const [floatOpen, setFloatOpen] = useState(false);
+  const floating = width > 0 && width < FLOAT_BELOW;
+  const open = floating ? floatOpen : pane.size === 1;
+  return {
+    open,
+    toggle: () => (floating ? setFloatOpen(!open) : pane.commit(open ? 0 : 1)),
+  };
 }
 
 /** Show/hide button for the inspector. */
@@ -86,9 +97,12 @@ function EditorHeader({
   const live = useStore((s) => s.liveCursor?.itemId === item.id && s.liveCursor.index === index);
   const title = item.kind === 'presentation' ? item.title : t('service.kind.announcements');
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--hairline)] bg-[var(--surface-1)] px-3">
-      <KindTile kind={item.kind} size={24} />
-      <div className="min-w-0">
+    // Narrow, it keeps what's needed: which slide, looping, Edit all text and the inspector.
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--hairline)] bg-[var(--surface-1)] px-3 @max-[560px]:gap-1.5 @max-[560px]:px-2">
+      <span className="contents @max-[560px]:hidden">
+        <KindTile kind={item.kind} size={24} />
+      </span>
+      <div className="min-w-0 @max-[560px]:hidden">
         <Typography as="h2" size={14} weight="semibold" tone="primary" truncate>
           {title}
         </Typography>
@@ -103,7 +117,13 @@ function EditorHeader({
         >
           <ChevronLeft size={15} />
         </IconButton>
-        <Typography size={12} weight="semibold" tone="secondary" tabular className="px-1.5">
+        <Typography
+          size={12}
+          weight="semibold"
+          tone="secondary"
+          tabular
+          className="whitespace-nowrap px-1.5"
+        >
           {t('canvas.slideOf', { n: index + 1, total })}
         </Typography>
         <IconButton
@@ -128,9 +148,10 @@ function EditorHeader({
         variant="ghost"
         icon={<Rows3 size={14} />}
         title={t('canvas.reflowHint')}
+        aria-label={t('canvas.reflow')}
         onClick={() => useStore.setState({ mode: 'reflow' })}
       >
-        {t('canvas.reflow')}
+        <span className="@max-[560px]:hidden">{t('canvas.reflow')}</span>
       </Button>
       <InspectorToggle {...inspector} />
     </header>
@@ -143,7 +164,8 @@ function EditorHeader({
  */
 function CanvasEditor({ item }: { item: TextItem }) {
   const { t } = useTranslation();
-  const inspector = useInspector();
+  const [root, size] = useSize();
+  const inspector = useInspector(size.width);
   const cursor = useStore((s) => s.editCursor);
   const index = cursor?.itemId === item.id ? Math.min(cursor.index, item.slides.length - 1) : 0;
   const [stage, width] = useFit(28);
@@ -165,10 +187,10 @@ function CanvasEditor({ item }: { item: TextItem }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [item, index]);
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="flex min-w-0 flex-1 flex-col">
+    <div ref={root} className="@container relative flex min-h-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <EditorHeader item={item} index={index} inspector={inspector} />
-        <div className="flex shrink-0 justify-center bg-[var(--surface-0)] pt-3">
+        <div className="flex shrink-0 justify-center-safe overflow-x-auto bg-[var(--surface-0)] px-2 pt-3">
           <CanvasToolbar item={item} index={index} />
         </div>
         {/* The stage: a quiet dotted ground, the slide centred on it with a soft shadow. */}
@@ -201,10 +223,26 @@ function CanvasEditor({ item }: { item: TextItem }) {
   );
 }
 
+/** A countdown: its slides, with the inspector beside (or over them, when narrow). */
+function CountdownEditor() {
+  const [root, size] = useSize();
+  const inspector = useInspector(size.width);
+  return (
+    <div ref={root} className="@container relative flex min-h-0 flex-1">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <SlideGrid purpose="edit" />
+        <div className="absolute right-2 top-2 z-10">
+          <InspectorToggle {...inspector} />
+        </div>
+      </div>
+      {inspector.open && <SlideInspector />}
+    </div>
+  );
+}
+
 /** Edit workspace: the selected item's editor, in place. */
 export function EditMode() {
   const { t } = useTranslation();
-  const inspector = useInspector();
   const item = useSelectedItem();
   const inService = useInService(item);
   if (!item)
@@ -219,18 +257,7 @@ export function EditMode() {
   if (item.kind === 'presentation' || item.kind === 'announcements' || item.kind === 'countdown') {
     if (!inService)
       return <EmptyState icon={<PencilOff size={28} />} title={t('modes.addToEdit')} />;
-    if (item.kind === 'countdown')
-      return (
-        <div className="flex min-h-0 flex-1">
-          <div className="relative flex min-w-0 flex-1 flex-col">
-            <SlideGrid purpose="edit" />
-            <div className="absolute right-2 top-2 z-10">
-              <InspectorToggle {...inspector} />
-            </div>
-          </div>
-          {inspector.open && <SlideInspector />}
-        </div>
-      );
+    if (item.kind === 'countdown') return <CountdownEditor />;
     return <CanvasEditor item={item} />;
   }
   return (

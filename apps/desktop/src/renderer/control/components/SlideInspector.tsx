@@ -58,7 +58,9 @@ function TextOrObjectInspector({ item }: { item: TextItem }) {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <aside className="flex w-[300px] shrink-0 flex-col overflow-y-auto bg-[var(--surface-0)]/35 shadow-[-1px_0_0_var(--hairline)]">
+    // Beside the slide; in a narrow workspace it floats over the right of it instead, under the
+    // header (whose button closes it).
+    <aside className="flex w-[300px] max-w-[85%] shrink-0 flex-col overflow-y-auto bg-[var(--surface-0)]/35 shadow-[-1px_0_0_var(--hairline)] @max-[720px]:absolute @max-[720px]:top-12 @max-[720px]:bottom-0 @max-[720px]:right-0 @max-[720px]:z-20 @max-[720px]:bg-[var(--surface-1)] @max-[720px]:shadow-[-1px_0_0_var(--hairline),-16px_0_40px_rgba(0,0,0,0.45)]">
       {children}
     </aside>
   );

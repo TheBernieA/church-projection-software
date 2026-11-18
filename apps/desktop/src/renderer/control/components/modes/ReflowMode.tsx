@@ -130,7 +130,7 @@ function ReflowEditor({
 
   const tool = 'shrink-0';
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="@container flex min-h-0 flex-1 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-4">
         <Rows3 size={16} className="text-[var(--text-3)]" />
         <Typography as="h2" variant="title" truncate className="min-w-0">
@@ -184,7 +184,8 @@ function ReflowEditor({
           {t('reflow.readOnly')}
         </Typography>
       )}
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
+      {/* Words beside their slides; in a narrow workspace, the slides go under the words. */}
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(240px,340px)] @max-[640px]:grid-cols-1 @max-[640px]:grid-rows-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="flex min-h-0 flex-col gap-2 p-4">
           {/* Tools. */}
           <div
@@ -288,7 +289,7 @@ function ReflowEditor({
         {/* The real slides. */}
         <ol
           aria-label={t('reflow.preview')}
-          className="min-h-0 space-y-2 overflow-y-auto border-l border-[var(--hairline)] p-3"
+          className="min-h-0 space-y-2 overflow-y-auto border-l border-[var(--hairline)] p-3 @max-[640px]:border-t @max-[640px]:border-l-0"
         >
           {built.slides.map((s, i) => {
             const block = built.blockOf[i] ?? 0;
