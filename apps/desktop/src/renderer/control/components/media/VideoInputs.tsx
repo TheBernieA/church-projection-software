@@ -31,7 +31,8 @@ import {
 import { openDialog, useStore } from '../../lib/store';
 import { CameraAccess } from './CameraAccess';
 import { CameraSwitcher } from './CameraSwitcher';
-import { SwitcherBar } from './SwitcherBar';
+import { SWITCHER_FIXED_WIDTH, SwitcherBar } from './SwitcherBar';
+import { useSize } from '../../lib/hooks';
 import { clickSource, take } from '../../lib/switcher';
 import { EmptyState } from '../EmptyState';
 import { REVEAL } from '../cards';
@@ -165,7 +166,16 @@ function CameraMenu({
  * click puts it on screen (click again takes it off). Its "…" holds its settings, which apply
  * straight away when it's live.
  */
-function InputTile({ device, n }: { device: InputDevice; n: number }) {
+function InputTile({
+  device,
+  n,
+  width,
+}: {
+  device: InputDevice;
+  n: number;
+  /** A fixed width (px), in the camera row under the switcher; else the grid sizes it. */
+  width?: number;
+}) {
   const { t } = useTranslation();
   const stream = useDeviceStream('videoinput', device.deviceId);
   const video = useRef<HTMLVideoElement>(null);
@@ -181,7 +191,10 @@ function InputTile({ device, n }: { device: InputDevice; n: number }) {
   }, [stream]);
   const change = (patch: Partial<CameraSettings>): void => updateCamera(device, patch);
   return (
-    <li className="group relative">
+    <li
+      className={`group relative ${width ? 'shrink-0' : ''}`}
+      style={width ? { width } : undefined}
+    >
       <Button
         variant="bare"
         aria-label={
@@ -307,6 +320,46 @@ function InputTile({ device, n }: { device: InputDevice; n: number }) {
   );
 }
 
+const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
+/** The switcher strip's padding and border (px). */
+const STRIP_CHROME = 25;
+/** Under the strip: the hint, the list's padding and a camera's name (px). */
+const BELOW_CHROME = 30 + 32 + 24;
+/** The strip is never shorter than its settings column (px). */
+const STRIP_MIN = 112;
+/** The cameras' column in the strip: its padding, divider and gap (px). */
+const INLINE_SOURCES_CHROME = 29;
+/** A camera's name under its picture (px). */
+const NAME_HEIGHT = 24;
+
+interface SwitcherFit {
+  /** Cameras in the strip, before Preview (the pane is too short to stack them underneath). */
+  inline: boolean;
+  monitor: number;
+  tile: number;
+}
+
+/**
+ * How big the switcher's monitors and the cameras can be in a pane this size, so all of it fits
+ * without scrolling. With room, the cameras sit in a row underneath (the monitors take a little
+ * over half the height); in a short pane they move into the strip, before Preview. The monitors
+ * never get so wide that the strip wraps.
+ */
+function fitSwitcher(width: number, height: number): SwitcherFit {
+  const stackedRoom = height - STRIP_CHROME - BELOW_CHROME;
+  if (stackedRoom - Math.max(STRIP_MIN, 90) >= 80) {
+    const byWidth = (((width - SWITCHER_FIXED_WIDTH) / 2) * 9) / 16;
+    const monitor = Math.round(clamp(Math.min(stackedRoom * 0.55, byWidth), 90, 220));
+    const tile = Math.round(clamp(stackedRoom - Math.max(STRIP_MIN, monitor), 80, 200));
+    return { inline: false, monitor, tile };
+  }
+  // The first camera and the two monitors share the width evenly (more cameras scroll).
+  const room = Math.max(STRIP_MIN, height - STRIP_CHROME);
+  const byWidth = ((width - SWITCHER_FIXED_WIDTH - INLINE_SOURCES_CHROME) / 3) * (9 / 16);
+  const size = Math.round(clamp(Math.min(byWidth, room - NAME_HEIGHT), 40, 220));
+  return { inline: true, monitor: size, tile: size };
+}
+
 /**
  * Video inputs (media bin › Sources): every camera and capture card the computer sees, live.
  * Click one to put it on screen full size, under the slide's words (for camera shots with
@@ -322,6 +375,25 @@ export function VideoInputs() {
   // The switcher (Preview, Program, Cut, Auto) folds away so the cameras get the room.
   const switcher = usePaneSize('inputSwitcher', 1, 0, 1);
   const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
+  const [body, size] = useSize();
+  const shown = devices && devices.length > 0 && switcher.size === 1 ? devices : null;
+  const fit = fitSwitcher(size.width, size.height);
+  const hint = previewFirst ? t('inputs.hintPreview') : t('inputs.hintProgram');
+  // With the switcher up: one row of cameras, as big as the space left allows (in the strip
+  // itself when the pane is short).
+  const cameraRow = shown && (
+    <ul
+      aria-label={t('inputs.cameras')}
+      title={fit.inline ? hint : undefined}
+      // Room for one whole camera (and its tally ring); more scroll sideways.
+      className="flex gap-3 overflow-x-auto p-1"
+      style={{ minWidth: (fit.tile * 16) / 9 + 8, maxWidth: '100%' }}
+    >
+      {shown.map((d, i) => (
+        <InputTile key={d.deviceId} device={d} n={i + 1} width={(fit.tile * 16) / 9} />
+      ))}
+    </ul>
+  );
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
@@ -375,35 +447,49 @@ export function VideoInputs() {
           <Settings2 size={14} />
         </IconButton>
       </div>
-      {devices && devices.length > 0 && switcher.size === 1 && <SwitcherBar devices={devices} />}
-      <CameraAccess className="mx-4 mt-3" />
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        {devices && devices.length === 0 ? (
-          <EmptyState
-            icon={<Video size={26} />}
-            title={hiddenCount ? t('inputs.allHidden') : t('inputs.noCameras')}
+      <div ref={body} className="flex min-h-0 flex-1 flex-col">
+        {shown && (
+          <SwitcherBar
+            devices={shown}
+            monitorHeight={fit.monitor}
+            sources={fit.inline ? cameraRow : undefined}
           />
-        ) : (
-          <>
-            <Typography
-              as="p"
-              size={11}
-              tone="muted"
-              leading="snug"
-              className="mb-3"
-              title={t('inputs.videoHint')}
-            >
-              {previewFirst ? t('inputs.hintPreview') : t('inputs.hintProgram')}
-            </Typography>
-            <ul
-              className="grid gap-x-3 gap-y-4"
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
-            >
-              {(devices ?? []).map((d, i) => (
-                <InputTile key={d.deviceId} device={d} n={i + 1} />
-              ))}
-            </ul>
-          </>
+        )}
+        <CameraAccess className="mx-4 mt-3" />
+        {!(shown && fit.inline) && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {devices && devices.length === 0 ? (
+              <EmptyState
+                icon={<Video size={26} />}
+                title={hiddenCount ? t('inputs.allHidden') : t('inputs.noCameras')}
+              />
+            ) : (
+              <>
+                <Typography
+                  as="p"
+                  size={11}
+                  tone="muted"
+                  leading="snug"
+                  className="mb-3"
+                  title={t('inputs.videoHint')}
+                >
+                  {hint}
+                </Typography>
+                {shown ? (
+                  cameraRow
+                ) : (
+                  <ul
+                    className="grid gap-x-3 gap-y-4"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
+                  >
+                    {(devices ?? []).map((d, i) => (
+                      <InputTile key={d.deviceId} device={d} n={i + 1} />
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
         )}
       </div>
     </div>

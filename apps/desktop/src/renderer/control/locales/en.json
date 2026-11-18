@@ -1492,6 +1492,7 @@
     "switcher": "Switcher",
     "switcherLabel": "Camera on screen",
     "onScreen": "On screen",
+    "cameras": "Cameras",
     "lookAgainHelp": "Look again for cameras and capture cards (after plugging one in)",
     "hintPreview": "Click a camera to put it on Preview, then Cut or Auto. Double-click takes it straight to the screen; keys 1–9 preview, Shift+1–9 take.",
     "hintProgram": "Click a camera to put it on the screen; click it again to take it off.",

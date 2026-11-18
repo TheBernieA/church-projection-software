@@ -12,6 +12,11 @@ import { Select } from '../Select';
 const KINDS: InputTransition['kind'][] = ['cut', 'fade', 'dip', 'wipe'];
 const DURATIONS = [300, 600, 1000, 1500, 2000];
 const OFF = 'off';
+/** Cut and Auto stay this tall (px) however small the monitors get. */
+const MIN_TAKE_HEIGHT = 76;
+/** Width (px) of everything in the strip but the two monitors: the take column, the settings
+ *  column, the gaps and padding (the monitors share what's left). */
+export const SWITCHER_FIXED_WIDTH = 124 + 236 + 2 * 12 + 20 + 32;
 
 /**
  * One bus monitor (Preview or Program): the camera layer alone, with its tally colour. The
@@ -23,6 +28,7 @@ function BusMonitor({
   label,
   name,
   empty,
+  height,
 }: {
   scene: Scene;
   tone: 'preview' | 'program';
@@ -30,10 +36,12 @@ function BusMonitor({
   name: string | null;
   /** Shown on the black picture when nothing is on this bus. */
   empty: string;
+  /** Picture height (px): the monitors scale with the room the pane has. */
+  height: number;
 }) {
   const color = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <figure className="min-w-0 max-w-[340px] flex-1 self-center">
+    <figure className="shrink-0 self-center" style={{ width: (height * 16) / 9 }}>
       <div
         className="relative overflow-hidden rounded-[6px] bg-black"
         style={{ boxShadow: `0 0 0 2px ${color}` }}
@@ -60,7 +68,7 @@ function BusMonitor({
           >
             {name}
           </Typography>
-        ) : (
+        ) : height < 90 ? null : (
           <Typography
             as="figcaption"
             size={11}
@@ -134,7 +142,17 @@ function TBar({ disabled }: { disabled: boolean }) {
  * The switcher's control strip (Media › Video input): Preview and Program monitors, Cut and
  * Auto, the transition and its length, the T-bar, and picture-in-picture.
  */
-export function SwitcherBar({ devices }: { devices: InputDevice[] }) {
+export function SwitcherBar({
+  devices,
+  monitorHeight,
+  sources,
+}: {
+  devices: InputDevice[];
+  /** How tall the Preview and Program pictures are (px), from the space available. */
+  monitorHeight: number;
+  /** The cameras, at the start of the strip (a short pane has no room for them underneath). */
+  sources?: React.ReactNode;
+}) {
   const { t } = useTranslation();
   const settings = useStore((s) => s.settings?.switcher);
   const preview = useStore((s) => s.live?.switcher.preview ?? null);
@@ -153,16 +171,25 @@ export function SwitcherBar({ devices }: { devices: InputDevice[] }) {
       aria-label={t('switcher.title')}
       className="flex shrink-0 flex-wrap items-stretch gap-x-5 gap-y-3 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
     >
+      {sources && (
+        <div className="flex min-w-0 flex-1 items-center border-r border-[var(--divider)] pr-5">
+          {sources}
+        </div>
+      )}
       {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
-      <div className="flex min-w-0 flex-[1_1_480px] items-stretch gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <BusMonitor
           scene={previewScene}
           tone="preview"
           label={t('switcher.preview')}
           name={preview?.label ?? null}
           empty={t('switcher.previewEmpty')}
+          height={monitorHeight}
         />
-        <div className="flex min-h-[96px] w-[124px] shrink-0 gap-2 self-stretch py-px">
+        <div
+          className="flex w-[124px] shrink-0 gap-2"
+          style={{ height: Math.max(MIN_TAKE_HEIGHT, monitorHeight) }}
+        >
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <Button
               size="sm"
@@ -195,6 +222,7 @@ export function SwitcherBar({ devices }: { devices: InputDevice[] }) {
           label={t('switcher.program')}
           name={input?.label ?? null}
           empty={t('switcher.programEmpty')}
+          height={monitorHeight}
         />
       </div>
       {/* How Auto and the T-bar mix, and the second camera in a corner. */}

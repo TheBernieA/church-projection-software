@@ -168,6 +168,30 @@ export function useWidth<T extends HTMLElement = HTMLDivElement>(): [RefObject<T
   return [ref, width];
 }
 
+/** An element's size, kept up to date as it is resized (0 × 0 until it is first measured). */
+export function useSize<T extends HTMLElement = HTMLDivElement>(): [
+  RefObject<T | null>,
+  { width: number; height: number },
+] {
+  const ref = useRef<T>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = (): void =>
+      setSize((s) =>
+        s.width === el.clientWidth && s.height === el.clientHeight
+          ? s
+          : { width: el.clientWidth, height: el.clientHeight },
+      );
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, size];
+}
+
 /** What of a slide's words the room sees (its key and timings aside). */
 const shown = (c: ContentLayer | null | undefined): string =>
   c
