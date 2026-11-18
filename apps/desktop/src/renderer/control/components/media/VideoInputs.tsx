@@ -31,7 +31,13 @@ import {
 import { openDialog, useStore } from '../../lib/store';
 import { CameraAccess } from './CameraAccess';
 import { CameraSwitcher } from './CameraSwitcher';
-import { SWITCHER_FIXED_WIDTH, SWITCHER_MIN_HEIGHT, SwitcherBar } from './SwitcherBar';
+import {
+  SWITCHER_FIXED_WIDTH,
+  SWITCHER_MIN_HEIGHT,
+  SWITCHER_STACKED_EXTRA,
+  SWITCHER_STACKED_WIDTH,
+  SwitcherBar,
+} from './SwitcherBar';
 import { useSize } from '../../lib/hooks';
 import { clickSource, take } from '../../lib/switcher';
 import { EmptyState } from '../EmptyState';
@@ -339,7 +345,12 @@ interface SwitcherFit {
   tile: number;
   /** A short pane: no hint line or names under the cameras. */
   dense: boolean;
+  /** A narrow pane: the switcher's settings go under its monitors, so the monitors keep room. */
+  stacked: boolean;
 }
+
+/** Narrower monitors than this (px) side by side, and the settings move under them instead. */
+const MIN_MONITOR_WIDTH = 150;
 
 /**
  * How big the switcher's monitors and the cameras under them can be in a pane this size, so all
@@ -348,15 +359,18 @@ interface SwitcherFit {
  * monitors and never smaller than MIN_TILE.
  */
 function fitSwitcher(width: number, height: number): SwitcherFit {
-  const dense = height - STRIP_CHROME - BELOW_CHROME < SWITCHER_MIN_HEIGHT + 90;
-  const room = height - STRIP_CHROME - (dense ? BELOW_CHROME_DENSE : BELOW_CHROME);
-  const byWidth = (((width - SWITCHER_FIXED_WIDTH) / 2) * 9) / 16;
+  const stacked = width > 0 && (width - SWITCHER_FIXED_WIDTH) / 2 < MIN_MONITOR_WIDTH;
+  const chrome = STRIP_CHROME + (stacked ? SWITCHER_STACKED_EXTRA : 0);
+  const dense = height - chrome - BELOW_CHROME < SWITCHER_MIN_HEIGHT + 90;
+  const room = height - chrome - (dense ? BELOW_CHROME_DENSE : BELOW_CHROME);
+  const byWidth =
+    (((width - (stacked ? SWITCHER_STACKED_WIDTH : SWITCHER_FIXED_WIDTH)) / 2) * 9) / 16;
   const wanted = Math.min(room * 0.55, byWidth, 220);
   const monitor = Math.round(Math.max(54, Math.min(wanted, room - MIN_TILE)));
   const tile = Math.round(
     clamp(Math.min(room - Math.max(SWITCHER_MIN_HEIGHT, monitor), monitor), MIN_TILE, 200),
   );
-  return { monitor, tile, dense };
+  return { monitor, tile, dense, stacked };
 }
 
 /**
@@ -450,11 +464,12 @@ export function VideoInputs() {
           <Settings2 size={14} />
         </IconButton>
       </div>
-      <div ref={body} className="flex min-h-0 flex-1 flex-col">
-        {shown && <SwitcherBar devices={shown} monitorHeight={fit.monitor} />}
+      {/* Sized to fit; in a pane too short even for that, it scrolls rather than hide the cameras. */}
+      <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {shown && <SwitcherBar devices={shown} monitorHeight={fit.monitor} stacked={fit.stacked} />}
         <CameraAccess className="mx-4 mt-3" />
         <div
-          className={`min-h-0 flex-1 overflow-y-auto ${shown && fit.dense ? 'px-4 py-2' : 'p-4'}`}
+          className={`flex-1 overflow-y-auto ${shown ? 'min-h-16' : 'min-h-0'} ${shown && fit.dense ? 'px-4 py-2' : 'p-4'}`}
         >
           {devices && devices.length === 0 ? (
             <EmptyState

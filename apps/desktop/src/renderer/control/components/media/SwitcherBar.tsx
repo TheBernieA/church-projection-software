@@ -17,6 +17,10 @@ const MIN_TAKE_HEIGHT = 72;
 /** Width (px) of everything in the strip but the two monitors: the take column, the settings
  *  column, the gaps and padding (the monitors share what's left). */
 export const SWITCHER_FIXED_WIDTH = 124 + 300 + 2 * 12 + 20 + 32;
+/** The same with the settings on their own row under the monitors (a narrow pane). */
+export const SWITCHER_STACKED_WIDTH = 124 + 2 * 12 + 32;
+/** How much taller the strip is with the settings on their own row: the row and its gap (px). */
+export const SWITCHER_STACKED_EXTRA = 32 + 12;
 /** The strip is never shorter than its settings column (px). */
 export const SWITCHER_MIN_HEIGHT = 72;
 
@@ -152,10 +156,13 @@ function TBar({ disabled }: { disabled: boolean }) {
 export function SwitcherBar({
   devices,
   monitorHeight,
+  stacked,
 }: {
   devices: InputDevice[];
   /** How tall the Preview and Program pictures are (px), from the space available. */
   monitorHeight: number;
+  /** A narrow pane: the transition settings go on a row of their own, under the monitors. */
+  stacked: boolean;
 }) {
   const { t } = useTranslation();
   const settings = useStore((s) => s.settings?.switcher);
@@ -168,12 +175,36 @@ export function SwitcherBar({
   const setTransition = (patch: Partial<InputTransition>): void =>
     void saveSettings({ switcher: { ...settings, transition: { ...transition, ...patch } } });
   const canTake = !!preview && preview.deviceId !== input?.deviceId;
+  const duration = (
+    <Select<string>
+      size="sm"
+      aria-label={t('switcher.duration')}
+      value={String(transition.durationMs)}
+      onChange={(v) => setTransition({ durationMs: Number(v) })}
+      options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
+        value: String(ms),
+        label: t('switcher.seconds', { s: ms / 1000 }),
+      }))}
+    />
+  );
+  const pipCamera = (
+    <Select<string>
+      size="sm"
+      aria-label={t('switcher.pipLabel')}
+      value={pip?.deviceId ?? OFF}
+      onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
+      options={[
+        { value: OFF, label: t('switcher.pipOff') },
+        ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
+      ]}
+    />
+  );
   const programScene: Scene = { ...EMPTY_SCENE, input, inputNext, pip };
   const previewScene: Scene = { ...EMPTY_SCENE, input: preview };
   return (
     <section
       aria-label={t('switcher.title')}
-      className="flex shrink-0 items-stretch gap-5 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
+      className={`flex shrink-0 items-stretch border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3 ${stacked ? 'flex-col gap-3' : 'gap-5'}`}
     >
       {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -225,41 +256,34 @@ export function SwitcherBar({
         />
       </div>
       {/* How Auto and the T-bar mix, and the second camera in a corner. */}
-      <div className="flex w-[300px] shrink-0 flex-col justify-center gap-2">
-        <Segmented<InputTransition['kind']>
-          label={t('switcher.transition')}
-          value={transition.kind}
-          onChange={(kind) => setTransition({ kind })}
-          options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
-        />
-        {/* Two rows, so the strip (and the monitors) can be short in a short pane. */}
-        <div className="flex gap-3">
-          <Row label={t('switcher.duration')}>
-            <Select<string>
-              size="sm"
-              aria-label={t('switcher.duration')}
-              value={String(transition.durationMs)}
-              onChange={(v) => setTransition({ durationMs: Number(v) })}
-              options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
-                value: String(ms),
-                label: t('switcher.seconds', { s: ms / 1000 }),
-              }))}
-            />
-          </Row>
-          <Row label={t('switcher.pip')}>
-            <Select<string>
-              size="sm"
-              aria-label={t('switcher.pipLabel')}
-              value={pip?.deviceId ?? OFF}
-              onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
-              options={[
-                { value: OFF, label: t('switcher.pipOff') },
-                ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
-              ]}
-            />
-          </Row>
+      {stacked ? (
+        // A narrow pane: one row of three under the monitors, so the cameras keep their room.
+        <div className="grid grid-cols-3 gap-2">
+          <Select<InputTransition['kind']>
+            size="sm"
+            aria-label={t('switcher.transition')}
+            value={transition.kind}
+            onChange={(kind) => setTransition({ kind })}
+            options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
+          />
+          {duration}
+          {pipCamera}
         </div>
-      </div>
+      ) : (
+        <div className="flex w-[300px] shrink-0 flex-col justify-center gap-2">
+          <Segmented<InputTransition['kind']>
+            label={t('switcher.transition')}
+            value={transition.kind}
+            onChange={(kind) => setTransition({ kind })}
+            options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
+          />
+          {/* Two rows, so the strip (and the monitors) can be short in a short pane. */}
+          <div className="flex gap-3">
+            <Row label={t('switcher.duration')}>{duration}</Row>
+            <Row label={t('switcher.pip')}>{pipCamera}</Row>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
