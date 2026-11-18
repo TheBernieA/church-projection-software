@@ -196,15 +196,13 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
             {(preview || running) && <StreamMeterOverlay />}
           </div>
           {s && <SilentNotice s={s} />}
+          {/* Pinned with the picture (the options scroll beneath): scenes, then the sound. */}
+          <ScenePreviews st={st} streaming={!!s?.streaming} />
+          <StreamSound />
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* First under the picture: the scenes, then the stream's sound and the mics. */}
-        <div className="flex flex-col gap-3 px-4 pb-3.5">
-          <ScenePreviews st={st} streaming={!!s?.streaming} />
-          <StreamSound />
-        </div>
         {/* What the stream shows comes first: it is what changes most during a service. */}
         <PicturePanel st={st} />
         <SoundPanel />

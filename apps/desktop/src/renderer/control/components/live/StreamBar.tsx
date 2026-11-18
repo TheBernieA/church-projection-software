@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff, X } from 'lucide-react';
+import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EMPTY_SCENE,
@@ -302,7 +302,8 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
           <div
             role="group"
             aria-label={t('console.scene')}
-            className="grid gap-x-2 gap-y-2.5"
+            // Never so tall that the options below have no room: the tiles scroll instead.
+            className="grid max-h-[188px] gap-x-2 gap-y-2.5 overflow-y-auto pr-0.5"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
           >
             {shown.map((c) => {
@@ -347,7 +348,10 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
   );
 }
 
-/** One mic or desk feed, at hand while live: on the stream or not, its level, its meter, mute. */
+/**
+ * One mic or desk feed, compact: on the stream or not, which input it is (with its meter, read
+ * straight from the mic), its level and mute.
+ */
 function InputStrip({
   c,
   choices,
@@ -359,7 +363,7 @@ function InputStrip({
   const { t } = useTranslation();
   const heard = c.stream && !c.mute;
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-1.5">
       <IconButton
         size="xs"
         aria-label={t('mixer.streamOf', { name: c.name })}
@@ -371,7 +375,7 @@ function InputStrip({
       >
         {c.stream ? <Mic size={14} /> : <MicOff size={14} />}
       </IconButton>
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex w-32 min-w-0 shrink flex-col gap-1">
         <Select<string>
           size="sm"
           aria-label={t('console.micOf', { name: c.name })}
@@ -393,21 +397,21 @@ function InputStrip({
           ]}
           className={heard ? '' : 'opacity-70'}
         />
-        {/* The same meter as Audio inputs: straight from the mic, so it shows the mic working
-            whether or not the stream is running. */}
+        {/* The same meter as Audio inputs: straight from the mic, live or not. */}
         <LevelMeter device={{ deviceId: c.deviceId, label: c.name }} />
       </div>
       <Slider
         aria-label={t('mixer.levelOf', { name: c.name })}
+        title={formatDb(c.gainDb)}
         min={MIN_DB}
         max={MAX_DB}
         step={0.5}
         value={c.gainDb}
-        format={formatDb}
+        format={null}
         onChange={(e) =>
           mixerLive({ action: 'channel', id: c.id, patch: { gainDb: Number(e.target.value) } })
         }
-        className="w-24 shrink-0"
+        className="w-16 shrink-0"
       />
       <IconButton
         size="xs"
@@ -418,35 +422,44 @@ function InputStrip({
       >
         <VolumeX size={13} />
       </IconButton>
-      <IconButton
-        size="xs"
-        aria-label={t('console.removeMic', { name: c.name })}
-        title={t('console.removeMic', { name: c.name })}
-        onClick={() => void mixerCmd({ action: 'remove', id: c.id })}
-      >
-        <X size={13} />
-      </IconButton>
     </div>
   );
 }
 
-const ADD = '';
+/** The computer's default microphone, else the first there is. */
+const defaultMic = <T extends { deviceId: string }>(devices: T[]): T | undefined =>
+  devices.find((d) => d.deviceId === 'default') ?? devices[0];
 
 /**
- * The stream's sound at hand, under its picture: its level and mute, then every mic and desk
- * feed with its own switch, level, meter and mute, and a way to add another.
+ * The stream's sound at hand, on one line under its picture: its level and mute, and the mic
+ * (switch it to another input, its level, its meter, mute). There's always a mic: with none on
+ * the mixer, the computer's default one is added (on the stream). More mics, from the Mixer,
+ * get a line each.
  */
 export function StreamSound() {
   const { t } = useTranslation();
   const mixer = useStore((s) => s.live?.mixer ?? null);
   const devices = useInputDevices('audioinput');
+  const inputs = useMemo(() => mixer?.channels.filter((c) => c.kind === 'input') ?? [], [mixer]);
+  const adding = useRef(false);
+  useEffect(() => {
+    if (!mixer || inputs.length || adding.current || !devices?.length) return;
+    const d = defaultMic(devices);
+    if (!d) return;
+    adding.current = true;
+    void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label }).finally(() => {
+      adding.current = false;
+    });
+  }, [mixer, inputs.length, devices]);
   if (!mixer) return null;
   const bus = mixer.stream;
-  const inputs = mixer.channels.filter((c) => c.kind === 'input');
-  const spare = (devices ?? []).filter((d) => !inputs.some((c) => c.deviceId === d.deviceId));
+  const choicesFor = (c: MixerChannel) =>
+    (devices ?? []).filter(
+      (d) => d.deviceId === c.deviceId || !inputs.some((o) => o.deviceId === d.deviceId),
+    );
+  const [first, ...more] = inputs;
   return (
     <div className="flex flex-col gap-2">
-      {/* The stream's level, and bringing in a mic, on one line. */}
       <div className="flex items-center gap-2">
         <IconButton
           size="xs"
@@ -462,41 +475,28 @@ export function StreamSound() {
         </IconButton>
         <Slider
           aria-label={t('mixer.levelOf', { name: t('mixer.bus.stream') })}
-          title={t('console.streamLevel')}
+          title={`${t('console.streamLevel')}: ${formatDb(bus.gainDb)}`}
           min={MIN_DB}
           max={MAX_DB}
           step={0.5}
           value={bus.gainDb}
-          format={formatDb}
+          format={null}
           onChange={(e) =>
             mixerLive({ action: 'bus', bus: 'stream', patch: { gainDb: Number(e.target.value) } })
           }
-          className="min-w-0 flex-1"
+          className="min-w-[72px] flex-1"
         />
-        {spare.length > 0 && (
-          <div className="w-40 shrink-0">
-            <Select<string>
-              size="sm"
-              aria-label={t('console.addMic')}
-              placeholder={t('console.addMic')}
-              value={ADD}
-              onChange={(id) => {
-                const d = spare.find((x) => x.deviceId === id);
-                if (d) void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label });
-              }}
-              options={spare.map((d) => ({ value: d.deviceId, label: d.label }))}
-            />
-          </div>
+        {first && (
+          <>
+            <span aria-hidden className="h-6 w-px shrink-0 bg-[var(--hairline)]" />
+            <InputStrip c={first} choices={choicesFor(first)} />
+          </>
         )}
       </div>
-      {inputs.map((c) => (
-        <InputStrip
-          key={c.id}
-          c={c}
-          choices={(devices ?? []).filter(
-            (d) => d.deviceId === c.deviceId || !inputs.some((o) => o.deviceId === d.deviceId),
-          )}
-        />
+      {more.map((c) => (
+        <div key={c.id} className="flex justify-end">
+          <InputStrip c={c} choices={choicesFor(c)} />
+        </div>
       ))}
     </div>
   );

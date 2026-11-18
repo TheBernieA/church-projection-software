@@ -784,7 +784,7 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a set of small live previews. Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera with the words and on its own, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes: the speaker button mutes the stream and the slider sets its level. Add a mic… on the same line brings in a mic or the desk.\n6. Each mic and desk then has its own line: the mic button puts it on the stream (red) or takes it off, the box under its name switches it to another input, the slider sets its level, the meter shows what the stream hears from it, the speaker mutes it and × removes it.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a set of small live previews. Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera with the words and on its own, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (its meter underneath moves when someone speaks, live or not), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
@@ -927,7 +927,7 @@
         },
         "deskSound": {
           "q": "Bring the sound desk into Lampstand",
-          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. In the Live console, choose it in Add a mic… under the scenes (or open Media › Sources › Audio input and click Stream on it).\n4. Check its meter, and the L/R meter on the stream picture, move when someone speaks.\nLeave Room off for mics and the desk: the desk already puts them on the room’s speakers, and playing them twice echoes."
+          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. In the Live console, pick it in the mic box under the scenes (or open Media › Sources › Audio input and click Stream on it).\n4. Check its meter, and the L/R meter on the stream picture, move when someone speaks.\nLeave Room off for mics and the desk: the desk already puts them on the room’s speakers, and playing them twice echoes."
         },
         "midi": {
           "q": "Run Lampstand from a desk or MIDI controller",
@@ -2225,7 +2225,6 @@
     "streamLevel": "Stream level",
     "micOnStream": "On the stream: click to take it off",
     "micOffStream": "Off the stream: click to send it",
-    "addMic": "Add a mic…",
     "scenesTitle": "Scenes",
     "scenesShow": "Show the scenes",
     "scenesHide": "Hide the scenes",
@@ -2236,8 +2235,7 @@
       "screens": "Screens"
     },
     "sceneTabs": "Kind of scene",
-    "micOf": "Which input {{name}} uses",
-    "removeMic": "Remove {{name}}"
+    "micOf": "Which input {{name}} uses"
   },
   "benchmark": {
     "button": "Check this computer",
