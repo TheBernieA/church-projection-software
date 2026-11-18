@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Clock3, ListPlus, Plus, Repeat, SlidersHorizontal, Target } from 'lucide-react';
+import { ListPlus, ListVideo, Plus, SlidersHorizontal, Target, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
@@ -291,8 +291,8 @@ function ItemSection({
           {takesBackground(item) && <ItemBackground item={item} />}
           <ToolDivider />
           {takesTransition(item) && <ItemTransition item={item} />}
-          <SoonTool id="timeline" icon={<Clock3 size={14} />} />
-          <SoonTool id="slide-actions" icon={<Repeat size={14} />} />
+          <SoonTool id="timeline" icon={<ListVideo size={14} />} />
+          <SoonTool id="slide-actions" icon={<Zap size={14} />} />
           {(item.kind === 'announcements' ||
             item.kind === 'presentation' ||
             item.kind === 'media') && <ToolDivider />}

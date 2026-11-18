@@ -24,6 +24,7 @@ import {
 import { useStore } from '../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from './menu';
 import { TILE_TOOL } from './slides/SlideCards';
+import { LayerGlyph } from './slides/Transitions';
 
 /** A little preview of a background, for menus and the header chip. */
 export function Swatch({ bg, size = 'md' }: { bg: BackgroundRef | undefined; size?: 'sm' | 'md' }) {
@@ -199,7 +200,7 @@ export function ItemBackground({
             title={current ? t('itemBg.own') : t('itemBg.theme')}
             className={TILE_TOOL}
           >
-            <ImageIcon size={12} />
+            <LayerGlyph behind size={13} />
           </IconButton>
         ) : (
           <IconButton

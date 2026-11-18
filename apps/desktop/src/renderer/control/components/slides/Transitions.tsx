@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, Shuffle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MediaTransition, ServiceItem, TransitionSpec } from '@lampstand/core';
 import { Button, IconButton, Typography } from '@lampstand/ui';
@@ -43,6 +43,33 @@ export function LayerGlyph({ behind, size = 14 }: { behind: boolean; size?: numb
         fill={behind ? '#1b1c20' : 'currentColor'}
         stroke="currentColor"
         strokeWidth="1.4"
+      />
+    </svg>
+  );
+}
+
+/**
+ * A transition: a square going from solid to transparent (a checkerboard), as one picture gives
+ * way to the next.
+ */
+export function TransitionGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
+      <rect
+        x="1.5"
+        y="1.5"
+        width="13"
+        height="13"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+      />
+      <path d="M2.2 2.2h5.8v11.6H2.2z" fill="currentColor" />
+      <path
+        d="M8 2.2h3v3H8zM11 5.2h3v3h-3zM8 8.2h3v3H8zM11 11.2h3v2.6h-3z"
+        fill="currentColor"
+        opacity="0.55"
       />
     </svg>
   );
@@ -151,7 +178,7 @@ function TransitionPill({
         className="flex h-4 w-4 items-center justify-center rounded-[3px]"
         style={{ background: colour, color: '#fff' }}
       >
-        <Shuffle size={10} strokeWidth={2.5} />
+        <TransitionGlyph size={11} />
       </span>
       <Typography size={11} tone="secondary" truncate className="max-w-[110px]">
         {value}
@@ -264,7 +291,7 @@ export function ItemTransition({
       onPick={(tr) => setItemTransition(item, tr)}
       trigger={
         <IconButton size="2xs" variant="quiet" aria-label={label} title={label} active={!!own}>
-          <Shuffle size={14} />
+          <TransitionGlyph size={15} />
         </IconButton>
       }
     />

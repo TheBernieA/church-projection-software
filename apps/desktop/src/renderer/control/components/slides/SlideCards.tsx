@@ -319,7 +319,7 @@ export function BackgroundCard({
         </div>
         <LabelBar
           color={null}
-          number={<ImageIcon size={12} />}
+          number={<LayerGlyph behind size={12} />}
           label={scene ? t('slides.background') : t('slides.noBackground')}
         />
       </Button>
