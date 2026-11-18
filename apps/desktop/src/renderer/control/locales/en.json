@@ -723,7 +723,9 @@
       "shortcuts": "All shortcuts",
       "library": "Backups",
       "streaming": "Streaming settings",
-      "ndi": "NDI"
+      "ndi": "NDI",
+      "surfaces": "Control surfaces",
+      "video": "Video"
     },
     "quickBar": "Find anything fast",
     "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter shows it (or previews it with Preview first on); Shift+Enter always shows it now.",
@@ -794,7 +796,7 @@
         },
         "slow": {
           "q": "Stream from an older or slower computer",
-          "a": "Settings › Streaming › Performance. Click “Check this computer” for a 10-second test, and leave the mode on Auto to use its answer. Light (540p) suits older laptops and slow internet, Balanced (720p) most churches, Quality (1080p) a recent computer with a good upload. If the computer struggles mid-stream, the console offers Switch to Light: a two-second pause, and the stream carries on."
+          "a": "Settings › Streaming › Performance. Click “Check this computer” for a 10-second test, and leave the mode on Auto to use its answer. Light (540p) suits older laptops and slow internet, Balanced (720p) most churches, Quality (1080p) a recent computer with a good upload. If the computer struggles mid-stream, the console offers Switch to Light: a two-second pause, and the stream carries on.\nA slow or busy upload is handled by itself: the stream lowers its bitrate to stay live (the bitrate reading turns amber) and climbs back when the connection allows. If the upload stays far too slow for the picture size, the console suggests Light, which looks sharper at that rate. “Check this computer” tests the computer, not the internet: check your upload speed with any speed test (1080p needs about 5 Mb/s, 720p 3, 540p 1.5)."
         },
         "delay": {
           "q": "Cut the delay viewers see",
@@ -818,7 +820,7 @@
         },
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
-          "a": "A destination that says Stopped shows why when you hover it. “Key needed” or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it. Can’t connect: check the internet connection; Lampstand tries YouTube’s second address by itself. Picture jumps or readings turn red: the upload or the computer can’t keep up, so pick a lighter Performance mode. Click Retry to bring a stopped destination back without ending the stream."
+          "a": "A destination that says Stopped shows why when you hover it. “Key needed” or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it. Can’t connect: check the internet connection; Lampstand tries YouTube’s second address by itself. An amber bitrate means the upload can’t carry the chosen quality and the stream has lowered itself to stay live; if it stays amber, pick a lighter Performance mode. Picture jumps or readings turn red: the computer can’t keep up, so pick a lighter mode too. Click Retry to bring a stopped destination back without ending the stream."
         }
       }
     },
@@ -832,11 +834,11 @@
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
-          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) and items from the + above the items, or drag songs, verses and media in. To fill a section, click the “+ Add to…” placeholder at its end (or the + on its coloured band), or drag things onto the band. A text item ends with a “+” card for another slide. Drag to reorder; a section moves with everything under it. The … beside a playlist’s name duplicates or deletes it."
+          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) with the + above the items. On the Show page, fill a section with the “+ Add to …” card at its end (or the + on its coloured band), or drag songs, verses and media onto it. Drag to reorder; a section moves with everything under it, and deleting a section deletes what’s in it. The … beside a playlist’s name duplicates or deletes it."
         },
         "verse": {
           "q": "Put a Bible verse on screen",
-          "a": "Press {{quick}} and type a reference such as jn 3 16 or Romans 8:28-39. Enter loads Preview, Shift+Enter puts it straight on screen. The Bible workspace lets you browse and pick verse ranges."
+          "a": "Press {{quick}} and type a reference such as jn 3 16 or Romans 8:28-39. Enter loads Preview, Shift+Enter puts it straight on screen.\nIn the Bible workspace, clicking a verse opens it in the slides without touching what’s on screen, so it never interrupts a presentation; click the slide to show it, or double-click the verse to show it at once. Turn on “Click shows it now” there if you’d rather a click went straight on screen."
         },
         "preview": {
           "q": "Check slides before the room sees them",
@@ -848,7 +850,7 @@
         },
         "backgrounds": {
           "q": "Use a moving background",
-          "a": "Open the media bin and pick Backgrounds. Hover a motion background to see it move, click to put it behind your words. Themes can carry a background too."
+          "a": "Open the media bin and pick Backgrounds. Hover a motion background to see it move, click to put it behind your words. Any picture or video in Media can go behind the words too: hover it and click “Use behind the words” (it stays there, under every slide, until you clear the background). Themes can carry a background too."
         },
         "arrangement": {
           "q": "Change a song’s order, key or language",
@@ -856,7 +858,7 @@
         },
         "edit": {
           "q": "Make your own slides",
-          "a": "Add Slides from the + menu, then open the Edit workspace: type a title and text, and add text boxes, shapes, lines and pictures on the canvas. Drag to move, pull the corners to resize."
+          "a": "Add Slides from the + menu. Click the pencil on a slide card (or open the Edit workspace) to change it: click the words on the canvas to type straight into them, and add text boxes, shapes, lines and pictures. Drag to move, pull the corners to resize. A text item ends with a + card for another slide.\nYou can edit a slide while it’s live: the screen keeps showing the old version until you press Update live."
         },
         "import": {
           "q": "Bring in PowerPoint or PDF",
@@ -897,6 +899,14 @@
         "undo": {
           "q": "Undo a mistake",
           "a": "Press {{undo}} (or Edit › Undo in the menu bar) to undo changes to playlists, songs and slides; {{redo}} redoes them."
+        },
+        "announcements": {
+          "q": "Loop announcements before the service",
+          "a": "Add Announcements from the + menu and give each notice its own slide. While live they move on by themselves every few seconds (set the time in the inspector) and loop; turn Loop off in the item to step through them by hand instead."
+        },
+        "audio": {
+          "q": "Play music or a video without it starting by itself",
+          "a": "Clicking a song or sound in Media › Audio selects it; nothing plays until you press its play button (or Play in the room). Videos work the same: put one on screen and press Play, or set Settings › Video › When a video goes live to play straight away."
         }
       }
     },
@@ -906,7 +916,41 @@
       "filter": "Find a feature",
       "none": "Nothing matches."
     },
-    "allKeys": "All keyboard shortcuts"
+    "allKeys": "All keyboard shortcuts",
+    "desk": {
+      "title": "Cameras, sound desks and controllers",
+      "help": "Switching cameras, bringing in the sound desk, and running Lampstand from a desk or controller over MIDI or OSC.",
+      "items": {
+        "cameras": {
+          "q": "Switch between cameras",
+          "a": "Media › Sources › Video input lists every camera and capture card. Click one to put it on Preview, then Cut ({{switcherCut}}) or Auto ({{switcherAuto}}) takes it to the screen with the transition chosen beside them (Cut, Fade, Dip or Wipe, and its length); drag the T-bar to mix by hand. Double-click a camera to take it at once. Keys 1–9 preview a camera, Shift+1–9 take it. PiP puts a second camera in a corner. The Switcher button hides Preview and Program when you want bigger cameras. Slide words stay on top of the camera."
+        },
+        "deskSound": {
+          "q": "Bring the sound desk into Lampstand",
+          "a": "Connect the desk by USB (or through an audio interface) and install its driver if the maker provides one; many desks need none on a Mac. It then shows in Media › Audio › Audio inputs with a level meter: switch it on and it becomes a channel on the mixer, to the room, the stream or both. Lampstand takes the device’s first two channels, so send the main mix to USB 1–2 on the desk."
+        },
+        "midi": {
+          "q": "Run Lampstand from a desk or MIDI controller",
+          "a": "1. Plug the desk or controller in by USB (or a MIDI interface). It appears in Settings › Control surfaces under MIDI.\n2. Under Controls, choose what a control should do: a show action (next slide, go live, black…), a camera, a mixer fader or mute, or the T-bar.\n3. Press Learn, then move the fader or press the button on the desk. Done: it now does that.\nThe Activity row shows the last control Lampstand heard, to check the connection. Learn again changes a control; the bin removes it."
+        },
+        "osc": {
+          "q": "Connect a desk or app over the network (OSC)",
+          "a": "For desks and apps that speak OSC (TouchOSC, Behringer X32 and Midas M32, many digital desks). In Settings › Control surfaces turn on “OSC over the network”; the page shows this computer’s address and port to type into the desk or app. Enter the desk’s own address and OSC port (an X32 uses 10023) so Lampstand can answer it. Then add controls with Learn as for MIDI. Both computers must be on the same network."
+        },
+        "feedback": {
+          "q": "Keep motor faders and button lights in step",
+          "a": "Leave “Motor faders and button lights follow” on in Settings › Control surfaces. When you change a fader or a mute in Lampstand, the desk’s motorised fader moves and its button light matches. A fader you’re moving on the desk is left alone, so it never fights your hand."
+        },
+        "cues": {
+          "q": "Make the desk react to the show (mute a mic while a video plays)",
+          "a": "In Settings › Control surfaces › Send to the desk, click Add a cue. Choose when (a video starts or stops, a camera goes on or off, the stream goes live or ends, the screen goes black or is cleared) and the message to send: MIDI (port, CC, note or program change, channel, number, value) or OSC (address and value, e.g. /ch/05/mix/on with 0 to mute channel 5 on an X32). Test sends it now so you can check the desk responds."
+        },
+        "deskTrouble": {
+          "q": "A control does nothing",
+          "a": "Watch the Activity row in Settings › Control surfaces while you move it. Nothing there: for MIDI, check the cable and that the desk shows under MIDI (some desks must be set to send MIDI in their own setup); for OSC, check the port and that the desk points at the address shown, and that a firewall isn’t blocking it. It shows but nothing happens: press Learn for that control again (the desk may send on another channel or number). A Behringer X32 or Midas M32 only sends its own fader moves to apps that keep asking, which Lampstand doesn’t do yet: use its MIDI mode for faders, or OSC to send cues to it."
+        }
+      }
+    }
   },
   "modes": {
     "label": "Workspace",

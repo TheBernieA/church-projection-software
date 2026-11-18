@@ -10,6 +10,7 @@ import {
   Radio,
   PanelTop,
   SlidersHorizontal,
+  SlidersVertical,
   HardDriveDownload,
   ListPlus,
   MonitorUp,
@@ -188,6 +189,8 @@ const HOWTO = [
   'themes',
   'text',
   'logo',
+  'announcements',
+  'audio',
   'backup',
   'undo',
 ];
@@ -205,6 +208,9 @@ const LIVE_HOWTO = [
   'keyFeed',
   'trouble',
 ];
+
+/** Cameras, the sound desk, and desks or controllers driving the show. */
+const DESK_HOWTO = ['cameras', 'deskSound', 'midi', 'osc', 'feedback', 'cues', 'deskTrouble'];
 
 /** A list of recipes that open on a click. */
 function Recipes({
@@ -350,6 +356,28 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
         }
       >
         <Recipes group="live" ids={LIVE_HOWTO} values={keyNames} />
+      </Group>
+
+      <Group
+        title={t('guide.desk.title')}
+        footnote={t('guide.desk.help')}
+        action={
+          <span className="flex gap-1">
+            <Button
+              size="xs"
+              variant="ghost"
+              icon={<SlidersVertical size={13} />}
+              onClick={() => goTo('surfaces')}
+            >
+              {t('guide.open.surfaces')}
+            </Button>
+            <Button size="xs" variant="ghost" onClick={() => goTo('video')}>
+              {t('guide.open.video')}
+            </Button>
+          </span>
+        }
+      >
+        <Recipes group="desk" ids={DESK_HOWTO} values={keyNames} />
       </Group>
 
       <Group
