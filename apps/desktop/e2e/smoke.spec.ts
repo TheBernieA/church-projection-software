@@ -874,6 +874,18 @@ test('drag from the library into the service plan (songs and verses)', async () 
   const afterVerse = await titles();
   expect(afterVerse.some((x) => x.startsWith('Genesis 1:1'))).toBe(true);
   await control.screenshot({ path: 'test-results/14-library-drag.png' });
+  // The chapters fold away once one is picked; Chapter brings them back. The arrows step books.
+  const bible = control.getByRole('region', { name: 'Bible' });
+  await bible.getByRole('button', { name: '2', exact: true }).click();
+  await expect(bible.getByRole('button', { name: /Thus the heavens and the earth/ })).toBeVisible();
+  await expect(bible.getByRole('button', { name: '3', exact: true })).toBeHidden();
+  await bible.getByRole('button', { name: 'Chapter 2' }).click();
+  await expect(bible.getByRole('button', { name: '3', exact: true })).toBeVisible();
+  await expect(bible.getByRole('button', { name: /^Previous book/ })).toBeDisabled();
+  await bible.getByRole('button', { name: 'Next book: Exodus' }).click();
+  await expect(bible.getByRole('button', { name: /Now these are the names/ })).toBeVisible();
+  await bible.getByRole('button', { name: 'Previous book: Genesis' }).click();
+  await expect(bible.getByRole('button', { name: /In the beginning God created/ })).toBeVisible();
 });
 
 test('undo / redo: ⌘Z and ⌘⇧Z revert and re-apply service edits', async () => {

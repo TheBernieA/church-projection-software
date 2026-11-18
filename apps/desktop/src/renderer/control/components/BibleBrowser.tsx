@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, parseBibleMarkup, type BookId, type ServiceItem } from '@lampstand/core';
 import { BOOKS, bookName } from '@lampstand/scripture';
@@ -7,7 +7,7 @@ import { openAdhoc, openPick, saveSettings } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
-import { Typography, Button, Switch, typographyClass } from '@lampstand/ui';
+import { Typography, Button, IconButton, Switch, typographyClass } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -22,6 +22,9 @@ export function BibleBrowser() {
   const [chapter, setChapter] = useState(1);
   const [anchor, setAnchor] = useState<number | null>(null);
   const [filter, setFilter] = useState('');
+  // The chapter numbers: shown when a book opens, folded away once one is picked (more room
+  // for the verses); the Chapter button brings them back.
+  const [chaptersOpen, setChaptersOpen] = useState(true);
   const counts = useStore((s) => s.verseCounts[versionId]);
   const verses = useStore((s) =>
     book ? s.chapters[chapterKey(versionId, book, chapter)] : undefined,
@@ -58,24 +61,77 @@ export function BibleBrowser() {
     void (live ? openAdhoc(item, 'live') : openPick(item));
   };
 
-  const chapters = book
-    ? (counts?.[book]?.length ?? BOOKS.find((b) => b.id === book)?.chapters ?? 0)
-    : 0;
+  const chaptersIn = (b: BookId): number =>
+    counts?.[b]?.length ?? BOOKS.find((x) => x.id === b)?.chapters ?? 0;
+  const chapters = book ? chaptersIn(book) : 0;
   const f = filter.trim().toLowerCase();
+
+  // Open a book at its first chapter, with its chapters showing to pick from.
+  const openBook = (id: BookId): void => {
+    setBook(id);
+    setChapter(1);
+    setAnchor(null);
+    setChaptersOpen(true);
+  };
+  // The previous and next book (in this version's order).
+  const order = BOOKS.filter((b) => !counts || chaptersIn(b.id) > 0);
+  const at = book ? order.findIndex((b) => b.id === book) : -1;
+  const prevBook = at > 0 ? order[at - 1] : undefined;
+  const nextBook = at >= 0 ? order[at + 1] : undefined;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 px-4 pb-3">
         {book ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
-            onClick={() => setBook(null)}
-            className={`-ml-2 min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
-          >
-            <Typography truncate>{bookName(book)}</Typography>
-          </Button>
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
+              onClick={() => setBook(null)}
+              className={`-ml-2 min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
+            >
+              <Typography truncate>{bookName(book)}</Typography>
+            </Button>
+            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+              <IconButton
+                size="sm"
+                aria-label={
+                  prevBook ? t('bible.prevBook', { name: prevBook.name }) : t('bible.firstBook')
+                }
+                title={prevBook ? t('bible.prevBook', { name: prevBook.name }) : undefined}
+                disabled={!prevBook}
+                onClick={() => prevBook && openBook(prevBook.id)}
+              >
+                <ChevronLeft size={16} />
+              </IconButton>
+              <Button
+                size="sm"
+                variant={chaptersOpen ? 'subtle' : 'ghost'}
+                aria-expanded={chaptersOpen}
+                title={t('bible.chaptersHelp')}
+                onClick={() => setChaptersOpen(!chaptersOpen)}
+                className="tabular-nums"
+              >
+                {t('bible.chapterN', { n: chapter })}
+                <ChevronDown
+                  size={13}
+                  className={`text-[var(--text-3)] transition-transform ${chaptersOpen ? 'rotate-180' : ''}`}
+                />
+              </Button>
+              <IconButton
+                size="sm"
+                aria-label={
+                  nextBook ? t('bible.nextBook', { name: nextBook.name }) : t('bible.lastBook')
+                }
+                title={nextBook ? t('bible.nextBook', { name: nextBook.name }) : undefined}
+                disabled={!nextBook}
+                onClick={() => nextBook && openBook(nextBook.id)}
+              >
+                <ChevronRight size={16} />
+              </IconButton>
+            </div>
+          </>
         ) : (
           <input
             className="field h-8 min-w-0 flex-1"
@@ -117,8 +173,7 @@ export function BibleBrowser() {
                       variant="bare"
                       key={b.id}
                       onClick={() => {
-                        setBook(b.id);
-                        setChapter(1);
+                        openBook(b.id);
                         setFilter('');
                       }}
                       className={`rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-[var(--surface-3)] ${typographyClass({ size: 13, tone: 'primary', truncate: true })}`}
@@ -135,19 +190,25 @@ export function BibleBrowser() {
       {book && (
         <>
           <div className="px-4">
-            <div className="grid max-h-28 grid-cols-[repeat(auto-fill,minmax(34px,1fr))] gap-1 overflow-y-auto pb-1">
-              {Array.from({ length: chapters }, (_, i) => i + 1).map((c) => (
-                <Button
-                  variant="bare"
-                  key={c}
-                  onClick={() => setChapter(c)}
-                  aria-current={c === chapter}
-                  className={`h-8 rounded-[7px] transition-colors ${typographyClass({ size: 12, weight: 'medium', tabular: true })} ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
-                >
-                  {c}
-                </Button>
-              ))}
-            </div>
+            {chaptersOpen && (
+              <div className="grid max-h-28 grid-cols-[repeat(auto-fill,minmax(34px,1fr))] gap-1 overflow-y-auto pb-1">
+                {Array.from({ length: chapters }, (_, i) => i + 1).map((c) => (
+                  <Button
+                    variant="bare"
+                    key={c}
+                    onClick={() => {
+                      setChapter(c);
+                      setAnchor(null);
+                      setChaptersOpen(false);
+                    }}
+                    aria-current={c === chapter}
+                    className={`h-8 rounded-[7px] transition-colors ${typographyClass({ size: 12, weight: 'medium', tabular: true })} ${c === chapter ? 'bg-[var(--accent)] text-[var(--accent-ink)] shadow-[0_2px_8px_rgba(232,176,75,0.3)]' : 'bg-[var(--surface-2)] text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'}`}
+                  >
+                    {c}
+                  </Button>
+                ))}
+              </div>
+            )}
             <div className="flex items-start gap-3 pb-2 pt-2">
               <Typography as="p" variant="caption" leading="snug" className="min-w-0 flex-1">
                 {showsNow ? t('bible.hintNow') : t('bible.hint')}
@@ -164,7 +225,11 @@ export function BibleBrowser() {
               </label>
             </div>
           </div>
-          <ol className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
+          {/* A new chapter starts at its first verse. */}
+          <ol
+            key={`${book}:${chapter}`}
+            className="min-h-0 flex-1 space-y-0.5 overflow-y-auto px-2 pb-3"
+          >
             {(verses ?? []).map((text, i) => {
               const v = i + 1;
               const isSel = selected && v >= selected.from && v <= selected.to;

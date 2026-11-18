@@ -83,7 +83,13 @@
     "hint": "Click a verse to open it in the slides, then click the slide to show it. Shift-click selects a range. Double-click shows it now.",
     "hintNow": "Click a verse to show it now. Shift-click selects a range.",
     "showsNow": "Click shows it now",
-    "showsNowHelp": "Clicking a verse (or a picture or video in the media bin) puts it on screen at once"
+    "showsNowHelp": "Clicking a verse (or a picture or video in the media bin) puts it on screen at once",
+    "prevBook": "Previous book: {{name}}",
+    "nextBook": "Next book: {{name}}",
+    "firstBook": "Previous book (this is the first)",
+    "lastBook": "Next book (this is the last)",
+    "chapterN": "Chapter {{n}}",
+    "chaptersHelp": "Show or hide the chapters"
   },
   "media": {
     "add": "Add media",
