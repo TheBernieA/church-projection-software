@@ -1,6 +1,12 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ListPlus, Plus } from 'lucide-react';
-import { ClipboardGlyph, PlayBoxGlyph, TargetGlyph, TimelineGlyph } from '../icons/ConsoleIcons';
+import {
+  ClipboardGlyph,
+  HEADER_TOOL,
+  PlayBoxGlyph,
+  TargetGlyph,
+  TimelineGlyph,
+} from '../icons/ConsoleIcons';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
@@ -45,7 +51,7 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
       role="img"
       aria-label={`${f.name} (${t('soon.badge')})`}
       title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
-      className="relative flex h-6 w-6 items-center justify-center"
+      className="relative flex h-[30px] w-[30px] items-center justify-center"
     >
       {icon}
       <span
@@ -58,7 +64,7 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
 
 /** A thin upright line between groups of tools in an item's header. */
 function ToolDivider() {
-  return <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-[var(--hairline-strong)]" />;
+  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-[var(--hairline-strong)]" />;
 }
 
 /**
@@ -266,7 +272,7 @@ function ItemSection({
       }}
     >
       <header
-        className={`sticky top-0 z-[1] flex h-8 items-center gap-2 border-b border-[var(--divider)] px-3 ${
+        className={`sticky top-0 z-[1] flex h-9 items-center gap-2 border-b border-[var(--divider)] px-3 ${
           selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-0)]'
         }`}
       >
@@ -306,6 +312,7 @@ function ItemSection({
               aria-pressed={announcing}
               active={announcing}
               activeTone="preview"
+              className={HEADER_TOOL}
               onClick={() =>
                 void (announcing ? stopAnnouncementsLayer() : runOnAnnouncementsLayer(item))
               }
@@ -320,6 +327,7 @@ function ItemSection({
               variant="quiet"
               aria-label={t('playback.open')}
               active={!!item.playback || item.loop || item.autoAdvance}
+              className={HEADER_TOOL}
               onClick={() => openDialog('playback', { playbackItemId: item.id })}
             >
               <PlayBoxGlyph />

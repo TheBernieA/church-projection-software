@@ -23,12 +23,12 @@ export function LoopToggle({ item }: { item: TextItem }) {
       onClick={() =>
         updateItem(item.id, (x) => (x.kind === 'announcements' ? { ...x, autoAdvance: !on } : x))
       }
-      className={`flex h-6 shrink-0 cursor-pointer items-center gap-1.5 rounded-[5px] px-1.5 hover:bg-[var(--surface-3)] ${typographyClass({ size: 12, weight: 'semibold', tabular: true })}`}
+      className={`flex h-[30px] shrink-0 cursor-pointer items-center gap-1.5 rounded-[5px] px-1.5 hover:bg-[var(--surface-3)] ${typographyClass({ size: 14, weight: 'semibold', tabular: true })}`}
       style={{ color: on ? 'var(--select)' : 'var(--text-3)' }}
     >
       {/* "8.0s" and a film strip with an arrow: the slides move on by themselves. */}
       {on && `${item.loopIntervalSec.toFixed(1)}s`}
-      <AutoAdvanceGlyph size={17} />
+      <AutoAdvanceGlyph size={23} />
     </Button>
   );
 }

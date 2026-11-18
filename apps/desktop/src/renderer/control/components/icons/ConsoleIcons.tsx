@@ -1,11 +1,14 @@
 /**
- * Boxy icons for an item's header, in the style of a presentation console: each drawn on a
+ * Boxy icons for an item's header (big: they nearly fill it), in the style of a presentation console: each drawn on a
  * 16-unit grid in the text colour (currentColor), so they sit with the rest of the tools.
  */
 
 interface GlyphProps {
   size?: number;
 }
+
+/** An item header's tool button: the icons nearly fill the header. */
+export const HEADER_TOOL = '!h-[30px] !w-[30px]';
 
 const svg = (size: number, children: React.ReactNode) => (
   <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden fill="none">
@@ -14,7 +17,7 @@ const svg = (size: number, children: React.ReactNode) => (
 );
 
 /** Auto-advance: a film strip with an arrow out of it (the slides move on by themselves). */
-export function AutoAdvanceGlyph({ size = 16 }: GlyphProps) {
+export function AutoAdvanceGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>
@@ -29,7 +32,7 @@ export function AutoAdvanceGlyph({ size = 16 }: GlyphProps) {
 }
 
 /** Slide actions: a clipboard (what else happens with a slide). */
-export function ClipboardGlyph({ size = 16 }: GlyphProps) {
+export function ClipboardGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>
@@ -49,7 +52,7 @@ export function ClipboardGlyph({ size = 16 }: GlyphProps) {
 }
 
 /** Timeline: boxes on a track, arrows both ways (timings recorded and played back). */
-export function TimelineGlyph({ size = 16 }: GlyphProps) {
+export function TimelineGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>
@@ -75,7 +78,7 @@ export function TimelineGlyph({ size = 16 }: GlyphProps) {
 }
 
 /** A transition: two boxes either side of a divide (one slide giving way to the next). */
-export function SplitGlyph({ size = 16 }: GlyphProps) {
+export function SplitGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>
@@ -88,7 +91,7 @@ export function SplitGlyph({ size = 16 }: GlyphProps) {
 }
 
 /** Where the slides go (the presentation layer or announcements): a ringed target. */
-export function TargetGlyph({ size = 16 }: GlyphProps) {
+export function TargetGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>
@@ -100,7 +103,7 @@ export function TargetGlyph({ size = 16 }: GlyphProps) {
 }
 
 /** Playback (a picture or video's options): a solid arrow in a box. */
-export function PlayBoxGlyph({ size = 16 }: GlyphProps) {
+export function PlayBoxGlyph({ size = 21 }: GlyphProps) {
   return svg(
     size,
     <>

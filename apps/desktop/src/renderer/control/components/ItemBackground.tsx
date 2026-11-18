@@ -24,6 +24,7 @@ import {
 import { useStore } from '../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from './menu';
 import { TILE_TOOL } from './slides/SlideCards';
+import { HEADER_TOOL } from './icons/ConsoleIcons';
 
 /** A little preview of a background, for menus and the header chip. */
 export function Swatch({ bg, size = 'md' }: { bg: BackgroundRef | undefined; size?: 'sm' | 'md' }) {
@@ -208,8 +209,9 @@ export function ItemBackground({
             aria-label={t('itemBg.button')}
             title={current ? t('itemBg.own') : t('itemBg.theme')}
             active={!!current}
+            className={HEADER_TOOL}
           >
-            {current ? <Swatch bg={current} size="sm" /> : <ImageIcon size={14} />}
+            {current ? <Swatch bg={current} /> : <ImageIcon size={19} strokeWidth={1.75} />}
           </IconButton>
         )
       }
