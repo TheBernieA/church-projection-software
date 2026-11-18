@@ -13,10 +13,12 @@ const KINDS: InputTransition['kind'][] = ['cut', 'fade', 'dip', 'wipe'];
 const DURATIONS = [300, 600, 1000, 1500, 2000];
 const OFF = 'off';
 /** Cut and Auto stay this tall (px) however small the monitors get. */
-const MIN_TAKE_HEIGHT = 76;
+const MIN_TAKE_HEIGHT = 72;
 /** Width (px) of everything in the strip but the two monitors: the take column, the settings
  *  column, the gaps and padding (the monitors share what's left). */
-export const SWITCHER_FIXED_WIDTH = 124 + 236 + 2 * 12 + 20 + 32;
+export const SWITCHER_FIXED_WIDTH = 124 + 300 + 2 * 12 + 20 + 32;
+/** The strip is never shorter than its settings column (px). */
+export const SWITCHER_MIN_HEIGHT = 72;
 
 /**
  * One bus monitor (Preview or Program): the camera layer alone, with its tally colour. The
@@ -150,13 +152,10 @@ function TBar({ disabled }: { disabled: boolean }) {
 export function SwitcherBar({
   devices,
   monitorHeight,
-  sources,
 }: {
   devices: InputDevice[];
   /** How tall the Preview and Program pictures are (px), from the space available. */
   monitorHeight: number;
-  /** The cameras, at the start of the strip (a short pane has no room for them underneath). */
-  sources?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const settings = useStore((s) => s.settings?.switcher);
@@ -176,11 +175,6 @@ export function SwitcherBar({
       aria-label={t('switcher.title')}
       className="flex shrink-0 items-stretch gap-5 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
     >
-      {sources && (
-        <div className="flex min-w-0 flex-1 items-center border-r border-[var(--divider)] pr-5">
-          {sources}
-        </div>
-      )}
       {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <BusMonitor
@@ -231,37 +225,40 @@ export function SwitcherBar({
         />
       </div>
       {/* How Auto and the T-bar mix, and the second camera in a corner. */}
-      <div className="flex w-[236px] shrink-0 flex-col justify-center gap-2">
+      <div className="flex w-[300px] shrink-0 flex-col justify-center gap-2">
         <Segmented<InputTransition['kind']>
           label={t('switcher.transition')}
           value={transition.kind}
           onChange={(kind) => setTransition({ kind })}
           options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
         />
-        <Row label={t('switcher.duration')}>
-          <Select<string>
-            size="sm"
-            aria-label={t('switcher.duration')}
-            value={String(transition.durationMs)}
-            onChange={(v) => setTransition({ durationMs: Number(v) })}
-            options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
-              value: String(ms),
-              label: t('switcher.seconds', { s: ms / 1000 }),
-            }))}
-          />
-        </Row>
-        <Row label={t('switcher.pip')}>
-          <Select<string>
-            size="sm"
-            aria-label={t('switcher.pipLabel')}
-            value={pip?.deviceId ?? OFF}
-            onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
-            options={[
-              { value: OFF, label: t('switcher.pipOff') },
-              ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
-            ]}
-          />
-        </Row>
+        {/* Two rows, so the strip (and the monitors) can be short in a short pane. */}
+        <div className="flex gap-3">
+          <Row label={t('switcher.duration')}>
+            <Select<string>
+              size="sm"
+              aria-label={t('switcher.duration')}
+              value={String(transition.durationMs)}
+              onChange={(v) => setTransition({ durationMs: Number(v) })}
+              options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
+                value: String(ms),
+                label: t('switcher.seconds', { s: ms / 1000 }),
+              }))}
+            />
+          </Row>
+          <Row label={t('switcher.pip')}>
+            <Select<string>
+              size="sm"
+              aria-label={t('switcher.pipLabel')}
+              value={pip?.deviceId ?? OFF}
+              onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
+              options={[
+                { value: OFF, label: t('switcher.pipOff') },
+                ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
+              ]}
+            />
+          </Row>
+        </div>
       </div>
     </section>
   );
@@ -270,8 +267,8 @@ export function SwitcherBar({
 /** A labelled control in the switcher's settings column. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2">
-      <Typography size={11} tone="secondary" className="w-12 shrink-0">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <Typography size={11} tone="secondary" className="shrink-0">
         {label}
       </Typography>
       <div className="min-w-0 flex-1">{children}</div>
