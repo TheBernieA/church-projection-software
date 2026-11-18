@@ -18,10 +18,10 @@ export interface SliderProps extends Omit<
    */
   format?: ((value: number) => string) | null;
   /**
-   * Where the readout sits: beside the track (default), or just under the thumb, following it
-   * (for tight rows where there's no room beside it).
+   * Where the readout sits: beside the track (default), or under it, centred and still (for
+   * tight rows where there's no room beside it).
    */
-  readoutAt?: 'end' | 'thumb';
+  readoutAt?: 'end' | 'below';
   /** Track fill colour (defaults to the text colour; e.g. red as a clip runs out). */
   fill?: string;
   /** Wrapper classes: width and flex behaviour. */
@@ -66,15 +66,13 @@ export function Slider({
         }
         className="ls-range min-w-0 flex-1"
       />
-      {readout !== null && readoutAt === 'thumb' && (
+      {readout !== null && readoutAt === 'below' && (
         <Typography
           size={10}
           tone="muted"
           tabular
           aria-hidden
-          // Under the thumb's centre (the thumb's 14px keeps it inside the track at each end).
-          style={{ left: `calc(${at}% + ${(7 - (at / 100) * 14).toFixed(1)}px)` }}
-          className="pointer-events-none absolute top-full -translate-x-1/2 whitespace-nowrap leading-none"
+          className="pointer-events-none absolute inset-x-0 top-full text-center whitespace-nowrap leading-none"
         >
           {readout}
         </Typography>

@@ -401,7 +401,7 @@ function InputStrip({
         step={0.5}
         value={c.gainDb}
         format={formatDb}
-        readoutAt="thumb"
+        readoutAt="below"
         onChange={(e) =>
           mixerLive({ action: 'channel', id: c.id, patch: { gainDb: Number(e.target.value) } })
         }
@@ -475,7 +475,7 @@ export function StreamSound() {
           step={0.5}
           value={bus.gainDb}
           format={formatDb}
-          readoutAt="thumb"
+          readoutAt="below"
           onChange={(e) =>
             mixerLive({ action: 'bus', bus: 'stream', patch: { gainDb: Number(e.target.value) } })
           }
