@@ -13,21 +13,27 @@ const KINDS: InputTransition['kind'][] = ['cut', 'fade', 'dip', 'wipe'];
 const DURATIONS = [300, 600, 1000, 1500, 2000];
 const OFF = 'off';
 
-/** One bus monitor (Preview or Program): the camera layer alone, with its tally colour. */
+/**
+ * One bus monitor (Preview or Program): the camera layer alone, with its tally colour. The
+ * camera's name sits on the picture; an empty bus says what to do.
+ */
 function BusMonitor({
   scene,
   tone,
   label,
   name,
+  empty,
 }: {
   scene: Scene;
   tone: 'preview' | 'program';
   label: string;
   name: string | null;
+  /** Shown on the black picture when nothing is on this bus. */
+  empty: string;
 }) {
   const color = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <figure className="flex min-w-0 flex-1 flex-col gap-1">
+    <figure className="min-w-0 max-w-[340px] flex-1 self-center">
       <div
         className="relative overflow-hidden rounded-[6px] bg-black"
         style={{ boxShadow: `0 0 0 2px ${color}` }}
@@ -43,10 +49,29 @@ function BusMonitor({
         >
           {label}
         </Typography>
+        {name ? (
+          <Typography
+            as="figcaption"
+            size={11}
+            weight="semibold"
+            tone="white"
+            truncate
+            className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-2 pb-1.5 pt-4"
+          >
+            {name}
+          </Typography>
+        ) : (
+          <Typography
+            as="figcaption"
+            size={11}
+            tone="white"
+            leading="snug"
+            className="absolute inset-0 flex items-center justify-center px-4 text-center opacity-60"
+          >
+            {empty}
+          </Typography>
+        )}
       </div>
-      <Typography as="figcaption" size={11} tone="secondary" truncate>
-        {name ?? '—'}
-      </Typography>
     </figure>
   );
 }
@@ -91,7 +116,7 @@ function TBar({ disabled }: { disabled: boolean }) {
         tbarRelease();
         setPos(0);
       }}
-      className={`relative h-full w-8 touch-none rounded-[6px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline-strong)] ${disabled ? 'opacity-40' : 'cursor-ns-resize'}`}
+      className={`relative h-full w-7 shrink-0 touch-none rounded-[6px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline-strong)] ${disabled ? 'opacity-40' : 'cursor-ns-resize'}`}
     >
       <span
         className="absolute inset-x-[13px] top-1 rounded-full bg-[var(--tally-preview)] opacity-70"
@@ -126,96 +151,97 @@ export function SwitcherBar({ devices }: { devices: InputDevice[] }) {
   return (
     <section
       aria-label={t('switcher.title')}
-      className="flex shrink-0 gap-3 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3 py-2.5"
+      className="flex shrink-0 flex-wrap items-stretch gap-x-5 gap-y-3 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
     >
-      <div className="flex min-w-0 max-w-[400px] flex-1 gap-3">
+      {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
+      <div className="flex min-w-0 flex-[1_1_480px] items-stretch gap-3">
         <BusMonitor
           scene={previewScene}
           tone="preview"
           label={t('switcher.preview')}
           name={preview?.label ?? null}
+          empty={t('switcher.previewEmpty')}
         />
+        <div className="flex min-h-[96px] w-[124px] shrink-0 gap-2 self-stretch py-px">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="!h-auto flex-1"
+              disabled={!canTake}
+              onClick={() => void cut()}
+              title={t('shortcuts.actions.switcherCut')}
+            >
+              {t('switcher.cut')}
+              <Kbd>C</Kbd>
+            </Button>
+            <Button
+              size="sm"
+              variant="live"
+              className="!h-auto flex-1"
+              disabled={!canTake}
+              onClick={() => void auto()}
+              title={t('shortcuts.actions.switcherAuto')}
+            >
+              {t('switcher.auto')}
+              <Kbd tone="onColor">T</Kbd>
+            </Button>
+          </div>
+          <TBar disabled={!canTake} />
+        </div>
         <BusMonitor
           scene={programScene}
           tone="program"
           label={t('switcher.program')}
           name={input?.label ?? null}
+          empty={t('switcher.programEmpty')}
         />
       </div>
-      <div className="flex w-[220px] shrink-0 flex-col gap-2">
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            className="flex-1"
-            disabled={!canTake}
-            onClick={() => void cut()}
-            title={t('shortcuts.actions.switcherCut')}
-          >
-            {t('switcher.cut')}
-            <Kbd>C</Kbd>
-          </Button>
-          <Button
-            size="sm"
-            variant="live"
-            className="flex-1"
-            disabled={!canTake}
-            onClick={() => void auto()}
-            title={t('shortcuts.actions.switcherAuto')}
-          >
-            {t('switcher.auto')}
-            <Kbd tone="onColor">T</Kbd>
-          </Button>
-        </div>
+      {/* How Auto and the T-bar mix, and the second camera in a corner. */}
+      <div className="flex w-[236px] shrink-0 flex-col justify-center gap-2">
         <Segmented<InputTransition['kind']>
           label={t('switcher.transition')}
           value={transition.kind}
           onChange={(kind) => setTransition({ kind })}
           options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
         />
-        <div className="flex items-center gap-2">
-          <Typography size={11} tone="secondary" className="w-12 shrink-0">
-            {t('switcher.duration')}
-          </Typography>
-          <div className="min-w-0 flex-1">
-            <Select<string>
-              size="sm"
-              aria-label={t('switcher.duration')}
-              value={String(transition.durationMs)}
-              onChange={(v) => setTransition({ durationMs: Number(v) })}
-              options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
-                value: String(ms),
-                label: t('switcher.seconds', { s: ms / 1000 }),
-              }))}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Typography size={11} tone="secondary" className="w-12 shrink-0">
-            {t('switcher.pip')}
-          </Typography>
-          <div className="min-w-0 flex-1">
-            <Select<string>
-              size="sm"
-              aria-label={t('switcher.pipLabel')}
-              value={pip?.deviceId ?? OFF}
-              onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
-              options={[
-                { value: OFF, label: t('switcher.pipOff') },
-                ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-      <div className="flex shrink-0 flex-col items-center gap-1 py-0.5">
-        <Typography size={10} tone="muted" caps weight="semibold">
-          T-bar
-        </Typography>
-        <div className="min-h-0 flex-1">
-          <TBar disabled={!canTake} />
-        </div>
+        <Row label={t('switcher.duration')}>
+          <Select<string>
+            size="sm"
+            aria-label={t('switcher.duration')}
+            value={String(transition.durationMs)}
+            onChange={(v) => setTransition({ durationMs: Number(v) })}
+            options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
+              value: String(ms),
+              label: t('switcher.seconds', { s: ms / 1000 }),
+            }))}
+          />
+        </Row>
+        <Row label={t('switcher.pip')}>
+          <Select<string>
+            size="sm"
+            aria-label={t('switcher.pipLabel')}
+            value={pip?.deviceId ?? OFF}
+            onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
+            options={[
+              { value: OFF, label: t('switcher.pipOff') },
+              ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
+            ]}
+          />
+        </Row>
       </div>
     </section>
+  );
+}
+
+/** A labelled control in the switcher's settings column. */
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Typography size={11} tone="secondary" className="w-12 shrink-0">
+        {label}
+      </Typography>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
   );
 }

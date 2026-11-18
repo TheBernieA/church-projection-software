@@ -34,7 +34,7 @@ export function CameraSwitcher({
       {label && (
         <Typography size={12} tone="secondary" className="flex shrink-0 items-center gap-1.5">
           <Video size={13} />
-          {t('inputs.switcher')}
+          {t('inputs.onScreen')}
         </Typography>
       )}
       <div className="min-w-0 flex-1">

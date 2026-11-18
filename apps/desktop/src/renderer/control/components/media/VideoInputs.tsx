@@ -321,6 +321,7 @@ export function VideoInputs() {
   const hiddenCount = (all?.length ?? 0) - (devices?.length ?? 0);
   // The switcher (Preview, Program, Cut, Auto) folds away so the cameras get the room.
   const switcher = usePaneSize('inputSwitcher', 1, 0, 1);
+  const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--divider)] bg-[var(--surface-1)] px-3">
@@ -337,10 +338,9 @@ export function VideoInputs() {
             {devices.length}
           </Typography>
         )}
-        <Typography size={11} tone="muted" truncate className="ml-1 min-w-0 flex-1">
-          {t('inputs.videoHint')}
-        </Typography>
-        <CameraSwitcher className="w-56 shrink-0" />
+        <span className="min-w-0 flex-1" />
+        {/* With the switcher folded away, this is where the camera on screen shows (and changes). */}
+        {switcher.size === 0 && <CameraSwitcher className="w-60 shrink-0" />}
         {devices && devices.length > 0 && (
           <Button
             size="xs"
@@ -354,24 +354,26 @@ export function VideoInputs() {
             {t('inputs.switcher')}
           </Button>
         )}
-        <Button
-          size="xs"
-          variant="ghost"
-          icon={<RefreshCw size={13} />}
+        <IconButton
+          size="sm"
+          aria-label={t('inputs.lookAgain')}
+          title={t('inputs.lookAgainHelp')}
           onClick={rescanDevices}
-          className="shrink-0"
         >
-          {t('inputs.lookAgain')}
-        </Button>
-        <Button
-          size="xs"
-          variant="ghost"
-          icon={<Settings2 size={13} />}
+          <RefreshCw size={14} />
+        </IconButton>
+        <IconButton
+          size="sm"
+          aria-label={
+            hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')
+          }
+          title={
+            hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')
+          }
           onClick={() => openDialog('settings', { settingsPage: 'video' })}
-          className="shrink-0"
         >
-          {hiddenCount ? t('inputs.manageHidden', { count: hiddenCount }) : t('inputs.manage')}
-        </Button>
+          <Settings2 size={14} />
+        </IconButton>
       </div>
       {devices && devices.length > 0 && switcher.size === 1 && <SwitcherBar devices={devices} />}
       <CameraAccess className="mx-4 mt-3" />
@@ -382,14 +384,26 @@ export function VideoInputs() {
             title={hiddenCount ? t('inputs.allHidden') : t('inputs.noCameras')}
           />
         ) : (
-          <ul
-            className="grid gap-x-3 gap-y-4"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
-          >
-            {(devices ?? []).map((d, i) => (
-              <InputTile key={d.deviceId} device={d} n={i + 1} />
-            ))}
-          </ul>
+          <>
+            <Typography
+              as="p"
+              size={11}
+              tone="muted"
+              leading="snug"
+              className="mb-3"
+              title={t('inputs.videoHint')}
+            >
+              {previewFirst ? t('inputs.hintPreview') : t('inputs.hintProgram')}
+            </Typography>
+            <ul
+              className="grid gap-x-3 gap-y-4"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}
+            >
+              {(devices ?? []).map((d, i) => (
+                <InputTile key={d.deviceId} device={d} n={i + 1} />
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>
