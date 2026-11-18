@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ListPlus, ListVideo, Plus, SlidersHorizontal, Target, Zap } from 'lucide-react';
+import { ListPlus, Plus } from 'lucide-react';
+import { ClipboardGlyph, PlayBoxGlyph, TargetGlyph, TimelineGlyph } from '../icons/ConsoleIcons';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
@@ -290,9 +291,9 @@ function ItemSection({
           {item.kind === 'announcements' && <LoopToggle item={item} />}
           {takesBackground(item) && <ItemBackground item={item} />}
           <ToolDivider />
+          <SoonTool id="slide-actions" icon={<ClipboardGlyph />} />
+          <SoonTool id="timeline" icon={<TimelineGlyph />} />
           {takesTransition(item) && <ItemTransition item={item} />}
-          <SoonTool id="timeline" icon={<ListVideo size={14} />} />
-          <SoonTool id="slide-actions" icon={<Zap size={14} />} />
           {(item.kind === 'announcements' ||
             item.kind === 'presentation' ||
             item.kind === 'media') && <ToolDivider />}
@@ -310,7 +311,7 @@ function ItemSection({
               }
             >
               {/* Where the slides go: a target, green while on the announcements layer. */}
-              <Target size={14} />
+              <TargetGlyph />
             </IconButton>
           )}
           {item.kind === 'media' && (
@@ -321,7 +322,7 @@ function ItemSection({
               active={!!item.playback || item.loop || item.autoAdvance}
               onClick={() => openDialog('playback', { playbackItemId: item.id })}
             >
-              <SlidersHorizontal size={14} />
+              <PlayBoxGlyph />
             </IconButton>
           )}
         </div>

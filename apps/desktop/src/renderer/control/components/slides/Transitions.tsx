@@ -16,6 +16,7 @@ import {
 } from '../../lib/transitions';
 import { useStore } from '../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
+import { SplitGlyph } from '../icons/ConsoleIcons';
 
 /**
  * Two squares, one in front of the other: which layer a picture or video plays on. The front
@@ -291,7 +292,7 @@ export function ItemTransition({
       onPick={(tr) => setItemTransition(item, tr)}
       trigger={
         <IconButton size="2xs" variant="quiet" aria-label={label} title={label} active={!!own}>
-          <TransitionGlyph size={15} />
+          <SplitGlyph />
         </IconButton>
       }
     />
