@@ -9,7 +9,14 @@ import {
   type VideoInputLayer,
 } from '@lampstand/core';
 import type { StreamApi, StreamConfig } from '@lampstand/ipc-contract';
-import { AudioPlayer, buildVideoInput, MixerEngine, SceneRenderer } from '@lampstand/renderer';
+import { parseChordLine } from '@lampstand/lyrics';
+import {
+  AudioPlayer,
+  buildVideoInput,
+  MixerEngine,
+  SceneRenderer,
+  StageView,
+} from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 // A real file, never inlined: the security policy doesn't run scripts from data: addresses
@@ -43,18 +50,33 @@ let latest: LiveState | null = null;
 
 // ---------- Picture ----------
 
-/** The stream's own camera, with its saved settings (fit, mirror, capture size). */
-let camera: { key: string; dispose: () => void } | null = null;
-function syncCamera(layer: VideoInputLayer | null): void {
-  const key = layer ? `${layer.deviceId}|${layer.fit}|${layer.mirror}|${layer.resolution}` : '';
-  if ((camera?.key ?? '') === key) return;
-  camera?.dispose();
-  $('camera').replaceChildren();
-  camera = null;
-  if (!layer) return;
-  const built = buildVideoInput(document, layer, true);
-  $('camera').append(built.node);
-  camera = { key, dispose: built.dispose };
+/**
+ * The stream's own cameras, with their saved settings (fit, mirror, capture size): one, or two
+ * for a layout (side by side, or the second in a corner). Reopened only when they change.
+ */
+let cameras: { key: string; dispose: () => void } | null = null;
+function syncCameras(layers: VideoInputLayer[], layout: string): void {
+  const el = $('camera');
+  el.className = layers.length > 1 ? `layout-${layout}` : '';
+  const key = layers.map((l) => `${l.deviceId}|${l.fit}|${l.mirror}|${l.resolution}`).join(',');
+  if ((cameras?.key ?? '') === key) return;
+  cameras?.dispose();
+  el.replaceChildren();
+  cameras = null;
+  if (!layers.length) return;
+  const built = layers.map((l) => buildVideoInput(document, l, true));
+  el.append(...built.map((b) => b.node));
+  cameras = { key, dispose: () => built.forEach((b) => b.dispose()) };
+}
+
+/** The stage display, drawn here when the stream mirrors it (made the first time it's needed). */
+let stage: StageView | null = null;
+function syncStage(on: boolean): void {
+  document.body.classList.toggle('mirror-stage', on);
+  if (!on || !config || !latest) return;
+  stage ??= new StageView($('stage'), { mediaUrl, parseChords: parseChordLine });
+  stage.setLayout(config.stageLayout);
+  stage.update(latest);
 }
 
 /**
@@ -67,31 +89,45 @@ const NO_MASKS = { black: false, logo: false, freeze: false };
 
 function draw(): void {
   if (!latest || !config) return;
-  const inputs = [
-    config,
-    latest.program,
-    latest.look,
-    latest.audio,
-    latest.mixer,
-    latest.lowerThird,
-  ];
+  // The stage display shows timers, the next slide and messages too: it follows every update.
+  const inputs =
+    config.picture.mirror === 'stage'
+      ? [config, latest]
+      : [config, latest.program, latest.look, latest.audio, latest.mixer, latest.lowerThird];
   if (inputs.length === drawn.length && inputs.every((x, i) => x === drawn[i])) return;
   drawn = inputs;
-  const pic = config.picture;
-  // What the audience screens show under the active Look.
-  const program: Scene = applyLook(latest.program, lookLayersFor(latest.look, 'main'));
-  const onCamera = pic.background === 'camera' && !!config.cameraLayer;
+  // Mirroring the stage display: it's all that shows (the sound mix carries on below).
+  syncStage(config.picture.mirror === 'stage');
+  // Mirroring the alternate output: the projector's picture with the words full screen, in
+  // that output's themes and under its Look.
+  const alternate = config.picture.mirror === 'alternate';
+  const pic = alternate
+    ? { ...config.picture, background: 'program' as const, words: 'full' as const }
+    : config.picture;
+  // What the screens show under the active Look.
+  const program: Scene = applyLook(
+    latest.program,
+    lookLayersFor(latest.look, alternate ? 'secondary' : 'main'),
+  );
+  // The stream's own cameras: one, or two laid out together.
+  const own = [
+    config.cameraLayer,
+    pic.background === 'layout' ? config.secondCameraLayer : null,
+  ].filter((l): l is VideoInputLayer => !!l);
+  const onCamera = (pic.background === 'camera' || pic.background === 'layout') && own.length > 0;
+  // The switcher's program: its camera, transitions and picture-in-picture, nothing else.
+  const switcher = pic.background === 'switcher';
   // 'none': only the words, over transparency (the NDI key feed).
   const bare = pic.background === 'none';
-  syncCamera(onCamera ? config.cameraLayer : null);
+  syncCameras(onCamera ? own.slice(0, pic.background === 'layout' ? 2 : 1) : [], pic.layout);
   back.render(
     {
       ...program,
       background: pic.background === 'program' ? program.background : null,
-      media: bare ? null : program.media,
+      media: bare || switcher ? null : program.media,
       input: onCamera || bare ? null : program.input,
       inputNext: onCamera || bare ? null : (program.inputNext ?? null),
-      pip: bare ? null : (program.pip ?? null),
+      pip: bare || onCamera ? null : (program.pip ?? null),
       content: null,
       announcement: null,
       web: null,
@@ -104,10 +140,10 @@ function draw(): void {
   // A lower third drawn with a theme made for it: the stream's own choice, else the one the
   // screens are using (lower-third mode). Without one, the slide's own theme is made smaller.
   // The stream's own theme for this kind of slide (Themes workspace) comes first.
-  const own = withKindThemes(program, config.kindThemes);
+  const themedOwn = withKindThemes(program, alternate ? config.alternateThemes : config.kindThemes);
   const worded =
-    own !== program
-      ? own
+    themedOwn !== program
+      ? themedOwn
       : pic.words === 'lowerThird'
         ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
         : program;
@@ -246,7 +282,9 @@ api.onConfig((c) => {
   }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
   if (c.meters && !config?.meters)
-    mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus, sides: l.sides }));
+    mix.startMeters((l) =>
+      api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus, sides: l.sides }),
+    );
   if (!c.meters) mix.stopMeters();
   document.body.classList.toggle('transparent', c.transparent);
   config = c;

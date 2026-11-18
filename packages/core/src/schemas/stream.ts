@@ -38,8 +38,21 @@ export const StreamSettingsSchema = z.object({
       camera: z.string().max(300).nullable().default(null),
       /** The words: full screen as the theme draws them, a lower third, or not at all. */
       words: z.enum(['full', 'lowerThird', 'none']).default('lowerThird'),
-      /** Behind the words: what the projector shows, the camera, or black. */
-      background: z.enum(['program', 'camera', 'black']).default('program'),
+      /**
+       * Behind the words: what the projector shows, a camera, the video switcher's program (the
+       * camera cut to there, with its transitions and picture-in-picture), two cameras laid out
+       * together, or black.
+       */
+      background: z.enum(['program', 'camera', 'switcher', 'layout', 'black']).default('program'),
+      /** Two cameras together (`background: 'layout'`): side by side, or the second in a corner. */
+      layout: z.enum(['sideBySide', 'pip']).default('sideBySide'),
+      /** The layout's second camera (the first is `camera`). */
+      secondCamera: z.string().max(300).nullable().default(null),
+      /**
+       * Show what one of the screens shows instead of making the stream's own picture: the
+       * alternate (HDMI) output with its themes, or the stage display. 'own': the stream's own.
+       */
+      mirror: z.enum(['own', 'alternate', 'stage']).default('own'),
       /** Lower third: size the words to fit the band by themselves (long verses shrink). */
       wordsAuto: z.boolean().default(true),
       /** Lower third, when not automatic: the words' size, as % of their full-screen size. */
@@ -57,6 +70,9 @@ export const StreamSettingsSchema = z.object({
       camera: null,
       words: 'lowerThird',
       background: 'program',
+      layout: 'sideBySide',
+      secondCamera: null,
+      mirror: 'own',
       wordsAuto: true,
       wordsSize: 60,
       wordsAlign: 'center',

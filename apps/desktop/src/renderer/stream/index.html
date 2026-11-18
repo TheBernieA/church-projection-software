@@ -56,6 +56,40 @@
       body.lower-third.has-words #band {
         display: block;
       }
+      /* Two cameras: side by side (each half, cropped to fill), or the second in a corner. */
+      #camera.layout-sideBySide > .ls-input:nth-child(1) {
+        right: 50% !important;
+      }
+      #camera.layout-sideBySide > .ls-input:nth-child(2) {
+        left: 50% !important;
+      }
+      #camera.layout-pip > .ls-input:nth-child(2) {
+        left: auto !important;
+        bottom: auto !important;
+        top: 4% !important;
+        right: 3% !important;
+        width: 30% !important;
+        height: 30% !important;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      }
+      /* Mirroring the stage display: only it shows. */
+      #stage {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: #07080c;
+      }
+      body.mirror-stage #stage {
+        display: block;
+      }
+      body.mirror-stage #camera,
+      body.mirror-stage #back,
+      body.mirror-stage #band,
+      body.mirror-stage #words {
+        visibility: hidden;
+      }
       /* The NDI words feed: see-through behind the words (alpha), for keying over cameras. */
       html:has(body.transparent),
       body.transparent {
@@ -69,6 +103,7 @@
       <div id="back"></div>
       <div id="band"></div>
       <div id="words"></div>
+      <div id="stage"></div>
     </div>
     <script type="module" src="./main.ts"></script>
   </body>

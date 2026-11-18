@@ -6,6 +6,7 @@ import type { Writable } from 'node:stream';
 import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'electron';
 import {
   resolvePerformance,
+  resolveStageLayout,
   StreamSettingsSchema,
   type LiveState,
   type MachineInfo,
@@ -69,6 +70,8 @@ export interface StreamDeps {
   wordsTheme: () => Theme | null;
   /** Themes the stream uses instead of each slide's own, by kind of slide. */
   kindThemes: () => ResolvedKindThemes;
+  /** The alternate (HDMI) output's themes, for a stream that mirrors it. */
+  alternateThemes: () => ResolvedKindThemes;
   onStatus: (s: StreamStatus) => void;
   notice: (n: Notice) => void;
 }
@@ -137,11 +140,10 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
 });
 
 /**
- * The stream's own camera as a screen layer, with its saved settings; its capture size is never
- * larger than the stream (a 4K webcam is asked for 720p on a 720p stream: far less to decode).
+ * A camera as a screen layer, with its saved settings; its capture size is never larger than
+ * the stream (a 4K webcam is asked for 720p on a 720p stream: far less to decode).
  */
-export function streamCameraLayer(s: Settings, height: number): VideoInputLayer | null {
-  const id = s.stream.picture.camera;
+function cameraLayerFor(s: Settings, id: string | null, height: number): VideoInputLayer | null {
   if (!id) return null;
   const c = s.cameras[id];
   const cap = height >= 1080 ? '1080' : '720';
@@ -153,6 +155,24 @@ export function streamCameraLayer(s: Settings, height: number): VideoInputLayer 
     fit: c?.fit ?? 'cover',
     mirror: c?.mirror ?? false,
     resolution,
+  };
+}
+
+/**
+ * What a stream picture needs besides its settings: its cameras (the second only for a layout),
+ * and the stage layout and alternate output's themes when it mirrors one of those screens.
+ */
+export function streamPictureExtras(
+  s: Settings,
+  height: number,
+  alternateThemes: ResolvedKindThemes,
+): Pick<StreamConfig, 'cameraLayer' | 'secondCameraLayer' | 'alternateThemes' | 'stageLayout'> {
+  const p = s.stream.picture;
+  return {
+    cameraLayer: cameraLayerFor(s, p.camera, height),
+    secondCameraLayer: p.background === 'layout' ? cameraLayerFor(s, p.secondCamera, height) : null,
+    alternateThemes: p.mirror === 'alternate' ? alternateThemes : {},
+    stageLayout: resolveStageLayout(s.stageLayouts, s.stageLayoutId),
   };
 }
 
@@ -604,7 +624,7 @@ export class StreamController {
       picture: s.picture,
       wordsTheme: this.d.wordsTheme(),
       kindThemes: this.d.kindThemes(),
-      cameraLayer: streamCameraLayer(settings, profile.height),
+      ...streamPictureExtras(settings, profile.height, this.d.alternateThemes()),
       transparent: false,
       // Meters only while someone can see them (a console, or the mixer while live).
       meters: this.encoding || this.watchers.size > 0,

@@ -19,7 +19,20 @@ export const WORDS_MODES: Choice<Picture['words']>[] = [
 export const BACKGROUNDS: Choice<Picture['background']>[] = [
   { value: 'program', label: 'streaming.bgProgram' },
   { value: 'camera', label: 'streaming.bgCamera' },
+  { value: 'switcher', label: 'streaming.bgSwitcher' },
+  { value: 'layout', label: 'streaming.bgLayout' },
   { value: 'black', label: 'streaming.bgBlack' },
+];
+
+export const LAYOUTS: Choice<Picture['layout']>[] = [
+  { value: 'sideBySide', label: 'streaming.layoutSide' },
+  { value: 'pip', label: 'streaming.layoutPip' },
+];
+
+export const MIRRORS: Choice<Picture['mirror']>[] = [
+  { value: 'own', label: 'streaming.mirrorOwn' },
+  { value: 'alternate', label: 'streaming.mirrorAlternate' },
+  { value: 'stage', label: 'streaming.mirrorStage' },
 ];
 
 export const WORDS_ALIGNS: Choice<Picture['wordsAlign']>[] = [
@@ -28,23 +41,59 @@ export const WORDS_ALIGNS: Choice<Picture['wordsAlign']>[] = [
   { value: 'right', label: 'streaming.align.right' },
 ];
 
-/**
- * Scenes: the usual looks for the stream, one click each (what's behind, and how the words
- * show). A camera scene is offered once per camera. Anything else is made with the controls
- * below.
- */
-export const STREAM_SCENES = [
-  { id: 'slides', background: 'program', words: 'full' },
-  { id: 'slidesLowerThird', background: 'program', words: 'lowerThird' },
-  { id: 'cameraLowerThird', background: 'camera', words: 'lowerThird' },
-  { id: 'camera', background: 'camera', words: 'none' },
-  { id: 'wordsOnBlack', background: 'black', words: 'full' },
-  { id: 'black', background: 'black', words: 'none' },
-] as const satisfies readonly {
+/** A scene template: the usual looks for the stream, one click each. */
+export interface SceneTemplate {
   id: string;
+  /** Where it's listed: slides and words, cameras, or the screens it mirrors. */
+  group: 'slides' | 'cameras' | 'screens';
   background: Picture['background'];
   words: Picture['words'];
-}[];
+  mirror?: Exclude<Picture['mirror'], 'own'>;
+  layout?: Picture['layout'];
+  /** Offered once for each camera. */
+  perCamera?: boolean;
+  /** Needs two cameras (a layout). */
+  twoCameras?: boolean;
+}
+
+/** The scenes the Live console offers (camera ones once per camera; layouts with two). */
+export const STREAM_SCENES: readonly SceneTemplate[] = [
+  { id: 'slides', group: 'slides', background: 'program', words: 'full' },
+  { id: 'slidesLowerThird', group: 'slides', background: 'program', words: 'lowerThird' },
+  { id: 'wordsOnBlack', group: 'slides', background: 'black', words: 'full' },
+  { id: 'black', group: 'slides', background: 'black', words: 'none' },
+  { id: 'switcherLowerThird', group: 'cameras', background: 'switcher', words: 'lowerThird' },
+  { id: 'switcher', group: 'cameras', background: 'switcher', words: 'none' },
+  {
+    id: 'cameraLowerThird',
+    group: 'cameras',
+    background: 'camera',
+    words: 'lowerThird',
+    perCamera: true,
+  },
+  { id: 'camera', group: 'cameras', background: 'camera', words: 'none', perCamera: true },
+  {
+    id: 'sideBySide',
+    group: 'cameras',
+    background: 'layout',
+    layout: 'sideBySide',
+    words: 'lowerThird',
+    twoCameras: true,
+  },
+  {
+    id: 'pip',
+    group: 'cameras',
+    background: 'layout',
+    layout: 'pip',
+    words: 'lowerThird',
+    twoCameras: true,
+  },
+  { id: 'alternate', group: 'screens', background: 'program', words: 'full', mirror: 'alternate' },
+  { id: 'stage', group: 'screens', background: 'program', words: 'full', mirror: 'stage' },
+];
+
+export const SCENE_GROUPS = ['slides', 'cameras', 'screens'] as const;
+
 /** The lower third's size when chosen by hand, as % of the words' full-screen size. */
 export const WORDS_SIZE = { min: 25, max: 100, step: 5 } as const;
 

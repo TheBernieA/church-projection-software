@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
+import { resolveStageLayout } from '@lampstand/core';
 import type {
   LiveState,
   NdiFeed,
@@ -17,7 +18,7 @@ import { secureWebPreferences } from '../security/hardening';
 import type { WindowManager } from '../windows/windowManager';
 import { type Logger } from '../types';
 import { findNdiRuntime } from './ndiRuntime';
-import { streamCameraLayer } from '../stream/streamController';
+import { streamPictureExtras } from '../stream/streamController';
 import type { NdiWorkerIn, NdiWorkerOut } from './ndiWorker';
 
 export interface NdiDeps {
@@ -29,6 +30,7 @@ export interface NdiDeps {
   standby: () => Standby;
   wordsTheme: () => Theme | null;
   kindThemes: () => ResolvedKindThemes;
+  alternateThemes: () => ResolvedKindThemes;
   onStatus: (s: NdiStatus) => void;
 }
 
@@ -46,6 +48,9 @@ interface Feed {
 /** The words as the theme draws them: full screen, nothing resized or moved. */
 const FULL = {
   camera: null,
+  layout: 'sideBySide',
+  secondCamera: null,
+  mirror: 'own',
   words: 'full',
   wordsAuto: false,
   wordsSize: 100,
@@ -253,8 +258,14 @@ export class NdiController {
       ...pictureOf(f.feed, this.d.getSettings()),
       wordsTheme: f.feed.content === 'stream' ? this.d.wordsTheme() : null,
       kindThemes: f.feed.content === 'stream' ? this.d.kindThemes() : {},
-      cameraLayer:
-        f.feed.content === 'stream' ? streamCameraLayer(this.d.getSettings(), f.height) : null,
+      ...(f.feed.content === 'stream'
+        ? streamPictureExtras(this.d.getSettings(), f.height, this.d.alternateThemes())
+        : {
+            cameraLayer: null,
+            secondCameraLayer: null,
+            alternateThemes: {},
+            stageLayout: resolveStageLayout([], null),
+          }),
       meters: false,
       probe: null,
       mix: f.feed.sound,

@@ -301,7 +301,10 @@ export interface StreamConfig {
     camera: string | null;
     words: 'full' | 'lowerThird' | 'none';
     /** 'none': nothing behind the words (a transparent NDI key feed). */
-    background: 'program' | 'camera' | 'black' | 'none';
+    background: 'program' | 'camera' | 'switcher' | 'layout' | 'black' | 'none';
+    layout: 'sideBySide' | 'pip';
+    secondCamera: string | null;
+    mirror: 'own' | 'alternate' | 'stage';
     /** Lower third: fit the words to the band automatically, or use `wordsSize` (%). */
     wordsAuto: boolean;
     wordsSize: number;
@@ -315,6 +318,12 @@ export interface StreamConfig {
   wordsTheme: Theme | null;
   /** The stream's own camera, with its saved settings (capture size capped at the stream's). */
   cameraLayer: VideoInputLayer | null;
+  /** A camera layout's second camera (likewise). */
+  secondCameraLayer: VideoInputLayer | null;
+  /** Mirroring the alternate output: its themes, by kind of slide. */
+  alternateThemes: ResolvedKindThemes;
+  /** Mirroring the stage display: its layout. */
+  stageLayout: StageLayout;
   /** GPU pipeline: check the hardware encoder can do this (the page reports back to main). */
   probe: EncodeConfig | null;
   /** Make the sound mix (off while just getting ready: no microphones open). */

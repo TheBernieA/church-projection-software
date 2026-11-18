@@ -9,6 +9,8 @@ import { useStore } from '../../lib/store';
 import {
   BACKGROUNDS,
   choices,
+  LAYOUTS,
+  MIRRORS,
   NONE,
   WORDS_ALIGNS,
   WORDS_MODES,
@@ -42,102 +44,147 @@ export function PicturePanel({ st }: { st: StreamSettings }) {
   const pic = st.picture;
   const set = (patch: Partial<StreamSettings['picture']>): void =>
     void saveSettings({ stream: { ...st, picture: { ...pic, ...patch } } });
+  const cameraOptions = [
+    { value: NONE, label: t('streaming.noCamera') },
+    ...(cameras ?? []).map((c) => ({ value: c.deviceId, label: c.label })),
+  ];
+  const camerasShown = pic.background === 'camera' || pic.background === 'layout';
   return (
     <Section title={t('console.picture')}>
-      <div className="flex flex-col gap-2">
-        <PictureRow label={t('console.behind')}>
-          <Segmented<StreamSettings['picture']['background']>
-            label={t('streaming.background')}
-            value={pic.background}
-            onChange={(background) => set({ background })}
-            options={choices(BACKGROUNDS, t)}
-          />
-        </PictureRow>
-        {pic.background === 'camera' && (
-          <PictureRow label={t('streaming.camera')}>
-            <Select<string>
-              size="sm"
-              aria-label={t('streaming.camera')}
-              value={pic.camera ?? NONE}
-              onChange={(id) => set({ camera: id === NONE ? null : id })}
-              options={[
-                { value: NONE, label: t('streaming.noCamera') },
-                ...(cameras ?? []).map((c) => ({ value: c.deviceId, label: c.label })),
-              ]}
-            />
-          </PictureRow>
-        )}
-      </div>
-      <div className="flex flex-col gap-2 border-t border-[var(--hairline)] pt-2.5">
-        <PictureRow label={t('streaming.words')}>
-          <Segmented<StreamSettings['picture']['words']>
-            label={t('streaming.words')}
-            value={pic.words}
-            onChange={(words) => set({ words })}
-            options={choices(WORDS_MODES, t)}
-          />
-        </PictureRow>
-        {pic.words === 'lowerThird' && (
-          <PictureRow label={t('streaming.wordsTheme')}>
-            <Select<string>
-              size="sm"
-              aria-label={t('streaming.wordsTheme')}
-              value={pic.wordsTheme ?? NONE}
-              onChange={(id) => {
-                // A theme brings its own position; Position can still move it afterwards.
-                const picked = lowerThirds.find((th) => th.id === id);
-                set({
-                  wordsTheme: picked ? picked.id : null,
-                  ...(picked ? { wordsAlign: themeAlignOf(picked) } : {}),
-                });
-              }}
-              options={[
-                { value: NONE, label: t('streaming.wordsThemeOwn') },
-                ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
-              ]}
-            />
-          </PictureRow>
-        )}
-        {pic.words === 'lowerThird' && (
-          <PictureRow label={t('streaming.wordsAlign')}>
-            <Segmented<StreamSettings['picture']['wordsAlign']>
-              label={t('streaming.wordsAlign')}
-              value={pic.wordsAlign}
-              onChange={(wordsAlign) => set({ wordsAlign })}
-              options={choices(WORDS_ALIGNS, t)}
-            />
-          </PictureRow>
-        )}
-        {pic.words === 'lowerThird' && (
-          <PictureRow label={t('streaming.wordsSize')}>
-            <div className="flex min-w-0 items-center gap-2.5">
-              <Button
-                size="xs"
-                variant={pic.wordsAuto ? 'primary' : 'subtle'}
-                aria-pressed={pic.wordsAuto}
-                title={t('streaming.wordsAutoHelp')}
-                onClick={() => set({ wordsAuto: !pic.wordsAuto })}
-              >
-                {t('streaming.wordsAuto')}
-              </Button>
-              {pic.wordsAuto ? (
-                <Typography size={11} tone="muted" leading="snug" className="min-w-0">
-                  {pic.wordsTheme ? t('streaming.wordsAutoTheme') : t('streaming.wordsAutoOn')}
-                </Typography>
-              ) : (
-                <Slider
-                  aria-label={t('streaming.wordsSize')}
-                  {...WORDS_SIZE}
-                  value={pic.wordsSize}
-                  format={(v) => `${v}%`}
-                  onChange={(e) => set({ wordsSize: Number(e.target.value) })}
-                  className="min-w-0 flex-1"
+      <PictureRow label={t('streaming.mirror')}>
+        <Select<StreamSettings['picture']['mirror']>
+          size="sm"
+          aria-label={t('streaming.mirror')}
+          value={pic.mirror}
+          onChange={(mirror) => set({ mirror })}
+          options={choices(MIRRORS, t)}
+        />
+      </PictureRow>
+      {pic.mirror !== 'own' ? (
+        <Typography as="p" size={11} tone="muted" leading="snug">
+          {t(`streaming.mirrorHelp.${pic.mirror}`)}
+        </Typography>
+      ) : (
+        <>
+          <div className="flex flex-col gap-2 border-t border-[var(--hairline)] pt-2.5">
+            <PictureRow label={t('console.behind')}>
+              <Select<StreamSettings['picture']['background']>
+                size="sm"
+                aria-label={t('streaming.background')}
+                value={pic.background}
+                onChange={(background) => set({ background })}
+                options={choices(BACKGROUNDS, t)}
+              />
+            </PictureRow>
+            {pic.background === 'layout' && (
+              <PictureRow label={t('streaming.layout')}>
+                <Segmented<StreamSettings['picture']['layout']>
+                  label={t('streaming.layout')}
+                  value={pic.layout}
+                  onChange={(layout) => set({ layout })}
+                  options={choices(LAYOUTS, t)}
                 />
-              )}
-            </div>
-          </PictureRow>
-        )}
-      </div>
+              </PictureRow>
+            )}
+            {camerasShown && (
+              <PictureRow
+                label={pic.background === 'layout' ? t('streaming.cameraA') : t('streaming.camera')}
+              >
+                <Select<string>
+                  size="sm"
+                  aria-label={
+                    pic.background === 'layout' ? t('streaming.cameraA') : t('streaming.camera')
+                  }
+                  value={pic.camera ?? NONE}
+                  onChange={(id) => set({ camera: id === NONE ? null : id })}
+                  options={cameraOptions}
+                />
+              </PictureRow>
+            )}
+            {pic.background === 'layout' && (
+              <PictureRow label={t('streaming.cameraB')}>
+                <Select<string>
+                  size="sm"
+                  aria-label={t('streaming.cameraB')}
+                  value={pic.secondCamera ?? NONE}
+                  onChange={(id) => set({ secondCamera: id === NONE ? null : id })}
+                  options={cameraOptions}
+                />
+              </PictureRow>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 border-t border-[var(--hairline)] pt-2.5">
+            <PictureRow label={t('streaming.words')}>
+              <Segmented<StreamSettings['picture']['words']>
+                label={t('streaming.words')}
+                value={pic.words}
+                onChange={(words) => set({ words })}
+                options={choices(WORDS_MODES, t)}
+              />
+            </PictureRow>
+            {pic.words === 'lowerThird' && (
+              <PictureRow label={t('streaming.wordsTheme')}>
+                <Select<string>
+                  size="sm"
+                  aria-label={t('streaming.wordsTheme')}
+                  value={pic.wordsTheme ?? NONE}
+                  onChange={(id) => {
+                    // A theme brings its own position; Position can still move it afterwards.
+                    const picked = lowerThirds.find((th) => th.id === id);
+                    set({
+                      wordsTheme: picked ? picked.id : null,
+                      ...(picked ? { wordsAlign: themeAlignOf(picked) } : {}),
+                    });
+                  }}
+                  options={[
+                    { value: NONE, label: t('streaming.wordsThemeOwn') },
+                    ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
+                  ]}
+                />
+              </PictureRow>
+            )}
+            {pic.words === 'lowerThird' && (
+              <PictureRow label={t('streaming.wordsAlign')}>
+                <Segmented<StreamSettings['picture']['wordsAlign']>
+                  label={t('streaming.wordsAlign')}
+                  value={pic.wordsAlign}
+                  onChange={(wordsAlign) => set({ wordsAlign })}
+                  options={choices(WORDS_ALIGNS, t)}
+                />
+              </PictureRow>
+            )}
+            {pic.words === 'lowerThird' && (
+              <PictureRow label={t('streaming.wordsSize')}>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Button
+                    size="xs"
+                    variant={pic.wordsAuto ? 'primary' : 'subtle'}
+                    aria-pressed={pic.wordsAuto}
+                    title={t('streaming.wordsAutoHelp')}
+                    onClick={() => set({ wordsAuto: !pic.wordsAuto })}
+                  >
+                    {t('streaming.wordsAuto')}
+                  </Button>
+                  {pic.wordsAuto ? (
+                    <Typography size={11} tone="muted" leading="snug" className="min-w-0">
+                      {pic.wordsTheme ? t('streaming.wordsAutoTheme') : t('streaming.wordsAutoOn')}
+                    </Typography>
+                  ) : (
+                    <Slider
+                      aria-label={t('streaming.wordsSize')}
+                      {...WORDS_SIZE}
+                      value={pic.wordsSize}
+                      format={(v) => `${v}%`}
+                      onChange={(e) => set({ wordsSize: Number(e.target.value) })}
+                      className="min-w-0 flex-1"
+                    />
+                  )}
+                </div>
+              </PictureRow>
+            )}
+          </div>
+        </>
+      )}
     </Section>
   );
 }

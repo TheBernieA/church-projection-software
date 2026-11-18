@@ -250,6 +250,7 @@ export class AppController {
       standby: () => this.standby,
       wordsTheme: () => this.wordsTheme,
       kindThemes: () => this.outputThemes.stream,
+      alternateThemes: () => this.outputThemes.alternate,
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
@@ -263,6 +264,7 @@ export class AppController {
       standby: () => this.standby,
       wordsTheme: () => this.wordsTheme,
       kindThemes: () => this.outputThemes.stream,
+      alternateThemes: () => this.outputThemes.alternate,
       onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
     });
     this.ndi.settingsChanged();

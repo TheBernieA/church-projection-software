@@ -2197,6 +2197,20 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   );
   await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
   await expect.poll(picture).toBe('program lowerThird');
+  // The switcher's program, and mirroring a screen (the stage display), are scenes too.
+  const mirror = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+    return r.ok ? r.value.stream.picture.mirror : '';
+  };
+  await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
+  await expect.poll(picture).toBe('switcher none');
+  await scenes.getByRole('button', { name: 'Stage display' }).click();
+  await expect.poll(mirror).toBe('stage');
+  await control.waitForTimeout(800);
+  await control.screenshot({ path: 'test-results/41c-live-scenes.png' });
+  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
+  await expect.poll(mirror).toBe('own');
+  await expect.poll(picture).toBe('program lowerThird');
   // The scenes fold away (and come back) with the arrow beside them.
   await live.getByRole('button', { name: 'Hide the scenes' }).click();
   await expect(scenes).toBeHidden();

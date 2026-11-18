@@ -17,7 +17,7 @@ import { useCameraSettingsVersion, useDeviceStream, useInputDevices } from '../.
 import { onMeters, readMeter, readSides } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
-import { STREAM_SCENES } from '../../lib/streamOptions';
+import { SCENE_GROUPS, STREAM_SCENES, type SceneTemplate } from '../../lib/streamOptions';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { usePref } from './consoleParts';
@@ -62,23 +62,33 @@ export function StreamMeterOverlay() {
   );
 }
 
-/** One look the stream can take, ready to click (a camera scene names its camera). */
+type Picture = StreamSettings['picture'];
+
+/** One look the stream can take, ready to click (camera scenes name their cameras). */
 interface SceneChoice {
   key: string;
   label: string;
-  background: StreamSettings['picture']['background'];
-  words: StreamSettings['picture']['words'];
-  camera: string | null;
+  group: SceneTemplate['group'];
+  patch: Pick<Picture, 'background' | 'words' | 'mirror'> &
+    Partial<Pick<Picture, 'layout' | 'camera' | 'secondCamera'>>;
 }
 
 /** A camera's live picture, small (the tile shows the very camera it would switch to). */
-function CameraThumb({ deviceId }: { deviceId: string }) {
+function CameraThumb({ deviceId, className = '' }: { deviceId: string; className?: string }) {
   const stream = useDeviceStream('videoinput', deviceId);
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (video.current) video.current.srcObject = stream;
   }, [stream]);
-  return <video ref={video} autoPlay muted playsInline className="h-full w-full object-cover" />;
+  return (
+    <video
+      ref={video}
+      autoPlay
+      muted
+      playsInline
+      className={`h-full w-full object-cover ${className}`}
+    />
+  );
 }
 
 /** The lower-third band, sketched over a tile's picture. */
@@ -92,9 +102,93 @@ const BandSketch = () => (
   </span>
 );
 
+/** A word on a tile with no picture of its own (the stage display, the switcher with nothing up). */
+const TileWord = ({ children }: { children: string }) => (
+  <Typography
+    as="span"
+    size={10}
+    weight="semibold"
+    tone="white"
+    className="absolute inset-0 flex items-center justify-center opacity-70"
+  >
+    {children}
+  </Typography>
+);
+
+/** What a scene would put on the stream, small: real cameras, the real slide. */
+function ScenePicture({
+  c,
+  program,
+  behind,
+  wordsAlone,
+}: {
+  c: SceneChoice;
+  program: Scene | null;
+  behind: Scene | null;
+  wordsAlone: Scene | null;
+}) {
+  const { t } = useTranslation();
+  const p = c.patch;
+  if (p.mirror === 'stage') return <TileWord>{t('console.scenes.stageTile')}</TileWord>;
+  if (p.mirror === 'alternate')
+    return (
+      <>
+        {program && <SceneView mode="thumbnail" scene={program} />}
+        <Typography
+          as="span"
+          size={10}
+          weight="semibold"
+          tone="white"
+          className="absolute right-1 top-1 rounded-[3px] bg-black/60 px-1"
+        >
+          HDMI
+        </Typography>
+      </>
+    );
+  const switcherCam = program?.input?.deviceId;
+  const picture =
+    p.background === 'layout' && p.camera && p.secondCamera ? (
+      p.layout === 'pip' ? (
+        <>
+          <CameraThumb deviceId={p.camera} />
+          <span className="absolute right-[4%] top-[6%] h-[32%] w-[32%] overflow-hidden rounded-[3px] shadow-[0_0_0_1px_rgba(255,255,255,0.4)]">
+            <CameraThumb deviceId={p.secondCamera} />
+          </span>
+        </>
+      ) : (
+        <span className="absolute inset-0 flex">
+          <span className="h-full w-1/2 overflow-hidden">
+            <CameraThumb deviceId={p.camera} />
+          </span>
+          <span className="h-full w-1/2 overflow-hidden">
+            <CameraThumb deviceId={p.secondCamera} />
+          </span>
+        </span>
+      )
+    ) : p.background === 'camera' && p.camera ? (
+      <CameraThumb deviceId={p.camera} />
+    ) : p.background === 'switcher' ? (
+      switcherCam ? (
+        <CameraThumb deviceId={switcherCam} />
+      ) : (
+        <TileWord>{t('console.scenes.switcherTile')}</TileWord>
+      )
+    ) : p.background === 'program' && program && behind ? (
+      <SceneView mode="thumbnail" scene={p.words === 'full' ? program : behind} />
+    ) : p.words === 'full' && wordsAlone ? (
+      <SceneView mode="thumbnail" scene={wordsAlone} />
+    ) : null;
+  return (
+    <>
+      {picture}
+      {p.words === 'lowerThird' && <BandSketch />}
+    </>
+  );
+}
+
 /**
- * The scenes, as small live previews: what each would put on the stream, with the real camera
- * pictures. One click switches the stream to it.
+ * The scenes, as small live previews in three groups (slides, cameras, screens): what each would
+ * put on the stream, with the real camera pictures. One click switches the stream to it.
  */
 export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming: boolean }) {
   const { t } = useTranslation();
@@ -110,17 +204,40 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
         .map((d) => ({ id: d.deviceId, name: saved[d.deviceId]?.name || d.label })),
     [all, saved],
   );
-  const choices: SceneChoice[] = STREAM_SCENES.flatMap((s): SceneChoice[] =>
-    s.background === 'camera'
-      ? cameras.map((c) => ({
-          key: `${s.id}:${c.id}`,
-          label: t(`console.scenes.${s.id}Of`, { name: c.name }),
-          background: s.background,
-          words: s.words,
-          camera: c.id,
-        }))
-      : [{ key: s.id, label: t(`console.scenes.${s.id}`), ...s, camera: null }],
-  );
+  // A layout's two cameras: the ones chosen, else the first two there are.
+  const pair = useMemo(() => {
+    const a = pic.camera && cameras.some((c) => c.id === pic.camera) ? pic.camera : cameras[0]?.id;
+    const b =
+      pic.secondCamera && pic.secondCamera !== a && cameras.some((c) => c.id === pic.secondCamera)
+        ? pic.secondCamera
+        : cameras.find((c) => c.id !== a)?.id;
+    return a && b ? ([a, b] as const) : null;
+  }, [cameras, pic.camera, pic.secondCamera]);
+  const choices: SceneChoice[] = STREAM_SCENES.flatMap((s): SceneChoice[] => {
+    const base = {
+      group: s.group,
+      patch: { background: s.background, words: s.words, mirror: s.mirror ?? ('own' as const) },
+    };
+    if (s.perCamera)
+      return cameras.map((c) => ({
+        ...base,
+        key: `${s.id}:${c.id}`,
+        label: t(`console.scenes.${s.id}Of`, { name: c.name }),
+        patch: { ...base.patch, camera: c.id },
+      }));
+    if (s.twoCameras)
+      return pair
+        ? [
+            {
+              ...base,
+              key: s.id,
+              label: t(`console.scenes.${s.id}`),
+              patch: { ...base.patch, layout: s.layout, camera: pair[0], secondCamera: pair[1] },
+            },
+          ]
+        : [];
+    return [{ ...base, key: s.id, label: t(`console.scenes.${s.id}`) }];
+  });
   // The projector's picture without its words, and its words alone (for the tiles to compose).
   const behind = useMemo<Scene | null>(
     () =>
@@ -131,22 +248,21 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
     () => (program ? { ...EMPTY_SCENE, content: program.content } : null),
     [program],
   );
-  const isOn = (c: SceneChoice): boolean =>
-    c.background === pic.background &&
-    c.words === pic.words &&
-    (c.camera === null || c.camera === pic.camera);
+  // On air: every field the scene sets matches (a mirror ignores what's behind).
+  const isOn = (c: SceneChoice): boolean => {
+    const p = c.patch;
+    if (p.mirror !== pic.mirror) return false;
+    if (p.mirror !== 'own') return true;
+    return (
+      p.background === pic.background &&
+      p.words === pic.words &&
+      (p.camera === undefined || p.camera === pic.camera) &&
+      (p.layout === undefined || p.layout === pic.layout) &&
+      (p.secondCamera === undefined || p.secondCamera === pic.secondCamera)
+    );
+  };
   const pick = (c: SceneChoice): void =>
-    void saveSettings({
-      stream: {
-        ...st,
-        picture: {
-          ...pic,
-          background: c.background,
-          words: c.words,
-          camera: c.camera ?? pic.camera,
-        },
-      },
-    });
+    void saveSettings({ stream: { ...st, picture: { ...pic, ...c.patch } } });
   const current = choices.find(isOn);
   return (
     <div className="flex flex-col gap-2">
@@ -169,52 +285,65 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
         </Typography>
       </Button>
       {open && (
-        <div
-          role="group"
-          aria-label={t('console.scene')}
-          className="grid gap-x-2 gap-y-2.5"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
-        >
-          {choices.map((c) => {
-            const on = isOn(c);
+        <div role="group" aria-label={t('console.scene')} className="flex flex-col gap-2.5">
+          {SCENE_GROUPS.map((g) => {
+            const inGroup = choices.filter((c) => c.group === g);
+            if (!inGroup.length) return null;
             return (
-              <Button
-                key={c.key}
-                variant="bare"
-                aria-pressed={on}
-                aria-label={c.label}
-                title={c.label}
-                onClick={() => pick(c)}
-                className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
+              <section
+                key={g}
+                aria-label={t(`console.sceneGroups.${g}`)}
+                className="flex flex-col gap-1.5"
               >
-                <span
-                  className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
-                    on
-                      ? streaming
-                        ? 'shadow-[0_0_0_2px_var(--tally-program)]'
-                        : 'shadow-[0_0_0_2px_var(--accent)]'
-                      : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
-                  }`}
-                >
-                  {c.background === 'camera' && c.camera ? (
-                    <CameraThumb deviceId={c.camera} />
-                  ) : c.background === 'program' && behind && program ? (
-                    <SceneView mode="thumbnail" scene={c.words === 'full' ? program : behind} />
-                  ) : c.words === 'full' && wordsAlone ? (
-                    <SceneView mode="thumbnail" scene={wordsAlone} />
-                  ) : null}
-                  {c.words === 'lowerThird' && <BandSketch />}
-                </span>
-                <Typography
-                  size={11}
-                  tone={on ? 'primary' : 'secondary'}
-                  weight={on ? 'semibold' : 'regular'}
-                  truncate
-                  className="block"
-                >
-                  {c.label}
+                <Typography as="h4" size={11} tone="muted" weight="semibold">
+                  {t(`console.sceneGroups.${g}`)}
                 </Typography>
-              </Button>
+                <div
+                  className="grid gap-x-2 gap-y-2.5"
+                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
+                >
+                  {inGroup.map((c) => {
+                    const on = isOn(c);
+                    return (
+                      <Button
+                        key={c.key}
+                        variant="bare"
+                        aria-pressed={on}
+                        aria-label={c.label}
+                        title={c.label}
+                        onClick={() => pick(c)}
+                        className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
+                      >
+                        <span
+                          className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
+                            on
+                              ? streaming
+                                ? 'shadow-[0_0_0_2px_var(--tally-program)]'
+                                : 'shadow-[0_0_0_2px_var(--accent)]'
+                              : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
+                          }`}
+                        >
+                          <ScenePicture
+                            c={c}
+                            program={program}
+                            behind={behind}
+                            wordsAlone={wordsAlone}
+                          />
+                        </span>
+                        <Typography
+                          size={11}
+                          tone={on ? 'primary' : 'secondary'}
+                          weight={on ? 'semibold' : 'regular'}
+                          truncate
+                          className="block"
+                        >
+                          {c.label}
+                        </Typography>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
         </div>

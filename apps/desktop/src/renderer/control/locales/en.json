@@ -784,11 +784,11 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound; it should move when someone speaks or music plays.\n4. Under the picture, click a scene to change what the stream shows. Each scene is a small live preview: Slides, Slides + lower third, every camera with the words and on its own, Words on black, and Black. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away and remembers it.\n5. Under the scenes: the speaker button mutes the stream and the slider sets its level. Add a mic… on the same line brings in a mic or the desk.\n6. Each mic and desk then has its own line: the mic button puts it on the stream (red) or takes it off, the slider sets its level, the meter shows what the stream hears from it, and the last button mutes it.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound; it should move when someone speaks or music plays.\n4. Under the picture, click a scene to change what the stream shows. Each is a small live preview, in three groups. Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar, with picture-in-picture), every camera with the words and on its own, and with two cameras, Two cameras side by side or Camera in a corner. Screens: the Alternate (HDMI) output in its themes, or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes: the speaker button mutes the stream and the slider sets its level. Add a mic… on the same line brings in a mic or the desk.\n6. Each mic and desk then has its own line: the mic button puts it on the stream (red) or takes it off, the slider sets its level, the meter shows what the stream hears from it, and the last button mutes it.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "1. For the usual looks, click a scene under the stream picture (see “Use the Live console”). To build your own look, use the steps below.\n2. In the Live console, open “What the stream shows”.\n3. Choose the words (full screen, a lower third, or none) and what’s behind them (the projector’s picture, a camera, or black).\n4. For a lower third, pick its theme, its position (left, centre or right) and its size: Auto fits each slide, or turn Auto off and drag.\n5. Mics and the desk are under the scenes; music and video are in “Music and video” further down: switch each one on for the stream and watch its meter.\nTurn on “Show the stream picture before going live” to check it first."
+          "a": "1. For the usual looks, click a scene under the stream picture (see “Use the Live console”). To build your own look, use the steps below.\n2. In the Live console, open “What the stream shows”.\n3. Choose what the stream shows (its own picture, or mirror the alternate output or stage display), what’s behind the words (the projector’s picture, a camera, the switcher, two cameras laid out together, or black) and the words (full screen, a lower third, or none). For two cameras, pick the layout and both cameras.\n4. For a lower third, pick its theme, its position (left, centre or right) and its size: Auto fits each slide, or turn Auto off and drag.\n5. Mics and the desk are under the scenes; music and video are in “Music and video” further down: switch each one on for the stream and watch its meter.\nTurn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
@@ -1811,7 +1811,7 @@
     "fullScreen": "Full screen",
     "off": "Off",
     "background": "Behind the words",
-    "backgroundHelp": "What the projector shows, a camera, or black.",
+    "backgroundHelp": "What the projector shows, a camera, the video switcher’s program, two cameras together, or black.",
     "bgProgram": "As the projector",
     "bgCamera": "Camera",
     "bgBlack": "Black",
@@ -1870,6 +1870,21 @@
       "balanced": "1280×720 at 30 fps, 3.5 Mb/s. Good for most churches.",
       "quality": "1920×1080 at 30 fps, 6 Mb/s. Needs a recent computer (ideally with a hardware encoder) and a good upload.",
       "custom": "The size, frame rate and bitrate below, exactly as set."
+    },
+    "bgSwitcher": "Switcher",
+    "bgLayout": "Two cameras",
+    "layout": "Layout",
+    "layoutSide": "Side by side",
+    "layoutPip": "In a corner",
+    "cameraA": "First camera",
+    "cameraB": "Second camera",
+    "mirror": "Show",
+    "mirrorOwn": "The stream's own picture",
+    "mirrorAlternate": "The alternate (HDMI) output",
+    "mirrorStage": "The stage display",
+    "mirrorHelp": {
+      "alternate": "The stream shows what the alternate output shows: the slides in its themes, under its Look.",
+      "stage": "The stream shows the stage display, in the layout chosen in the Stage workspace."
     }
   },
   "surfaces": {
@@ -2181,14 +2196,22 @@
     "meterRight": "Stream sound, right",
     "scene": "Scene: what the stream shows",
     "scenes": {
-      "slides": "Slides",
+      "slides": "Main screen",
       "slidesLowerThird": "Slides + lower third",
       "cameraLowerThird": "Camera with a lower third",
       "camera": "Camera only",
       "wordsOnBlack": "Words on black",
       "black": "Black",
       "cameraLowerThirdOf": "{{name}} + words",
-      "cameraOf": "{{name}}"
+      "cameraOf": "{{name}}",
+      "switcherLowerThird": "Switcher + words",
+      "switcher": "Switcher",
+      "sideBySide": "Two cameras",
+      "pip": "Camera in a corner",
+      "alternate": "Alternate (HDMI)",
+      "stage": "Stage display",
+      "stageTile": "STAGE",
+      "switcherTile": "SWITCHER"
     },
     "muteStream": "Mute the stream",
     "streamMuted": "The stream is muted: viewers hear nothing",
@@ -2206,7 +2229,12 @@
     "scenesTitle": "Scenes",
     "scenesShow": "Show the scenes",
     "scenesHide": "Hide the scenes",
-    "scenesCustom": "Your own look (below)"
+    "scenesCustom": "Your own look (below)",
+    "sceneGroups": {
+      "slides": "Slides",
+      "cameras": "Cameras",
+      "screens": "Screens"
+    }
   },
   "benchmark": {
     "button": "Check this computer",
