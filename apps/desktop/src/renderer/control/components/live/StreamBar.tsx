@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
+import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EMPTY_SCENE,
@@ -20,6 +20,7 @@ import { useStore } from '../../lib/store';
 import { STREAM_SCENES } from '../../lib/streamOptions';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
+import { usePref } from './consoleParts';
 
 /**
  * The stream's sound, left and right, over the corner of its picture: the operator sees at a
@@ -97,6 +98,7 @@ const BandSketch = () => (
  */
 export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming: boolean }) {
   const { t } = useTranslation();
+  const [open, setOpen] = usePref('lampstand.liveScenes', true);
   const program = useStore((s) => s.live?.program ?? null);
   const all = useInputDevices('videoinput');
   const saved = useCameraSettingsVersion();
@@ -145,50 +147,78 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
         },
       },
     });
+  const current = choices.find(isOn);
   return (
-    <div role="group" aria-label={t('console.scene')} className="flex gap-2 overflow-x-auto pb-1">
-      {choices.map((c) => {
-        const on = isOn(c);
-        return (
-          <Button
-            key={c.key}
-            variant="bare"
-            aria-pressed={on}
-            aria-label={c.label}
-            title={c.label}
-            onClick={() => pick(c)}
-            className="group/scene flex w-[104px] shrink-0 cursor-pointer flex-col gap-1 text-left"
-          >
-            <span
-              className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
-                on
-                  ? streaming
-                    ? 'shadow-[0_0_0_2px_var(--tally-program)]'
-                    : 'shadow-[0_0_0_2px_var(--accent)]'
-                  : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
-              }`}
-            >
-              {c.background === 'camera' && c.camera ? (
-                <CameraThumb deviceId={c.camera} />
-              ) : c.background === 'program' && behind && program ? (
-                <SceneView mode="thumbnail" scene={c.words === 'full' ? program : behind} />
-              ) : c.words === 'full' && wordsAlone ? (
-                <SceneView mode="thumbnail" scene={wordsAlone} />
-              ) : null}
-              {c.words === 'lowerThird' && <BandSketch />}
-            </span>
-            <Typography
-              size={11}
-              tone={on ? 'primary' : 'secondary'}
-              weight={on ? 'semibold' : 'regular'}
-              truncate
-              className="block"
-            >
-              {c.label}
-            </Typography>
-          </Button>
-        );
-      })}
+    <div className="flex flex-col gap-2">
+      <Button
+        variant="bare"
+        aria-expanded={open}
+        aria-label={open ? t('console.scenesHide') : t('console.scenesShow')}
+        onClick={() => setOpen(!open)}
+        className="flex w-full cursor-pointer items-center gap-2 text-left"
+      >
+        <ChevronRight
+          size={14}
+          className={`shrink-0 text-[var(--text-3)] transition-transform ${open ? 'rotate-90' : ''}`}
+        />
+        <Typography as="span" variant="overline">
+          {t('console.scenesTitle')}
+        </Typography>
+        <Typography size={12} tone="secondary" truncate className="min-w-0 flex-1 text-right">
+          {current?.label ?? t('console.scenesCustom')}
+        </Typography>
+      </Button>
+      {open && (
+        <div
+          role="group"
+          aria-label={t('console.scene')}
+          className="grid gap-x-2 gap-y-2.5"
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
+        >
+          {choices.map((c) => {
+            const on = isOn(c);
+            return (
+              <Button
+                key={c.key}
+                variant="bare"
+                aria-pressed={on}
+                aria-label={c.label}
+                title={c.label}
+                onClick={() => pick(c)}
+                className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
+              >
+                <span
+                  className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
+                    on
+                      ? streaming
+                        ? 'shadow-[0_0_0_2px_var(--tally-program)]'
+                        : 'shadow-[0_0_0_2px_var(--accent)]'
+                      : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
+                  }`}
+                >
+                  {c.background === 'camera' && c.camera ? (
+                    <CameraThumb deviceId={c.camera} />
+                  ) : c.background === 'program' && behind && program ? (
+                    <SceneView mode="thumbnail" scene={c.words === 'full' ? program : behind} />
+                  ) : c.words === 'full' && wordsAlone ? (
+                    <SceneView mode="thumbnail" scene={wordsAlone} />
+                  ) : null}
+                  {c.words === 'lowerThird' && <BandSketch />}
+                </span>
+                <Typography
+                  size={11}
+                  tone={on ? 'primary' : 'secondary'}
+                  weight={on ? 'semibold' : 'regular'}
+                  truncate
+                  className="block"
+                >
+                  {c.label}
+                </Typography>
+              </Button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -264,6 +294,7 @@ export function StreamSound() {
   const spare = (devices ?? []).filter((d) => !inputs.some((c) => c.deviceId === d.deviceId));
   return (
     <div className="flex flex-col gap-2">
+      {/* The stream's level, and bringing in a mic, on one line. */}
       <div className="flex items-center gap-2">
         <IconButton
           size="xs"
@@ -277,11 +308,9 @@ export function StreamSound() {
         >
           {bus.mute ? <VolumeX size={14} /> : <Volume2 size={14} />}
         </IconButton>
-        <Typography size={12} weight="semibold" tone="primary" className="min-w-0 flex-1">
-          {t('console.streamLevel')}
-        </Typography>
         <Slider
           aria-label={t('mixer.levelOf', { name: t('mixer.bus.stream') })}
+          title={t('console.streamLevel')}
           min={MIN_DB}
           max={MAX_DB}
           step={0.5}
@@ -290,25 +319,27 @@ export function StreamSound() {
           onChange={(e) =>
             mixerLive({ action: 'bus', bus: 'stream', patch: { gainDb: Number(e.target.value) } })
           }
-          className="w-32 shrink-0"
+          className="min-w-0 flex-1"
         />
+        {spare.length > 0 && (
+          <div className="w-40 shrink-0">
+            <Select<string>
+              size="sm"
+              aria-label={t('console.addMic')}
+              placeholder={t('console.addMic')}
+              value={ADD}
+              onChange={(id) => {
+                const d = spare.find((x) => x.deviceId === id);
+                if (d) void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label });
+              }}
+              options={spare.map((d) => ({ value: d.deviceId, label: d.label }))}
+            />
+          </div>
+        )}
       </div>
       {inputs.map((c) => (
         <InputStrip key={c.id} c={c} />
       ))}
-      {spare.length > 0 && (
-        <Select<string>
-          size="sm"
-          aria-label={t('console.addMic')}
-          placeholder={t('console.addMic')}
-          value={ADD}
-          onChange={(id) => {
-            const d = spare.find((x) => x.deviceId === id);
-            if (d) void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label });
-          }}
-          options={spare.map((d) => ({ value: d.deviceId, label: d.label }))}
-        />
-      )}
     </div>
   );
 }

@@ -2195,8 +2195,13 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     'aria-pressed',
     'true',
   );
-  await scenes.getByRole('button', { name: 'Slides with a lower third' }).click();
+  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
   await expect.poll(picture).toBe('program lowerThird');
+  // The scenes fold away (and come back) with the arrow beside them.
+  await live.getByRole('button', { name: 'Hide the scenes' }).click();
+  await expect(scenes).toBeHidden();
+  await live.getByRole('button', { name: 'Show the scenes' }).click();
+  await expect(scenes).toBeVisible();
   // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
   await live.getByRole('button', { name: 'Mute Stream' }).click();
   const silent = live.getByRole('alert').filter({ hasText: 'The stream is muted' });

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import {
   Circle,
   ExternalLink,
@@ -17,7 +17,7 @@ import { q } from '../../lib/api';
 import { openDialog, useStore } from '../../lib/store';
 import { useStreamPreview } from '../../lib/streamPreview';
 import { CheckComputer } from './CheckComputer';
-import { formatBytes, readPref, run, Section } from './consoleParts';
+import { formatBytes, run, Section, usePref } from './consoleParts';
 import { DestinationsPanel } from './DestinationsPanel';
 import { PicturePanel } from './PicturePanel';
 import { QuickSettings } from './QuickSettings';
@@ -41,7 +41,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
   const st: StreamSettings | null = settings?.stream ?? null;
   const destinations = st?.destinations ?? NO_DESTINATIONS;
   const enabled = destinations.filter((d) => d.enabled);
-  const [showReady, setShowReady] = useState(() => readPref(READY_KEY, true));
+  const [showReady, toggleReady] = usePref(READY_KEY, true);
   const canReady = s?.profile.allowReady ?? true;
   const running = !!s && s.state !== 'idle';
   const previewCanvas = useRef<HTMLCanvasElement>(null);
@@ -51,14 +51,6 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
     showReady && canReady,
   );
 
-  const toggleReady = (on: boolean): void => {
-    setShowReady(on);
-    try {
-      localStorage.setItem(READY_KEY, on ? '1' : '0');
-    } catch {
-      /* this session only */
-    }
-  };
   const goLive = (): void => {
     const names = enabled.map((d) => d.name).join(', ');
     if (window.confirm(t('live.confirmStart', { names }))) run('stream.start', { stream: true });

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Typography } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { attempt } from '../../lib/store';
@@ -20,6 +20,20 @@ export function readPref(key: string, fallback: boolean): boolean {
   } catch {
     return fallback;
   }
+}
+
+/** A yes/no the operator chose in the console, remembered on this computer. */
+export function usePref(key: string, fallback: boolean): [boolean, (on: boolean) => void] {
+  const [on, setOn] = useState(() => readPref(key, fallback));
+  const set = (next: boolean): void => {
+    setOn(next);
+    try {
+      localStorage.setItem(key, next ? '1' : '0');
+    } catch {
+      /* this session only */
+    }
+  };
+  return [on, set];
 }
 
 /** A titled block of the console. */
