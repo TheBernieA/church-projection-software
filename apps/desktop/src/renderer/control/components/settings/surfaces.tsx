@@ -5,7 +5,9 @@ import {
   DESK_EVENTS,
   describeSource,
   MUTE_MODES,
-  suggestMuteMode,
+  surfaceTargetFromKey,
+  surfaceTargetKey,
+  withSource,
   type MuteMode,
   newId,
   SURFACE_ACTIONS,
@@ -17,7 +19,6 @@ import {
   type SurfaceBinding,
   type SurfaceSource,
   type SurfacesSettings,
-  type SurfaceTarget,
 } from '@lampstand/core';
 import type { OscStatus } from '@lampstand/ipc-contract';
 import { Button, IconButton, Segmented, Switch, Typography } from '@lampstand/ui';
@@ -32,46 +33,6 @@ import { EmptyState, Group, Notice, Row, SettingsPage, Tag, UnitInput } from './
 type Update = (patch: Partial<Settings>) => void;
 
 // ---------- What a control does: one string per choice, for the dropdown ----------
-
-const targetKey = (t: SurfaceTarget): string => {
-  switch (t.kind) {
-    case 'action':
-      return `action:${t.action}`;
-    case 'camera':
-      return `camera:${t.n}:${t.take ? 'take' : 'preview'}`;
-    case 'fader':
-    case 'mute':
-      return `${t.kind}:${t.bus}${t.bus === 'channel' ? `:${t.channelId ?? ''}` : ''}`;
-    case 'tbar':
-      return 'tbar';
-  }
-};
-
-/** The choice in the dropdown as a target; a mute guesses how the desk's control reports. */
-function targetFromKey(key: string, source?: SurfaceSource): SurfaceTarget | null {
-  const [kind, a, b] = key.split(':');
-  if (kind === 'tbar') return { kind: 'tbar' };
-  if (kind === 'action') {
-    const action = SURFACE_ACTIONS.find((x) => x === a);
-    return action ? { kind: 'action', action } : null;
-  }
-  if (kind === 'camera') return { kind: 'camera', n: Number(a), take: b === 'take' };
-  const mode = source ? suggestMuteMode(source) : 'toggle';
-  const extra = kind === 'mute' ? { mode } : {};
-  if (kind === 'fader' || kind === 'mute') {
-    if (a === 'room' || a === 'stream') return { kind, bus: a, ...extra } as SurfaceTarget;
-    if (a === 'channel' && b)
-      return { kind, bus: 'channel', channelId: b, ...extra } as SurfaceTarget;
-  }
-  return null;
-}
-
-/** A binding with a newly learned control (a mute re-guesses how that control reports). */
-const relearned = (b: SurfaceBinding, source: SurfaceSource): SurfaceBinding => ({
-  ...b,
-  source,
-  target: b.target.kind === 'mute' ? { ...b.target, mode: suggestMuteMode(source) } : b.target,
-});
 
 function useTargetOptions(): { value: string; label: string }[] {
   const { t } = useTranslation();
@@ -147,6 +108,28 @@ function LearnButton({
   );
 }
 
+/** One line of the Controls card: what it does, the control on the desk, Learn, and an end slot. */
+function ControlLine({
+  does,
+  control,
+  learn,
+  end,
+}: {
+  does: React.ReactNode;
+  control: React.ReactNode;
+  learn: React.ReactNode;
+  end?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="min-w-0 flex-1">{does}</div>
+      <div className="w-44 shrink-0">{control}</div>
+      {learn}
+      {end ?? <span className="w-6 shrink-0" />}
+    </div>
+  );
+}
+
 function BindingRow({
   binding,
   options,
@@ -159,55 +142,61 @@ function BindingRow({
   onRemove: () => void;
 }) {
   const { t } = useTranslation();
-  const key = targetKey(binding.target);
+  const key = surfaceTargetKey(binding.target);
   const label = options.find((o) => o.value === key)?.label ?? key;
-  const [learning, toggle] = useLearn((source) => onChange(relearned(binding, source)));
+  const [learning, toggle] = useLearn((source) => onChange(withSource(binding, source)));
   const target = binding.target;
   return (
     <div className="px-4 py-2.5">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
+      <ControlLine
+        does={
           <Select<string>
             size="sm"
             aria-label={t('surfaces.does', { name: label })}
             value={key}
             onChange={(v) => {
-              const next = targetFromKey(v, binding.source);
+              const next = surfaceTargetFromKey(v, binding.source);
               if (next) onChange({ ...binding, target: next });
             }}
             options={
               options.some((o) => o.value === key) ? options : [{ value: key, label }, ...options]
             }
           />
-        </div>
-        <Typography
-          size={12}
-          tone="secondary"
-          tabular
-          truncate
-          className="w-44 shrink-0"
-          title={
-            binding.source.kind === 'midi' && binding.source.device
-              ? binding.source.device
-              : undefined
-          }
-        >
-          {describeSource(binding.source)}
-        </Typography>
-        <LearnButton
-          label={t('surfaces.relearn', { name: label })}
-          learning={learning}
-          onClick={toggle}
-        />
-        <IconButton
-          size="xs"
-          variant="danger"
-          aria-label={t('surfaces.remove', { name: label })}
-          onClick={onRemove}
-        >
-          <Trash2 size={14} />
-        </IconButton>
-      </div>
+        }
+        control={
+          <Typography
+            size={12}
+            tone="secondary"
+            tabular
+            truncate
+            className="block"
+            title={
+              binding.source.kind === 'midi' && binding.source.device
+                ? binding.source.device
+                : undefined
+            }
+          >
+            {describeSource(binding.source)}
+          </Typography>
+        }
+        learn={
+          <LearnButton
+            label={t('surfaces.relearn', { name: label })}
+            learning={learning}
+            onClick={toggle}
+          />
+        }
+        end={
+          <IconButton
+            size="xs"
+            variant="danger"
+            aria-label={t('surfaces.remove', { name: label })}
+            onClick={onRemove}
+          >
+            <Trash2 size={14} />
+          </IconButton>
+        }
+      />
       {target.kind === 'mute' && (
         <div className="mt-2 flex items-center gap-3 pl-0.5">
           <Typography size={12} tone="muted" className="shrink-0">
@@ -239,25 +228,28 @@ function NewBinding({
   const { t } = useTranslation();
   const [key, setKey] = useState(options[0]?.value ?? 'action:next');
   const [learning, toggle] = useLearn((source) => {
-    const target = targetFromKey(key, source);
+    const target = surfaceTargetFromKey(key, source);
     if (target) onAdd({ id: newId(), source, target });
   });
   return (
-    <div className="flex items-center gap-3 bg-[var(--surface-1)]/50 px-4 py-2.5">
-      <div className="min-w-0 flex-1">
-        <Select<string>
-          size="sm"
-          aria-label={t('surfaces.newDoes')}
-          value={key}
-          onChange={setKey}
-          options={options}
-        />
-      </div>
-      <Typography size={12} tone="muted" className="w-44 shrink-0">
-        {learning ? t('surfaces.touchIt') : t('surfaces.thenLearn')}
-      </Typography>
-      <LearnButton label={t('surfaces.learnNew')} learning={learning} onClick={toggle} />
-      <span className="w-6 shrink-0" />
+    <div className="bg-[var(--surface-1)]/50 px-4 py-2.5">
+      <ControlLine
+        does={
+          <Select<string>
+            size="sm"
+            aria-label={t('surfaces.newDoes')}
+            value={key}
+            onChange={setKey}
+            options={options}
+          />
+        }
+        control={
+          <Typography size={12} tone="muted">
+            {learning ? t('surfaces.touchIt') : t('surfaces.thenLearn')}
+          </Typography>
+        }
+        learn={<LearnButton label={t('surfaces.learnNew')} learning={learning} onClick={toggle} />}
+      />
     </div>
   );
 }
@@ -265,6 +257,18 @@ function NewBinding({
 // ---------- One cue to the desk ----------
 
 const OSC_ARG_TYPES = ['none', 'i', 'f', 's'] as const;
+
+/** What a new cue (or one switched to MIDI or OSC) starts with. */
+const NEW_MESSAGE = {
+  midi: { kind: 'midi', device: '', type: 'cc', channel: 1, number: 0, value: 127 },
+  osc: { kind: 'osc', address: '/', arg: { type: 'none' } },
+} as const satisfies Record<DeskMessage['kind'], DeskMessage>;
+
+/** A typed whole number, held to a range (or null when it isn't one). */
+function wholeIn(raw: string, lo: number, hi: number): number | null {
+  const n = Math.round(Number(raw));
+  return Number.isFinite(n) && raw.trim() !== '' ? Math.min(hi, Math.max(lo, n)) : null;
+}
 
 function argFrom(type: OscArg['type'], raw: string): OscArg {
   if (type === 'none') return { type };
@@ -309,13 +313,7 @@ function CueRow({
         <Segmented<'midi' | 'osc'>
           label={t('surfaces.sendAs', { name: when })}
           value={m.kind}
-          onChange={(kind) =>
-            setSend(
-              kind === 'midi'
-                ? { kind, device: '', type: 'cc', channel: 1, number: 0, value: 127 }
-                : { kind, address: '/', arg: { type: 'none' } },
-            )
-          }
+          onChange={(kind) => setSend(kind === 'midi' ? NEW_MESSAGE.midi : NEW_MESSAGE.osc)}
           options={[
             { value: 'midi', label: 'MIDI' },
             { value: 'osc', label: 'OSC' },
@@ -372,7 +370,10 @@ function CueRow({
             unit={t('surfaces.channelUnit')}
             min={1}
             max={16}
-            onCommit={(v) => setSend({ ...m, channel: Math.min(16, Math.max(1, Number(v) || 1)) })}
+            onCommit={(v) => {
+              const x = wholeIn(v, 1, 16);
+              if (x !== null) setSend({ ...m, channel: x });
+            }}
           />
           <UnitInput
             id={`cue-n-${cue.id}`}
@@ -386,7 +387,10 @@ function CueRow({
             }
             min={0}
             max={127}
-            onCommit={(v) => setSend({ ...m, number: Math.min(127, Math.max(0, Number(v) || 0)) })}
+            onCommit={(v) => {
+              const x = wholeIn(v, 0, 127);
+              if (x !== null) setSend({ ...m, number: x });
+            }}
           />
           {m.type !== 'pc' && (
             <UnitInput
@@ -395,7 +399,10 @@ function CueRow({
               unit={t('surfaces.valueUnit')}
               min={0}
               max={127}
-              onCommit={(v) => setSend({ ...m, value: Math.min(127, Math.max(0, Number(v) || 0)) })}
+              onCommit={(v) => {
+                const x = wholeIn(v, 0, 127);
+                if (x !== null) setSend({ ...m, value: x });
+              }}
             />
           )}
         </div>
@@ -538,8 +545,8 @@ export function SurfacesPage({ s, update }: { s: Settings; update: Update }) {
               min={1024}
               max={65535}
               onCommit={(v) => {
-                const port = Math.round(Number(v));
-                if (port >= 1024 && port <= 65535) setOscSettings({ port });
+                const port = wholeIn(v, 1024, 65535);
+                if (port !== null) setOscSettings({ port });
               }}
             />
             <Switch
@@ -581,8 +588,8 @@ export function SurfacesPage({ s, update }: { s: Settings; update: Update }) {
               min={1}
               max={65535}
               onCommit={(v) => {
-                const sendPort = Math.round(Number(v));
-                if (sendPort >= 1 && sendPort <= 65535) setOscSettings({ sendPort });
+                const sendPort = wholeIn(v, 1, 65535);
+                if (sendPort !== null) setOscSettings({ sendPort });
               }}
             />
           </div>
@@ -637,14 +644,7 @@ export function SurfacesPage({ s, update }: { s: Settings; update: Update }) {
                   {
                     id: newId(),
                     when: 'videoPlay',
-                    send: {
-                      kind: 'midi',
-                      device: '',
-                      type: 'cc',
-                      channel: 1,
-                      number: 0,
-                      value: 127,
-                    },
+                    send: NEW_MESSAGE.midi,
                   },
                 ],
               })

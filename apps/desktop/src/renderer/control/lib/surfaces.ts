@@ -1,7 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import {
   controlKey,
-  deskMidiBytes,
   encodeMidi,
   muteFromValue,
   muteToValue,
@@ -31,9 +30,9 @@ import { previewSource, switcherSource, take, tbar, tbarRelease } from './switch
  * or OSC, and Lampstand tells the desk what's happening. One engine for both protocols: every
  * message becomes a SurfaceMessage, matched against the operator's bindings.
  *
- * Kept light on the hot path: a fader sends up to a few hundred messages a second, so matching
- * is a plain loop over the bindings, mixer moves go through `mixerLive` (sent at most every
- * 40 ms) and the T-bar through `tbar` (likewise).
+ * Kept light on the hot path: a fader sends up to a few hundred messages a second, so bindings
+ * are looked up by control (an index rebuilt only when they change), mixer moves go through
+ * `mixerLive` (sent at most every 40 ms) and the T-bar through `tbar` (likewise).
  */
 
 // ---------- What the settings page shows (ports, activity, learning) ----------
@@ -75,23 +74,27 @@ export function learnControl(done: (s: SurfaceSource) => void): () => void {
 
 const surfaces = (): SurfacesSettings | undefined => useStore.getState().settings?.surfaces;
 
-const presses = new PressDetector();
+let presses = new PressDetector();
 /** When each binding last moved Lampstand (feedback leaves it alone for a moment: no fight). */
 const touched = new Map<string, number>();
+/** Where each bound fader and mute was last sent, so only changes go out. */
+const sentFeedback = new Map<string, number>();
+
+/** The bindings changed: forget what was known about the old ones. */
+function bindingsChanged(): void {
+  presses = new PressDetector();
+  touched.clear();
+  sentFeedback.clear();
+}
 const TOUCH_HOLD_MS = 400;
 
 /** The T-bar's travel: a hardware bar goes top to bottom for one take, then back for the next. */
 let tbarFrom: 0 | 1 = 0;
 let tbarMoving = false;
 
-const mixerGain = (m: Mixer, t: MixerTarget): number | null =>
-  t.bus === 'channel'
-    ? (m.channels.find((c) => c.id === t.channelId)?.gainDb ?? null)
-    : m[t.bus].gainDb;
-const mixerMute = (m: Mixer, t: MixerTarget): boolean | null =>
-  t.bus === 'channel'
-    ? (m.channels.find((c) => c.id === t.channelId)?.mute ?? null)
-    : m[t.bus].mute;
+/** The fader and mute a target points at (a channel, or a master), or null when it's gone. */
+const strip = (m: Mixer, t: MixerTarget): { gainDb: number; mute: boolean } | null =>
+  t.bus === 'channel' ? (m.channels.find((c) => c.id === t.channelId) ?? null) : m[t.bus];
 
 /** A fader move (live: sent at most every 40 ms) or a mute (sent at once). */
 function setMixer(t: MixerTarget, patch: { gainDb?: number; mute?: boolean }, live: boolean): void {
@@ -124,8 +127,8 @@ function run(b: SurfaceBinding, m: SurfaceMessage): void {
     }
     case 'mute': {
       const mixer = useStore.getState().live?.mixer;
-      const muted = mixer ? mixerMute(mixer, t) : null;
-      if (muted === null) return;
+      const muted = mixer ? strip(mixer, t)?.mute : undefined;
+      if (muted === undefined) return;
       // A switch says what it should be; a button flips it on each press.
       const wanted = m.trigger ? null : muteFromValue(t.mode, m.value);
       const next = wanted ?? (presses.press(b.id, m) ? !muted : muted);
@@ -214,12 +217,18 @@ function midiOut(device: string, bytes: number[]): void {
 
 /** Send a desk cue (also used by the settings page's Test button). */
 export function sendDeskMessage(m: DeskMessage): void {
-  if (m.kind === 'midi') midiOut(m.device, deskMidiBytes(m));
+  if (m.kind === 'midi') midiOut(m.device, encodeMidi(m.type, m.channel, m.number, m.value / 127));
   else api.oscSend(m.address, m.arg.type === 'none' ? [] : [m.arg]);
 }
 
-/** Where each bound fader and mute was last sent, so only changes go out. */
-const sentFeedback = new Map<string, number>();
+/** A position back to the control it came from (0–1; `onOff` sends OSC as a whole 0 or 1). */
+function sendToControl(src: SurfaceSource, value: number, onOff: boolean): void {
+  if (src.kind === 'osc')
+    api.oscSend(src.address, [onOff ? { type: 'i', value: value ? 1 : 0 } : { type: 'f', value }]);
+  // A program change has no position to show.
+  else if (src.type !== 'pc')
+    midiOut(src.device, encodeMidi(src.type, src.channel, src.number, value));
+}
 
 /** Motor faders and button lights follow Lampstand's mixer (moved on screen or by a cue). */
 function feedback(mixer: Mixer): void {
@@ -229,27 +238,14 @@ function feedback(mixer: Mixer): void {
   for (const b of s.bindings) {
     const t = b.target;
     if (t.kind !== 'fader' && t.kind !== 'mute') continue;
-    let value: number | null;
-    if (t.kind === 'fader') {
-      const db = mixerGain(mixer, t);
-      value = db === null ? null : dbToTravel(db);
-    } else {
-      const muted = mixerMute(mixer, t);
-      value = muted === null ? null : muteToValue(t.mode, muted);
-    }
-    if (value === null || sentFeedback.get(b.id) === value) continue;
+    const s = strip(mixer, t);
+    if (!s) continue;
+    const value = t.kind === 'fader' ? dbToTravel(s.gainDb) : muteToValue(t.mode, s.mute);
+    if (sentFeedback.get(b.id) === value) continue;
     sentFeedback.set(b.id, value);
     // The operator's hand is on this one right now: moving it under them would fight.
     if (now - (touched.get(b.id) ?? -Infinity) < TOUCH_HOLD_MS) continue;
-    const src = b.source;
-    if (src.kind === 'midi') {
-      if (src.type !== 'pc')
-        midiOut(src.device, encodeMidi(src.type, src.channel, src.number, value));
-    } else
-      api.oscSend(
-        src.address,
-        t.kind === 'fader' ? [{ type: 'f', value }] : [{ type: 'i', value: value ? 1 : 0 }],
-      );
+    sendToControl(b.source, value, t.kind === 'mute');
   }
 }
 
@@ -294,7 +290,9 @@ function attachInputs(): void {
 }
 
 async function startMidi(): Promise<void> {
-  if (access || ports.midi === 'starting') return;
+  // Only from 'off': a computer that refused (or has no MIDI) isn't asked again on every change
+  // of state, only when MIDI is switched off and on again.
+  if (ports.midi !== 'off') return;
   if (!('requestMIDIAccess' in navigator)) {
     setPorts({ midi: 'unavailable' });
     return;
@@ -332,16 +330,17 @@ export function installSurfaces(): () => void {
   });
   let streamLive = useStore.getState().stream?.state === 'live';
   const offStore = useStore.subscribe((s, prev) => {
-    if (s.settings?.surfaces.midi && !access) void startMidi();
-    else if (s.settings && !s.settings.surfaces.midi && access) stopMidi();
+    const midiOn = s.settings?.surfaces.midi;
+    if (midiOn && ports.midi === 'off') void startMidi();
+    else if (midiOn === false && ports.midi !== 'off') stopMidi();
     if (s.live && s.live !== prev.live) {
       if (s.live.mixer !== prev.live?.mixer) feedback(s.live.mixer);
       if (s.live.program !== prev.live?.program)
         for (const e of deskEvents(prev.live, s.live)) fire(e);
     }
-    if (s.settings?.surfaces !== prev.settings?.surfaces) {
+    if (s.settings?.surfaces.bindings !== prev.settings?.surfaces.bindings) {
       // New or changed bindings: send their positions afresh.
-      sentFeedback.clear();
+      bindingsChanged();
       if (s.live) feedback(s.live.mixer);
     }
     const live = s.stream?.state === 'live';

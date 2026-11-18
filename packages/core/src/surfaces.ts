@@ -1,4 +1,15 @@
-import type { DeskMessage, MidiType, MuteMode, OscArg, SurfaceSource } from './schemas/surfaces';
+import {
+  SURFACE_ACTIONS,
+  type MidiType,
+  type MixerTarget,
+  type MuteMode,
+  type OscArg,
+  type SurfaceBinding,
+  type SurfaceSource,
+  type SurfaceTarget,
+} from './schemas/surfaces';
+
+const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 
 /**
  * Control-surface protocols, kept free of any platform: MIDI messages (Web MIDI hands over raw
@@ -57,8 +68,8 @@ export function encodeMidi(
   number: number,
   value: number,
 ): number[] {
-  const ch = (Math.min(16, Math.max(1, channel)) - 1) & 0x0f;
-  const v = Math.min(1, Math.max(0, value));
+  const ch = (clamp(channel, 1, 16) - 1) & 0x0f;
+  const v = clamp(value, 0, 1);
   const n = number & 0x7f;
   switch (type) {
     case 'note':
@@ -72,11 +83,6 @@ export function encodeMidi(
       return [0xe0 | ch, x & 0x7f, (x >> 7) & 0x7f];
     }
   }
-}
-
-/** A desk cue's MIDI message as bytes. */
-export function deskMidiBytes(m: Extract<DeskMessage, { kind: 'midi' }>): number[] {
-  return encodeMidi(m.type, m.channel, m.number, m.value / 127);
 }
 
 // ---------- OSC ----------
@@ -199,7 +205,7 @@ export function oscToSurface(m: OscMessage): SurfaceMessage {
   const n = m.args.find((a): a is number => typeof a === 'number');
   const source: SurfaceSource = { kind: 'osc', address: m.address };
   if (n === undefined) return { source, value: 1, trigger: true };
-  return { source, value: Math.min(1, Math.max(0, n)), trigger: false };
+  return { source, value: clamp(n, 0, 1), trigger: false };
 }
 
 // ---------- Matching ----------
@@ -272,3 +278,62 @@ export class PressDetector {
     return is && !was;
   }
 }
+
+// ---------- Targets as one string (the settings page's dropdown) ----------
+
+/** A target as one string: "action:next", "camera:2:take", "fader:channel:tracks", "tbar". */
+export function surfaceTargetKey(t: SurfaceTarget): string {
+  switch (t.kind) {
+    case 'action':
+      return `action:${t.action}`;
+    case 'camera':
+      return `camera:${t.n}:${t.take ? 'take' : 'preview'}`;
+    case 'fader':
+    case 'mute':
+      return t.bus === 'channel' ? `${t.kind}:channel:${t.channelId ?? ''}` : `${t.kind}:${t.bus}`;
+    case 'tbar':
+      return 'tbar';
+  }
+}
+
+/**
+ * The target for a key (null for one that makes no sense). A mute takes the way `source`
+ * most likely reports (a button unless there's a reason to think otherwise).
+ */
+export function surfaceTargetFromKey(key: string, source?: SurfaceSource): SurfaceTarget | null {
+  const [kind = '', a, b] = key.split(':');
+  switch (kind) {
+    case 'tbar':
+      return { kind };
+    case 'action': {
+      const action = SURFACE_ACTIONS.find((x) => x === a);
+      return action ? { kind, action } : null;
+    }
+    case 'camera': {
+      const n = Number(a);
+      return Number.isInteger(n) && n >= 1 && n <= 9 ? { kind, n, take: b === 'take' } : null;
+    }
+    case 'fader':
+    case 'mute': {
+      const where: MixerTarget | null =
+        a === 'room' || a === 'stream'
+          ? { bus: a }
+          : a === 'channel' && b
+            ? { bus: 'channel', channelId: b }
+            : null;
+      if (!where) return null;
+      return kind === 'fader'
+        ? { kind, ...where }
+        : { kind, ...where, mode: source ? suggestMuteMode(source) : 'toggle' };
+    }
+    default:
+      return null;
+  }
+}
+
+/** A binding taught a new control (a mute re-guesses how that control reports). */
+export const withSource = (b: SurfaceBinding, source: SurfaceSource): SurfaceBinding => ({
+  ...b,
+  source,
+  target: b.target.kind === 'mute' ? { ...b.target, mode: suggestMuteMode(source) } : b.target,
+});

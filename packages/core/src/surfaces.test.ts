@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  surfaceTargetFromKey,
+  surfaceTargetKey,
+  withSource,
   controlKey,
   muteFromValue,
   muteToValue,
@@ -158,5 +161,33 @@ describe('matching and presses', () => {
     expect(muteToValue('toggle', true)).toBe(1);
     expect(suggestMuteMode({ kind: 'osc', address: '/ch/05/mix/on' })).toBe('on');
     expect(suggestMuteMode(cc)).toBe('toggle');
+  });
+
+  it('turns targets into keys and back', () => {
+    const targets = [
+      { kind: 'action', action: 'next' },
+      { kind: 'camera', n: 2, take: true },
+      { kind: 'fader', bus: 'channel', channelId: 'tracks' },
+      { kind: 'fader', bus: 'stream' },
+      { kind: 'mute', bus: 'room', mode: 'toggle' },
+      { kind: 'tbar' },
+    ] as const;
+    for (const target of targets)
+      expect(surfaceTargetFromKey(surfaceTargetKey(target))).toEqual(target);
+    expect(surfaceTargetFromKey('action:nope')).toBeNull();
+    expect(surfaceTargetFromKey('camera:12:take')).toBeNull();
+    expect(surfaceTargetFromKey('fader:channel')).toBeNull();
+    const x32 = { kind: 'osc', address: '/ch/01/mix/on' } as const;
+    expect(surfaceTargetFromKey('mute:room', x32)).toEqual({
+      kind: 'mute',
+      bus: 'room',
+      mode: 'on',
+    });
+    const b = {
+      id: 'b',
+      source: cc,
+      target: { kind: 'mute', bus: 'room', mode: 'toggle' },
+    } as const;
+    expect(withSource(b, x32).target).toEqual({ kind: 'mute', bus: 'room', mode: 'on' });
   });
 });

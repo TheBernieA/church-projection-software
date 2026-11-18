@@ -26,7 +26,7 @@ function localAddresses(): string[] {
  * also work.
  */
 /** How often the desk subscription is renewed (an X32 drops it after 10 s). */
-export const SUBSCRIBE_EVERY_MS = 8000;
+const SUBSCRIBE_EVERY_MS = 8000;
 /** Messages are gathered this long before going to the control window: a desk recalling a scene
  *  sends hundreds at once, and one IPC message (with only each address's latest) is far cheaper. */
 const BATCH_MS = 8;
