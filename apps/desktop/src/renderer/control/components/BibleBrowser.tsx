@@ -83,55 +83,15 @@ export function BibleBrowser() {
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 px-4 pb-3">
         {book ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
-              onClick={() => setBook(null)}
-              className={`-ml-2 min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
-            >
-              <Typography truncate>{bookName(book)}</Typography>
-            </Button>
-            <div className="ml-auto flex shrink-0 items-center gap-0.5">
-              <IconButton
-                size="sm"
-                aria-label={
-                  prevBook ? t('bible.prevBook', { name: prevBook.name }) : t('bible.firstBook')
-                }
-                title={prevBook ? t('bible.prevBook', { name: prevBook.name }) : undefined}
-                disabled={!prevBook}
-                onClick={() => prevBook && openBook(prevBook.id)}
-              >
-                <ChevronLeft size={16} />
-              </IconButton>
-              <Button
-                size="sm"
-                variant={chaptersOpen ? 'subtle' : 'ghost'}
-                aria-expanded={chaptersOpen}
-                title={t('bible.chaptersHelp')}
-                onClick={() => setChaptersOpen(!chaptersOpen)}
-                className="tabular-nums"
-              >
-                {t('bible.chapterN', { n: chapter })}
-                <ChevronDown
-                  size={13}
-                  className={`text-[var(--text-3)] transition-transform ${chaptersOpen ? 'rotate-180' : ''}`}
-                />
-              </Button>
-              <IconButton
-                size="sm"
-                aria-label={
-                  nextBook ? t('bible.nextBook', { name: nextBook.name }) : t('bible.lastBook')
-                }
-                title={nextBook ? t('bible.nextBook', { name: nextBook.name }) : undefined}
-                disabled={!nextBook}
-                onClick={() => nextBook && openBook(nextBook.id)}
-              >
-                <ChevronRight size={16} />
-              </IconButton>
-            </div>
-          </>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<ChevronLeft size={18} className="shrink-0 text-[var(--text-3)]" />}
+            onClick={() => setBook(null)}
+            className={`-ml-2 mr-auto min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
+          >
+            <Typography truncate>{bookName(book)}</Typography>
+          </Button>
         ) : (
           <input
             className="field h-8 min-w-0 flex-1"
@@ -155,6 +115,47 @@ export function BibleBrowser() {
           />
         </div>
       </div>
+      {/* The book's own row: previous book, its chapters, next book. */}
+      {book && (
+        <div className="flex items-center gap-1 px-4 pb-3">
+          <IconButton
+            size="sm"
+            aria-label={
+              prevBook ? t('bible.prevBook', { name: prevBook.name }) : t('bible.firstBook')
+            }
+            title={prevBook ? t('bible.prevBook', { name: prevBook.name }) : undefined}
+            disabled={!prevBook}
+            onClick={() => prevBook && openBook(prevBook.id)}
+          >
+            <ChevronLeft size={16} />
+          </IconButton>
+          <Button
+            size="sm"
+            variant={chaptersOpen ? 'subtle' : 'ghost'}
+            aria-expanded={chaptersOpen}
+            title={t('bible.chaptersHelp')}
+            onClick={() => setChaptersOpen(!chaptersOpen)}
+            className="flex-1 justify-center tabular-nums"
+          >
+            {t('bible.chapterN', { n: chapter })}
+            <ChevronDown
+              size={13}
+              className={`text-[var(--text-3)] transition-transform ${chaptersOpen ? 'rotate-180' : ''}`}
+            />
+          </Button>
+          <IconButton
+            size="sm"
+            aria-label={
+              nextBook ? t('bible.nextBook', { name: nextBook.name }) : t('bible.lastBook')
+            }
+            title={nextBook ? t('bible.nextBook', { name: nextBook.name }) : undefined}
+            disabled={!nextBook}
+            onClick={() => nextBook && openBook(nextBook.id)}
+          >
+            <ChevronRight size={16} />
+          </IconButton>
+        </div>
+      )}
       {!book && (
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
           {(['OT', 'NT'] as const).map((tst) => {

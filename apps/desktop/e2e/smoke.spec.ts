@@ -886,6 +886,9 @@ test('drag from the library into the service plan (songs and verses)', async () 
   await expect(bible.getByRole('button', { name: /Now these are the names/ })).toBeVisible();
   await bible.getByRole('button', { name: 'Previous book: Genesis' }).click();
   await expect(bible.getByRole('button', { name: /In the beginning God created/ })).toBeVisible();
+  await bible.getByRole('button', { name: 'Next book: Exodus' }).click();
+  await bible.getByRole('button', { name: 'Next book: Leviticus' }).click();
+  await control.screenshot({ path: 'test-results/14b-bible-books.png' });
 });
 
 test('undo / redo: ⌘Z and ⌘⇧Z revert and re-apply service edits', async () => {
