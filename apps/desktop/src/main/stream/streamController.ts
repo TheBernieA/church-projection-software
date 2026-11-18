@@ -628,8 +628,9 @@ export class StreamController {
       transparent: false,
       // Meters only while someone can see them (a console, or the mixer while live).
       meters: this.encoding || this.watchers.size > 0,
-      // No microphones open until it goes live.
-      mix: this.encoding,
+      // The sound is mixed while live, and while a console watches (so the meters show the
+      // mics working before going live); with nothing watching and not live, no mic is open.
+      mix: this.encoding || this.watchers.size > 0,
       probe: this.winGpu ? { ...size, fps: profile.fps, kbps: profile.videoKbps } : null,
       logo: this.d.logo(),
       standby: this.d.standby(),

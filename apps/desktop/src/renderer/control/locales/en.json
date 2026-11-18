@@ -784,7 +784,7 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound; it should move when someone speaks or music plays.\n4. Under the picture, click a scene to change what the stream shows. Each is a small live preview, in three groups. Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar, with picture-in-picture), every camera with the words and on its own, and with two cameras, Two cameras side by side or Camera in a corner. Screens: the Alternate (HDMI) output in its themes, or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes: the speaker button mutes the stream and the slider sets its level. Add a mic… on the same line brings in a mic or the desk.\n6. Each mic and desk then has its own line: the mic button puts it on the stream (red) or takes it off, the slider sets its level, the meter shows what the stream hears from it, and the last button mutes it.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a set of small live previews. Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera with the words and on its own, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes: the speaker button mutes the stream and the slider sets its level. Add a mic… on the same line brings in a mic or the desk.\n6. Each mic and desk then has its own line: the mic button puts it on the stream (red) or takes it off, the box under its name switches it to another input, the slider sets its level, the meter shows what the stream hears from it, the speaker mutes it and × removes it.\n7. Further down: what the stream shows in detail (behind, words, lower third), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
@@ -2234,7 +2234,10 @@
       "slides": "Slides",
       "cameras": "Cameras",
       "screens": "Screens"
-    }
+    },
+    "sceneTabs": "Kind of scene",
+    "micOf": "Which input {{name}} uses",
+    "removeMic": "Remove {{name}}"
   },
   "benchmark": {
     "button": "Check this computer",

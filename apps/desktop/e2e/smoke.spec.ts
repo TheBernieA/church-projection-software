@@ -2171,6 +2171,11 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     });
   expect((await stream())?.state).toBe('idle');
   expect((await stream())?.ready).toBe(true);
+  // Before going live, the mics already show on the stream's meter (to check they work).
+  const left = live.getByRole('meter', { name: 'Stream sound, left' });
+  await expect
+    .poll(async () => Number(await left.getAttribute('aria-valuenow')), { timeout: 15_000 })
+    .toBeGreaterThan(-60);
   // Go live (confirmed): the destination goes live, and the health panel fills in.
   await live.getByRole('button', { name: 'Go live' }).click();
   await expect(live.getByRole('status')).toHaveText(/Live/, { timeout: 20_000 });
@@ -2202,12 +2207,15 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     const r = await control.evaluate(() => window.lampstand.query('settings.get'));
     return r.ok ? r.value.stream.picture.mirror : '';
   };
+  await live.getByRole('radio', { name: 'Cameras' }).click();
   await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
   await expect.poll(picture).toBe('switcher none');
+  await live.getByRole('radio', { name: 'Screens' }).click();
   await scenes.getByRole('button', { name: 'Stage display' }).click();
   await expect.poll(mirror).toBe('stage');
   await control.waitForTimeout(800);
   await control.screenshot({ path: 'test-results/41c-live-scenes.png' });
+  await live.getByRole('radio', { name: 'Slides' }).click();
   await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
   await expect.poll(mirror).toBe('own');
   await expect.poll(picture).toBe('program lowerThird');

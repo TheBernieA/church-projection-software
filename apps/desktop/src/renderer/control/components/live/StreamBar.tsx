@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   EMPTY_SCENE,
@@ -11,7 +11,7 @@ import {
   type StreamSettings,
 } from '@lampstand/core';
 import type { StreamStatus } from '@lampstand/ipc-contract';
-import { Button, IconButton, Meter, Slider, Typography } from '@lampstand/ui';
+import { Button, IconButton, Meter, Segmented, Slider, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { useCameraSettingsVersion, useDeviceStream, useInputDevices } from '../../lib/inputs';
 import { onMeters, readMeter, readSides } from '../../lib/meters';
@@ -264,6 +264,9 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
   const pick = (c: SceneChoice): void =>
     void saveSettings({ stream: { ...st, picture: { ...pic, ...c.patch } } });
   const current = choices.find(isOn);
+  // Slides, Cameras or Screens: opens on the one with the scene on air.
+  const [tab, setTab] = useState<SceneTemplate['group']>(() => current?.group ?? 'slides');
+  const shown = choices.filter((c) => c.group === tab);
   return (
     <div className="flex flex-col gap-2">
       <Button
@@ -285,75 +288,73 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
         </Typography>
       </Button>
       {open && (
-        <div role="group" aria-label={t('console.scene')} className="flex flex-col gap-2.5">
-          {SCENE_GROUPS.map((g) => {
-            const inGroup = choices.filter((c) => c.group === g);
-            if (!inGroup.length) return null;
-            return (
-              <section
-                key={g}
-                aria-label={t(`console.sceneGroups.${g}`)}
-                className="flex flex-col gap-1.5"
-              >
-                <Typography as="h4" size={11} tone="muted" weight="semibold">
-                  {t(`console.sceneGroups.${g}`)}
-                </Typography>
-                <div
-                  className="grid gap-x-2 gap-y-2.5"
-                  style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
+        <>
+          <Segmented<SceneTemplate['group']>
+            label={t('console.sceneTabs')}
+            value={tab}
+            onChange={setTab}
+            options={SCENE_GROUPS.filter((g) => choices.some((c) => c.group === g)).map((g) => ({
+              value: g,
+              label: t(`console.sceneGroups.${g}`),
+            }))}
+          />
+          <div
+            role="group"
+            aria-label={t('console.scene')}
+            className="grid gap-x-2 gap-y-2.5"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
+          >
+            {shown.map((c) => {
+              const on = isOn(c);
+              return (
+                <Button
+                  key={c.key}
+                  variant="bare"
+                  aria-pressed={on}
+                  aria-label={c.label}
+                  title={c.label}
+                  onClick={() => pick(c)}
+                  className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
                 >
-                  {inGroup.map((c) => {
-                    const on = isOn(c);
-                    return (
-                      <Button
-                        key={c.key}
-                        variant="bare"
-                        aria-pressed={on}
-                        aria-label={c.label}
-                        title={c.label}
-                        onClick={() => pick(c)}
-                        className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
-                      >
-                        <span
-                          className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
-                            on
-                              ? streaming
-                                ? 'shadow-[0_0_0_2px_var(--tally-program)]'
-                                : 'shadow-[0_0_0_2px_var(--accent)]'
-                              : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
-                          }`}
-                        >
-                          <ScenePicture
-                            c={c}
-                            program={program}
-                            behind={behind}
-                            wordsAlone={wordsAlone}
-                          />
-                        </span>
-                        <Typography
-                          size={11}
-                          tone={on ? 'primary' : 'secondary'}
-                          weight={on ? 'semibold' : 'regular'}
-                          truncate
-                          className="block"
-                        >
-                          {c.label}
-                        </Typography>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+                  <span
+                    className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
+                      on
+                        ? streaming
+                          ? 'shadow-[0_0_0_2px_var(--tally-program)]'
+                          : 'shadow-[0_0_0_2px_var(--accent)]'
+                        : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
+                    }`}
+                  >
+                    <ScenePicture c={c} program={program} behind={behind} wordsAlone={wordsAlone} />
+                  </span>
+                  <Typography
+                    size={11}
+                    tone={on ? 'primary' : 'secondary'}
+                    weight={on ? 'semibold' : 'regular'}
+                    truncate
+                    className="block"
+                  >
+                    {c.label}
+                  </Typography>
+                </Button>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
 }
 
 /** One mic or desk feed, at hand while live: on the stream or not, its level, its meter, mute. */
-function InputStrip({ c }: { c: MixerChannel }) {
+function InputStrip({
+  c,
+  choices,
+}: {
+  c: MixerChannel;
+  /** The inputs it can be switched to: its own, and any not on another channel. */
+  choices: { deviceId: string; label: string }[];
+}) {
   const { t } = useTranslation();
   const read = useCallback(() => readMeter('stream', c.id), [c.id]);
   const heard = c.stream && !c.mute;
@@ -371,9 +372,27 @@ function InputStrip({ c }: { c: MixerChannel }) {
         {c.stream ? <Mic size={14} /> : <MicOff size={14} />}
       </IconButton>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <Typography size={12} tone={heard ? 'primary' : 'muted'} truncate>
-          {c.name}
-        </Typography>
+        <Select<string>
+          size="sm"
+          aria-label={t('console.micOf', { name: c.name })}
+          value={c.deviceId}
+          onChange={(deviceId) => {
+            const d = choices.find((x) => x.deviceId === deviceId);
+            if (d && d.deviceId !== c.deviceId)
+              void mixerCmd({
+                action: 'channel',
+                id: c.id,
+                patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
+              });
+          }}
+          options={[
+            ...(choices.some((d) => d.deviceId === c.deviceId)
+              ? []
+              : [{ value: c.deviceId, label: c.name }]),
+            ...choices.map((d) => ({ value: d.deviceId, label: d.label })),
+          ]}
+          className={heard ? '' : 'opacity-70'}
+        />
         <Meter
           read={read}
           subscribe={onMeters}
@@ -402,6 +421,14 @@ function InputStrip({ c }: { c: MixerChannel }) {
         onClick={() => void mixerCmd({ action: 'channel', id: c.id, patch: { mute: !c.mute } })}
       >
         <VolumeX size={13} />
+      </IconButton>
+      <IconButton
+        size="xs"
+        aria-label={t('console.removeMic', { name: c.name })}
+        title={t('console.removeMic', { name: c.name })}
+        onClick={() => void mixerCmd({ action: 'remove', id: c.id })}
+      >
+        <X size={13} />
       </IconButton>
     </div>
   );
@@ -467,7 +494,13 @@ export function StreamSound() {
         )}
       </div>
       {inputs.map((c) => (
-        <InputStrip key={c.id} c={c} />
+        <InputStrip
+          key={c.id}
+          c={c}
+          choices={(devices ?? []).filter(
+            (d) => d.deviceId === c.deviceId || !inputs.some((o) => o.deviceId === d.deviceId),
+          )}
+        />
       ))}
     </div>
   );
