@@ -20,6 +20,14 @@ const base = { id: IdSchema, notes: z.string().max(4000).optional() };
  * Backgrounds of single slides, by slide key, in place of the item's (or its theme's): one slide
  * on its own picture, the rest on the item's.
  */
+/** Slides that move on by themselves while live: every `seconds`, back to the first at the end
+ * when `loop`. */
+export const AdvanceSchema = z.object({
+  seconds: z.number().min(1).max(600),
+  loop: z.boolean(),
+});
+export type Advance = z.infer<typeof AdvanceSchema>;
+
 export const SlideBackgroundsSchema = z.record(z.string().max(160), BackgroundRefSchema);
 
 export const ServiceItemSchema = z.discriminatedUnion('kind', [
@@ -34,6 +42,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transpose: z.number().int().min(-11).max(11).optional(),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Move to the next slide on its own every so many seconds while live (looping back or not). */
+    advance: AdvanceSchema.optional(),
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
@@ -51,6 +61,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     versionIds: z.array(z.string().max(32)).min(1).max(4),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Move to the next slide on its own every so many seconds while live (looping back or not). */
+    advance: AdvanceSchema.optional(),
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
@@ -81,6 +93,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     slides: z.array(TextSlideSchema).max(500),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Move to the next slide on its own every so many seconds while live (looping back or not). */
+    advance: AdvanceSchema.optional(),
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),

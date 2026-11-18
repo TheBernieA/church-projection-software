@@ -16,6 +16,7 @@ import {
 } from '@lampstand/core';
 import { knownDuration } from './mediaDurations';
 import { slideTransitionFor } from './transitions';
+import { advanceOf } from './advance';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
@@ -321,7 +322,7 @@ export async function saveSettings(patch: Partial<Settings>): Promise<void> {
   await attempt(() => cmd('settings.update', { patch }), 'errors.setting');
 }
 
-// ---------- Announcements loop (auto-advance while live) ----------
+// ---------- Auto-advance while live (announcements, and any item set to move on by itself) ----------
 let loopTimer: ReturnType<typeof setTimeout> | null = null;
 function stopAnnouncements(): void {
   if (loopTimer) clearTimeout(loopTimer);
@@ -329,12 +330,17 @@ function stopAnnouncements(): void {
 }
 function scheduleAnnouncements(item: ServiceItem, index: number): void {
   stopAnnouncements();
-  if (item.kind !== 'announcements' || item.slides.length < 2 || !item.autoAdvance) return;
+  const adv = advanceOf(item);
+  const count = adv ? slidesFor(item).length : 0;
+  if (!adv || count < 2) return;
+  // The last slide: back to the first when looping, else it stays.
+  const next = index + 1 < count ? index + 1 : adv.loop ? 0 : -1;
+  if (next < 0) return;
   loopTimer = setTimeout(() => {
     const cur = get().liveCursor;
     if (cur?.itemId !== item.id || cur.index !== index) return;
-    void goLiveSlide(item, (index + 1) % item.slides.length, 'ui');
-  }, item.loopIntervalSec * 1000);
+    void goLiveSlide(item, next, 'ui');
+  }, adv.seconds * 1000);
 }
 
 /** Wait until an item's slides can be built (e.g. Bible chapters loaded). */
@@ -448,7 +454,7 @@ export async function runOnAnnouncementsLayer(item: ServiceItem): Promise<void> 
   const run = ++announceRun;
   const slides = (await ensureItemReady(item)).filter((sl) => sl.action.kind === 'content');
   if (!slides.length || run !== announceRun) return;
-  const every = (item.kind === 'announcements' ? item.loopIntervalSec : 8) * 1000;
+  const every = (advanceOf(item)?.seconds ?? 8) * 1000;
   useStore.setState({ announceItemId: item.id });
   const show = async (i: number): Promise<void> => {
     if (run !== announceRun || get().announceItemId !== item.id) return;

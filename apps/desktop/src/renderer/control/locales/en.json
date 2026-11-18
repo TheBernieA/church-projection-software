@@ -1621,7 +1621,7 @@
     "theme": "These slides use their theme’s background (click to choose another)",
     "useTheme": "The theme’s background",
     "useOnScreen": "The one on screen now",
-    "stock": "Stock backgrounds",
+    "stock": "Motion backgrounds",
     "builtIn": "Built-in backgrounds",
     "yours": "Your backgrounds",
     "noneYet": "None yet: add some in Media › Backgrounds",
@@ -1634,7 +1634,8 @@
     "copyToAll_one": "Use this for all {{count}} items",
     "copyToAll_other": "Use this for all {{count}} items",
     "copyToAllHint": "Every song, reading, presentation, announcement and countdown in the service gets this background (or the theme’s, if this one uses the theme’s)",
-    "change": "Change the background of these slides"
+    "change": "Change the background of these slides",
+    "library": "Your pictures and videos"
   },
   "audioSettings": {
     "room": "Room audio",
@@ -2286,5 +2287,14 @@
       "zoom": "Zoom",
       "blur": "Blur"
     }
+  },
+  "advance": {
+    "title": "Move on by itself",
+    "off": "Off: wait for a click",
+    "every": "Every {{s}} s",
+    "loop": "Loop back to the first slide",
+    "on": "Moves on every {{s}} s",
+    "help": "The slides move on by themselves every {{s}} s while live (click to change)",
+    "offHelp": "The slides wait for a click (click to make them move on by themselves)"
   }
 }

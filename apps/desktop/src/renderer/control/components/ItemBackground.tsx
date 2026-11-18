@@ -1,13 +1,6 @@
 import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import {
-  Check,
-  ChevronRight,
-  Image as ImageIcon,
-  Layers,
-  MonitorPlay,
-  Palette,
-} from 'lucide-react';
+import { Check, Image as ImageIcon, Layers, MonitorPlay, Palette } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { STOCK_BACKGROUNDS, type BackgroundRef } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
@@ -62,32 +55,14 @@ function Choice({
   );
 }
 
-/** A submenu of backgrounds (stock, built in, yours). */
-function Section({
-  icon,
-  label,
-  children,
-}: {
-  icon: ReactNode;
-  label: string;
-  children: ReactNode;
-}) {
+/** A labelled group of backgrounds in the menu. */
+function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <DropdownMenu.Sub>
-      <DropdownMenu.SubTrigger className={ITEM_CLASS}>
-        {icon}
-        <Typography className="flex-1">{label}</Typography>
-        <ChevronRight size={13} />
-      </DropdownMenu.SubTrigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.SubContent
-          sideOffset={4}
-          className={`${MENU_CLASS} max-h-[60vh] overflow-y-auto`}
-        >
-          {children}
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Sub>
+    <DropdownMenu.Group>
+      <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+      <DropdownMenu.Label className={MENU_LABEL_CLASS}>{label}</DropdownMenu.Label>
+      {children}
+    </DropdownMenu.Group>
   );
 }
 
@@ -115,13 +90,21 @@ export function BackgroundMenu({
   children?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const yours = useStore((s) => s.media).filter((m) => m.isBackground && m.kind !== 'audio');
+  const media = useStore((s) => s.media);
+  const yours = media.filter((m) => m.isBackground && m.kind !== 'audio');
+  // Every other picture and video in the library can go behind the words too.
+  const library = media.filter((m) => !m.isBackground && m.kind !== 'audio');
   const onScreen = useStore((s) => s.live?.program.background?.ref);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align={align} sideOffset={4} className={MENU_CLASS}>
+        <DropdownMenu.Content
+          align={align}
+          sideOffset={4}
+          collisionPadding={8}
+          className={`${MENU_CLASS} max-h-[min(70vh,var(--radix-dropdown-menu-content-available-height))] w-72 overflow-y-auto`}
+        >
           <DropdownMenu.Label className={MENU_LABEL_CLASS}>{title}</DropdownMenu.Label>
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => onPick(undefined)}>
             <Palette size={14} />
@@ -136,18 +119,18 @@ export function BackgroundMenu({
             </DropdownMenu.Item>
           )}
           {children}
-          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
-          <Section icon={<ImageIcon size={14} />} label={t('itemBg.stock')}>
+          {/* One list, no submenus: motion, built in, yours, and every picture and video. */}
+          <Group label={t('itemBg.stock')}>
             {STOCK_BACKGROUNDS.map((b) => (
               <Choice key={b.id} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
-          </Section>
-          <Section icon={<ImageIcon size={14} />} label={t('itemBg.builtIn')}>
+          </Group>
+          <Group label={t('itemBg.builtIn')}>
             {BUILT_IN_BACKGROUNDS.map((b) => (
               <Choice key={b.name} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
-          </Section>
-          <Section icon={<ImageIcon size={14} />} label={t('itemBg.yours')}>
+          </Group>
+          <Group label={t('itemBg.yours')}>
             {yours.length === 0 ? (
               <DropdownMenu.Item disabled className={ITEM_CLASS}>
                 {t('itemBg.noneYet')}
@@ -163,7 +146,20 @@ export function BackgroundMenu({
                 />
               ))
             )}
-          </Section>
+          </Group>
+          {library.length > 0 && (
+            <Group label={t('itemBg.library')}>
+              {library.map((m) => (
+                <Choice
+                  key={m.id}
+                  name={m.name}
+                  bg={mediaBackground(m)}
+                  current={current}
+                  onPick={onPick}
+                />
+              ))}
+            </Group>
+          )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

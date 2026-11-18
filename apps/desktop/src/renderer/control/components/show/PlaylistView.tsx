@@ -294,7 +294,8 @@ function ItemSection({
             coming, then where it plays. */}
         <div className="ml-auto flex shrink-0 items-center gap-1">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
-          {item.kind === 'announcements' && <LoopToggle item={item} />}
+          {/* Every item with slides can move on by itself (announcements loop by default). */}
+          <LoopToggle item={item} />
           {takesBackground(item) && <ItemBackground item={item} />}
           <ToolDivider />
           <SoonTool id="slide-actions" icon={<ClipboardGlyph />} />

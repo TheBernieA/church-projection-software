@@ -1785,7 +1785,7 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   // From the item's own Background button: another stock background, then the theme's again.
   const pickBg = control.getByRole('button', { name: 'Background for these slides' }).first();
   await pickBg.click();
-  await control.getByRole('menuitem', { name: 'Stock backgrounds' }).click();
+  // One list, no submenus: the motion backgrounds are right there.
   await control.getByRole('menuitem', { name: 'Glory', exact: true }).click();
   await expect.poll(bg).toBe('#FFE7B0');
   await control.screenshot({ path: 'test-results/35-slide-background.png' });
@@ -2541,11 +2541,21 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   // The Welcome announcements say they loop, and can be told to stay on each slide.
   await mode('Show');
   await (await servicePlan()).getByText('Welcome').first().click();
-  const loop = control.getByRole('button', { name: /^Loops every \d+ s$/ }).first();
+  const welcome = control.getByRole('region', { name: 'Welcome', exact: true }).first();
+  const loop = welcome.getByRole('button', { name: /^Loops every \d+ s$/ });
   await expect(loop).toBeVisible();
+  // Its menu: off, or how often (and every other item with slides has the same control).
   await loop.click();
-  await expect(control.getByRole('button', { name: 'Stays on each slide' }).first()).toBeVisible();
-  await control.getByRole('button', { name: 'Stays on each slide' }).first().click();
+  await control.getByRole('menuitem', { name: 'Off: wait for a click' }).click();
+  await welcome.getByRole('button', { name: 'Stays on each slide' }).click();
+  await control.getByRole('menuitem', { name: 'Every 5 s' }).click();
+  await expect(welcome.getByRole('button', { name: 'Loops every 5 s' })).toBeVisible();
+  await expect(
+    control
+      .getByRole('region', { name: /Psalm 23/ })
+      .first()
+      .getByRole('button', { name: 'Stays on each slide' }),
+  ).toBeVisible();
 
   // A picture behind the words: the verse on screen stays, the picture goes behind it.
   await binTab('Media');
@@ -2786,8 +2796,7 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
   await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
   // One slide on a background of its own, then back to the song's.
   await song.getByRole('button', { name: 'Background of slide 2' }).click();
-  await control.getByRole('menuitem', { name: 'Built-in backgrounds' }).click();
-  await control.getByRole('menuitem').filter({ hasText: /\w/ }).last().click();
+  await control.getByRole('menuitem', { name: 'Ice halo', exact: true }).click();
   const own = song.getByRole('button', {
     name: 'Slide 2 has its own background (click to change)',
   });
@@ -2875,7 +2884,10 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
   await song.getByRole('button', { name: 'Background for these slides' }).click();
   await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
   // Words back on screen for the next test.
-  await song.getByRole('button', { name: /Verse 1/ }).first().click();
+  await song
+    .getByRole('button', { name: /Verse 1/ })
+    .first()
+    .click();
   await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
 });
 

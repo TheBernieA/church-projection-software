@@ -1,114 +1,112 @@
 /**
- * Boxy icons for an item's header (big: they nearly fill it), in the style of a presentation console: each drawn on a
- * 16-unit grid in the text colour (currentColor), so they sit with the rest of the tools.
+ * Boxy icons for an item's header (big: they nearly fill it), in the style of a presentation
+ * console. Drawn on a 20-unit grid and shown at 20px, so every edge lands on a pixel; in the text
+ * colour (currentColor), like the rest of the tools.
  */
+
+/** An item header's tool button: the icons nearly fill the header. */
+export const HEADER_TOOL = '!h-[30px] !w-[30px]';
 
 interface GlyphProps {
   size?: number;
 }
 
-/** An item header's tool button: the icons nearly fill the header. */
-export const HEADER_TOOL = '!h-[30px] !w-[30px]';
-
 const svg = (size: number, children: React.ReactNode) => (
-  <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden fill="none">
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 20 20"
+    aria-hidden
+    fill="none"
+    shapeRendering="geometricPrecision"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     {children}
   </svg>
 );
 
 /** Auto-advance: a film strip with an arrow out of it (the slides move on by themselves). */
-export function AutoAdvanceGlyph({ size = 21 }: GlyphProps) {
+export function AutoAdvanceGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
-      <rect x="1" y="4" width="10" height="8" rx="1" fill="currentColor" />
       <path
-        d="M2.5 5.4h1.3v1.3H2.5zM5 5.4h1.3v1.3H5zM7.5 5.4h1.3v1.3H7.5zM2.5 9.3h1.3v1.3H2.5zM5 9.3h1.3v1.3H5zM7.5 9.3h1.3v1.3H7.5z"
-        fill="var(--surface-0)"
+        fillRule="evenodd"
+        fill="currentColor"
+        d="M2.5 5h10A1.5 1.5 0 0 1 14 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 1 13.5v-7A1.5 1.5 0 0 1 2.5 5ZM3 7v2h2V7Zm3.5 0v2h2V7ZM10 7v2h2V7ZM3 11v2h2v-2Zm3.5 0v2h2v-2ZM10 11v2h2v-2Z"
       />
-      <path d="M11.5 4.5 15 8l-3.5 3.5z" fill="currentColor" />
+      <path d="M15 6l4 4-4 4z" fill="currentColor" />
     </>,
   );
 }
 
 /** Slide actions: a clipboard (what else happens with a slide). */
-export function ClipboardGlyph({ size = 21 }: GlyphProps) {
+export function ClipboardGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
       <rect
-        x="2.5"
-        y="3"
-        width="11"
-        height="11.5"
-        rx="1.2"
+        x="3.5"
+        y="3.5"
+        width="13"
+        height="14.5"
+        rx="2"
         stroke="currentColor"
-        strokeWidth="1.3"
+        strokeWidth="1.8"
       />
-      <rect x="5.5" y="1.5" width="5" height="3" rx="0.8" fill="currentColor" />
-      <path d="M5 8h6M5 10.8h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <rect x="6.5" y="1.5" width="7" height="4" rx="1" fill="currentColor" />
+      <path d="M7 10h6M7 13.5h4" stroke="currentColor" strokeWidth="1.8" />
     </>,
   );
 }
 
 /** Timeline: boxes on a track, arrows both ways (timings recorded and played back). */
-export function TimelineGlyph({ size = 21 }: GlyphProps) {
+export function TimelineGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
-      <path
-        d="M2 4.5h11.5M13.5 4.5 11.8 2.8M14 11.5H2.5M2.5 11.5l1.7 1.7"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <rect x="2.5" y="6.5" width="3" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.1" />
-      <rect x="6.5" y="6.5" width="3" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.1" />
-      <rect
-        x="10.5"
-        y="6.5"
-        width="3"
-        height="3"
-        rx="0.5"
-        stroke="currentColor"
-        strokeWidth="1.1"
-      />
+      <path d="M2.5 4.5h14m-2.5-2.5 2.5 2.5L14 7" stroke="currentColor" strokeWidth="1.7" />
+      <path d="M17.5 15.5h-14M6 13l-2.5 2.5L6 18" stroke="currentColor" strokeWidth="1.7" />
+      <rect x="2" y="8" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="8" y="8" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.5" />
+      <rect x="14" y="8" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.5" />
     </>,
   );
 }
 
 /** A transition: two boxes either side of a divide (one slide giving way to the next). */
-export function SplitGlyph({ size = 21 }: GlyphProps) {
+export function SplitGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
-      <rect x="1.5" y="3" width="13" height="10" rx="1.2" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M8 1.5v13" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="3.5" y="6" width="3" height="4" rx="0.5" fill="currentColor" />
-      <rect x="9.5" y="6" width="3" height="4" rx="0.5" fill="currentColor" />
+      <rect x="1.5" y="4" width="17" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M10 2v16" stroke="currentColor" strokeWidth="2" />
+      <rect x="4" y="7.5" width="3.5" height="5" rx="0.8" fill="currentColor" />
+      <rect x="12.5" y="7.5" width="3.5" height="5" rx="0.8" fill="currentColor" />
     </>,
   );
 }
 
 /** Where the slides go (the presentation layer or announcements): a ringed target. */
-export function TargetGlyph({ size = 21 }: GlyphProps) {
+export function TargetGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
-      <circle cx="8" cy="8" r="6.3" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="8" cy="8" r="3.4" stroke="currentColor" strokeWidth="1.6" />
-      <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="10" cy="10" r="8" stroke="currentColor" strokeWidth="2" />
+      <circle cx="10" cy="10" r="4.25" stroke="currentColor" strokeWidth="2" />
+      <circle cx="10" cy="10" r="1.6" fill="currentColor" />
     </>,
   );
 }
 
 /** Playback (a picture or video's options): a solid arrow in a box. */
-export function PlayBoxGlyph({ size = 21 }: GlyphProps) {
+export function PlayBoxGlyph({ size = 20 }: GlyphProps) {
   return svg(
     size,
     <>
-      <rect x="1.5" y="2" width="13" height="12" rx="1.5" fill="currentColor" />
-      <path d="M6 5l4.5 3L6 11z" fill="var(--surface-0)" />
+      <rect x="1.5" y="2.5" width="17" height="15" rx="2.5" fill="currentColor" />
+      <path d="M7.5 6.5 13.5 10l-6 3.5z" fill="var(--surface-0)" />
     </>,
   );
 }
