@@ -7,7 +7,7 @@ import { openAdhoc, openPick, saveSettings } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
 import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
-import { Typography, Button, IconButton, Switch, typographyClass } from '@lampstand/ui';
+import { Typography, Button, Switch, typographyClass } from '@lampstand/ui';
 
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
@@ -115,27 +115,30 @@ export function BibleBrowser() {
           />
         </div>
       </div>
-      {/* The book's own row: previous book, its chapters, next book. */}
+      {/* The book's own row: the previous book (by name), its chapters, the next book. */}
       {book && (
-        <div className="flex items-center gap-1 px-4 pb-3">
-          <IconButton
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 px-4 pb-3">
+          <Button
             size="sm"
+            variant="ghost"
+            icon={<ChevronLeft size={16} className="shrink-0" />}
             aria-label={
               prevBook ? t('bible.prevBook', { name: prevBook.name }) : t('bible.firstBook')
             }
             title={prevBook ? t('bible.prevBook', { name: prevBook.name }) : undefined}
             disabled={!prevBook}
             onClick={() => prevBook && openBook(prevBook.id)}
+            className="min-w-0 justify-self-start"
           >
-            <ChevronLeft size={16} />
-          </IconButton>
+            {prevBook && <Typography truncate>{prevBook.name}</Typography>}
+          </Button>
           <Button
             size="sm"
             variant={chaptersOpen ? 'subtle' : 'ghost'}
             aria-expanded={chaptersOpen}
             title={t('bible.chaptersHelp')}
             onClick={() => setChaptersOpen(!chaptersOpen)}
-            className="flex-1 justify-center tabular-nums"
+            className="tabular-nums"
           >
             {t('bible.chapterN', { n: chapter })}
             <ChevronDown
@@ -143,17 +146,20 @@ export function BibleBrowser() {
               className={`text-[var(--text-3)] transition-transform ${chaptersOpen ? 'rotate-180' : ''}`}
             />
           </Button>
-          <IconButton
+          <Button
             size="sm"
+            variant="ghost"
             aria-label={
               nextBook ? t('bible.nextBook', { name: nextBook.name }) : t('bible.lastBook')
             }
             title={nextBook ? t('bible.nextBook', { name: nextBook.name }) : undefined}
             disabled={!nextBook}
             onClick={() => nextBook && openBook(nextBook.id)}
+            className="min-w-0 justify-self-end"
           >
-            <ChevronRight size={16} />
-          </IconButton>
+            {nextBook && <Typography truncate>{nextBook.name}</Typography>}
+            <ChevronRight size={16} className="shrink-0" />
+          </Button>
         </div>
       )}
       {!book && (
