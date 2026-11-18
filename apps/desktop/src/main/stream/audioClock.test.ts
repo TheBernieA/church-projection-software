@@ -66,6 +66,7 @@ describe('the stream sound clock', () => {
     out.writable = false;
     out.writableLength = 0;
     expect(clock.write(Buffer.alloc(ms(20)))).toBe(false);
+    expect(clock.report().audioDroppedMs).toBe(40); // both refused batches are counted
   });
 
   it('starts clean for a new session', () => {

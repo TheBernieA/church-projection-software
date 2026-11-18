@@ -222,6 +222,11 @@ export interface StreamStatus {
    * What a viewer sees is this plus the streaming service's own delay.
    */
   delayMs: number | null;
+  /**
+   * The video bitrate the stream has lowered itself to, to fit the upload (kb/s); null while it
+   * runs at the performance mode's bitrate.
+   */
+  adaptedKbps: number | null;
   /** This computer's ffmpeg can send SRT (direct links); null until asked. */
   srt: boolean | null;
   destinations: StreamDestinationStatus[];
@@ -336,7 +341,10 @@ export interface StreamApi {
   /** GPU pipeline: each new stream picture, as a frame on the GPU (close it when done). */
   onFrame(cb: (frame: GpuFrame) => void): void;
   /** Start encoding with these settings, stop (null), or make the next frame a keyframe. */
-  onEncode(cb: (cmd: EncodeConfig | { keyframe: true } | null) => void): () => void;
+  /** Start encoding, change the bitrate on the fly, ask for a keyframe, or stop (null). */
+  onEncode(
+    cb: (cmd: EncodeConfig | { keyframe: true } | { bitrate: number } | null) => void,
+  ): () => void;
   /**
    * An encoded H.264 frame (AVCC), with when it was made (µs since encoding started) and, on
    * keyframes, the encoder's configuration record (avcC).

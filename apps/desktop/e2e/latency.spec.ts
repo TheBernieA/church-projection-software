@@ -23,6 +23,24 @@ test.setTimeout(240_000);
 
 const SECONDS = Number(process.env.LAMPSTAND_LATENCY_SECONDS ?? 40);
 
+/**
+ * A slow upload: a relay (fixtures/throttle.py) from `from` to `to` that passes on at most
+ * `kbps`, with small buffers like a real link, so a sender that sends too much backs up on its
+ * own side.
+ */
+function throttle(from: number, to: number, kbps: number): Promise<{ close: () => void }> {
+  const relay = spawn('python3', [
+    '-I',
+    join(__dirname, 'fixtures', 'throttle.py'),
+    String(from),
+    String(to),
+    String(kbps),
+  ]);
+  return new Promise((resolve) => {
+    relay.stdout.once('data', () => resolve({ close: () => relay.kill() }));
+  });
+}
+
 test('livestream sending latency to a local RTMP server', async () => {
   const lib = tempLibrary('lat');
   const dir = lib.dir;
@@ -73,6 +91,12 @@ test('livestream sending latency to a local RTMP server', async () => {
     }
   });
   await new Promise((r) => setTimeout(r, 800));
+  // A slow upload (LAMPSTAND_LATENCY_KBPS): the stream goes through a relay that passes on only
+  // so many kilobits a second, like a weak connection, holding the rest back (so the sender's
+  // own buffers fill, as they would on a real network).
+  const kbps = Number(process.env.LAMPSTAND_LATENCY_KBPS ?? 0);
+  const relay = kbps > 0 ? await throttle(port + 1, port, kbps) : null;
+  const sendPort = relay ? port + 1 : port;
 
   const l = await launch(lib, [
     '--use-fake-device-for-media-stream',
@@ -88,7 +112,7 @@ test('livestream sending latency to a local RTMP server', async () => {
         id: 'd1',
         kind: 'custom',
         name: 'Local',
-        url: `rtmp://127.0.0.1:${port}/live/test`,
+        url: `rtmp://127.0.0.1:${sendPort}/live/test`,
         enabled: true,
       },
     ],
@@ -113,6 +137,7 @@ test('livestream sending latency to a local RTMP server', async () => {
   await control.waitForTimeout(1500);
   await app.close();
   server.kill();
+  relay?.close();
 
   // Stream start: the first video tag's arrival stands for timestamp 0 (so the figure is the
   // delay that builds up after the start, plus jitter; a constant first-packet delay cancels).
@@ -167,6 +192,26 @@ test('livestream sending latency to a local RTMP server', async () => {
       encoding: 'utf8',
     },
   ).stderr;
+  // Every health line: how the sending delay, speed and sound held up over the run.
+  for (const l of log.filter((x) => x.includes('stream health') || x.includes('bitrate'))) {
+    const fields = JSON.parse(l.slice(l.indexOf('{'))) as Record<string, unknown>;
+    const pick = (k: string): unknown => fields[k];
+    console.log(
+      'HEALTH',
+      JSON.stringify({
+        t: String(fields.t).slice(11, 19),
+        msg: fields.msg,
+        delay: pick('delayMs'),
+        speed: pick('speed'),
+        fps: pick('fps'),
+        congested: pick('congested'),
+        audioLead: pick('audioLeadMs'),
+        padded: pick('audioPaddedMs'),
+        kbps: pick('kbps'),
+        target: pick('targetKbps'),
+      }),
+    );
+  }
   const health = log.filter((l) => l.includes('stream health')).at(-1) ?? '';
   const extra = {
     meanVolume: /mean_volume: ([-\d.]+) dB/.exec(vol)?.[1],

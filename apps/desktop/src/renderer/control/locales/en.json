@@ -2020,7 +2020,8 @@
       "load": "Computer load: Lampstand and the encoder together (100% = one full core).",
       "size": "Picture size and frame rate for the next start ({{mode}} mode).",
       "bitrate": "Video bitrate (target {{target}} Mb/s): how much internet upload the stream uses.",
-      "encoder": "The video encoder in use (a hardware one saves the computer's effort)."
+      "encoder": "The video encoder in use (a hardware one saves the computer's effort).",
+      "bitrateAdapted": "The upload couldn't carry {{target}} Mb/s, so the stream lowered itself to {{rate}} Mb/s to stay live. It climbs back when the connection allows."
     }
   },
   "benchmark": {

@@ -49,6 +49,7 @@ import { AudioClock } from './audioClock';
 import { resolveDestinations, type ResolvedDestinations } from './destinations';
 import { sharedTexturesAvailable, TextureRelay, type Watcher } from './textureRelay';
 import { Backlog } from './backlog';
+import { BitrateController } from './bitrate';
 import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
 import { FramePump } from './framePump';
 import { isStruggling, Ring, sampleProcess, type HealthSample } from './health';
@@ -116,6 +117,7 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   speed: 0,
   dropped: 0,
   delayMs: null,
+  adaptedKbps: null,
   srt: null,
   droppedLocal: 0,
   destinations: [],
@@ -251,6 +253,8 @@ export class StreamController {
   private readonly audio = new AudioClock(() => this.audioOut);
   /** GPU pipeline: hands each picture to the stream page's encoder and the watching consoles. */
   private readonly relay: TextureRelay;
+  /** GPU pipeline: lowers the bitrate when the upload can't keep up, raises it again after. */
+  private readonly abr = new BitrateController(DEFAULT_PROFILE.videoKbps);
   /** Counts encoder starts, so one that was overtaken while it waited gives way. */
   private spawnSeq = 0;
 
@@ -339,6 +343,7 @@ export class StreamController {
       this.congested = 0;
       this.pcmSeen = 0;
       this.audio.reset();
+      this.abr.reset(this.freshProfile().videoKbps);
       for (const r of Object.values(this.history)) r.clear();
       this.status = { ...this.status, restarts: 0, error: null, advice: null };
       // A window that was getting ready under another mode starts again at the right size.
@@ -379,6 +384,7 @@ export class StreamController {
     this.d.updateSettings({ stream: { ...this.d.getSettings().stream, performance: 'light' } });
     if (!this.encoding) return;
     this.setStatus({ advice: null }, true);
+    this.abr.reset(this.freshProfile().videoKbps);
     await this.restartWithNewWindow();
   }
 
@@ -898,7 +904,7 @@ export class StreamController {
       this.rateAt = 0;
       this.rateBytes = 0;
       this.videoChunks = 0;
-      const cfg = { width, height, fps: profile.fps, kbps: profile.videoKbps };
+      const cfg = { width, height, fps: profile.fps, kbps: this.abr.current };
       if (this.pageReady) this.beginGpuEncode(cfg);
       else this.pendingEncode = cfg; // sent when the page has loaded
     } else {
@@ -944,6 +950,35 @@ export class StreamController {
       afterTick: () => this.audio.topUp(),
     });
     this.pump.begin();
+  }
+
+  /**
+   * Keep the stream within what the upload carries (GPU pipeline: the hardware encoder changes
+   * its bitrate on the fly). A backlog that built up anyway is thrown away by reconnecting.
+   */
+  private adaptBitrate(delayMs: number, sentKbps: number, at: number): void {
+    if (this.pipeline !== 'gpu' || !this.want.stream || this.status.state !== 'live') return;
+    if (process.env.LAMPSTAND_ABR === '0') return; // measurements: the stream as it was without it
+    const action = this.abr.next({ delayMs, sentKbps, at });
+    if (!action) return;
+    if (action.kind === 'reconnect') {
+      this.d.log.warn('stream fell behind; reconnecting to catch up', {
+        delayMs,
+        kbps: this.abr.current,
+      });
+      this.abr.reconnected(at);
+      void this.restartEncoder(this.want.record);
+      return;
+    }
+    this.d.log.info('bitrate', {
+      targetKbps: action.kbps,
+      reason: action.reason,
+      delayMs,
+      sentKbps,
+    });
+    this.win?.webContents.send(Channels.evEncode, { bitrate: action.kbps });
+    const full = this.winProfile?.videoKbps ?? action.kbps;
+    this.setStatus({ adaptedKbps: action.kbps < full ? action.kbps : null }, true);
   }
 
   /** Sound from the stream page's mix, on to ffmpeg. */
@@ -1093,8 +1128,12 @@ export class StreamController {
             ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt)) +
               this.d.getSettings().stream.quality.audioKbps
             : this.status.kbps;
+      const videoKbps = this.rateAt
+        ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt))
+        : 0;
       this.rateAt = at;
       this.rateBytes = this.videoBytes;
+      if (delayMs !== null) this.adaptBitrate(delayMs, videoKbps, at);
       this.setStatus(
         {
           state: p.time > 1 ? 'live' : this.status.state,

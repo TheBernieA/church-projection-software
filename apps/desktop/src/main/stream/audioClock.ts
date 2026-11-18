@@ -60,11 +60,13 @@ export class AudioClock {
 
   /** Sound from the mix. False when it was not written (too late, or ffmpeg isn't taking it). */
   write(chunk: Buffer): boolean {
-    if (this.started && this.written - this.dueBytes() > SLACK_BYTES) {
+    // Too late (its gap was filled), or ffmpeg isn't taking sound (a backed-up upload): either
+    // way this batch is lost, and counted, so the log tells the truth about gaps in the sound.
+    if ((this.started && this.written - this.dueBytes() > SLACK_BYTES) || !this.send(chunk)) {
       this.dropped += chunk.length;
       return false;
     }
-    return this.send(chunk);
+    return true;
   }
 
   /** Fill with silence once the sound is well behind the clock. */

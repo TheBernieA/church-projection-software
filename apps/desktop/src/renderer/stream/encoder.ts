@@ -22,6 +22,7 @@ export class StreamEncoder {
     api.onEncode((cmd) => {
       if (cmd === null) post({ t: 'stop' });
       else if ('keyframe' in cmd) post({ t: 'key' });
+      else if ('bitrate' in cmd) post({ t: 'bitrate', kbps: cmd.bitrate });
       else post({ t: 'begin', cfg: cmd });
     });
     this.worker.onmessage = (e: MessageEvent<WorkerOut>) => {

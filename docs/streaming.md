@@ -271,3 +271,27 @@ readouts, health), `destinationFields.tsx` (shared with Settings), `consoleParts
 shown in both the console and Settings are listed once in `lib/streamOptions.ts`.
 
 Measurements share `e2e/streamHarness.ts` (`perf`, `latency`, `glass` specs).
+
+## Adaptive bitrate (staying live on a weak upload)
+
+When the upload can't carry the stream's bitrate, the data backs up in the computer's network
+buffers (macOS grows these to several MB), where nothing in the app can discard it. A user's
+stream at 6 Mb/s over a slower connection drifted 30 s behind live in a minute, and the sound
+was filled with silence while it waited.
+
+`bitrate.ts` watches how far behind live the stream leaves (once a second, from ffmpeg's
+progress). Past 1.2 s it lowers the hardware encoder's bitrate on the fly (WebCodecs
+`configure`, no restart, from a keyframe) to 60% of what was actually being sent. Once the
+stream has been live for 10 s it climbs back (×1.25 every 10 s) to the mode's bitrate. If
+lowering choked again within two minutes, that rate becomes a ceiling for five minutes. If the
+delay is still over 3 s after lowering, it reconnects (rate-limited) to throw the backlog away.
+The Live console's bitrate reading turns amber and explains when it has lowered itself.
+
+Measured with the slow-link relay (`LAMPSTAND_LATENCY_KBPS=1000`, `e2e/fixtures/throttle.py`,
+1080p30): without it the delay climbed to 17 s in a minute with 39 s of sound replaced by
+silence; with it the stream was live again within about 25 s, the sound intact and in sync
+within 35 ms. On a fast connection nothing changes. `LAMPSTAND_ABR=0` turns it off for
+comparison. (GPU pipeline only; the CPU pipeline's ffmpeg encoder keeps its bitrate.)
+
+Capping the socket send buffer (`send_buffer_size`) was tried and made no measurable
+difference, so it isn't used.

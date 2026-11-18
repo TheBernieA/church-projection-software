@@ -228,7 +228,14 @@ export function FooterReadings({ s }: { s: StreamStatus }) {
       items={[
         {
           text: `${(kbps / 1000).toFixed(1)} Mb/s`,
-          help: t('console.help.bitrate', { target: (s.profile.videoKbps / 1000).toFixed(1) }),
+          help:
+            s.adaptedKbps !== null
+              ? t('console.help.bitrateAdapted', {
+                  rate: (s.adaptedKbps / 1000).toFixed(1),
+                  target: (s.profile.videoKbps / 1000).toFixed(1),
+                })
+              : t('console.help.bitrate', { target: (s.profile.videoKbps / 1000).toFixed(1) }),
+          tone: s.adaptedKbps !== null ? ('warn' as const) : undefined,
         },
         { text: ENCODER_NAMES[s.encoder] ?? s.encoder, help: t('console.help.encoder') },
       ]}

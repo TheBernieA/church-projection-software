@@ -14,6 +14,7 @@ export type WorkerIn =
   | { t: 'probe'; cfg: EncodeConfig }
   | { t: 'begin'; cfg: EncodeConfig }
   | { t: 'key' }
+  | { t: 'bitrate'; kbps: number }
   | { t: 'stop' };
 
 export interface ChunkMessage {
@@ -203,6 +204,18 @@ function tick(): void {
   timer = setTimeout(tick, Math.max(1, msToNextFrame(start, performance.now(), c.fps, sent)));
 }
 
+/**
+ * A new bitrate mid-stream (the upload can't keep up, or has recovered): the hardware encoder
+ * takes it on the fly, from a keyframe, with no restart and no gap.
+ */
+function setBitrate(kbps: number): void {
+  const enc = encoder;
+  if (!enc || !config || enc.state !== 'configured' || config.kbps === kbps) return;
+  config = { ...config, kbps };
+  enc.configure(encoderConfig(config));
+  wantKey = true;
+}
+
 scope.onmessage = (e: MessageEvent<WorkerIn>) => {
   const m = e.data;
   switch (m.t) {
@@ -231,6 +244,9 @@ scope.onmessage = (e: MessageEvent<WorkerIn>) => {
       break;
     case 'key':
       wantKey = true;
+      break;
+    case 'bitrate':
+      setBitrate(m.kbps);
       break;
     case 'stop':
       stop(true);
