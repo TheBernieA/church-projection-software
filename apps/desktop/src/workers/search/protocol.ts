@@ -14,7 +14,8 @@ export interface SongDoc {
 
 export type ToWorker =
   | { type: 'init'; biblesDir: string; cacheDir: string }
-  | { type: 'bibles'; versions: { id: string; checksum: string }[] }
+  /** The installed versions; `warm` (the default) is indexed now, the rest when first searched. */
+  | { type: 'bibles'; versions: { id: string; checksum: string }[]; warm?: string }
   | { type: 'songs'; docs: SongDoc[] }
   | { type: 'query'; id: number; text: string; limit: number; versionId?: string };
 

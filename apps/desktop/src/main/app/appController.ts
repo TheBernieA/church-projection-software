@@ -294,7 +294,10 @@ export class AppController {
       log.child('search'),
     );
     this.search.start();
-    this.search.setBibles(bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })));
+    this.search.setBibles(
+      bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })),
+      settings.get().defaultBibleVersion,
+    );
     await this.reindexSongs();
 
     registerIpc({
@@ -679,6 +682,7 @@ export class AppController {
     await this.s.bibles.refresh();
     this.search.setBibles(
       this.s.bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })),
+      this.s.settings.get().defaultBibleVersion,
     );
     this.windows.sendToControl(Channels.evRepo, 'bibles');
   }

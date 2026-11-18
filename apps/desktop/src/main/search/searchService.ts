@@ -14,6 +14,7 @@ export class SearchService {
   >();
   private lastSongs: SongDoc[] = [];
   private lastBibles: { id: string; checksum: string }[] = [];
+  private lastWarm: string | undefined;
   private stopped = false;
 
   constructor(
@@ -40,7 +41,7 @@ export class SearchService {
       this.log.warn('search worker exited; restarting', { code });
       setTimeout(() => {
         this.start();
-        this.setBibles(this.lastBibles);
+        this.setBibles(this.lastBibles, this.lastWarm);
         this.setSongs(this.lastSongs);
       }, 500);
     });
@@ -57,9 +58,11 @@ export class SearchService {
     this.post({ type: 'songs', docs });
   }
 
-  setBibles(versions: { id: string; checksum: string }[]): void {
+  /** The installed versions; `warm` (the default version) is indexed straight away. */
+  setBibles(versions: { id: string; checksum: string }[], warm?: string): void {
     this.lastBibles = versions;
-    this.post({ type: 'bibles', versions });
+    this.lastWarm = warm;
+    this.post({ type: 'bibles', versions, ...(warm ? { warm } : {}) });
   }
 
   query(text: string, limit: number, versionId?: string): Promise<SearchHit[]> {

@@ -45,13 +45,14 @@ function QuickBarBody() {
     if (s.length < 3) return;
     const id = ++seq.current;
     const timer = setTimeout(() => {
-      void q('search.query', { text: s, limit: 20 }).then(
+      // Verses from the default version only (one hit per verse, not one per installed Bible).
+      void q('search.query', { text: s, limit: 20, versionId }).then(
         (r) => id === seq.current && setHits(r),
         () => undefined,
       );
     }, 80);
     return () => clearTimeout(timer);
-  }, [text]);
+  }, [text, versionId]);
 
   const rows = useMemo<Row[]>(() => {
     const s = text.trim();

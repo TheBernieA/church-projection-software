@@ -704,7 +704,7 @@
       },
       "packages": {
         "title": "Add Bibles and hymnals",
-        "body": "The King James Version is included. Install other Bible versions (.lsbible) and hymnals (.lshymnal) from files you have been given."
+        "body": "Twelve public-domain Bibles are included: KJV, ASV, WEB, YLT, Darby, BBE and Webster in English, Diodati and Riveduta in Italian, Reina-Valera 1909 in Spanish, Louis Segond 1910 in French and Luther 1912 in German. Install other Bible versions (.lsbible) and hymnals (.lshymnal) from files you have been given."
       },
       "service": {
         "title": "Build your service",

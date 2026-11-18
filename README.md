@@ -37,7 +37,7 @@ packages/
   renderer/            Scene → DOM renderer: layers, auto-fit, transitions, background continuity, masks
   ipc-contract/        every IPC channel + Zod request schemas
   ui/                  design tokens + base components
-resources/bibles/      bundled KJV (`.lsbible`, built by scripts/buildKjvModule.mjs)
+resources/bibles/      bundled public-domain Bibles (`.lsbible`, built by scripts/buildBibleModules.mjs)
 docs/                  ADRs, package formats, smoke-test checklists
 ```
 

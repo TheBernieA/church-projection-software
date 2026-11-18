@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-// Builds resources/bibles/kjv.lsbible from the public-domain KJV USFM published by eBible.org.
-// Usage: node scripts/buildKjvModule.mjs [--refresh]   (--refresh re-downloads the source zip)
+// Builds the bundled Bibles (resources/bibles/<id>.lsbible) from the public-domain USFM editions
+// published by eBible.org.
+// Usage: node scripts/buildBibleModules.mjs [id ...] [--refresh]
+//   ids: which versions to build (default: all, see VERSIONS); --refresh re-downloads the sources.
 // See docs/module-format.md for the output format.
 
 import { createHash } from 'node:crypto';
@@ -11,12 +13,8 @@ import { strToU8, strFromU8, unzipSync, zipSync } from 'fflate';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const CACHE_DIR = join(ROOT, 'scripts', '.cache');
-const OUT_FILE = join(ROOT, 'resources', 'bibles', 'kjv.lsbible');
-const SOURCE_URL = 'https://ebible.org/Scriptures/eng-kjv2006_usfm.zip';
-const CACHE_ZIP = join(CACHE_DIR, 'eng-kjv2006_usfm.zip');
-const CACHE_META = join(CACHE_DIR, 'eng-kjv2006_usfm.meta.json');
-
-const EXPECTED = { books: 66, chapters: 1189, verses: 31102 };
+const OUT_DIR = join(ROOT, 'resources', 'bibles');
+const BOOK_COUNT = 66;
 
 /** Canonical 66 books (USFM codes, must match BOOK_IDS in packages/core) with English names. */
 const BOOKS = [
@@ -89,18 +87,145 @@ const BOOKS = [
 ];
 const BOOK_NAMES = new Map(BOOKS);
 
-const LICENSE_TEXT =
-  'The King James Version (Authorized Version, 1611; text as standardised in the 1769 Oxford ' +
-  'edition) is in the public domain in most of the world. In the United Kingdom, rights in the ' +
-  'Authorized Version are vested in the Crown and administered by Cambridge University Press, the ' +
-  "Crown's patentee; reproduction there is permitted under the terms of that patent. " +
-  'This module was produced from the public-domain "eng-kjv2006" USFM edition published by ' +
-  "eBible.org; footnotes and Strong's tagging were removed.";
+/** What every module made here says about where it came from. */
+const madeFrom = (ebible) =>
+  `This module was produced from the public-domain "${ebible}" USFM edition published by ` +
+  "eBible.org; footnotes, cross references and Strong's tagging were removed.";
+
+/**
+ * The bundled versions: all public domain, all from eBible.org. `english` keeps the English book
+ * names (other languages take each book's own heading from the source). `expected` pins the
+ * exact shape where it is known (the KJV); the others are checked for all 66 books and every
+ * chapter having text, and may leave a verse empty where the source has none (e.g. Darby omits
+ * a few the KJV has).
+ */
+const VERSIONS = [
+  {
+    id: 'kjv',
+    ebible: 'eng-kjv2006',
+    name: 'King James Version',
+    abbreviation: 'KJV',
+    language: 'en',
+    versification: 'kjv',
+    expected: { chapters: 1189, verses: 31102 },
+    license:
+      'The King James Version (Authorized Version, 1611; text as standardised in the 1769 Oxford ' +
+      'edition) is in the public domain in most of the world. In the United Kingdom, rights in the ' +
+      'Authorized Version are vested in the Crown and administered by Cambridge University Press, the ' +
+      "Crown's patentee; reproduction there is permitted under the terms of that patent. " +
+      'This module was produced from the public-domain "eng-kjv2006" USFM edition published by ' +
+      "eBible.org; footnotes and Strong's tagging were removed.",
+  },
+  {
+    id: 'asv',
+    ebible: 'eng-asv',
+    name: 'American Standard Version (1901)',
+    abbreviation: 'ASV',
+    language: 'en',
+    versification: 'kjv',
+    license: 'The American Standard Version (1901) is in the public domain.',
+  },
+  {
+    id: 'web',
+    ebible: 'engwebp',
+    name: 'World English Bible',
+    abbreviation: 'WEB',
+    language: 'en',
+    versification: 'kjv',
+    license:
+      'The World English Bible is in the public domain. "World English Bible" is a trademark of ' +
+      'eBible.org; this module is the unaltered text without its footnotes.',
+  },
+  {
+    id: 'ylt',
+    ebible: 'engylt',
+    name: "Young's Literal Translation",
+    abbreviation: 'YLT',
+    language: 'en',
+    versification: 'kjv',
+    license: "Young's Literal Translation (1898) is in the public domain.",
+  },
+  {
+    id: 'darby',
+    ebible: 'engDBY',
+    name: 'Darby Translation',
+    abbreviation: 'DBY',
+    language: 'en',
+    versification: 'kjv',
+    license: 'The Darby Translation (1890) is in the public domain.',
+  },
+  {
+    id: 'bbe',
+    ebible: 'engBBE',
+    name: 'Bible in Basic English',
+    abbreviation: 'BBE',
+    language: 'en',
+    versification: 'kjv',
+    license: 'The Bible in Basic English (1965) is in the public domain.',
+  },
+  {
+    id: 'webster',
+    ebible: 'engwebster',
+    name: 'Noah Webster Bible',
+    abbreviation: 'WBS',
+    language: 'en',
+    versification: 'kjv',
+    license: "Noah Webster's revision of the King James Version (1833) is in the public domain.",
+  },
+  {
+    id: 'diodati',
+    ebible: 'ita1885',
+    name: 'Diodati (1885)',
+    abbreviation: 'DIO',
+    language: 'it',
+    versification: 'kjv',
+    license:
+      "Giovanni Diodati's Italian translation (1641, revised 1821; this edition 1885) is in the " +
+      'public domain.',
+  },
+  {
+    id: 'riveduta',
+    ebible: 'ita1927',
+    name: 'Riveduta (1927)',
+    abbreviation: 'RIV',
+    language: 'it',
+    versification: 'kjv',
+    license: 'The Riveduta Italian Bible (1927) is in the public domain.',
+  },
+  {
+    id: 'rv1909',
+    ebible: 'spaRV1909',
+    name: 'Reina-Valera 1909',
+    abbreviation: 'RV1909',
+    language: 'es',
+    versification: 'kjv',
+    license: 'The Reina-Valera revision of 1909 is in the public domain.',
+  },
+  {
+    id: 'lsg',
+    ebible: 'fraLSG',
+    name: 'Louis Segond (1910)',
+    abbreviation: 'LSG',
+    language: 'fr',
+    // Segond numbers some verses differently (e.g. Psalm titles are verse 1).
+    versification: 'custom',
+    license: 'The Louis Segond translation (1910) is in the public domain.',
+  },
+  {
+    id: 'luther1912',
+    ebible: 'deu1912',
+    name: 'Lutherbibel 1912',
+    abbreviation: 'LUT',
+    language: 'de',
+    versification: 'kjv',
+    license: "The 1912 revision of Martin Luther's German Bible is in the public domain.",
+  },
+];
 
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
 function fail(msg) {
-  console.error(`buildKjvModule: FAILED — ${msg}`);
+  console.error(`buildBibleModules: FAILED — ${msg}`);
   process.exit(1);
 }
 function assert(cond, msg) {
@@ -110,34 +235,33 @@ function assert(cond, msg) {
 // ---------------------------------------------------------------------------------------------
 // 1. Download (cached)
 // ---------------------------------------------------------------------------------------------
-async function getSource() {
+async function getSource(v) {
   mkdirSync(CACHE_DIR, { recursive: true });
+  const sourceUrl = `https://ebible.org/Scriptures/${v.ebible}_usfm.zip`;
+  const cacheZip = join(CACHE_DIR, `${v.ebible}_usfm.zip`);
+  const cacheMeta = join(CACHE_DIR, `${v.ebible}_usfm.meta.json`);
   const refresh = process.argv.includes('--refresh');
-  if (!refresh && existsSync(CACHE_ZIP) && existsSync(CACHE_META)) {
-    const bytes = readFileSync(CACHE_ZIP);
-    const meta = JSON.parse(readFileSync(CACHE_META, 'utf8'));
+  if (!refresh && existsSync(cacheZip) && existsSync(cacheMeta)) {
+    const bytes = readFileSync(cacheZip);
+    const meta = JSON.parse(readFileSync(cacheMeta, 'utf8'));
     assert(
       sha256(bytes) === meta.sha256,
-      'cached zip does not match its recorded sha256; rerun with --refresh',
+      `${v.id}: cached zip does not match its recorded sha256; rerun with --refresh`,
     );
-    console.log(`Using cached source ${CACHE_ZIP} (retrieved ${meta.retrievedAt})`);
+    console.log(`Using cached source ${cacheZip} (retrieved ${meta.retrievedAt})`);
     return { bytes, provenance: meta };
   }
-  console.log(`Downloading ${SOURCE_URL} ...`);
-  const res = await fetch(SOURCE_URL);
-  assert(res.ok, `download failed: HTTP ${res.status}`);
+  console.log(`Downloading ${sourceUrl} ...`);
+  const res = await fetch(sourceUrl);
+  assert(res.ok, `${v.id}: download failed: HTTP ${res.status}`);
   const bytes = Buffer.from(await res.arrayBuffer());
   assert(
     bytes.length > 1_000_000 && bytes.length < 50_000_000,
-    `unexpected download size ${bytes.length}`,
+    `${v.id}: unexpected download size ${bytes.length}`,
   );
-  const provenance = {
-    sourceUrl: SOURCE_URL,
-    retrievedAt: new Date().toISOString(),
-    sha256: sha256(bytes),
-  };
-  writeFileSync(CACHE_ZIP, bytes);
-  writeFileSync(CACHE_META, JSON.stringify(provenance, null, 2) + '\n');
+  const provenance = { sourceUrl, retrievedAt: new Date().toISOString(), sha256: sha256(bytes) };
+  writeFileSync(cacheZip, bytes);
+  writeFileSync(cacheMeta, JSON.stringify(provenance, null, 2) + '\n');
   return { bytes, provenance };
 }
 
@@ -184,7 +308,8 @@ const PARA_MARKERS =
 const SKIP_MARKERS =
   /^\\(id|ide|h|toc\d?|toca\d?|mt\d?|mte\d?|imt\d?|is\d?|ip|ipi|im|imi|ipq|imq|ipr|iq\d?|ib|ili\d?|iot|io\d?|ior|iex|rem|sts|usfm|cl|cp|ca|va|vp|r|mr|ms\d?|sr|sp)$/;
 
-function parseBook(usfm, bookId, headings) {
+/** Verses the source leaves out (e.g. Darby's Matthew 23:14), as "BOOK c:v". */
+function parseBook(usfm, bookId, headings, missing) {
   const chapters = [];
   let chapter = 0;
   let verse = 0;
@@ -195,6 +320,9 @@ function parseBook(usfm, bookId, headings) {
     if (cur) {
       const text = convertInline(cur.raw);
       chapters[cur.chapter - 1][cur.verse - 1] = text;
+      // A verse with no words (e.g. the WEB's Luke 17:36, kept only as a number) counts as missing.
+      if (!text.replace(/<[^>]+>/g, '').trim())
+        missing.push(`${bookId} ${cur.chapter}:${cur.verse}`);
       cur = null;
     }
   };
@@ -222,12 +350,18 @@ function parseBook(usfm, bookId, headings) {
     }
     if (marker === '\\v') {
       flush();
-      const vm = /^(\d+)\s+([\s\S]*)$/.exec(rest);
+      // The text may start on the next line (as in the Reina-Valera's Numbers 12:16).
+      const vm = /^(\d+)(?:\s+([\s\S]*))?$/.exec(rest);
       assert(vm, `${bookId} ${chapter}: malformed verse line: ${line.slice(0, 80)}`);
       const n = parseInt(vm[1], 10);
-      assert(n === verse + 1, `${bookId} ${chapter}:${n}: verse out of order (after ${verse})`);
+      assert(n > verse, `${bookId} ${chapter}:${n}: verse out of order (after ${verse})`);
+      // A verse the source leaves out stays empty, so the numbering still lines up.
+      for (let gap = verse + 1; gap < n; gap++) {
+        chapters[chapter - 1][gap - 1] = '';
+        missing.push(`${bookId} ${chapter}:${gap}`);
+      }
       verse = n;
-      cur = { chapter, verse, raw: vm[2] };
+      cur = { chapter, verse, raw: vm[2] ?? '' };
       for (const h of pendingHeadings) headings.push({ ...h, chapter, verse, position: 'before' });
       pendingHeadings = [];
       continue;
@@ -263,7 +397,9 @@ function parseBook(usfm, bookId, headings) {
     fail(`${bookId} ${chapter}:${verse}: unhandled paragraph marker ${marker}`);
   }
   flush();
-  assert(pendingHeadings.length === 0, `${bookId}: dangling headings at end of book`);
+  // A note after a book's last verse (the ASV's end of Habakkuk) goes after that verse.
+  for (const h of pendingHeadings)
+    headings.push({ ...h, chapter, verse, position: 'after', kind: 'subscription' });
   return chapters;
 }
 
@@ -276,46 +412,55 @@ function isSubscription(usfm, line) {
 // ---------------------------------------------------------------------------------------------
 // 3. Build
 // ---------------------------------------------------------------------------------------------
-async function main() {
-  const { bytes, provenance } = await getSource();
+async function buildVersion(v) {
+  const { bytes, provenance } = await getSource(v);
   const src = unzipSync(new Uint8Array(bytes));
 
   const byBook = new Map();
   for (const [name, data] of Object.entries(src)) {
     if (!name.endsWith('.usfm')) continue;
-    const text = strFromU8(data).replace(/^﻿/, '');
+    const text = strFromU8(data).replace(/^\uFEFF/, '');
     const id = /^\\id\s+([A-Z0-9]{3})/.exec(text)?.[1];
-    assert(id, `${name}: no \\id line`);
+    assert(id, `${v.id} ${name}: no \\id line`);
     if (!BOOK_NAMES.has(id)) {
       console.log(`  skipping non-canonical book ${id} (${name})`);
       continue;
     }
-    assert(!byBook.has(id), `duplicate book ${id}`);
+    assert(!byBook.has(id), `${v.id}: duplicate book ${id}`);
     byBook.set(id, text);
   }
-  assert(byBook.size === EXPECTED.books, `expected ${EXPECTED.books} books, found ${byBook.size}`);
+  assert(byBook.size === BOOK_COUNT, `${v.id}: expected ${BOOK_COUNT} books, found ${byBook.size}`);
 
   const files = {}; // path -> Uint8Array
   const headings = [];
+  const missing = [];
+  const names = new Map(); // book -> the name in the module
   let chapterCount = 0;
   let verseCount = 0;
   const bookTexts = new Map();
 
-  for (const [id, name] of BOOKS) {
+  for (const [id, english] of BOOKS) {
     const usfm = byBook.get(id);
-    assert(usfm, `missing book ${id}`);
-    const chapters = parseBook(usfm, id, headings);
+    assert(usfm, `${v.id}: missing book ${id}`);
+    // English versions keep the English names; others take the book's own heading.
+    const own = /^\\h\s+(.+?)\s*$/m.exec(usfm)?.[1];
+    const name = v.language === 'en' || !own ? english : own.slice(0, 100);
+    names.set(id, name);
+    const chapters = parseBook(usfm, id, headings, missing);
     chapters.forEach((verses, ci) => {
-      assert(verses.length > 0, `${id} ${ci + 1}: chapter has no verses`);
-      verses.forEach((v, vi) => {
+      assert(verses.length > 0, `${v.id} ${id} ${ci + 1}: chapter has no verses`);
+      verses.forEach((t, vi) => {
+        const where = `${v.id} ${id} ${ci + 1}:${vi + 1}`;
+        assert(typeof t === 'string', `${where}: no verse`);
         assert(
-          typeof v === 'string' && v.replace(/<[^>]+>/g, '').trim().length > 0,
-          `${id} ${ci + 1}:${vi + 1}: empty verse`,
+          t.replace(/<[^>]+>/g, '').trim().length > 0 ||
+            missing.includes(`${id} ${ci + 1}:${vi + 1}`),
+          `${where}: empty verse`,
         );
-        assert(!v.includes('\\'), `${id} ${ci + 1}:${vi + 1}: stray USFM marker: ${v}`);
-        assert(!/[|]/.test(v), `${id} ${ci + 1}:${vi + 1}: stray attribute pipe: ${v}`);
-        assert(v.length <= 5000, `${id} ${ci + 1}:${vi + 1}: verse too long`);
-        assertBalancedTags(v, `${id} ${ci + 1}:${vi + 1}`);
+        assert(!t.includes('\\'), `${where}: stray USFM marker: ${t}`);
+        assert(!/[|]/.test(t), `${where}: stray attribute pipe: ${t}`);
+        assert(t.length <= 5000, `${where}: verse too long`);
+        assertBalancedTags(t, where);
       });
       verseCount += verses.length;
     });
@@ -325,33 +470,44 @@ async function main() {
   }
 
   // Sanity checks on content.
-  assert(
-    chapterCount === EXPECTED.chapters,
-    `expected ${EXPECTED.chapters} chapters, got ${chapterCount}`,
-  );
-  assert(verseCount === EXPECTED.verses, `expected ${EXPECTED.verses} verses, got ${verseCount}`);
-  const plain = (s) => s.replace(/<[^>]+>/g, '');
+  const plain = (t) => t.replace(/<[^>]+>/g, '');
   const gen11 = plain(bookTexts.get('GEN')[0][0]);
-  assert(
-    gen11 === 'In the beginning God created the heaven and the earth.',
-    `Genesis 1:1 looks wrong: ${gen11}`,
-  );
   const jhn316 = plain(bookTexts.get('JHN')[2][15]);
-  assert(
-    jhn316 ===
-      'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.',
-    `John 3:16 looks wrong: ${jhn316}`,
-  );
-  assert(bookTexts.get('JHN')[2][15].startsWith('<wj>'), 'John 3:16 should be words of Jesus');
-  assert(
-    bookTexts.get('PSA')[22][0].includes('<nd>LORD</nd>'),
-    'Psalm 23:1 should contain <nd>LORD</nd>',
-  );
-  assert(bookTexts.get('PSA').length === 150, 'Psalms should have 150 chapters');
-  assert(bookTexts.get('PSA')[118].length === 176, 'Psalm 119 should have 176 verses');
+  assert(gen11 && jhn316, `${v.id}: Genesis 1:1 or John 3:16 is empty`);
+  if (v.expected) {
+    assert(
+      chapterCount === v.expected.chapters,
+      `expected ${v.expected.chapters} chapters, got ${chapterCount}`,
+    );
+    assert(
+      verseCount === v.expected.verses,
+      `expected ${v.expected.verses} verses, got ${verseCount}`,
+    );
+  }
+  if (v.id === 'kjv') {
+    assert(
+      gen11 === 'In the beginning God created the heaven and the earth.',
+      `Genesis 1:1 looks wrong: ${gen11}`,
+    );
+    assert(
+      jhn316 ===
+        'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.',
+      `John 3:16 looks wrong: ${jhn316}`,
+    );
+    assert(bookTexts.get('JHN')[2][15].startsWith('<wj>'), 'John 3:16 should be words of Jesus');
+    assert(
+      bookTexts.get('PSA')[22][0].includes('<nd>LORD</nd>'),
+      'Psalm 23:1 should contain <nd>LORD</nd>',
+    );
+  }
+  assert(bookTexts.get('PSA').length === 150, `${v.id}: Psalms should have 150 chapters`);
+  assert(missing.length <= 20, `${v.id}: ${missing.length} verses missing: ${missing.join(', ')}`);
 
   for (const h of headings) {
-    assert(!h.text.includes('\\'), `stray marker in heading ${h.book} ${h.chapter}:${h.verse}`);
+    assert(
+      !h.text.includes('\\'),
+      `${v.id}: stray marker in heading ${h.book} ${h.chapter}:${h.verse}`,
+    );
   }
   files['headings.json'] = strToU8(
     JSON.stringify({ format: 'lampstand-headings', formatVersion: 1, headings }),
@@ -361,16 +517,16 @@ async function main() {
     format: 'lampstand-bible',
     formatVersion: 1,
     version: {
-      id: 'kjv',
-      name: 'King James Version',
-      abbreviation: 'KJV',
-      language: 'en',
+      id: v.id,
+      name: v.name,
+      abbreviation: v.abbreviation,
+      language: v.language,
       direction: 'ltr',
-      versification: 'kjv',
+      versification: v.versification,
       license: {
         kind: 'public-domain',
-        text: LICENSE_TEXT,
-        url: 'https://ebible.org/find/details.php?id=eng-kjv2006',
+        text: v.id === 'kjv' ? v.license : `${v.license} ${madeFrom(v.ebible)}`,
+        url: `https://ebible.org/find/details.php?id=${v.ebible}`,
       },
       source: 'bundled',
       checksumSha256: '',
@@ -390,15 +546,28 @@ async function main() {
   for (const [p, d] of Object.entries(files)) zipEntries[p] = d;
   // Fixed mtime keeps the output byte-reproducible for a given source zip.
   const zipped = zipSync(zipEntries, { level: 9, mtime: new Date('2000-01-01T00:00:00Z') });
-  mkdirSync(dirname(OUT_FILE), { recursive: true });
-  writeFileSync(OUT_FILE, zipped);
+  const out = join(OUT_DIR, `${v.id}.lsbible`);
+  mkdirSync(OUT_DIR, { recursive: true });
+  writeFileSync(out, zipped);
 
-  verifyOutput(OUT_FILE);
+  verifyOutput(out, names, verseCount);
 
   console.log(
-    `Wrote ${OUT_FILE}\n  ${BOOKS.length} books, ${chapterCount} chapters, ${verseCount} verses, ` +
-      `${headings.length} headings\n  size ${statSync(OUT_FILE).size} bytes, sha256 ${sha256(readFileSync(OUT_FILE))}`,
+    `Wrote ${out}\n  ${BOOKS.length} books, ${chapterCount} chapters, ${verseCount} verses ` +
+      `(${missing.length} missing in the source${missing.length ? `: ${missing.join(', ')}` : ''}), ${headings.length} headings\n` +
+      `  size ${statSync(out).size} bytes, sha256 ${sha256(readFileSync(out))}\n` +
+      `  Genesis 1:1  ${gen11}\n  John 3:16    ${jhn316}`,
   );
+}
+
+async function main() {
+  const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
+  for (const id of wanted)
+    assert(
+      VERSIONS.some((v) => v.id === id),
+      `unknown version ${id}`,
+    );
+  for (const v of VERSIONS) if (!wanted.length || wanted.includes(v.id)) await buildVersion(v);
 }
 
 function assertBalancedTags(v, where) {
@@ -412,7 +581,7 @@ function assertBalancedTags(v, where) {
 }
 
 /** Re-read the written module and check it the way the installer will. */
-function verifyOutput(path) {
+function verifyOutput(path, names, expectedVerses) {
   const entries = unzipSync(new Uint8Array(readFileSync(path)));
   const manifestBytes = entries['manifest.json'];
   assert(manifestBytes, 'output: manifest.json missing at zip root');
@@ -441,7 +610,7 @@ function verifyOutput(path) {
     const json = JSON.parse(strFromU8(data));
     if (f.path.startsWith('books/')) {
       assert(
-        f.path === `books/${json.book}.json` && BOOK_NAMES.get(json.book) === json.name,
+        f.path === `books/${json.book}.json` && names.get(json.book) === json.name,
         `output: bad book file ${f.path}`,
       );
       assert(
@@ -458,10 +627,10 @@ function verifyOutput(path) {
     }
   }
   assert(
-    manifest.files.filter((f) => f.path.startsWith('books/')).length === EXPECTED.books,
+    manifest.files.filter((f) => f.path.startsWith('books/')).length === BOOK_COUNT,
     'output: book count',
   );
-  assert(verses === EXPECTED.verses, `output: verse count ${verses}`);
+  assert(verses === expectedVerses, `output: verse count ${verses}`);
   console.log('Output verified (manifest, per-file sha256/size, book files, verse count).');
 }
 
