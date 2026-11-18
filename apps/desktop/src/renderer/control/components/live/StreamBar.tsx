@@ -20,7 +20,6 @@ import { useStore } from '../../lib/store';
 import { SCENE_GROUPS, STREAM_SCENES, type SceneTemplate } from '../../lib/streamOptions';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { LevelMeter } from '../bins/AudioInputs';
 import { usePref } from './consoleParts';
 
 /**
@@ -302,9 +301,8 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
           <div
             role="group"
             aria-label={t('console.scene')}
-            // Never so tall that the options below have no room: the tiles scroll instead.
-            className="grid max-h-[188px] gap-x-2 gap-y-2.5 overflow-y-auto pr-0.5"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))' }}
+            // One row of whole tiles, four across: more scroll sideways, so none is ever cut off.
+            className="grid auto-cols-[max(84px,calc((100%_-_24px)/4))] grid-flow-col gap-2 overflow-x-auto overflow-y-hidden p-0.5 pb-1"
           >
             {shown.map((c) => {
               const on = isOn(c);
@@ -349,8 +347,8 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
 }
 
 /**
- * One mic or desk feed, compact: on the stream or not, which input it is (with its meter, read
- * straight from the mic), its level and mute.
+ * One mic or desk feed, compact: on the stream or not, which input it is, its level and mute.
+ * (Its sound shows on the L/R meter on the stream picture.)
  */
 function InputStrip({
   c,
@@ -375,8 +373,7 @@ function InputStrip({
       >
         {c.stream ? <Mic size={14} /> : <MicOff size={14} />}
       </IconButton>
-      <div className="flex w-32 min-w-0 shrink flex-col gap-1">
-        <Select<string>
+      <Select<string>
           size="sm"
           aria-label={t('console.micOf', { name: c.name })}
           value={c.deviceId}
@@ -395,11 +392,8 @@ function InputStrip({
               : [{ value: c.deviceId, label: c.name }]),
             ...choices.map((d) => ({ value: d.deviceId, label: d.label })),
           ]}
-          className={heard ? '' : 'opacity-70'}
+          className={`w-32 min-w-0 shrink ${heard ? '' : 'opacity-70'}`}
         />
-        {/* The same meter as Audio inputs: straight from the mic, live or not. */}
-        <LevelMeter device={{ deviceId: c.deviceId, label: c.name }} />
-      </div>
       <Slider
         aria-label={t('mixer.levelOf', { name: c.name })}
         title={formatDb(c.gainDb)}
