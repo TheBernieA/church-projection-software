@@ -1,9 +1,8 @@
 import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
 import { z } from 'zod';
 
-const StreamWatchSchema = z.object({ fps: z.number().min(0).max(60), ready: z.boolean() });
-import type { CommandBus, Result } from '@lampstand/core';
-import { toErrorShape } from '@lampstand/core';
+import type { CommandBus, OscArg, Result } from '@lampstand/core';
+import { OscArgSchema, toErrorShape } from '@lampstand/core';
 import {
   Channels,
   CommandEnvelopeSchema,
@@ -15,6 +14,13 @@ import {
 import { type Logger, type QueryHandlers, type WindowKind } from '../types';
 import { APP_SCHEME } from '../constants';
 import { errorMessage } from '../utils';
+import type { OscStatus } from '@lampstand/ipc-contract';
+
+const StreamWatchSchema = z.object({ fps: z.number().min(0).max(60), ready: z.boolean() });
+const OscSendSchema = z.object({
+  address: z.string().min(1).max(200).startsWith('/'),
+  args: z.array(OscArgSchema).max(8),
+});
 
 /** Commands that any control-window source may issue are everything registered on the bus. */
 interface RouterDeps {
@@ -26,6 +32,9 @@ interface RouterDeps {
   onMeters: (m: MeterReport) => void;
   /** A control window watches the stream picture (Live console). */
   onStreamWatch: (sender: number, fps: number, ready: boolean) => void;
+  /** A control window sends an OSC message to the desk. */
+  onOscSend: (address: string, args: OscArg[]) => void;
+  oscStatus: () => OscStatus;
   log: Logger;
 }
 
@@ -94,6 +103,13 @@ export function registerIpc(d: RouterDeps): void {
     const w = StreamWatchSchema.safeParse(raw);
     if (w.success) d.onStreamWatch(e.sender.id, w.data.fps, w.data.ready);
   });
+
+  ipcMain.on(Channels.oscSend, (e, raw: unknown) => {
+    if (!trusted(e) || d.kindOf(e) !== 'control') return;
+    const m = OscSendSchema.safeParse(raw);
+    if (m.success) d.onOscSend(m.data.address, m.data.args);
+  });
+  ipcMain.handle(Channels.oscStatus, (e) => (isControl(e) ? d.oscStatus() : null));
 
   ipcMain.on(Channels.meters, (e, raw: unknown) => {
     if (!trusted(e)) return;

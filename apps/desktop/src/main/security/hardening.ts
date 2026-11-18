@@ -57,17 +57,21 @@ export function lockDownWebContents(wc: WebContents, log: Logger): void {
 }
 
 /**
- * Permission policy: camera/mic (video and audio inputs) only for the app's own control and
- * output windows; everything else, and every other permission, is denied.
+ * Permission policy: camera/mic (video and audio inputs) and MIDI only for the app's own control
+ * and output windows; everything else, and every other permission, is denied.
  */
 export function installPermissionHandlers(
   isMediaAllowed: (wc: WebContents | null) => boolean,
 ): void {
   const ses = session.defaultSession;
+  // MIDI for desks and controllers driving the show. Lampstand only asks for plain MIDI, but
+  // Electron files every Web MIDI request under 'midiSysex', so both names are let through.
+  const allowed = (permission: string): boolean =>
+    permission === 'media' || permission === 'midi' || permission === 'midiSysex';
   ses.setPermissionRequestHandler((wc, permission, cb) => {
-    cb(permission === 'media' && isMediaAllowed(wc));
+    cb(allowed(permission) && isMediaAllowed(wc));
   });
-  ses.setPermissionCheckHandler((wc, permission) => permission === 'media' && isMediaAllowed(wc));
+  ses.setPermissionCheckHandler((wc, permission) => allowed(permission) && isMediaAllowed(wc));
   ses.setDevicePermissionHandler(() => false);
 }
 

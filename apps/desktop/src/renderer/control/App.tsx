@@ -1,3 +1,4 @@
+import { installSurfaces } from './lib/surfaces';
 import { useSwitcherSources } from './lib/switcher';
 import { migrateLocalCameras } from './lib/inputs';
 import { saveSettings } from './lib/actions';
@@ -53,6 +54,7 @@ export function App() {
   const liveConsole = useStore((s) => s.liveConsole);
   const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
   useEffect(() => installShortcuts(), []);
+  useEffect(() => installSurfaces(), []);
   useEffect(() => installMediaWatch(), []);
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);

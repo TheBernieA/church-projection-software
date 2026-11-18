@@ -18,6 +18,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
+import { createSocket } from 'node:dgram';
+import { decodeOsc, encodeOsc } from '@lampstand/core';
 
 /**
  * Core Sunday flow (§19.2): quick bar → preview → go live → verify the output window DOM,
@@ -553,6 +555,10 @@ test('settings: category pages, installed Bible packages', async () => {
   await control.screenshot({ path: 'test-results/06-settings-streaming.png' });
   // ↑/↓ walk the sidebar.
   await nav.getByRole('button', { name: 'Streaming' }).focus();
+  await control.keyboard.press('ArrowUp');
+  await expect(
+    control.getByRole('heading', { name: 'Control surfaces', exact: true }),
+  ).toBeVisible();
   await control.keyboard.press('ArrowUp');
   await expect(control.getByRole('heading', { name: 'Audio', exact: true })).toBeVisible();
   await control.screenshot({ path: 'test-results/06-settings-audio.png' });
@@ -2547,6 +2553,115 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
       }),
     )
     .toBe('Sample Sunday service');
+});
+
+test('control surfaces: OSC from a desk runs the show and the mixer; cues go back to it', async () => {
+  // MIDI is allowed (the computer may have no devices: then simply none are listed).
+  expect(
+    await control.evaluate(() =>
+      navigator.requestMIDIAccess({ sysex: false }).then(
+        () => 'ok',
+        (e: unknown) => (e instanceof Error ? e.name : String(e)),
+      ),
+    ),
+  ).toBe('ok');
+  // A stand-in for the desk: it hears Lampstand's cues and fader positions.
+  const desk = createSocket('udp4');
+  const heard: { address: string; args: (number | string)[] }[] = [];
+  desk.on('message', (d) => heard.push(...decodeOsc(new Uint8Array(d))));
+  await new Promise<void>((r) => desk.bind(0, '127.0.0.1', r));
+  const port = 39000 + Math.floor(Math.random() * 1000);
+  const surfaces = {
+    midi: true,
+    feedback: true,
+    osc: { enabled: true, port, sendHost: '127.0.0.1', sendPort: desk.address().port },
+    bindings: [
+      {
+        id: 'e2e-black',
+        source: { kind: 'osc', address: '/lampstand/black' },
+        target: { kind: 'action', action: 'black' },
+      },
+      {
+        id: 'e2e-tracks',
+        source: { kind: 'osc', address: '/lampstand/tracks' },
+        target: { kind: 'fader', bus: 'channel', channelId: 'tracks' },
+      },
+    ],
+    cues: [
+      {
+        id: 'e2e-cue',
+        when: 'black',
+        send: { kind: 'osc', address: '/desk/black', arg: { type: 'i', value: 1 } },
+      },
+    ],
+  };
+  await control.evaluate(
+    (p) => window.lampstand.command({ type: 'settings.update', payload: { patch: p } }),
+    { surfaces },
+  );
+  await expect
+    .poll(() => control.evaluate(() => window.lampstand.oscStatus().then((s) => s.listening)))
+    .toBe(true);
+  const send = (address: string, args: Parameters<typeof encodeOsc>[1] = []) =>
+    desk.send(encodeOsc(address, args), port, '127.0.0.1');
+  const live = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    if (!r.ok) throw new Error('live.get');
+    return r.value;
+  };
+  // The desk's fader moves Lampstand's Tracks fader (45% of the travel is −20 dB).
+  send('/lampstand/tracks', [{ type: 'f', value: 0.45 }]);
+  await expect
+    .poll(async () => (await live()).mixer.channels.find((c) => c.id === 'tracks')?.gainDb)
+    .toBe(-20);
+  // A button: the screen goes black, and the desk hears the cue for it.
+  send('/lampstand/black');
+  await expect.poll(async () => (await live()).program.masks.black).toBe(true);
+  await expect.poll(() => heard.some((m) => m.address === '/desk/black')).toBe(true);
+  expect(heard.find((m) => m.address === '/desk/black')?.args).toEqual([1]);
+  // Moving the fader in Lampstand sends its position back (motor faders follow).
+  await control.evaluate(() =>
+    window.lampstand.command({
+      type: 'live.mixer',
+      payload: { action: 'channel', id: 'tracks', patch: { gainDb: 0 } },
+    }),
+  );
+  await expect
+    .poll(() => heard.filter((m) => m.address === '/lampstand/tracks').at(-1)?.args[0])
+    .toBeCloseTo(0.79375, 3);
+  // The settings page shows the controls and the cue.
+  await control.getByTitle('Settings', { exact: true }).click();
+  await control
+    .getByRole('navigation', { name: 'Settings' })
+    .getByRole('button', { name: 'Control surfaces', exact: true })
+    .click();
+  await expect(
+    control.getByRole('heading', { name: 'Control surfaces', exact: true }),
+  ).toBeVisible();
+  await expect(control.getByText('/lampstand/tracks')).toBeVisible();
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/40-control-surfaces.png' });
+  await control.keyboard.press('Escape');
+  // Back as it was for the tests after this one.
+  send('/lampstand/black');
+  await expect.poll(async () => (await live()).program.masks.black).toBe(false);
+  await control.evaluate(() =>
+    window.lampstand.command({
+      type: 'settings.update',
+      payload: {
+        patch: {
+          surfaces: {
+            midi: true,
+            feedback: true,
+            osc: { enabled: false, port: 9000, sendHost: '', sendPort: 10023 },
+            bindings: [],
+            cues: [],
+          },
+        },
+      },
+    }),
+  );
+  desk.close();
 });
 
 test('output survives a control renderer crash', async () => {

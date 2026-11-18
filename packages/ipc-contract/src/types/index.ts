@@ -5,6 +5,8 @@ import type {
   LiveState,
   MediaItem,
   MediaPlaylist,
+  OscArg,
+  OscMessage,
   OutputRole,
   ResolvedKindThemes,
   Result,
@@ -192,7 +194,23 @@ export interface ControlApi {
   onLiveConsole(cb: (open: boolean) => void): () => void;
   /** NDI status changes (runtime found, receivers per feed). */
   onNdi(cb: (s: NdiStatus) => void): () => void;
+  /** OSC messages from a desk or app (when listening is on in Settings › Control surfaces). */
+  onOsc(cb: (messages: OscMessage[]) => void): () => void;
+  onOscStatus(cb: (s: OscStatus) => void): () => void;
+  oscStatus(): Promise<OscStatus>;
+  /** Send an OSC message to the desk (the address and port in Settings › Control surfaces). */
+  oscSend(address: string, args: OscArg[]): void;
   platform: string;
+}
+
+/** The OSC listener. */
+export interface OscStatus {
+  listening: boolean;
+  port: number;
+  /** Why it isn't listening (the port is taken, for one). */
+  error: string | null;
+  /** This computer's network addresses, for setting up the desk. */
+  addresses: string[];
 }
 
 /** How one stream destination is doing. */

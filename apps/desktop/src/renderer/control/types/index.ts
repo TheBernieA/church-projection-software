@@ -48,6 +48,7 @@ export type SettingsPageId =
   | 'audio'
   | 'streaming'
   | 'ndi'
+  | 'surfaces'
   | 'packages'
   | 'library'
   | 'about'

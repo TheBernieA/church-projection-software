@@ -108,7 +108,7 @@ export function ConnectionsPage() {
         </div>
       </Group>
       <Group title={t('connections.control')}>
-        <SoonList ids={['remote', 'stage-app', 'stream-deck', 'midi-dmx', 'timecode']} />
+        <SoonList ids={['remote', 'stage-app', 'stream-deck', 'dmx', 'timecode']} />
       </Group>
       <Group title={t('connections.network')}>
         <SoonList ids={['network-link', 'api']} />

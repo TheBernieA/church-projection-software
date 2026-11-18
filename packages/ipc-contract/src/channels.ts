@@ -71,6 +71,14 @@ export const Channels = {
   evStreamPreview: 'ev:stream-preview',
   /** main → control: livestream / recording status. */
   evStream: 'ev:stream',
+  /** control → main: an OSC message to the desk (Settings › Control surfaces' send-to address). */
+  oscSend: 'osc:send',
+  /** control → main: the OSC listener's status. */
+  oscStatus: 'osc:status',
+  /** main → control: OSC messages that arrived. */
+  evOsc: 'ev:osc',
+  /** main → control: the OSC listener started, stopped or failed. */
+  evOscStatus: 'ev:osc-status',
   // main → renderer events
   evLive: 'ev:live',
   evRepo: 'ev:repo',

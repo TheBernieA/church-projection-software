@@ -359,12 +359,12 @@ export const FEATURES: Feature[] = [
     'soon',
   ),
   f(
-    'midi-dmx',
+    'midi-osc',
     'automation',
-    'MIDI & DMX',
-    'Trigger slides from a sound desk or lighting console.',
-    'soon',
+    'MIDI & OSC control',
+    'Run slides, cameras, the T-bar and the mixer from a sound desk or controller, and send cues back to the desk.',
   ),
+  f('dmx', 'automation', 'DMX lighting', 'Trigger lighting scenes with the slides.', 'soon'),
   f('stream-deck', 'automation', 'Stream Deck', 'Run the show from physical buttons.', 'soon'),
   f(
     'api',

@@ -23,6 +23,8 @@ export * from './schemas/timers';
 export * from './schemas/stage';
 export * from './schemas/stream';
 export * from './schemas/mixer';
+export * from './schemas/surfaces';
+export * from './surfaces';
 export * from './streamPerformance';
 export * from './frameClock';
 export * from './stock';

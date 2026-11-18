@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { StageLayoutSchema } from './stage';
 import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
+import { SurfacesSettingsSchema } from './surfaces';
 import { TimerDefSchema } from './timers';
 import { CameraSettingsSchema, InputTransitionSchema, PropPositionSchema } from './scene';
 
@@ -262,6 +263,8 @@ export const SettingsSchema = z
     /** Item kinds that go straight to program on click when "Preview first" is on (§3.4). */
     liveEditingKinds: z.array(z.string().max(32)).default([]),
     shortcuts: z.record(z.string().max(60), z.string().max(60)).default({}),
+    /** Sound desks and controllers (MIDI, OSC) driving Lampstand, and cues sent back to them. */
+    surfaces: SurfacesSettingsSchema.default(SurfacesSettingsSchema.parse({})),
     ccliLicenseNumber: z.string().max(20).optional(),
     lastServiceId: z.string().max(64).optional(),
     layout: z.record(z.string().max(60), z.number()).default({}),

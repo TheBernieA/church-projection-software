@@ -78,6 +78,9 @@ const RUN: Record<ShortcutAction, () => void> = {
   },
 };
 
+/** Run a show action (a key, or a button on a desk or controller). */
+export const runShowAction = (action: ShortcutAction): void => RUN[action]();
+
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   if (!el) return false;

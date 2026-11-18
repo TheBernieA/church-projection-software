@@ -30,6 +30,7 @@ import {
   type RepoKind,
 } from '@lampstand/ipc-contract';
 import { stripChords } from '@lampstand/lyrics';
+import { OscServer } from '../surfaces/oscServer';
 import { registerIpc } from '../ipc/router';
 import { installAppMenu } from './menu';
 import { createQueries } from '../ipc/queries';
@@ -86,6 +87,7 @@ export class AppController {
   private search!: SearchService;
   private stream!: StreamController;
   private ndi!: NdiController;
+  private osc!: OscServer;
   private secrets!: SecretStore;
   private auditLog: AuditEntry[] = [];
   private log!: Logger;
@@ -265,6 +267,14 @@ export class AppController {
     });
     this.ndi.settingsChanged();
     app.on('will-quit', () => this.ndi.shutdown());
+    this.osc = new OscServer({
+      log: log.child('osc'),
+      getSettings: () => settings.get(),
+      onMessages: (m) => this.windows.sendToControl(Channels.evOsc, m),
+      onStatus: (s) => this.windows.sendToControl(Channels.evOscStatus, s),
+    });
+    this.osc.settingsChanged();
+    app.on('will-quit', () => this.osc.close());
 
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
@@ -303,6 +313,8 @@ export class AppController {
       onOutputReady: (e) => this.windows.outputReady(e.sender),
       onMeters: (m) => this.windows.sendToControl(Channels.evMeters, m),
       onStreamWatch: (sender, fps, ready) => this.stream.watch(sender, fps, ready),
+      onOscSend: (address, args) => this.osc.send(address, args),
+      oscStatus: () => this.osc.current,
       log,
     });
 
@@ -362,6 +374,7 @@ export class AppController {
       this.windows.sendToControl(Channels.evRepo, 'settings');
       this.stream.settingsChanged();
       this.ndi.settingsChanged();
+      this.osc.settingsChanged();
       void this.refreshWordsTheme();
       const key = JSON.stringify([next.displays, next.windowMode]);
       if (key !== outputKey) {

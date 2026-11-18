@@ -22,6 +22,7 @@ import { VideoPage } from './settings/video';
 import { AudioPage } from './settings/audio';
 import { StreamingPage } from './settings/streaming';
 import { NdiPage } from './settings/ndi';
+import { SurfacesPage } from './settings/surfaces';
 import { PageFrameContext, Tag, type PageFrame } from './settings/parts';
 import {
   PAGE_ICONS,
@@ -252,6 +253,7 @@ export function SettingsDialog() {
           {page === 'audio' && <AudioPage s={s} update={update} />}
           {page === 'streaming' && <StreamingPage s={s} update={update} />}
           {page === 'ndi' && <NdiPage s={s} update={update} />}
+          {page === 'surfaces' && <SurfacesPage s={s} update={update} />}
           {page === 'packages' && <PackagesPage />}
           {page === 'library' && <LibraryPage />}
           {page === 'about' && <AboutPage />}

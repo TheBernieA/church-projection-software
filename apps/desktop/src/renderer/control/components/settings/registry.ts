@@ -11,6 +11,7 @@ import {
   Radio,
   ShieldCheck,
   SlidersHorizontal,
+  SlidersVertical,
   SquareDashed,
   Video,
   Volume2,
@@ -23,7 +24,7 @@ import { type SettingsPageId } from '../../types';
 export const SETTINGS_SECTIONS: { id: string; pages: SettingsPageId[] }[] = [
   { id: 'workspace', pages: ['general', 'presenting', 'scripture', 'songs'] },
   { id: 'screens', pages: ['screens', 'video', 'ndi'] },
-  { id: 'sound', pages: ['audio', 'streaming'] },
+  { id: 'sound', pages: ['audio', 'surfaces', 'streaming'] },
   { id: 'system', pages: ['packages', 'library', 'connections', 'about'] },
   { id: 'help', pages: ['guide', 'features'] },
 ];
@@ -36,6 +37,7 @@ export const PAGE_ICONS: Record<SettingsPageId, LucideIcon> = {
   screens: SquareDashed,
   video: Video,
   ndi: Cast,
+  surfaces: SlidersVertical,
   audio: Volume2,
   streaming: Radio,
   packages: Package,
@@ -118,6 +120,13 @@ export const SEARCH_INDEX: SearchEntry[] = [
     keywords: 'stream key rtmp youtube facebook live',
   },
   { page: 'streaming', label: 'streaming.picture', keywords: 'lower third camera words' },
+  {
+    page: 'surfaces',
+    label: 'surfaces.controls',
+    keywords: 'midi osc desk mixer controller fader button learn x32 behringer yamaha allen heath',
+  },
+  { page: 'surfaces', label: 'surfaces.cues', keywords: 'send desk mute cue midi osc' },
+  { page: 'surfaces', label: 'surfaces.connections', keywords: 'midi osc port network' },
   { page: 'streaming', label: 'streaming.sound', keywords: 'microphone mix audio' },
   { page: 'streaming', label: 'streaming.quality', keywords: 'bitrate resolution fps encoder' },
   { page: 'streaming', label: 'streaming.recording', keywords: 'record mp4 folder file' },
