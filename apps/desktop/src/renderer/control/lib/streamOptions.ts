@@ -24,17 +24,6 @@ export const BACKGROUNDS: Choice<Picture['background']>[] = [
   { value: 'black', label: 'streaming.bgBlack' },
 ];
 
-export const LAYOUTS: Choice<Picture['layout']>[] = [
-  { value: 'sideBySide', label: 'streaming.layoutSide' },
-  { value: 'pip', label: 'streaming.layoutPip' },
-];
-
-export const MIRRORS: Choice<Picture['mirror']>[] = [
-  { value: 'own', label: 'streaming.mirrorOwn' },
-  { value: 'alternate', label: 'streaming.mirrorAlternate' },
-  { value: 'stage', label: 'streaming.mirrorStage' },
-];
-
 export const WORDS_ALIGNS: Choice<Picture['wordsAlign']>[] = [
   { value: 'left', label: 'streaming.align.left' },
   { value: 'center', label: 'streaming.align.center' },

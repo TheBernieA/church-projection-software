@@ -19,7 +19,7 @@ import { useStreamPreview } from '../../lib/streamPreview';
 import { CheckComputer } from './CheckComputer';
 import { formatBytes, run, Section, usePref } from './consoleParts';
 import { DestinationsPanel } from './DestinationsPanel';
-import { PicturePanel } from './PicturePanel';
+import { LowerThirdPanel } from './LowerThirdPanel';
 import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
@@ -203,8 +203,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {/* What the stream shows comes first: it is what changes most during a service. */}
-        <PicturePanel st={st} />
+        {/* The lower third's look, while the scene on air has one. */}
+        <LowerThirdPanel st={st} />
         <SoundPanel />
         <DestinationsPanel s={s} st={st} />
         <QuickSettings

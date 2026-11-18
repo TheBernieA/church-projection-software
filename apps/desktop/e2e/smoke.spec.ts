@@ -2236,8 +2236,8 @@ test('livestream: set up a destination, go live from the Live console, end it', 
       return r.ok ? r.value.mixer.stream.mute : null;
     })
     .toBe(false);
-  // The words on the stream: move them left and choose a size instead of the automatic fit.
-  const shows = live.getByRole('region', { name: 'What the stream shows' });
+  // The stream's lower third (Slides + lower third is on air): move it left, choose a size.
+  const shows = live.getByRole('region', { name: 'Lower third on the stream' });
   await shows.scrollIntoViewIfNeeded();
   await shows.getByRole('radio', { name: 'Left' }).click();
   await shows.getByRole('button', { name: 'Auto', exact: true }).click();

@@ -340,6 +340,33 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
               );
             })}
           </div>
+          {/* A two-camera scene on air: which camera goes where. */}
+          {tab === 'cameras' && pic.mirror === 'own' && pic.background === 'layout' && pair && (
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { first: true, mine: pair[0], other: pair[1] },
+                  { first: false, mine: pair[1], other: pair[0] },
+                ] as const
+              ).map(({ first, mine, other }) => (
+                <Select<string>
+                  key={String(first)}
+                  size="sm"
+                  aria-label={first ? t('streaming.cameraA') : t('streaming.cameraB')}
+                  value={mine}
+                  onChange={(id) => {
+                    // Picking the other one's camera swaps them.
+                    const rest = id === other ? mine : other;
+                    const [camera, secondCamera] = first ? [id, rest] : [rest, id];
+                    void saveSettings({
+                      stream: { ...st, picture: { ...pic, camera, secondCamera } },
+                    });
+                  }}
+                  options={cameras.map((c) => ({ value: c.id, label: c.name }))}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
