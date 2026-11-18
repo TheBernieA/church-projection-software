@@ -9,6 +9,14 @@ import { Select } from './Select';
 import { chapterKey, loadChapter, useStore } from '../lib/store';
 import { Typography, Button, Switch, typographyClass } from '@lampstand/ui';
 
+/** "Chapter" in the languages of the bundled Bibles, so the label matches the version shown. */
+const CHAPTER_WORD: Record<string, string> = {
+  it: 'Capitolo',
+  es: 'Capítulo',
+  fr: 'Chapitre',
+  de: 'Kapitel',
+};
+
 /** Chapter browser (§8.5): books → chapters → verses. Control UI only, never on output. */
 export function BibleBrowser() {
   const { t } = useTranslation();
@@ -28,6 +36,8 @@ export function BibleBrowser() {
   const counts = useStore((s) => s.verseCounts[versionId]);
   // The version's own book names ("Genesi", "Juan"); English versions use the built-in ones.
   const names = useStore((s) => s.bookNames[versionId]);
+  const language = versions.find((v) => v.id === versionId)?.language.split('-')[0] ?? 'en';
+  const chapterWord = CHAPTER_WORD[language];
   const nameOf = (id: BookId): string => names?.[id] ?? bookName(id);
   const verses = useStore((s) =>
     book ? s.chapters[chapterKey(versionId, book, chapter)] : undefined,
@@ -143,7 +153,7 @@ export function BibleBrowser() {
             onClick={() => setChaptersOpen(!chaptersOpen)}
             className="tabular-nums"
           >
-            {t('bible.chapterN', { n: chapter })}
+            {chapterWord ? `${chapterWord} ${chapter}` : t('bible.chapterN', { n: chapter })}
             <ChevronDown
               size={13}
               className={`text-[var(--text-3)] transition-transform ${chaptersOpen ? 'rotate-180' : ''}`}

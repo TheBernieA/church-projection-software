@@ -894,6 +894,7 @@ test('drag from the library into the service plan (songs and verses)', async () 
   await control.getByRole('option', { name: /RIV/ }).click();
   await expect(bible.getByRole('button', { name: 'Next book: Numeri' })).toBeVisible();
   await expect(bible.getByRole('button', { name: 'Previous book: Esodo' })).toBeVisible();
+  await expect(bible.getByRole('button', { name: 'Capitolo 1' })).toBeVisible();
   await control.screenshot({ path: 'test-results/14c-bible-italian.png' });
   await bible.getByRole('combobox', { name: 'Version' }).click();
   await control.getByRole('option', { name: /KJV/ }).click();
