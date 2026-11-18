@@ -62,6 +62,15 @@ function themeBackground(theme: Theme, override?: BackgroundLayer['ref']): Backg
 const textBlock = (text: string): TextBlock => ({ spans: [{ text }] });
 
 /**
+ * The item's background, if it sits behind the words (set over everything, it's a cue of its own
+ * and the slides keep their theme's).
+ */
+const behindWords = (item: {
+  background?: BackgroundLayer['ref'] | undefined;
+  backgroundOver?: boolean | undefined;
+}): BackgroundLayer['ref'] | undefined => (item.backgroundOver ? undefined : item.background);
+
+/**
  * A slide's background: its own when it has one (set from its tile), else the item's. `own`
  * says which, so the tile can show a background of its own on its thumbnail.
  */
@@ -143,7 +152,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
         item.textFormat,
       );
-      const background = themeBackground(theme, item.background);
+      const background = themeBackground(theme, behindWords(item));
       const lyricSlides = buildSongSlides(song, {
         arrangementId: item.arrangementId,
         translationLang: item.translationLang,
@@ -218,7 +227,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         verse: (r: VerseRef) => ctx.chapters[chapterKey(v.id, r.book, r.chapter)]?.[r.verse - 1],
       }));
       const theme = withTextFormat(themeFor(ctx, 'scripture', item.themeId), item.textFormat);
-      const background = themeBackground(theme, item.background);
+      const background = themeBackground(theme, behindWords(item));
       const s = ctx.settings?.scripture;
       const built = buildScriptureSlides(refs, texts, {
         mode: s?.versesPerSlide ?? 'fit',
@@ -305,7 +314,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'presentation':
     case 'announcements': {
       const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
-      const background = themeBackground(theme, item.background);
+      const background = themeBackground(theme, behindWords(item));
       return {
         missing: [],
         slides: item.slides.map((ts, i) => {

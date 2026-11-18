@@ -275,6 +275,8 @@ export function BackgroundCard({
   live,
   duration,
   button,
+  change,
+  over = false,
   backdrop = 'checker',
   onClick,
 }: {
@@ -283,7 +285,12 @@ export function BackgroundCard({
   live: boolean;
   /** A video background's length (seconds). */
   duration?: number | undefined;
+  /** Top left: its layer (the two squares), switched with a click. */
   button: ReactNode;
+  /** Bottom right of the picture, on hover: change it. */
+  change?: ReactNode;
+  /** It's a cue of its own, over everything (not behind the words). */
+  over?: boolean;
   backdrop?: Backdrop;
   onClick: () => void;
 }) {
@@ -291,6 +298,11 @@ export function BackgroundCard({
   return (
     <div className="group/slide relative">
       <div className="absolute left-1.5 top-1.5 z-[1] flex items-center gap-1">{button}</div>
+      {change && (
+        <div className="absolute bottom-8 right-1.5 z-[1] opacity-0 transition-opacity focus-within:opacity-100 group-hover/slide:opacity-100 has-[[data-state=open]]:opacity-100">
+          {change}
+        </div>
+      )}
       <Button
         variant="bare"
         onClick={onClick}
@@ -319,8 +331,14 @@ export function BackgroundCard({
         </div>
         <LabelBar
           color={null}
-          number={<LayerGlyph behind size={12} />}
-          label={scene ? t('slides.background') : t('slides.noBackground')}
+          number={<LayerGlyph behind={!over} size={12} />}
+          label={
+            !scene
+              ? t('slides.noBackground')
+              : over
+                ? t('slides.backgroundOver')
+                : t('slides.background')
+          }
         />
       </Button>
     </div>

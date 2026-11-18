@@ -38,6 +38,11 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
+    /**
+     * The background's layer (its tile's corner icon): behind the words (default), or a cue of
+     * its own over everything, the slides then on their theme's background.
+     */
+    backgroundOver: z.boolean().optional(),
   }),
   z.object({
     ...base,
@@ -50,6 +55,11 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
+    /**
+     * The background's layer (its tile's corner icon): behind the words (default), or a cue of
+     * its own over everything, the slides then on their theme's background.
+     */
+    backgroundOver: z.boolean().optional(),
   }),
   z.object({
     ...base,
@@ -75,6 +85,11 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
+    /**
+     * The background's layer (its tile's corner icon): behind the words (default), or a cue of
+     * its own over everything, the slides then on their theme's background.
+     */
+    backgroundOver: z.boolean().optional(),
   }),
   z.object({
     ...base,
@@ -90,6 +105,11 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
+    /**
+     * The background's layer (its tile's corner icon): behind the words (default), or a cue of
+     * its own over everything, the slides then on their theme's background.
+     */
+    backgroundOver: z.boolean().optional(),
   }),
   z.object({
     ...base,

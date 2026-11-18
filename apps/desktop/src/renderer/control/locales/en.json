@@ -176,7 +176,9 @@
     "slideBgTitle": "Behind this slide",
     "slideBgItem": "The same as the other slides",
     "layerFront": "Plays over everything (click to put it behind the words)",
-    "layerBehind": "Plays behind the words (click to put it over everything)"
+    "layerBehind": "Plays behind the words (click to put it over everything)",
+    "layerFixed": "Behind the words (a colour or gradient can only sit behind them)",
+    "backgroundOver": "Over everything"
   },
   "monitor": {
     "preview": "Preview",

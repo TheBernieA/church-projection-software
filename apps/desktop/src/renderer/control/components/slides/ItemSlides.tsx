@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
 import { IconButton, Segmented, Slider, Typography, percent } from '@lampstand/ui';
 import { goLiveSlide, putBehindWords, showBackgroundLayer } from '../../lib/actions';
+import { cmd } from '../../lib/api';
 import { groupStarts } from '../../lib/groupKeys';
 import {
   sameBackground,
@@ -21,6 +22,7 @@ import {
 import { knownDuration } from '../../lib/mediaDurations';
 import { patchItem, useStore } from '../../lib/store';
 import { BackgroundMenu, ItemBackground, Swatch } from '../ItemBackground';
+import { LayerGlyph } from './Transitions';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
 import { thumbScene } from '../../lib/slideThumbs';
 import { usePaneSize } from '../shell/Splitter';
@@ -201,6 +203,7 @@ export function ItemSlides({
   add?: ((list: boolean) => ReactNode) | undefined;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const media = useStore((s) => s.media);
   const onScreen = useStore((s) => s.live?.program.background?.ref);
   const liveHere = useStore((s) => s.liveCursor?.itemId === item.id);
@@ -234,11 +237,18 @@ export function ItemSlides({
           },
         }
       : undefined;
-  // The background the item's slides share (the item's own, or its theme's).
+  // The item's own picture or video can play on either layer (its tile's corner icon): behind
+  // the words, or over everything as a cue of its own.
+  const ownBg = layeredItem?.background;
+  const switchable = ownBg?.kind === 'image' || ownBg?.kind === 'video';
+  const over = switchable && !!layeredItem?.backgroundOver;
+  // The background the tile shows: the cue over everything, else what the slides sit on (the
+  // item's own, or its theme's).
   const shared = useMemo(() => {
+    if (over) return { ref: ownBg };
     const first = slides.find((s) => s.action.kind === 'content' && !s.ownBackground);
     return first?.action.kind === 'content' ? first.action.background : null;
-  }, [slides]);
+  }, [slides, over, ownBg]);
   const sharedScene = useMemo(
     () =>
       shared
@@ -250,6 +260,37 @@ export function ItemSlides({
     [shared],
   );
   const ref = shared?.ref;
+  const programMediaId = useStore((s) => s.live?.program.media?.mediaId);
+  const cueLive =
+    over && (ref?.kind === 'image' || ref?.kind === 'video') && programMediaId === ref.mediaId;
+  /** The tile clicked: over everything, the picture full screen; else behind the words. */
+  const showShared = (): void => {
+    if (over && (ref?.kind === 'image' || ref?.kind === 'video')) {
+      void cmd('live.goLive', {
+        media: {
+          mediaId: ref.mediaId,
+          kind: ref.kind,
+          loop: ref.kind === 'video' ? ref.loop : false,
+          muted: false,
+          fit: 'cover',
+          playing: true,
+          position: 0,
+          volume: 1,
+        },
+        content: null,
+        next: null,
+      }).catch(() => undefined);
+      return;
+    }
+    void showBackgroundLayer(shared);
+  };
+  const toggleLayer = (): void => {
+    if (!layeredItem || !ownBg) return;
+    patchItem<typeof layeredItem>(layeredItem, { backgroundOver: !over });
+    // Its picture on screen over everything, now set behind: it moves behind the words.
+    if (over && programMediaId === ownBg.mediaId)
+      void putBehindWords({ mediaId: ownBg.mediaId, kind: ownBg.kind });
+  };
   const duration =
     ref?.kind === 'video'
       ? knownDuration(ref.mediaId, media.find((m) => m.id === ref.mediaId)?.durationSec)
@@ -301,11 +342,39 @@ export function ItemSlides({
       {layeredItem && slides.length > 0 && (
         <BackgroundCard
           scene={sharedScene}
-          live={liveHere && !!ref && sameBackground(ref, onScreen)}
+          live={over ? cueLive : liveHere && !!ref && sameBackground(ref, onScreen)}
           duration={duration}
           backdrop={prefs.backdrop}
-          onClick={() => void showBackgroundLayer(shared)}
-          button={<ItemBackground item={layeredItem} tile />}
+          over={over}
+          onClick={showShared}
+          button={
+            <IconButton
+              size="2xs"
+              variant="bare"
+              aria-label={
+                !switchable
+                  ? t('slides.layerFixed')
+                  : over
+                    ? t('slides.layerFront')
+                    : t('slides.layerBehind')
+              }
+              title={
+                !switchable
+                  ? t('slides.layerFixed')
+                  : over
+                    ? t('slides.layerFront')
+                    : t('slides.layerBehind')
+              }
+              aria-pressed={!over}
+              disabled={!switchable}
+              onClick={toggleLayer}
+              onDoubleClick={(e: MouseEvent) => e.stopPropagation()}
+              className="flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-[4px] bg-black/55 text-white backdrop-blur-sm hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] disabled:cursor-default disabled:hover:bg-black/55 disabled:hover:text-white"
+            >
+              <LayerGlyph behind={!over} />
+            </IconButton>
+          }
+          change={<ItemBackground item={layeredItem} tile />}
         />
       )}
       <ol aria-label={label} className="contents">

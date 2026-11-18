@@ -2848,6 +2848,35 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
   await control.getByRole('button', { name: /^Media transition:/ }).click();
   await control.getByRole('menuitem', { name: /^The usual/ }).click();
   await expect.poll(async () => (await program())?.mediaTransition).toBeUndefined();
+  // The background's corner icon switches its layer, as on a media cue: behind the words, or
+  // over everything. First give the song a picture: the seed image, put behind the words.
+  await binTab('Media');
+  await control
+    .getByRole('region', { name: 'Bin' })
+    .getByRole('button', { name: 'Show now: Seed image' })
+    .click();
+  await control
+    .getByRole('list', { name: 'Slide list' })
+    .getByRole('button', { name: /^Plays over everything/ })
+    .click();
+  await (await servicePlan()).getByText('Test Song').first().click();
+  await song.getByRole('button', { name: 'Background for these slides' }).click();
+  await control.getByRole('menuitem', { name: 'The one on screen now' }).click();
+  const layer = song.getByRole('button', { name: /^Plays behind the words/ });
+  await layer.click();
+  await expect(song.getByRole('button', { name: /^Plays over everything/ })).toBeVisible();
+  await song.getByRole('button', { name: 'Background of these slides', exact: true }).click();
+  await expect.poll(async () => (await program())?.media?.mediaId).toBe('seed-image');
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/50f-background-over.png' });
+  // Back behind the words, and back on the theme's background.
+  await song.getByRole('button', { name: /^Plays over everything/ }).click();
+  await expect.poll(async () => (await program())?.media ?? null).toBeNull();
+  await song.getByRole('button', { name: 'Background for these slides' }).click();
+  await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
+  // Words back on screen for the next test.
+  await song.getByRole('button', { name: /Verse 1/ }).first().click();
+  await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
 });
 
 test('output survives a control renderer crash', async () => {
