@@ -14,12 +14,13 @@ import type { StreamStatus } from '@lampstand/ipc-contract';
 import { Button, IconButton, Meter, Segmented, Slider, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { useCameraSettingsVersion, useDeviceStream, useInputDevices } from '../../lib/inputs';
-import { onMeters, readMeter, readSides } from '../../lib/meters';
+import { onMeters, readSides } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
 import { SCENE_GROUPS, STREAM_SCENES, type SceneTemplate } from '../../lib/streamOptions';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
+import { LevelMeter } from '../bins/AudioInputs';
 import { usePref } from './consoleParts';
 
 /**
@@ -356,7 +357,6 @@ function InputStrip({
   choices: { deviceId: string; label: string }[];
 }) {
   const { t } = useTranslation();
-  const read = useCallback(() => readMeter('stream', c.id), [c.id]);
   const heard = c.stream && !c.mute;
   return (
     <div className="flex items-center gap-2">
@@ -393,13 +393,9 @@ function InputStrip({
           ]}
           className={heard ? '' : 'opacity-70'}
         />
-        <Meter
-          read={read}
-          subscribe={onMeters}
-          label={t('mixer.meterOf', { name: c.name })}
-          orientation="horizontal"
-          className="w-full"
-        />
+        {/* The same meter as Audio inputs: straight from the mic, so it shows the mic working
+            whether or not the stream is running. */}
+        <LevelMeter device={{ deviceId: c.deviceId, label: c.name }} />
       </div>
       <Slider
         aria-label={t('mixer.levelOf', { name: c.name })}
