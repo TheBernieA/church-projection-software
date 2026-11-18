@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  controlKey,
+  muteFromValue,
+  muteToValue,
+  suggestMuteMode,
   decodeOsc,
   describeSource,
   encodeMidi,
@@ -137,5 +141,22 @@ describe('matching and presses', () => {
       bindings: [],
       cues: [],
     });
+  });
+
+  it('keys controls for lookup (pitch bend has no number)', () => {
+    expect(controlKey(cc)).toBe('midi:cc:1:7');
+    expect(controlKey({ ...cc, type: 'pitch', number: 5 })).toBe('midi:pitch:1:0');
+    expect(controlKey({ kind: 'osc', address: '/a' })).toBe('osc:/a');
+  });
+
+  it('reads and writes mutes for buttons and both kinds of switch', () => {
+    expect(muteFromValue('toggle', 1)).toBeNull();
+    expect(muteFromValue('muted', 1)).toBe(true);
+    expect(muteFromValue('on', 1)).toBe(false); // an X32 channel switched on: not muted
+    expect(muteFromValue('on', 0)).toBe(true);
+    expect(muteToValue('on', true)).toBe(0);
+    expect(muteToValue('toggle', true)).toBe(1);
+    expect(suggestMuteMode({ kind: 'osc', address: '/ch/05/mix/on' })).toBe('on');
+    expect(suggestMuteMode(cc)).toBe('toggle');
   });
 });

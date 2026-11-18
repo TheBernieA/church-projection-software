@@ -25,9 +25,20 @@ function localAddresses(): string[] {
  * cues to the desk's address. One socket does both, so desks that answer to the sender's port
  * also work.
  */
+/** How often the desk subscription is renewed (an X32 drops it after 10 s). */
+export const SUBSCRIBE_EVERY_MS = 8000;
+/** Messages are gathered this long before going to the control window: a desk recalling a scene
+ *  sends hundreds at once, and one IPC message (with only each address's latest) is far cheaper. */
+const BATCH_MS = 8;
+
 export class OscServer {
   private socket: Socket | null = null;
   private port = 0;
+  private subscription: ReturnType<typeof setInterval> | null = null;
+  /** Gathered messages, in order; a fader's older position in the batch gives way to its newest. */
+  private batch: OscMessage[] = [];
+  private faderAt = new Map<string, number>();
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private status: OscStatus = { listening: false, port: 0, error: null, addresses: [] };
 
   constructor(private readonly d: Deps) {}
@@ -44,9 +55,53 @@ export class OscServer {
       this.setStatus({ listening: false, port, error: null });
       return;
     }
-    if (this.socket && this.port === port) return;
-    this.close();
-    this.listen(port);
+    if (!this.socket || this.port !== port) {
+      this.close();
+      this.listen(port);
+    }
+    this.syncSubscription();
+  }
+
+  /**
+   * Behringer X32 / Midas M32: they report their fader and mute moves only to apps that send
+   * /xremote at least every 10 s, and send them to the port it came from (the listening one).
+   */
+  private syncSubscription(): void {
+    const { enabled, subscribe, sendHost } = this.d.getSettings().surfaces.osc;
+    const want = enabled && subscribe && !!sendHost;
+    if (!want) {
+      if (this.subscription) clearInterval(this.subscription);
+      this.subscription = null;
+      return;
+    }
+    if (this.subscription) return;
+    const renew = (): void => {
+      if (this.socket) this.send('/xremote', []);
+    };
+    this.subscription = setInterval(renew, SUBSCRIBE_EVERY_MS);
+    renew();
+  }
+
+  private receive(messages: OscMessage[]): void {
+    for (const m of messages) {
+      // Only positions merge (a fraction: a fader's travel). Buttons and switches keep every
+      // message, so a quick press and release is never lost.
+      const first = m.args[0];
+      const position = typeof first === 'number' && !Number.isInteger(first);
+      const at = position ? this.faderAt.get(m.address) : undefined;
+      if (at !== undefined) this.batch[at] = m;
+      else {
+        if (position) this.faderAt.set(m.address, this.batch.length);
+        this.batch.push(m);
+      }
+    }
+    this.flushTimer ??= setTimeout(() => {
+      this.flushTimer = null;
+      const out = this.batch;
+      this.batch = [];
+      this.faderAt.clear();
+      if (out.length) this.d.onMessages(out);
+    }, BATCH_MS);
   }
 
   private listen(port: number): void {
@@ -55,7 +110,7 @@ export class OscServer {
     this.port = port;
     socket.on('message', (data) => {
       const messages = decodeOsc(new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
-      if (messages.length) this.d.onMessages(messages);
+      if (messages.length) this.receive(messages);
     });
     socket.on('error', (e) => {
       this.d.log.warn('osc listener failed', { port, error: e.message });
@@ -66,6 +121,8 @@ export class OscServer {
       if (this.socket !== socket) return;
       this.d.log.info('osc listening', { port });
       this.setStatus({ listening: true, port, error: null });
+      // The subscription goes out from this socket, so the desk answers here.
+      if (this.subscription) this.send('/xremote', []);
     });
   }
 
@@ -83,6 +140,12 @@ export class OscServer {
   }
 
   close(): void {
+    if (this.subscription) clearInterval(this.subscription);
+    this.subscription = null;
+    if (this.flushTimer) clearTimeout(this.flushTimer);
+    this.flushTimer = null;
+    this.batch = [];
+    this.faderAt.clear();
     const s = this.socket;
     this.socket = null;
     this.port = 0;

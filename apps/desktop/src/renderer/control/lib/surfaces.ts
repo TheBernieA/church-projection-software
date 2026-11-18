@@ -1,7 +1,10 @@
 import { useSyncExternalStore } from 'react';
 import {
+  controlKey,
   deskMidiBytes,
   encodeMidi,
+  muteFromValue,
+  muteToValue,
   oscToSurface,
   parseMidi,
   PressDetector,
@@ -90,17 +93,15 @@ const mixerMute = (m: Mixer, t: MixerTarget): boolean | null =>
     ? (m.channels.find((c) => c.id === t.channelId)?.mute ?? null)
     : m[t.bus].mute;
 
+/** A fader move (live: sent at most every 40 ms) or a mute (sent at once). */
 function setMixer(t: MixerTarget, patch: { gainDb?: number; mute?: boolean }, live: boolean): void {
-  if (t.bus === 'channel') {
-    if (!t.channelId) return;
-    const a = { action: 'channel' as const, id: t.channelId, patch };
-    if (live) mixerLive(a);
-    else void mixerCmd(a);
-  } else {
-    const a = { action: 'bus' as const, bus: t.bus, patch };
-    if (live) mixerLive(a);
-    else void mixerCmd(a);
-  }
+  if (t.bus === 'channel' && !t.channelId) return;
+  const a =
+    t.bus === 'channel'
+      ? { action: 'channel' as const, id: t.channelId ?? '', patch }
+      : { action: 'bus' as const, bus: t.bus, patch };
+  if (live) mixerLive(a);
+  else void mixerCmd(a);
 }
 
 function run(b: SurfaceBinding, m: SurfaceMessage): void {
@@ -122,12 +123,15 @@ function run(b: SurfaceBinding, m: SurfaceMessage): void {
       return;
     }
     case 'mute': {
-      if (!presses.press(b.id, m)) return;
       const mixer = useStore.getState().live?.mixer;
       const muted = mixer ? mixerMute(mixer, t) : null;
       if (muted === null) return;
+      // A switch says what it should be; a button flips it on each press.
+      const wanted = m.trigger ? null : muteFromValue(t.mode, m.value);
+      const next = wanted ?? (presses.press(b.id, m) ? !muted : muted);
+      if (next === muted) return;
       touched.set(b.id, performance.now());
-      setMixer(t, { mute: !muted }, false);
+      setMixer(t, { mute: next }, false);
       return;
     }
     case 'tbar': {
@@ -174,7 +178,22 @@ export function handleSurfaceMessage(m: SurfaceMessage): void {
   }
   const bindings = surfaces()?.bindings;
   if (!bindings?.length) return;
-  for (const b of bindings) if (sameControl(b.source, m.source)) run(b, m);
+  for (const b of indexOf(bindings).get(controlKey(m.source)) ?? [])
+    if (sameControl(b.source, m.source)) run(b, m);
+}
+
+/** The bindings by control, rebuilt only when the bindings change (not per message). */
+let indexed: { from: SurfaceBinding[]; by: Map<string, SurfaceBinding[]> } | null = null;
+function indexOf(bindings: SurfaceBinding[]): Map<string, SurfaceBinding[]> {
+  if (indexed?.from !== bindings) {
+    const by = new Map<string, SurfaceBinding[]>();
+    for (const b of bindings) {
+      const key = controlKey(b.source);
+      by.set(key, [...(by.get(key) ?? []), b]);
+    }
+    indexed = { from: bindings, by };
+  }
+  return indexed.by;
 }
 
 // ---------- Outgoing: feedback and desk cues ----------
@@ -216,7 +235,7 @@ function feedback(mixer: Mixer): void {
       value = db === null ? null : dbToTravel(db);
     } else {
       const muted = mixerMute(mixer, t);
-      value = muted === null ? null : muted ? 1 : 0;
+      value = muted === null ? null : muteToValue(t.mode, muted);
     }
     if (value === null || sentFeedback.get(b.id) === value) continue;
     sentFeedback.set(b.id, value);

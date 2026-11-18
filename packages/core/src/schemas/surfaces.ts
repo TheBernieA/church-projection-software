@@ -31,6 +31,8 @@ export type SurfaceAction = (typeof SURFACE_ACTIONS)[number];
 export const MIDI_TYPES = ['cc', 'note', 'pc', 'pitch'] as const;
 export type MidiType = (typeof MIDI_TYPES)[number];
 
+export const MUTE_MODES = ['toggle', 'muted', 'on'] as const;
+export type MuteMode = (typeof MUTE_MODES)[number];
 const Channel = z.number().int().min(1).max(16);
 const Byte = z.number().int().min(0).max(127);
 
@@ -70,7 +72,16 @@ export const SurfaceTargetSchema = z.discriminatedUnion('kind', [
     take: z.boolean().default(false),
   }),
   z.object({ kind: z.literal('fader'), ...MixerTargetSchema.shape }),
-  z.object({ kind: z.literal('mute'), ...MixerTargetSchema.shape }),
+  z.object({
+    kind: z.literal('mute'),
+    ...MixerTargetSchema.shape,
+    /**
+     * How the control reports: `toggle`, a button (each press flips the mute); `muted`, a switch
+     * whose 1 means muted; `on`, a switch whose 1 means on, i.e. not muted (an X32's
+     * /ch/01/mix/on).
+     */
+    mode: z.enum(MUTE_MODES).default('toggle'),
+  }),
   z.object({ kind: z.literal('tbar') }),
 ]);
 export type SurfaceTarget = z.infer<typeof SurfaceTargetSchema>;
@@ -143,8 +154,13 @@ export const SurfacesSettingsSchema = z.object({
       /** Where OSC replies and desk cues go ('' to send nothing). */
       sendHost: z.string().max(200).default(''),
       sendPort: z.number().int().min(1).max(65535).default(10023),
+      /**
+       * Keep asking the desk for its changes (Behringer X32, Midas M32: they only report fader
+       * and mute moves to apps that renew a subscription every few seconds).
+       */
+      subscribe: z.boolean().default(false),
     })
-    .default({ enabled: false, port: 9000, sendHost: '', sendPort: 10023 }),
+    .default({ enabled: false, port: 9000, sendHost: '', sendPort: 10023, subscribe: false }),
   bindings: z.array(SurfaceBindingSchema).max(200).default([]),
   cues: z.array(DeskCueSchema).max(100).default([]),
 });

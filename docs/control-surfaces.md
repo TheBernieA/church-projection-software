@@ -13,8 +13,17 @@ what is happening. Nothing is specific to one make: the operator teaches Lampsta
    - **OSC:** turn on "OSC over the network" and pick a port. Point the desk or app at the
      address shown ("Point the desk or app at 192.168.1.20, port 9000").
    - To send OSC back, enter the desk's address and its OSC port (an X32 listens on 10023).
+   - **Behringer X32 / Midas M32:** also turn on "Ask the desk for its changes". These desks
+     report fader and mute moves only to apps that send `/xremote` at least every 10 s.
+     Lampstand sends it every 8 s, from its listening port, so the desk answers there.
 2. **Add controls.** Choose what a control does, press **Learn**, then move the fader or press
-   the button on the desk. A control can be:
+   the button on the desk. A mute control can report in three ways, set under the control:
+   - a button, where each press flips the mute;
+   - a switch where 1 means muted;
+   - a switch where 1 means on: an X32's `/ch/NN/mix/on`, picked by itself when an address
+     ending in `/on` is learned.
+
+   A control can be:
    - **A show action:** go live, next or previous slide, the clears, black, logo, freeze,
      panic, Cut, Auto, or play/pause the video.
    - **A camera:** to Preview, or straight on screen (cameras 1–9, as in Media › Video input).
@@ -71,6 +80,11 @@ sends its position back.
 - **Permission:** Electron files every Web MIDI request under `midiSysex`. Lampstand allows it
   only for its own windows, and itself asks for plain MIDI.
 - **Speed:** a fader can send hundreds of messages a second.
-  - Matching is a loop over the bindings.
+  - Bindings are indexed by control, and the index is rebuilt only when they change.
+  - Main gathers OSC for 8 ms and hands it over as one IPC message. A fader's older positions
+    give way to its newest; buttons keep every message, so a quick press and release is never
+    lost.
+  - Switches (mutes) only act when the state differs, so a desk echoing a change back does
+    nothing.
   - Mixer moves go out at most every 40 ms through `mixerLive`, and T-bar moves through `tbar`.
   - The activity light updates at most 10 times a second.

@@ -99,9 +99,29 @@ describe('control surface engine', () => {
   });
 
   it('toggles a mute on each press', () => {
-    use([{ id: 'm1', source: midi('note', 1), target: { kind: 'mute', bus: 'room' } }]);
+    use([
+      { id: 'm1', source: midi('note', 1), target: { kind: 'mute', bus: 'room', mode: 'toggle' } },
+    ]);
     handleSurfaceMessage(note(1, true));
     expect(calls.mixerCmd).toEqual([{ action: 'bus', bus: 'room', patch: { mute: true } }]);
+  });
+
+  it('follows an X32-style on switch (0 is muted), and ignores a repeat of the same state', () => {
+    use([
+      {
+        id: 'x',
+        source: { kind: 'osc', address: '/ch/05/mix/on' },
+        target: { kind: 'mute', bus: 'channel', channelId: 'video', mode: 'on' },
+      },
+    ]);
+    const on = (v: number): SurfaceMessage => ({
+      source: { kind: 'osc', address: '/ch/05/mix/on' },
+      value: v,
+      trigger: false,
+    });
+    handleSurfaceMessage(on(0)); // switched off on the desk: muted
+    handleSurfaceMessage(on(1)); // the mixer here still says unmuted: nothing to change
+    expect(calls.mixerCmd).toEqual([{ action: 'channel', id: 'video', patch: { mute: true } }]);
   });
 
   it('puts camera n on Preview', () => {

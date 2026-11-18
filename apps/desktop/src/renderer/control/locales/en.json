@@ -780,133 +780,133 @@
       "items": {
         "youtube": {
           "q": "Stream to YouTube or Facebook",
-          "a": "1. Click Live in the toolbar to open the Live console, then Add under Destinations and pick YouTube or Facebook.\n2. In YouTube Studio › Go live › Stream, copy the “Stream key” (the copy button beside the key, not the “Stream URL”). On Facebook: Live video › Streaming software.\n3. Paste it into the destination and click Save key. Keys are stored encrypted on this computer and never shown again.\n4. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key."
+          "a": "1. Click Live in the toolbar to open the Live console.\n2. Under Destinations click Add and pick YouTube or Facebook.\n3. Copy the stream key. In YouTube Studio: Go live › Stream, then the copy button beside “Stream key” (not the Stream URL). On Facebook: Live video › Streaming software.\n4. Paste it into the destination and click Save key. Keys are stored encrypted and never shown again.\n5. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key."
         },
         "console": {
           "q": "Use the Live console",
-          "a": "Live in the toolbar docks the console beside the output; Own window moves it to another display. The picture is exactly what goes out. The top bar shows the frame rate, encoder speed (1.00× keeps up), the sending delay and the computer’s load; the bottom bar shows the bitrate and the encoder. Hover any reading to see what it means. Red or amber readings mean the computer or the internet connection is struggling."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or Own window to move it to another display.\n2. Watch the picture: it is exactly what goes out.\n3. Read the bars: frame rate, encoder speed (1.00× keeps up), sending delay and computer load at the top; bitrate and encoder at the bottom.\nHover any reading to see what it means. Amber or red readings mean the computer or the internet connection is struggling."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "In the console, “What the stream shows” sets the words (full screen, a lower third, or none) and what is behind them (the projector’s picture, a camera, or black). Theme draws the lower third in a theme made for it (Stream lower third, Modern lower third, or your own with the Lower third layout). Position puts the lower third left, centre or right; Size fits each slide to the lower third automatically (Auto), or turn Auto off and drag to the size you want. “What the stream hears” picks the channels that go out; the mixer in the Audio tab has a separate stream mix with its own faders. Turn on “Show the stream picture before going live” to check it first."
+          "a": "1. In the Live console, open “What the stream shows”.\n2. Choose the words (full screen, a lower third, or none) and what’s behind them (the projector’s picture, a camera, or black).\n3. For a lower third, pick its theme, its position (left, centre or right) and its size: Auto fits each slide, or turn Auto off and drag.\n4. Under “What the stream hears”, pick the channels that go out. The mixer has a separate stream mix with its own faders.\nTurn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
-          "a": "Click Record in the Live console: it records with or without streaming. Settings › Streaming can record every time you go live. The file stays playable even if the computer stops unexpectedly."
+          "a": "1. Click Record in the Live console. It records with or without streaming.\n2. To record every time you go live, turn it on in Settings › Streaming.\nThe file stays playable even if the computer stops unexpectedly."
         },
         "slow": {
           "q": "Stream from an older or slower computer",
-          "a": "Settings › Streaming › Performance. Click “Check this computer” for a 10-second test, and leave the mode on Auto to use its answer. Light (540p) suits older laptops and slow internet, Balanced (720p) most churches, Quality (1080p) a recent computer with a good upload. If the computer struggles mid-stream, the console offers Switch to Light: a two-second pause, and the stream carries on.\nA slow or busy upload is handled by itself: the stream lowers its bitrate to stay live (the bitrate reading turns amber) and climbs back when the connection allows. If the upload stays far too slow for the picture size, the console suggests Light, which looks sharper at that rate. “Check this computer” tests the computer, not the internet: check your upload speed with any speed test (1080p needs about 5 Mb/s, 720p 3, 540p 1.5)."
+          "a": "1. Open Settings › Streaming › Performance.\n2. Click “Check this computer” (a 10-second test) and leave the mode on Auto to use its answer.\n3. Or choose yourself: Light (540p) for older laptops and slow internet, Balanced (720p) for most churches, Quality (1080p) for a recent computer with a good upload.\nIf the computer struggles mid-stream, the console offers Switch to Light: a two-second pause, and the stream carries on.\nA slow upload is handled by itself: the stream lowers its bitrate to stay live (the bitrate reading turns amber) and climbs back when it can. If the upload stays too slow for the picture size, the console suggests Light, which looks sharper at that rate. Check your upload with any speed test: 1080p needs about 5 Mb/s, 720p 3, 540p 1.5."
         },
         "delay": {
           "q": "Cut the delay viewers see",
-          "a": "Lampstand sends each frame about 0.2 seconds after it is drawn; the console’s delay reading shows this live, and it climbs only if your upload can’t keep up. The rest is added by the streaming service. On YouTube, before going live, open YouTube Studio › Stream settings › Stream latency and pick Ultra low-latency (about 2–5 seconds; Low is 5–10, Normal 15–30). Judge the delay on the public watch page: the preview inside YouTube Studio lags more. For under a second, use a direct link or NDI (below)."
+          "a": "1. Before going live, open YouTube Studio › Stream settings › Stream latency.\n2. Pick Ultra low-latency (about 2–5 seconds; Low is 5–10, Normal 15–30).\n3. Judge the delay on the public watch page: the preview inside YouTube Studio lags more.\nLampstand itself sends each frame about 0.2 seconds after it is drawn; the console’s delay reading shows this live. For under a second, use a direct link or NDI."
         },
         "direct": {
           "q": "Send to another room with almost no delay (direct link)",
-          "a": "A direct link goes straight to a receiver you run (OBS, vMix, VLC, a decoder box) instead of a service, with well under a second of delay. It can run beside YouTube.\n1. On the receiving computer in OBS: add a Media Source, untick “Local file”, and set Input to udp://@:9000. In VLC: Open Network, udp://@:9000, and lower “network caching” in its options.\n2. In the Live console, Add › Direct link, and type the receiver’s address with the same port, e.g. udp://192.168.1.50:9000.\n3. Go live.\nUDP is for the same network. For a link across the internet use SRT (srt://address:9000, with the receiver set to srt://:9000?mode=listener); it resends lost packets, and needs an ffmpeg built with SRT on this computer."
+          "a": "1. On the receiving computer, in OBS add a Media Source, untick “Local file”, and set Input to udp://@:9000. In VLC: Open Network, udp://@:9000, and lower “network caching”.\n2. In the Live console, click Add › Direct link and type the receiver’s address with the same port, e.g. udp://192.168.1.50:9000.\n3. Click Go live.\nA direct link has well under a second of delay and can run beside YouTube. UDP is for the same network. Across the internet use SRT (srt://address:9000, with the receiver set to srt://:9000?mode=listener); it needs an ffmpeg built with SRT."
         },
         "ndi": {
           "q": "Send to vMix, OBS or NDI gear on the network",
-          "a": "Install NDI Tools (free) on this computer, then open Settings › NDI and turn on a feed: the program, the words alone over transparency (to key over cameras), or the stream picture. In vMix, OBS (with the NDI plugin) or NDI Studio Monitor, add an NDI source and pick this computer’s feed by name. NDI stays on the local network and is the lowest-delay way to feed a video mixer."
+          "a": "1. Install NDI Tools (free) on this computer.\n2. Open Settings › NDI and turn on a feed: the program, the words alone over transparency (to key over cameras), or the stream picture.\n3. In vMix, OBS (with the NDI plugin) or NDI Studio Monitor, add an NDI source and pick this computer’s feed by name.\nNDI stays on the local network and is the lowest-delay way to feed a video mixer."
         },
         "screens": {
           "q": "Show a lower third on the projector too",
-          "a": "Under the output monitor, switch on “Lower third on the screens”. Pick its theme and where it sits (left, centre or right). The audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you switch it off; your theme and position are remembered. The stream follows it unless the stream has a theme of its own."
+          "a": "1. Under the output monitor, switch on “Lower third on the screens”.\n2. Pick its theme and where it sits (left, centre or right).\nThe audience screens then draw every slide’s words along the bottom in that theme, over a camera or video, until you switch it off. The stream follows it unless the stream has a theme of its own."
         },
         "keyFeed": {
           "q": "Send the words to a video mixer over HDMI (key feed)",
-          "a": "1. Plug the mixer into this computer’s HDMI output, open Outputs (the Audience light in the toolbar) and give that display the Alternate role.\n2. Under “Alternate output: key feed for a video mixer”, pick Green or Blue (chroma key on the mixer) or Black (luma key). The output then carries only the words and props over that colour.\n3. Click “Choose its themes”, pick Lower third, then click a theme and choose Alternate (HDMI), for Scripture, Lyrics and Text.\nOn an ATEM, use an upstream chroma or luma key with this input as the source. For a clean alpha channel instead, use the NDI “Words” feed."
+          "a": "1. Plug the video mixer into this computer’s HDMI output.\n2. Open Outputs (the Audience light in the toolbar) and give that display the Alternate role.\n3. Under “Alternate output: key feed for a video mixer”, pick Green or Blue (chroma key) or Black (luma key).\n4. Click “Choose its themes”, pick Lower third, then click a theme and choose Alternate (HDMI) for Scripture, Lyrics and Text.\nOn an ATEM, use an upstream chroma or luma key with this input as the source. For a clean alpha channel instead, use the NDI “Words” feed."
         },
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
-          "a": "A destination that says Stopped shows why when you hover it. “Key needed” or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it. Can’t connect: check the internet connection; Lampstand tries YouTube’s second address by itself. An amber bitrate means the upload can’t carry the chosen quality and the stream has lowered itself to stay live; if it stays amber, pick a lighter Performance mode. Picture jumps or readings turn red: the computer can’t keep up, so pick a lighter mode too. Click Retry to bring a stopped destination back without ending the stream."
+          "a": "1. Hover a destination that says Stopped to see why.\n2. “Key needed”, or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it.\n3. Can’t connect: check the internet connection. Lampstand tries YouTube’s second address by itself.\n4. Amber bitrate: the upload can’t carry the chosen quality and the stream has lowered itself to stay live. If it stays amber, pick a lighter Performance mode.\n5. Picture jumps or readings turn red: the computer can’t keep up; pick a lighter mode.\nClick Retry to bring a stopped destination back without ending the stream."
         }
       }
     },
     "howto": {
       "title": "How to…",
-      "help": "Short recipes for the everyday jobs. Click one to open it.",
+      "help": "Short step-by-step recipes for the everyday jobs. Click one to open it.",
       "items": {
         "song": {
           "q": "Add a new song",
-          "a": "Click + next to LIBRARY. Type the words with section headers like [Verse 1] and [Chorus] on their own lines; a blank line starts a new slide. Save, then drag the song onto the playlist, or use its Add to service button."
+          "a": "1. Click + next to LIBRARY.\n2. Type the words. Put section headers such as [Verse 1] and [Chorus] on their own lines; a blank line starts a new slide.\n3. Click Save.\n4. Drag the song onto the playlist, or use its Add to service button."
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
-          "a": "Click + next to PLAYLISTS. Add sections (Walk-in, Worship, Word…) with the + above the items. On the Show page, fill a section with the “+ Add to …” card at its end (or the + on its coloured band), or drag songs, verses and media onto it. Drag to reorder; a section moves with everything under it, and deleting a section deletes what’s in it. The … beside a playlist’s name duplicates or deletes it."
+          "a": "1. Click + next to PLAYLISTS to make a playlist.\n2. Add sections (Walk-in, Worship, Word…) with the + above the items.\n3. On the Show page, click the “+ Add to …” card at the end of a section (or the + on its coloured band) to add songs, verses, slides or media to it. You can also drag things onto the section.\n4. Drag items to reorder them. A section moves with everything under it.\nDeleting a section deletes everything in it. The … beside a playlist’s name duplicates or deletes the playlist."
         },
         "verse": {
           "q": "Put a Bible verse on screen",
-          "a": "Press {{quick}} and type a reference such as jn 3 16 or Romans 8:28-39. Enter loads Preview, Shift+Enter puts it straight on screen.\nIn the Bible workspace, clicking a verse opens it in the slides without touching what’s on screen, so it never interrupts a presentation; click the slide to show it, or double-click the verse to show it at once. Turn on “Click shows it now” there if you’d rather a click went straight on screen."
+          "a": "1. Press {{quick}}.\n2. Type a reference such as jn 3 16 or Romans 8:28-39.\n3. Press Enter to load it on Preview, or Shift+Enter to put it straight on screen.\nIn the Bible workspace, clicking a verse opens it in the slides without touching the screen, so it never interrupts a presentation. Click the slide to show it, or double-click the verse to show it at once. Turn on “Click shows it now” there if you want a click to go straight on screen."
         },
         "preview": {
           "q": "Check slides before the room sees them",
-          "a": "Turn on Preview first in the toolbar. Clicks then load the Preview monitor; press {{goLive}} (or Go live) to send it to the screens."
+          "a": "1. Turn on Preview first in the toolbar.\n2. Click a slide: it loads on the Preview monitor only.\n3. Press {{goLive}} (or Go live) to send it to the screens."
         },
         "clear": {
           "q": "Take things off the screen",
-          "a": "Use the strip beside the monitor to clear one layer, or the red power button ({{clearAll}}) to clear everything. {{panic}} clears the words but keeps the background. Black and Logo cover the screen without losing your place."
+          "a": "1. To clear one layer (text, media, background, overlays), use the strip beside the monitor.\n2. To clear everything, click the red power button or press {{clearAll}}.\n3. To clear the words but keep the background, press {{panic}}.\nBlack and Logo cover the screen without losing your place."
         },
         "backgrounds": {
           "q": "Use a moving background",
-          "a": "Open the media bin and pick Backgrounds. Hover a motion background to see it move, click to put it behind your words. Any picture or video in Media can go behind the words too: hover it and click “Use behind the words” (it stays there, under every slide, until you clear the background). Themes can carry a background too."
+          "a": "1. Open Media and pick Backgrounds.\n2. Hover a motion background to see it move, then click it to put it behind your words.\n3. To use your own picture or video, hover it in Media and click “Use behind the words”.\nIt stays under every slide until you clear the background. Themes can carry a background too."
         },
         "arrangement": {
           "q": "Change a song’s order, key or language",
-          "a": "In a song’s header on the Show page, pick an arrangement (a short version, say), transpose the chords for the stage display, or add a translation shown under each line. Write arrangements and translations in the song editor."
+          "a": "1. Open the song in the song editor to write arrangements (a short version, say) and translations.\n2. On the Show page, pick the arrangement in the song’s header.\n3. Transpose the chords there for the stage display, or turn on the translation to show it under each line."
         },
         "edit": {
           "q": "Make your own slides",
-          "a": "Add Slides from the + menu. Click the pencil on a slide card (or open the Edit workspace) to change it: click the words on the canvas to type straight into them, and add text boxes, shapes, lines and pictures. Drag to move, pull the corners to resize. A text item ends with a + card for another slide.\nYou can edit a slide while it’s live: the screen keeps showing the old version until you press Update live."
+          "a": "1. Add Slides from the + menu.\n2. Click the pencil on a slide card (or open the Edit workspace).\n3. Click the words on the canvas and type. Add text boxes, shapes, lines and pictures from the toolbar.\n4. Drag to move things; pull the corners to resize.\n5. Click the + card after the last slide to add another.\nYou can edit a slide while it’s live: the screen keeps the old version until you press Update live."
         },
         "import": {
           "q": "Bring in PowerPoint or PDF",
-          "a": "Choose Import in the + menu. PowerPoint comes in as editable text slides; PDF brings each page in as a picture. From Keynote, export to PowerPoint or PDF first."
+          "a": "1. Choose Import in the + menu.\n2. Pick a PowerPoint or PDF file.\nPowerPoint comes in as editable text slides; PDF brings each page in as a picture. From Keynote, export to PowerPoint or PDF first."
         },
         "web": {
           "q": "Show a web page",
-          "a": "Choose Web page in the + menu and enter a secure (https) address. It shows on the audience screens in an isolated view; Black screen covers it."
+          "a": "1. Choose Web page in the + menu.\n2. Enter a secure (https) address.\n3. Show it like any slide: it appears on the audience screens in an isolated view.\nBlack screen covers it."
         },
         "props": {
           "q": "Show a logo or notice over everything",
-          "a": "In Show controls › Props, make a prop from a picture or a line of text and click it to show or hide it. Messages show text such as “Parent of {number}” as a lower third or a ticker."
+          "a": "1. Open Show controls › Props.\n2. Make a prop from a picture or a line of text.\n3. Click it to show or hide it over everything.\nMessages show text such as “Parent of {number}” as a lower third or a ticker."
         },
         "timers": {
           "q": "Run a countdown",
-          "a": "Add a Countdown item for a full-screen countdown, or start a timer in Show controls › Timers; running timers show on the stage display."
+          "a": "1. For a full-screen countdown, add a Countdown item and show it.\n2. For a timer the stage can see, start one in Show controls › Timers.\nRunning timers show on the stage display."
         },
         "stage": {
           "q": "Set up the stage display",
-          "a": "Give a screen the Stage role in Screens (click the Audience or Stage light in the toolbar). It shows the current and next slide, the clock, timers, chords and your stage message."
+          "a": "1. Click the Audience or Stage light in the toolbar to open Screens.\n2. Give a screen the Stage role.\nIt shows the current and next slide, the clock, timers, chords and your stage message."
         },
         "themes": {
           "q": "Change how the words look",
-          "a": "Theme in the toolbar opens Themes. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third), then click a theme and say where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream. The strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Duplicate a built-in theme to change its fonts, colours, effects and background; Import theme and the export button move themes between computers."
+          "a": "1. Click Theme in the toolbar.\n2. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third).\n3. Click a theme and choose where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream.\nThe strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Duplicate a built-in theme to change its fonts, colours, effects and background. Import theme and the export button move themes between computers."
         },
         "text": {
           "q": "Change one song’s font or colour",
-          "a": "Select the item in the playlist and press Text in the toolbar. Pick a font, size, bold or italic, colour and alignment; only that item changes, on top of its theme. Use theme puts it back."
+          "a": "1. Select the item in the playlist.\n2. Click Text in the toolbar.\n3. Pick a font, size, bold or italic, colour and alignment.\nOnly that item changes, on top of its theme. Use theme puts it back."
         },
         "logo": {
           "q": "Set the logo and off-air screen",
-          "a": "Settings › Presenting: your church name and a tagline on a choice of looks, or your own picture or video. The off-air screen shows it whenever nothing is live."
+          "a": "1. Open Settings › Presenting.\n2. Type your church name and a tagline and pick a look, or choose your own picture or video.\nThe off-air screen shows it whenever nothing is live."
         },
         "backup": {
           "q": "Back up or move your library",
-          "a": "Settings › Library & backups exports everything (songs, playlists, themes, media) to one file and imports it on another computer. A backup is also made every day."
+          "a": "1. Open Settings › Library & backups.\n2. Click Export library to save everything (songs, playlists, themes, media) to one file.\n3. On the other computer, click Import library and pick that file.\nA backup is also made every day."
         },
         "undo": {
           "q": "Undo a mistake",
-          "a": "Press {{undo}} (or Edit › Undo in the menu bar) to undo changes to playlists, songs and slides; {{redo}} redoes them."
+          "a": "1. Press {{undo}} (or Edit › Undo in the menu bar) to undo a change to playlists, songs or slides.\n2. Press {{redo}} to redo it."
         },
         "announcements": {
           "q": "Loop announcements before the service",
-          "a": "Add Announcements from the + menu and give each notice its own slide. While live they move on by themselves every few seconds (set the time in the inspector) and loop; turn Loop off in the item to step through them by hand instead."
+          "a": "1. Add Announcements from the + menu.\n2. Give each notice its own slide.\n3. Set how many seconds each slide shows in the inspector on the right.\n4. Show it: the slides move on by themselves and loop.\nTurn Loop off in the item to step through them by hand."
         },
         "audio": {
           "q": "Play music or a video without it starting by itself",
-          "a": "Clicking a song or sound in Media › Audio selects it; nothing plays until you press its play button (or Play in the room). Videos work the same: put one on screen and press Play, or set Settings › Video › When a video goes live to play straight away."
+          "a": "1. Click a song or sound in Media › Audio to select it; nothing plays yet.\n2. Press its play button (or Play in the room) when you want it.\n3. Videos wait for Play too. To make them start by themselves, set Settings › Video › When a video goes live to Play straight away."
         }
       }
     },
@@ -923,31 +923,31 @@
       "items": {
         "cameras": {
           "q": "Switch between cameras",
-          "a": "Media › Sources › Video input lists every camera and capture card. Click one to put it on Preview, then Cut ({{switcherCut}}) or Auto ({{switcherAuto}}) takes it to the screen with the transition chosen beside them (Cut, Fade, Dip or Wipe, and its length); drag the T-bar to mix by hand. Double-click a camera to take it at once. Keys 1–9 preview a camera, Shift+1–9 take it. PiP puts a second camera in a corner. The Switcher button hides Preview and Program when you want bigger cameras. Slide words stay on top of the camera."
+          "a": "1. Open Media › Sources › Video input.\n2. Click a camera to put it on Preview.\n3. Press Cut ({{switcherCut}}) or Auto ({{switcherAuto}}) to take it to the screen, or drag the T-bar to mix by hand. Pick the transition (Cut, Fade, Dip or Wipe) and its length beside them.\nDouble-click a camera to take it at once. Keys 1–9 preview a camera, Shift+1–9 take it. PiP puts a second camera in a corner. The Switcher button hides Preview and Program when you want bigger cameras. Slide words stay on top of the camera."
         },
         "deskSound": {
           "q": "Bring the sound desk into Lampstand",
-          "a": "Connect the desk by USB (or through an audio interface) and install its driver if the maker provides one; many desks need none on a Mac. It then shows in Media › Audio › Audio inputs with a level meter: switch it on and it becomes a channel on the mixer, to the room, the stream or both. Lampstand takes the device’s first two channels, so send the main mix to USB 1–2 on the desk."
+          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. Open Media › Audio › Audio inputs: the desk shows with a level meter. Switch it on.\nIt becomes a channel on the mixer; send it to the room, the stream or both."
         },
         "midi": {
           "q": "Run Lampstand from a desk or MIDI controller",
-          "a": "1. Plug the desk or controller in by USB (or a MIDI interface). It appears in Settings › Control surfaces under MIDI.\n2. Under Controls, choose what a control should do: a show action (next slide, go live, black…), a camera, a mixer fader or mute, or the T-bar.\n3. Press Learn, then move the fader or press the button on the desk. Done: it now does that.\nThe Activity row shows the last control Lampstand heard, to check the connection. Learn again changes a control; the bin removes it."
+          "a": "1. Plug the desk or controller in by USB (or a MIDI interface).\n2. Open Settings › Control surfaces and check it shows under MIDI.\n3. Under Controls, choose what a control should do: a show action (next slide, go live, black…), a camera, a mixer fader or mute, or the T-bar.\n4. Press Learn, then move the fader or press the button on the desk.\n5. Try it: the control now does that.\nThe Activity row shows the last control Lampstand heard. Press Learn again to change a control; the bin removes it."
         },
         "osc": {
           "q": "Connect a desk or app over the network (OSC)",
-          "a": "For desks and apps that speak OSC (TouchOSC, Behringer X32 and Midas M32, many digital desks). In Settings › Control surfaces turn on “OSC over the network”; the page shows this computer’s address and port to type into the desk or app. Enter the desk’s own address and OSC port (an X32 uses 10023) so Lampstand can answer it. Then add controls with Learn as for MIDI. Both computers must be on the same network."
+          "a": "1. Open Settings › Control surfaces and turn on “OSC over the network”.\n2. Type the address and port the page shows into the desk or app.\n3. Enter the desk’s own address and OSC port under “The desk’s address” (an X32 or M32 uses 10023).\n4. For a Behringer X32 or Midas M32, turn on “Ask the desk for its changes”, or its faders and mutes won’t reach Lampstand.\n5. Add controls with Learn, as for MIDI.\nBoth computers must be on the same network. A learned X32 mute (its /mix/on switch) is set up as “on means the channel is on” by itself."
         },
         "feedback": {
           "q": "Keep motor faders and button lights in step",
-          "a": "Leave “Motor faders and button lights follow” on in Settings › Control surfaces. When you change a fader or a mute in Lampstand, the desk’s motorised fader moves and its button light matches. A fader you’re moving on the desk is left alone, so it never fights your hand."
+          "a": "1. Open Settings › Control surfaces.\n2. Leave “Motor faders and button lights follow” on.\nWhen you change a fader or a mute in Lampstand, the desk’s motorised fader moves and its button light matches. A fader you’re moving on the desk is left alone, so it never fights your hand."
         },
         "cues": {
           "q": "Make the desk react to the show (mute a mic while a video plays)",
-          "a": "In Settings › Control surfaces › Send to the desk, click Add a cue. Choose when (a video starts or stops, a camera goes on or off, the stream goes live or ends, the screen goes black or is cleared) and the message to send: MIDI (port, CC, note or program change, channel, number, value) or OSC (address and value, e.g. /ch/05/mix/on with 0 to mute channel 5 on an X32). Test sends it now so you can check the desk responds."
+          "a": "1. Open Settings › Control surfaces › Send to the desk and click Add a cue.\n2. Choose when: a video starts or stops, a camera goes on or off, the stream goes live or ends, the screen goes black or is cleared.\n3. Choose the message: MIDI (port, CC, note or program change, channel, number, value) or OSC (address and value).\n4. Click Test to send it now and check the desk responds.\nExample: to mute channel 5 on an X32 while a video plays, send OSC /ch/05/mix/on with the whole number 0 when a video starts, and 1 when it stops."
         },
         "deskTrouble": {
           "q": "A control does nothing",
-          "a": "Watch the Activity row in Settings › Control surfaces while you move it. Nothing there: for MIDI, check the cable and that the desk shows under MIDI (some desks must be set to send MIDI in their own setup); for OSC, check the port and that the desk points at the address shown, and that a firewall isn’t blocking it. It shows but nothing happens: press Learn for that control again (the desk may send on another channel or number). A Behringer X32 or Midas M32 only sends its own fader moves to apps that keep asking, which Lampstand doesn’t do yet: use its MIDI mode for faders, or OSC to send cues to it."
+          "a": "1. Open Settings › Control surfaces and watch the Activity row while you move the control.\n2. Nothing shows, MIDI: check the cable, that the desk is listed under MIDI, and that the desk is set to send MIDI in its own setup.\n3. Nothing shows, OSC: check the port, that the desk points at the address shown, that both are on the same network, and that a firewall isn’t blocking it. For an X32 or M32, turn on “Ask the desk for its changes”.\n4. It shows but nothing happens: press Learn for that control again (the desk may send on another channel or number).\n5. A mute works backwards: change “The desk’s control is” under that control."
         }
       }
     }
@@ -1951,7 +1951,16 @@
       "f": "Decimal",
       "s": "Text"
     },
-    "oscNoAddress": "Set the desk's address above, or this cue goes nowhere."
+    "oscNoAddress": "Set the desk's address above, or this cue goes nowhere.",
+    "subscribe": "Ask the desk for its changes (X32, M32)",
+    "subscribeHelp": "Behringer X32 and Midas M32 desks only send their fader and mute moves to apps that keep asking. Turn this on (with the desk's address above) and Lampstand asks every 8 seconds.",
+    "muteMode": "The desk's control is",
+    "muteModeOf": "How the mute control for {{name}} reports",
+    "muteModes": {
+      "toggle": "A button: each press mutes or unmutes",
+      "muted": "A switch: on means muted",
+      "on": "A switch: on means the channel is on (X32, M32)"
+    }
   },
   "mixer": {
     "title": "Mixer",

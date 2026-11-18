@@ -534,6 +534,8 @@ test('settings: category pages, installed Bible packages', async () => {
   await expect(control.locator('[data-howto="youtube"]')).toHaveCount(1);
   await control.locator('[data-howto="midi"] summary').click();
   await expect(control.locator('[data-howto="midi"]')).toContainText('Press Learn');
+  await control.locator('[data-howto="midi"]').scrollIntoViewIfNeeded();
+  await control.screenshot({ path: 'test-results/06-guide-recipe.png' });
   const index = control.getByTestId('feature-index');
   await expect(index.locator('[data-feature="reflow"]')).toBeVisible();
   await index.getByLabel('Find a feature').fill('chord');

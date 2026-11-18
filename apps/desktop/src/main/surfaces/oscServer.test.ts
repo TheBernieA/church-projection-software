@@ -96,4 +96,61 @@ describe('OSC server', () => {
     server.settingsChanged();
     expect(server.current.listening).toBe(false);
   });
+
+  it('keeps an X32-style subscription, sent from the listening port, so the desk answers there', async () => {
+    const port = await freePort();
+    const desk = createSocket('udp4');
+    const asked: { address: string; from: number }[] = [];
+    desk.on('message', (d, from) => {
+      for (const m of decodeOsc(new Uint8Array(d))) {
+        asked.push({ address: m.address, from: from.port });
+        // The desk answers the subscriber's port with a fader move.
+        desk.send(
+          encodeOsc('/ch/01/mix/fader', [{ type: 'f', value: 0.25 }]),
+          from.port,
+          '127.0.0.1',
+        );
+      }
+    });
+    await new Promise<void>((r) => desk.bind(0, '127.0.0.1', r));
+    const { got } = start(() =>
+      settingsWith({
+        enabled: true,
+        port,
+        subscribe: true,
+        sendHost: '127.0.0.1',
+        sendPort: desk.address().port,
+      }),
+    );
+    await until(() => got.length > 0);
+    desk.close();
+    expect(asked[0]).toEqual({ address: '/xremote', from: port });
+    expect(got[0]).toEqual({ address: '/ch/01/mix/fader', args: [0.25] });
+  });
+
+  it('hands over a burst as one batch: fader positions merge, presses are all kept', async () => {
+    const port = await freePort();
+    const batches: OscMessage[][] = [];
+    const server = new OscServer({
+      log,
+      getSettings: () => settingsWith({ enabled: true, port }),
+      onMessages: (m) => batches.push(m),
+      onStatus: () => {},
+    });
+    servers.push(server);
+    server.settingsChanged();
+    await until(() => server.current.listening);
+    const out = createSocket('udp4');
+    const send = (address: string, args: Parameters<typeof encodeOsc>[1] = []) =>
+      new Promise<void>((r) => out.send(encodeOsc(address, args), port, '127.0.0.1', () => r()));
+    for (const v of [0.1, 0.2, 0.3]) await send('/fader', [{ type: 'f', value: v }]);
+    await send('/go', [{ type: 'i', value: 1 }]);
+    await send('/go', [{ type: 'i', value: 0 }]);
+    await until(() => batches.flat().length >= 3);
+    out.close();
+    const all = batches.flat();
+    expect(all.filter((m) => m.address === '/go').map((m) => m.args[0])).toEqual([1, 0]);
+    expect(all.filter((m) => m.address === '/fader').at(-1)?.args[0]).toBeCloseTo(0.3, 5);
+    expect(batches.length).toBeLessThan(5);
+  });
 });

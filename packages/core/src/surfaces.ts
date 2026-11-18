@@ -1,4 +1,4 @@
-import type { DeskMessage, MidiType, OscArg, SurfaceSource } from './schemas/surfaces';
+import type { DeskMessage, MidiType, MuteMode, OscArg, SurfaceSource } from './schemas/surfaces';
 
 /**
  * Control-surface protocols, kept free of any platform: MIDI messages (Web MIDI hands over raw
@@ -215,6 +215,33 @@ export function sameControl(bound: SurfaceSource, got: SurfaceSource): boolean {
     (!bound.device || !got.device || bound.device === got.device)
   );
 }
+
+/**
+ * A control's lookup key (its port aside, which `sameControl` checks): bindings are indexed by
+ * it, so a fader sending hundreds of messages a second finds its bindings without a search.
+ */
+export function controlKey(s: SurfaceSource): string {
+  if (s.kind === 'osc') return `osc:${s.address}`;
+  return `midi:${s.type}:${s.channel}:${s.type === 'pitch' ? 0 : s.number}`;
+}
+
+/** What a mute control's position means: muted, or null for a button (it flips on a press). */
+export function muteFromValue(mode: MuteMode, value: number): boolean | null {
+  if (mode === 'toggle') return null;
+  const high = value >= 0.5;
+  return mode === 'muted' ? high : !high;
+}
+
+/** The position to send a mute control so its light shows the mute. */
+export const muteToValue = (mode: MuteMode, muted: boolean): number =>
+  (mode === 'on' ? !muted : muted) ? 1 : 0;
+
+/**
+ * How a newly learned mute control most likely reports: an OSC address ending in /on (an X32
+ * or M32 channel's on switch) is a switch where 1 means on; anything else a button.
+ */
+export const suggestMuteMode = (s: SurfaceSource): MuteMode =>
+  s.kind === 'osc' && /\/on$/i.test(s.address) ? 'on' : 'toggle';
 
 /** A control as people read it: "CC 7 · ch 1", "Note 36 · ch 10", "/ch/01/mix/fader". */
 export function describeSource(s: SurfaceSource): string {

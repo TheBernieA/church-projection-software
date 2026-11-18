@@ -225,7 +225,7 @@ function Recipes({
   const { t } = useTranslation();
   return (
     <>
-      {ids.map((id) => (
+      {ids.map((id, i) => (
         <details key={id} className="group px-4 py-2.5" data-howto={id}>
           <Typography
             as="summary"
@@ -237,20 +237,63 @@ function Recipes({
               aria-hidden
               className="shrink-0 text-[var(--text-3)] transition-transform group-open:rotate-90"
             />
+            <Typography size={12} tone="muted" tabular className="w-5 shrink-0">
+              {i + 1}.
+            </Typography>
             {t(`guide.${group}.items.${id}.q`)}
           </Typography>
-          <Typography
-            as="p"
-            size={12}
-            tone="secondary"
-            leading="relaxed"
-            className="mt-1.5 whitespace-pre-line pl-[22px]"
-          >
-            {t(`guide.${group}.items.${id}.a`, values)}
-          </Typography>
+          <RecipeSteps text={t(`guide.${group}.items.${id}.a`, values)} />
         </details>
       ))}
     </>
+  );
+}
+
+const STEP = /^(\d+)\.\s+(.*)$/;
+
+/** A recipe's answer: its numbered lines as steps, any other line as a note after them. */
+function RecipeSteps({ text }: { text: string }) {
+  const lines = text.split('\n').filter((l) => l.trim());
+  const steps = lines.flatMap((l) => {
+    const m = STEP.exec(l);
+    return m ? [{ n: m[1] ?? '', body: m[2] ?? '' }] : [];
+  });
+  const notes = lines.filter((l) => !STEP.test(l));
+  return (
+    <div className="mt-2 pl-[50px] pr-2">
+      {steps.length > 0 && (
+        <ol className="flex flex-col gap-1.5">
+          {steps.map((s) => (
+            <li key={s.n} className="flex gap-2.5">
+              <Typography
+                size={11}
+                weight="semibold"
+                tone="inherit"
+                tabular
+                className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]"
+              >
+                {s.n}
+              </Typography>
+              <Typography size={12} tone="secondary" leading="relaxed" className="min-w-0">
+                {s.body}
+              </Typography>
+            </li>
+          ))}
+        </ol>
+      )}
+      {notes.map((note) => (
+        <Typography
+          as="p"
+          key={note}
+          size={12}
+          tone="muted"
+          leading="relaxed"
+          className={steps.length ? 'mt-2.5 border-l-2 border-[var(--hairline-strong)] pl-2.5' : ''}
+        >
+          {note}
+        </Typography>
+      ))}
+    </div>
   );
 }
 

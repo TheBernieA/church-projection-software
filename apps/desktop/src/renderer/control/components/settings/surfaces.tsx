@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Plus, Radio, Send, SlidersVertical, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   DESK_EVENTS,
   describeSource,
+  MUTE_MODES,
+  suggestMuteMode,
+  type MuteMode,
   newId,
   SURFACE_ACTIONS,
   type DeskCue,
@@ -44,7 +47,8 @@ const targetKey = (t: SurfaceTarget): string => {
   }
 };
 
-function targetFromKey(key: string): SurfaceTarget | null {
+/** The choice in the dropdown as a target; a mute guesses how the desk's control reports. */
+function targetFromKey(key: string, source?: SurfaceSource): SurfaceTarget | null {
   const [kind, a, b] = key.split(':');
   if (kind === 'tbar') return { kind: 'tbar' };
   if (kind === 'action') {
@@ -52,12 +56,22 @@ function targetFromKey(key: string): SurfaceTarget | null {
     return action ? { kind: 'action', action } : null;
   }
   if (kind === 'camera') return { kind: 'camera', n: Number(a), take: b === 'take' };
+  const mode = source ? suggestMuteMode(source) : 'toggle';
+  const extra = kind === 'mute' ? { mode } : {};
   if (kind === 'fader' || kind === 'mute') {
-    if (a === 'room' || a === 'stream') return { kind, bus: a };
-    if (a === 'channel' && b) return { kind, bus: 'channel', channelId: b };
+    if (a === 'room' || a === 'stream') return { kind, bus: a, ...extra } as SurfaceTarget;
+    if (a === 'channel' && b)
+      return { kind, bus: 'channel', channelId: b, ...extra } as SurfaceTarget;
   }
   return null;
 }
+
+/** A binding with a newly learned control (a mute re-guesses how that control reports). */
+const relearned = (b: SurfaceBinding, source: SurfaceSource): SurfaceBinding => ({
+  ...b,
+  source,
+  target: b.target.kind === 'mute' ? { ...b.target, mode: suggestMuteMode(source) } : b.target,
+});
 
 function useTargetOptions(): { value: string; label: string }[] {
   const { t } = useTranslation();
@@ -93,13 +107,18 @@ function useTargetOptions(): { value: string; label: string }[] {
 /** "Learn": the next control touched on the desk is this one. */
 function useLearn(onLearned: (s: SurfaceSource) => void): [boolean, () => void] {
   const [on, setOn] = useState(false);
+  // The latest callback, without re-arming the listener on every render.
+  const done = useRef(onLearned);
+  useLayoutEffect(() => {
+    done.current = onLearned;
+  });
   useEffect(() => {
     if (!on) return;
     return learnControl((s) => {
       setOn(false);
-      onLearned(s);
+      done.current(s);
     });
-  }, [on, onLearned]);
+  }, [on]);
   return [on, () => setOn((x) => !x)];
 }
 
@@ -142,50 +161,69 @@ function BindingRow({
   const { t } = useTranslation();
   const key = targetKey(binding.target);
   const label = options.find((o) => o.value === key)?.label ?? key;
-  const [learning, toggle] = useLearn((source) => onChange({ ...binding, source }));
+  const [learning, toggle] = useLearn((source) => onChange(relearned(binding, source)));
+  const target = binding.target;
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
-      <div className="min-w-0 flex-1">
-        <Select<string>
-          size="sm"
-          aria-label={t('surfaces.does', { name: label })}
-          value={key}
-          onChange={(v) => {
-            const target = targetFromKey(v);
-            if (target) onChange({ ...binding, target });
-          }}
-          options={
-            options.some((o) => o.value === key) ? options : [{ value: key, label }, ...options]
+    <div className="px-4 py-2.5">
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <Select<string>
+            size="sm"
+            aria-label={t('surfaces.does', { name: label })}
+            value={key}
+            onChange={(v) => {
+              const next = targetFromKey(v, binding.source);
+              if (next) onChange({ ...binding, target: next });
+            }}
+            options={
+              options.some((o) => o.value === key) ? options : [{ value: key, label }, ...options]
+            }
+          />
+        </div>
+        <Typography
+          size={12}
+          tone="secondary"
+          tabular
+          truncate
+          className="w-44 shrink-0"
+          title={
+            binding.source.kind === 'midi' && binding.source.device
+              ? binding.source.device
+              : undefined
           }
+        >
+          {describeSource(binding.source)}
+        </Typography>
+        <LearnButton
+          label={t('surfaces.relearn', { name: label })}
+          learning={learning}
+          onClick={toggle}
         />
+        <IconButton
+          size="xs"
+          variant="danger"
+          aria-label={t('surfaces.remove', { name: label })}
+          onClick={onRemove}
+        >
+          <Trash2 size={14} />
+        </IconButton>
       </div>
-      <Typography
-        size={12}
-        tone="secondary"
-        tabular
-        truncate
-        className="w-44 shrink-0"
-        title={
-          binding.source.kind === 'midi' && binding.source.device
-            ? binding.source.device
-            : undefined
-        }
-      >
-        {describeSource(binding.source)}
-      </Typography>
-      <LearnButton
-        label={t('surfaces.relearn', { name: label })}
-        learning={learning}
-        onClick={toggle}
-      />
-      <IconButton
-        size="xs"
-        variant="danger"
-        aria-label={t('surfaces.remove', { name: label })}
-        onClick={onRemove}
-      >
-        <Trash2 size={14} />
-      </IconButton>
+      {target.kind === 'mute' && (
+        <div className="mt-2 flex items-center gap-3 pl-0.5">
+          <Typography size={12} tone="muted" className="shrink-0">
+            {t('surfaces.muteMode')}
+          </Typography>
+          <div className="w-80">
+            <Select<MuteMode>
+              size="sm"
+              aria-label={t('surfaces.muteModeOf', { name: label })}
+              value={target.mode}
+              onChange={(mode) => onChange({ ...binding, target: { ...target, mode } })}
+              options={MUTE_MODES.map((m) => ({ value: m, label: t(`surfaces.muteModes.${m}`) }))}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -201,7 +239,7 @@ function NewBinding({
   const { t } = useTranslation();
   const [key, setKey] = useState(options[0]?.value ?? 'action:next');
   const [learning, toggle] = useLearn((source) => {
-    const target = targetFromKey(key);
+    const target = targetFromKey(key, source);
     if (target) onAdd({ id: newId(), source, target });
   });
   return (
@@ -548,6 +586,13 @@ export function SurfacesPage({ s, update }: { s: Settings; update: Update }) {
               }}
             />
           </div>
+        </Row>
+        <Row label={t('surfaces.subscribe')} description={t('surfaces.subscribeHelp')}>
+          <Switch
+            label={t('surfaces.subscribe')}
+            checked={sf.osc.subscribe}
+            onChange={(subscribe) => setOscSettings({ subscribe })}
+          />
         </Row>
         <Row label={t('surfaces.feedback')} description={t('surfaces.feedbackHelp')}>
           <Switch
