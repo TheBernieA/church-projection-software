@@ -15,6 +15,7 @@ import {
   type Theme,
 } from '@lampstand/core';
 import { knownDuration } from './mediaDurations';
+import { slideTransitionFor } from './transitions';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
@@ -164,6 +165,7 @@ export async function goLiveSlide(
   useStore.setState({ liveCursor: { itemId: item.id, index } });
   const a = slide.action;
   if (a.kind === 'content') {
+    const transition = slideTransitionFor(item);
     const cv = slide.countdownVideo;
     const video =
       cv && a.content.countdownTo ? countdownVideoLayer(cv.mediaId, a.content.countdownTo) : null;
@@ -177,6 +179,8 @@ export async function goLiveSlide(
           ...(video ? { media: video, keepTiming: true } : {}),
           next: next?.action.kind === 'content' ? next.action.content : null,
           keepInput: get().settings?.keepCameraUnderWords ?? false,
+          // The item's own transition, else the default (Show, bottom left), else the theme's.
+          ...(transition ? { transition } : {}),
         },
         source,
       ),

@@ -174,7 +174,9 @@
     "slideBg": "Background of slide {{n}}",
     "slideBgOwn": "Slide {{n}} has its own background (click to change)",
     "slideBgTitle": "Behind this slide",
-    "slideBgItem": "The same as the other slides"
+    "slideBgItem": "The same as the other slides",
+    "layerFront": "Plays over everything (click to put it behind the words)",
+    "layerBehind": "Plays behind the words (click to put it over everything)"
   },
   "monitor": {
     "preview": "Preview",
@@ -882,7 +884,7 @@
         },
         "tiles": {
           "q": "Read the slide tiles, and jump to the chorus",
-          "a": "1. Each song, verse or set of slides starts with a Background tile: the picture behind all of its slides. Click it to put it on the screens behind the words; its button at the top left changes it.\n2. The slides after it show only their words, over a checkerboard, because they sit on that background. A slide with a background of its own shows it.\n3. To give one slide its own background, hover it and click the picture button at its top left. Pick “The same as the other slides” to undo it.\n4. A letter at a slide's top left is its section's key: C for the Chorus, A, S, D for Verses 1–3, B for the Bridge, T for the Tag, P for the Pre-chorus. Press it to go to that section of the selected song (a chorus sung again goes to the next one).\n5. Black, Logo, Freeze, play/pause and the switcher's Cut and Auto now take Shift: ⇧B, ⇧L, ⇧F, ⇧P, ⇧C, ⇧T.\n6. At the bottom right: Grid, Easy (the words, large) or Table (a small picture, the words and the notes). “…” sets Slides by group (each section on its own row) and what shows through transparent thumbnails."
+          "a": "1. Each song, verse or set of slides starts with a Background tile: the picture behind all of its slides. Click it to put it on the screens behind the words; its button at the top left changes it.\n2. The slides after it show only their words, over a checkerboard, because they sit on that background. A slide with a background of its own shows it.\n3. To give one slide its own background, hover it and click the picture button at its top left. Pick “The same as the other slides” to undo it.\n4. A letter at a slide's top left is its section's key: C for the Chorus, A, S, D for Verses 1–3, B for the Bridge, T for the Tag, P for the Pre-chorus. Press it to go to that section of the selected song (a chorus sung again goes to the next one).\n5. Black, Logo, Freeze, play/pause and the switcher's Cut and Auto now take Shift: ⇧B, ⇧L, ⇧F, ⇧P, ⇧C, ⇧T.\n6. A picture or video item shows two squares at its top left: the front one filled means it plays over everything, the back one filled means behind the words. Click to switch (if it's on screen, it moves at once).\n7. At the bottom left, the orange button sets how slides change for everything (Cut, Fade, Dissolve…, or each theme's own) and the purple one how pictures and videos change (Cut or Dissolve, and how long). The shuffle button in an item's header gives just that item its own slide transition. The target in a slide set's header sends it to the announcements layer (green while it's there).\n8. At the bottom right: Grid, Easy (the words, large) or Table (a small picture, the words and the notes). “…” sets Slides by group (each section on its own row) and what shows through transparent thumbnails."
         },
         "edit": {
           "q": "Make your own slides",
@@ -2261,5 +2263,26 @@
     "whileLive": "Not while streaming or recording.",
     "done": "This computer streams smoothly in {{mode}} (encoder: {{encoder}}). Auto will use it.",
     "last": "Last check: {{mode}}"
+  },
+  "transition": {
+    "slides": "Slide transition",
+    "media": "Media transition",
+    "length": "Length",
+    "seconds": "{{s}} s",
+    "themes": "Each theme’s own",
+    "themesShort": "Theme’s",
+    "usual": "Usual",
+    "usualLong": "The usual (a gentle fade)",
+    "useDefault": "The default ({{name}})",
+    "itemDefault": "Transition: the default (click to give these slides their own)",
+    "itemOwn": "Transition: {{name}} (these slides’ own)",
+    "kinds": {
+      "cut": "Cut",
+      "fade": "Fade",
+      "dissolve": "Dissolve",
+      "slide": "Slide up",
+      "zoom": "Zoom",
+      "blur": "Blur"
+    }
   }
 }

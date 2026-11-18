@@ -96,6 +96,8 @@ const ACTIVE = {
   accent: '!bg-[var(--accent-soft)] !text-[var(--accent)]',
   select: '!bg-[var(--select)] !text-white',
   live: '!bg-[var(--tally-program)] !text-white shadow-[0_0_8px_rgba(239,74,80,0.45)] hover:brightness-110',
+  /** Green: something playing on a layer of its own (the announcements layer). */
+  preview: '!bg-[var(--tally-preview)] !text-white hover:brightness-110',
 } as const;
 
 /**

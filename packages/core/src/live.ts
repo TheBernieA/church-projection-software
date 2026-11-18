@@ -13,7 +13,7 @@ import {
   type WebLayer,
   type Scene,
 } from './schemas/scene';
-import { ThemeSchema, TransitionSpecSchema } from './schemas/theme';
+import { MediaTransitionSchema, ThemeSchema, TransitionSpecSchema } from './schemas/theme';
 import { LookLayerSchema, LookSchema } from './schemas/settings';
 import { LiveTimerSchema, TimerDefSchema, type LiveTimer } from './schemas/timers';
 import type { CommandBus } from './commands';
@@ -691,6 +691,23 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => ({ ...s, program: { ...s.program, background: p.background } }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    // How media and backgrounds change on every screen from now on (Show › the purple
+    // transition): null for the usual fades.
+    type: 'live.setMediaTransition',
+    schema: z.object({ mediaTransition: MediaTransitionSchema.nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => {
+        const program: Scene = { ...s.program };
+        if (p.mediaTransition) program.mediaTransition = p.mediaTransition;
+        else delete program.mediaTransition;
+        return { ...s, program };
+      });
       return { result: null };
     },
   });

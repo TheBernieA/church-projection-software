@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   BackgroundAdjustSchema,
   BackgroundRefSchema,
+  MediaTransitionSchema,
   ThemeSchema,
   TransitionSpecSchema,
 } from './theme';
@@ -256,5 +257,7 @@ export const SceneSchema = z.object({
   masks: MasksSchema,
   /** Transition to use when this scene's content changes. */
   transition: TransitionSpecSchema.optional(),
+  /** How media and backgrounds change (Show › the purple transition); unset: the usual fades. */
+  mediaTransition: MediaTransitionSchema.optional(),
 });
 export type Scene = z.infer<typeof SceneSchema>;

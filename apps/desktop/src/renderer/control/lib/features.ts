@@ -54,7 +54,7 @@ export const FEATURES: Feature[] = [
     'transitions',
     'presentations',
     'Slide transitions',
-    'Cut, fade and other transitions between slides, set per theme.',
+    'Cut, fade and other transitions between slides: a default for all, or per item or theme.',
   ),
   f(
     'live-editing',

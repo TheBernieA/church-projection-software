@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MediaTransitionSchema, TransitionSpecSchema } from './theme';
 import { StageLayoutSchema } from './stage';
 import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
@@ -125,6 +126,16 @@ export const SettingsSchema = z
     pickShowsNow: z.boolean().default(false),
     /** A video that goes live starts playing at once; off = it waits on its first frame for Play. */
     mediaAutoplay: z.boolean().default(true),
+    /**
+     * The default transitions (Show, bottom left): slides (unset: each theme's own) and media and
+     * backgrounds (unset: the usual fades). An item can set its own slide transition.
+     */
+    transitions: z
+      .object({
+        slide: TransitionSpecSchema.optional(),
+        media: MediaTransitionSchema.optional(),
+      })
+      .default({}),
     /** The video switcher (Media › Video input): what a click does, the Auto transition, PiP. */
     switcher: z
       .object({

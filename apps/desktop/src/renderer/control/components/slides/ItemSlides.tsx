@@ -11,7 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem } from '@lampstand/core';
 import { IconButton, Segmented, Slider, Typography, percent } from '@lampstand/ui';
-import { showBackgroundLayer } from '../../lib/actions';
+import { goLiveSlide, putBehindWords, showBackgroundLayer } from '../../lib/actions';
 import { groupStarts } from '../../lib/groupKeys';
 import {
   sameBackground,
@@ -19,7 +19,7 @@ import {
   takesSlideBackgrounds,
 } from '../../lib/itemBackground';
 import { knownDuration } from '../../lib/mediaDurations';
-import { useStore } from '../../lib/store';
+import { patchItem, useStore } from '../../lib/store';
 import { BackgroundMenu, ItemBackground, Swatch } from '../ItemBackground';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
 import { thumbScene } from '../../lib/slideThumbs';
@@ -216,6 +216,24 @@ export function ItemSlides({
     [slides, layered],
   );
   const badges = useMemo(() => groupStarts(slides), [slides]);
+  // A picture or video: over everything, or behind the words (its layer, switched on its tile).
+  const layer =
+    item.kind === 'media'
+      ? {
+          behind: item.asBackground,
+          onToggle: () => {
+            const behind = !item.asBackground;
+            patchItem<typeof item>(item, { asBackground: behind });
+            // On screen now: it moves to its new layer straight away.
+            if (useStore.getState().liveCursor?.itemId !== item.id) return;
+            const m = useStore.getState().media.find((x) => x.id === item.mediaId);
+            if (!m || m.kind === 'audio') return;
+            void (behind
+              ? putBehindWords({ mediaId: m.id, kind: m.kind })
+              : goLiveSlide({ ...item, asBackground: false }, 0));
+          },
+        }
+      : undefined;
   // The background the item's slides share (the item's own, or its theme's).
   const shared = useMemo(() => {
     const first = slides.find((s) => s.action.kind === 'content' && !s.ownBackground);
@@ -308,6 +326,7 @@ export function ItemSlides({
                 <SlideBackgroundButton item={layeredItem} slide={slide} n={i + 1} />
               ) : null
             }
+            layer={layer}
             onClick={() => onClick(i)}
             onDoubleClick={() => onDoubleClick(i)}
             onEdit={onQuickEdit ? () => onQuickEdit(i) : undefined}

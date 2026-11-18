@@ -96,6 +96,13 @@ export const TransitionSpecSchema = z.object({
 });
 export type TransitionSpec = z.infer<typeof TransitionSpecSchema>;
 
+/** How pictures and videos (media and backgrounds) change on screen: at once, or dissolving. */
+export const MediaTransitionSchema = z.object({
+  kind: z.enum(['cut', 'dissolve']),
+  durationMs: z.number().int().min(0).max(10000),
+});
+export type MediaTransition = z.infer<typeof MediaTransitionSchema>;
+
 export const ThemeContentKindSchema = z.enum(['scripture', 'lyrics', 'text', 'lower-third']);
 export type ThemeContentKind = z.infer<typeof ThemeContentKindSchema>;
 

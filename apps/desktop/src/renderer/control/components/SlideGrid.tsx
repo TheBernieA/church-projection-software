@@ -12,6 +12,7 @@ import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
 import { type SlideState } from './slides/SlideCards';
 import { ItemSlides, SlideViewControls, useSlideViewPrefs } from './slides/ItemSlides';
+import { DefaultTransitions } from './slides/Transitions';
 import { SongControls } from './SongControls';
 import { ItemBackground } from './ItemBackground';
 import { takesBackground } from '../lib/itemBackground';
@@ -154,7 +155,9 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
         )}
       </div>
       {item && slides.length > 0 && (
-        <div className="flex h-10 shrink-0 items-center justify-end gap-3 border-t border-[var(--hairline)] px-3">
+        <div className="flex h-10 shrink-0 items-center gap-3 border-t border-[var(--hairline)] px-3">
+          <DefaultTransitions />
+          <span className="flex-1" />
           <SlideViewControls prefs={prefs} />
         </div>
       )}

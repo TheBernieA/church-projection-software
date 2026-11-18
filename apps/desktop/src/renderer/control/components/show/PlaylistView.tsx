@@ -1,13 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  Clock3,
-  ListPlus,
-  Megaphone,
-  Plus,
-  Repeat,
-  Shuffle,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { Clock3, ListPlus, Plus, Repeat, SlidersHorizontal, Target } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
 import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
@@ -38,6 +30,8 @@ import {
   useSlideViewPrefs,
   type SlideViewPrefs,
 } from '../slides/ItemSlides';
+import { DefaultTransitions, ItemTransition } from '../slides/Transitions';
+import { takesTransition } from '../../lib/transitions';
 import { type PresentableSlide } from '../../types';
 
 /** A planned per-item tool: a dimmed icon with a small "soon" dot; the tooltip says what it'll do. */
@@ -296,7 +290,7 @@ function ItemSection({
           {item.kind === 'announcements' && <LoopToggle item={item} />}
           {takesBackground(item) && <ItemBackground item={item} />}
           <ToolDivider />
-          <SoonTool id="transitions" icon={<Shuffle size={14} />} />
+          {takesTransition(item) && <ItemTransition item={item} />}
           <SoonTool id="timeline" icon={<Clock3 size={14} />} />
           <SoonTool id="slide-actions" icon={<Repeat size={14} />} />
           {(item.kind === 'announcements' ||
@@ -307,13 +301,16 @@ function ItemSection({
               size="2xs"
               variant="quiet"
               aria-label={announcing ? t('announce.stop') : t('announce.run')}
+              title={announcing ? t('announce.stop') : t('announce.run')}
               aria-pressed={announcing}
               active={announcing}
+              activeTone="preview"
               onClick={() =>
                 void (announcing ? stopAnnouncementsLayer() : runOnAnnouncementsLayer(item))
               }
             >
-              <Megaphone size={14} />
+              {/* Where the slides go: a target, green while on the announcements layer. */}
+              <Target size={14} />
             </IconButton>
           )}
           {item.kind === 'media' && (
@@ -427,6 +424,8 @@ export function PlaylistView() {
             </Button>
           }
         />
+        <span aria-hidden className="h-4 w-px bg-[var(--hairline-strong)]" />
+        <DefaultTransitions />
         <span className="flex-1" />
         <SlideViewControls prefs={prefs} />
       </div>

@@ -6,6 +6,7 @@ import { TallyTag, Typography, Button, IconButton } from '@lampstand/ui';
 import { putBehindWords } from '../../lib/actions';
 import { groupColor } from '../../lib/slides';
 import { SceneView } from '../SceneView';
+import { LayerGlyph } from './Transitions';
 import { type PresentableSlide } from '../../types';
 
 /** Where a slide stands: on air, loaded in Preview, being edited, or none of these. */
@@ -123,6 +124,7 @@ export function SlideCard({
   transparent = false,
   backdrop = 'checker',
   newRow = false,
+  layer,
 }: CardProps & {
   scene: Scene;
   hint?: string;
@@ -138,6 +140,8 @@ export function SlideCard({
   backdrop?: Backdrop;
   /** Start a new row here (a new section, with "slides by group"). */
   newRow?: boolean;
+  /** A picture or video item: which layer it plays on, and the button that switches it. */
+  layer?: { behind: boolean; onToggle: () => void } | undefined;
 }) {
   const { t } = useTranslation();
   const label = useStateLabel(slide, state);
@@ -171,10 +175,25 @@ export function SlideCard({
       {/* Top left: the section's letter, the kind of slide, and its background button. */}
       <div className="absolute left-1.5 top-1.5 z-[1] flex items-center gap-1">
         {badge && <HotkeyBadge letter={badge} group={slide.group} />}
-        <ActionIcon slide={slide} />
+        {layer ? (
+          <IconButton
+            size="2xs"
+            variant="bare"
+            aria-label={layer.behind ? t('slides.layerBehind') : t('slides.layerFront')}
+            title={layer.behind ? t('slides.layerBehind') : t('slides.layerFront')}
+            aria-pressed={layer.behind}
+            onClick={layer.onToggle}
+            onDoubleClick={(e) => e.stopPropagation()}
+            className="flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-[4px] bg-black/55 text-white backdrop-blur-sm hover:bg-[var(--accent)] hover:text-[var(--accent-ink)]"
+          >
+            <LayerGlyph behind={layer.behind} />
+          </IconButton>
+        ) : (
+          <ActionIcon slide={slide} />
+        )}
         {backgroundButton}
         {/* A picture or video slide can go behind the words instead of over everything. */}
-        {slide.action.kind === 'media' && (
+        {!layer && slide.action.kind === 'media' && (
           <IconButton
             size="2xs"
             variant="bare"

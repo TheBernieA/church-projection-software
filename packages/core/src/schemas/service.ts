@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
 import { MediaTrimSchema, SlideObjectSchema, WebUrlSchema } from './scene';
-import { BackgroundRefSchema, TextFormatSchema } from './theme';
+import { BackgroundRefSchema, TextFormatSchema, TransitionSpecSchema } from './theme';
 
 const TextSlideSchema = z.object({
   id: IdSchema,
@@ -34,6 +34,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transpose: z.number().int().min(-11).max(11).optional(),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Its own slide transition, instead of the default one (Show › the orange transition). */
+    transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
@@ -44,6 +46,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     versionIds: z.array(z.string().max(32)).min(1).max(4),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Its own slide transition, instead of the default one (Show › the orange transition). */
+    transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
@@ -67,6 +71,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     slides: z.array(TextSlideSchema).max(500),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Its own slide transition, instead of the default one (Show › the orange transition). */
+    transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
@@ -80,6 +86,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     autoAdvance: z.boolean().default(true),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    /** Its own slide transition, instead of the default one (Show › the orange transition). */
+    transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
@@ -93,6 +101,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     ]),
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
+    transition: TransitionSpecSchema.optional(),
     /** Its own background (e.g. a stock countdown); otherwise the theme's. */
     background: BackgroundRefSchema.optional(),
     /** A countdown video, played so its last frame lands exactly on zero. */

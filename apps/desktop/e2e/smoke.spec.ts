@@ -2555,12 +2555,13 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   await expect(out.locator('.ls-layer-media img')).toHaveCount(1);
   await bin.getByRole('button', { name: 'Use behind the words: Seed image' }).click();
   await expect(out.locator('.ls-layer-media img')).toHaveCount(0);
-  // The same from the picture's slide in the middle.
+  // The same from the picture's tile in the middle, with its layer button.
   await bin.getByRole('button', { name: 'Show now: Seed image' }).click();
   await expect(out.locator('.ls-layer-media img')).toHaveCount(1);
+  // Its layer button: over everything → behind the words (it moves there at once).
   await control
     .getByRole('list', { name: 'Slide list' })
-    .getByRole('button', { name: 'Use behind the words: Seed image' })
+    .getByRole('button', { name: /^Plays over everything/ })
     .click();
   await expect(out.locator('.ls-layer-media img')).toHaveCount(0);
   await expect
@@ -2814,6 +2815,39 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
   await control.getByRole('menuitemcheckbox', { name: 'Slides by group' }).click();
   await control.getByRole('button', { name: 'View options' }).click();
   await control.getByRole('menuitemradio', { name: 'Checkerboard' }).click();
+  // Default transitions, bottom left: slides (orange) and media (purple).
+  const program = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.program : null;
+  };
+  await control.getByRole('button', { name: /^Slide transition:/ }).click();
+  await control.getByRole('menuitem', { name: 'Cut' }).click();
+  await song
+    .getByRole('button', { name: /Chorus/ })
+    .first()
+    .click();
+  await expect.poll(async () => (await program())?.transition?.kind).toBe('cut');
+  await control.getByRole('button', { name: /^Media transition:/ }).click();
+  await control.getByRole('menuitem', { name: 'Dissolve' }).click();
+  await expect.poll(async () => (await program())?.mediaTransition?.kind).toBe('dissolve');
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/50e-transitions.png' });
+  // An item's own transition beats the default.
+  await song.getByRole('button', { name: /^Transition: the default/ }).click();
+  await control.getByRole('menuitem', { name: 'Zoom' }).click();
+  await song
+    .getByRole('button', { name: /Verse 1/ })
+    .first()
+    .click();
+  await expect.poll(async () => (await program())?.transition?.kind).toBe('zoom');
+  // Back as they were.
+  await song.getByRole('button', { name: /^Transition: Zoom/ }).click();
+  await control.getByRole('menuitem', { name: /^The default/ }).click();
+  await control.getByRole('button', { name: /^Slide transition:/ }).click();
+  await control.getByRole('menuitem', { name: 'Each theme’s own' }).click();
+  await control.getByRole('button', { name: /^Media transition:/ }).click();
+  await control.getByRole('menuitem', { name: /^The usual/ }).click();
+  await expect.poll(async () => (await program())?.mediaTransition).toBeUndefined();
 });
 
 test('output survives a control renderer crash', async () => {

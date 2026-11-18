@@ -447,24 +447,32 @@ export class SceneRenderer {
     }
   }
 
+  /**
+   * How long media and backgrounds take to change: the default media transition when one is set
+   * (cut: at once), else the usual fade for that layer.
+   */
+  private mediaFadeMs(scene: Scene, usual: number): number {
+    const t = scene.mediaTransition;
+    if (!t) return usual;
+    return t.kind === 'cut' ? 0 : t.durationMs;
+  }
+
   private renderBackground(scene: Scene, instant: boolean): void {
     const key = backgroundKey(scene.background);
     if (this.bg?.key === key || (!this.bg && key === 'none')) return; // continuity: never restart
     const old = this.bg;
+    const fade = instant ? 0 : this.mediaFadeMs(scene, BG_FADE_MS);
     if (key === 'none' || !scene.background) {
       this.bg = null;
     } else {
       const node = buildBackground(this.doc, scene.background, this.opts, this.opts.mode);
-      node.style.opacity = instant ? '1' : '0';
+      node.style.opacity = fade ? '0' : '1';
       this.bgLayer.append(node);
       this.bg = { key, node };
-      if (!instant)
-        void animate(node, [{ opacity: 0 }, { opacity: 1 }], {
-          duration: BG_FADE_MS,
-          easing: 'ease',
-        });
+      if (fade)
+        void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing: 'ease' });
     }
-    if (old) this.retire(old.node, instant ? 0 : BG_FADE_MS);
+    if (old) this.retire(old.node, fade);
   }
 
   private renderMedia(scene: Scene, instant: boolean): void {
@@ -484,6 +492,7 @@ export class SceneRenderer {
     }
     const old = this.media;
     this.media = null;
+    const fade = instant ? 0 : this.mediaFadeMs(scene, 400);
     if (scene.media) {
       const node = buildMedia(
         this.doc,
@@ -496,10 +505,10 @@ export class SceneRenderer {
       );
       this.mediaLayer.append(node);
       this.media = { key, node };
-      if (!instant)
-        void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: 'ease' });
+      if (fade)
+        void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing: 'ease' });
     }
-    if (old) this.retire(old.node, instant ? 0 : 400);
+    if (old) this.retire(old.node, fade);
   }
 
   /**
