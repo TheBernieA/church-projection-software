@@ -48,6 +48,7 @@ import {
 import { AudioClock } from './audioClock';
 import { resolveDestinations, type ResolvedDestinations } from './destinations';
 import { sharedTexturesAvailable, TextureRelay, type Watcher } from './textureRelay';
+import { SoundWatch } from './soundWatch';
 import { Backlog } from './backlog';
 import { BitrateController } from './bitrate';
 import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
@@ -118,6 +119,7 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   dropped: 0,
   delayMs: null,
   adaptedKbps: null,
+  silent: false,
   srt: null,
   droppedLocal: 0,
   destinations: [],
@@ -226,6 +228,8 @@ export class StreamController {
   private flvOpen = false;
   private flvBase = 0;
   private healthTicks = 0;
+  /** Whether the stream mix has any sound (from its meter). */
+  private readonly sound = new SoundWatch();
   private readonly backlog = new Backlog();
   /** Times video was skipped because a destination couldn't keep up (for the log and advice). */
   private congested = 0;
@@ -719,6 +723,7 @@ export class StreamController {
       // The first picture is out: picture and sound start together from here.
       this.encodeLive = true;
       this.audio.begin();
+      this.sound.start(performance.now());
       this.startAudioClock();
     }
     // ffmpeg can't take video as fast as it's made (a slow or stalled upload): rather than let
@@ -910,6 +915,7 @@ export class StreamController {
     } else {
       // The frame pump starts now, and the sound with it.
       this.audio.begin();
+      this.sound.start(performance.now());
       this.startPump(profile.fps);
     }
     this.startHealth();
@@ -1005,6 +1011,24 @@ export class StreamController {
 
   // ---------- Health ----------
 
+  /** The stream mix's level just now (from the stream window's meter). */
+  hearStream(peak: number): void {
+    this.sound.hear(peak, performance.now());
+  }
+
+  /** Live with no sound for a while: say so (once in the log, and on the console). */
+  private checkSilence(): boolean {
+    const silent = this.encodeLive && this.sound.silent(performance.now());
+    if (silent && !this.status.silent) {
+      const channels = this.d.getLiveState().mixer.channels.filter((c) => c.stream);
+      this.d.log.warn('stream has no sound', {
+        streamChannels: channels.map((c) => c.kind),
+        streamMuted: this.d.getLiveState().mixer.stream.mute,
+      });
+    }
+    return silent;
+  }
+
   private startHealth(): void {
     this.stopHealth();
     this.healthTimer = setInterval(() => void this.sampleHealth(), HEALTH_MS);
@@ -1031,6 +1055,7 @@ export class StreamController {
         backlogS: Math.round(this.backlog.seconds(this.ff?.stdin?.writableLength ?? 0) * 100) / 100,
         congested: this.congested,
         pcmSeen: this.pcmSeen,
+        audioPeakDb: this.sound.takePeakDb(),
       });
     if (!DEBUG) return;
     this.d.log.info('gpu frames', {
@@ -1093,6 +1118,7 @@ export class StreamController {
     if (struggling && !this.status.advice)
       this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
     this.setStatus({
+      silent: this.checkSilence(),
       droppedLocal: droppedTotal,
       dropped: droppedTotal + this.ffmpegDropped,
       recordingBytes,

@@ -246,7 +246,7 @@ api.onConfig((c) => {
   }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
   if (c.meters && !config?.meters)
-    mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus }));
+    mix.startMeters((l) => api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus, sides: l.sides }));
   if (!c.meters) mix.stopMeters();
   document.body.classList.toggle('transparent', c.transparent);
   config = c;

@@ -1,7 +1,7 @@
 import { Mic, SlidersVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDb, MAX_DB, MIN_DB } from '@lampstand/core';
-import { Button, Slider, Switch, Typography } from '@lampstand/ui';
+import { Button, Slider, Typography } from '@lampstand/ui';
 import {
   useDeviceStream,
   useInputDevices,
@@ -34,41 +34,61 @@ export function LevelMeter({ device }: { device: InputDevice }) {
   );
 }
 
+/** Where an input goes: the room's speakers, the livestream (and recording), or both. */
+const ROUTES = ['room', 'stream'] as const;
+
 function InputRow({ device }: { device: InputDevice }) {
   const { t } = useTranslation();
   const channel = useStore(
     (s) => s.live?.mixer.channels.find((c) => c.deviceId === device.deviceId) ?? null,
   );
-  const inRoom = !!channel?.room && !channel.mute;
-  const toggle = (on: boolean): void => {
+  const on = (route: (typeof ROUTES)[number]): boolean => !!channel?.[route] && !channel.mute;
+  const live = on('room') || on('stream');
+  const toggle = (route: (typeof ROUTES)[number]): void => {
+    const next = !on(route);
     if (!channel) {
-      if (on) void mixerCmd({ action: 'add', deviceId: device.deviceId, name: device.label });
+      // Not on the mixer yet: add it, going only where it was asked to.
+      if (next)
+        void mixerCmd({
+          action: 'add',
+          deviceId: device.deviceId,
+          name: device.label,
+          room: route === 'room',
+          stream: route === 'stream',
+        });
       return;
     }
     void mixerCmd({
       action: 'channel',
       id: channel.id,
-      patch: on ? { room: true, mute: false } : { room: false },
+      patch: next ? { [route]: true, mute: false } : { [route]: false },
     });
   };
   return (
     <li className="flex flex-col gap-1.5 rounded-[8px] bg-[var(--surface-0)] px-2.5 py-2 shadow-[inset_0_0_0_1px_var(--hairline)]">
       <div className="flex items-center gap-2">
-        <Mic
-          size={14}
-          className={inRoom ? 'text-[var(--tally-program)]' : 'text-[var(--text-3)]'}
-        />
+        <Mic size={14} className={live ? 'text-[var(--tally-program)]' : 'text-[var(--text-3)]'} />
         <Typography size={12} weight="medium" truncate className="min-w-0 flex-1">
           {channel?.name ?? device.label}
         </Typography>
-        <Switch
-          label={t('inputs.liveAudio', { name: device.label })}
-          checked={inRoom}
-          onChange={toggle}
-        />
+        {ROUTES.map((route) => (
+          <Button
+            key={route}
+            size="3xs"
+            variant={on(route) ? 'primary' : 'subtle'}
+            aria-pressed={on(route)}
+            aria-label={t(route === 'room' ? 'inputs.toRoom' : 'inputs.toStream', {
+              name: device.label,
+            })}
+            title={t(route === 'room' ? 'inputs.toRoomHelp' : 'inputs.toStreamHelp')}
+            onClick={() => toggle(route)}
+          >
+            {t(route === 'room' ? 'mixer.roomShort' : 'mixer.streamShort')}
+          </Button>
+        ))}
       </div>
       <LevelMeter device={device} />
-      {channel && inRoom && (
+      {channel && live && (
         <Slider
           aria-label={t('inputs.volume', { name: device.label })}
           min={MIN_DB}
@@ -91,8 +111,8 @@ function InputRow({ device }: { device: InputDevice }) {
 }
 
 /**
- * Audio inputs (Audio tab): microphones and desk feeds, each with a level meter. Switch one on
- * to put it through the room; each is a channel on the Mixer (EQ, compressor, stream send).
+ * Audio inputs (Audio tab): microphones and desk feeds, each with a level meter. Send one to
+ * the stream, the room, or both; each is a channel on the Mixer (EQ, compressor, routing).
  */
 export function AudioInputs() {
   const { t } = useTranslation();

@@ -23,6 +23,7 @@ import { PicturePanel } from './PicturePanel';
 import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
+import { SilentNotice, StreamBar, StreamMeterOverlay } from './StreamBar';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
@@ -174,8 +175,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           )}
         </div>
 
-        {/* The real picture going out. */}
-        <div className="px-4 pb-3.5">
+        {/* The real picture going out, its sound, and the scene. */}
+        <div className="flex flex-col gap-2.5 px-4 pb-3.5">
           <div
             className={`relative aspect-video w-full overflow-hidden rounded-[8px] bg-black ${s?.streaming ? 'shadow-[0_0_0_2px_var(--tally-program)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
           >
@@ -200,13 +201,17 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                     : t('console.previewLight')}
               </Typography>
             )}
+            {(preview || running) && <StreamMeterOverlay />}
           </div>
+          <StreamBar st={st} />
+          {s && <SilentNotice s={s} />}
         </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* What the stream shows comes first: it is what changes most during a service. */}
         <PicturePanel st={st} />
+        <SoundPanel />
         <DestinationsPanel s={s} st={st} />
         <QuickSettings
           s={s}
@@ -215,7 +220,6 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           canReady={canReady}
           onReady={toggleReady}
         />
-        <SoundPanel />
         {s && <HealthPanel s={s} />}
 
         {s?.recordingPath && (

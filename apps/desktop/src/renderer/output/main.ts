@@ -82,7 +82,7 @@ api.onInfo((i) => {
     audio = new RoomAudio(window, mediaUrl);
     renderer.setAudioTap(audio.tapVideo);
     audio.mixer.startMeters((l) =>
-      api.sendMeters({ bus: 'room', channels: l.channels, level: l.bus }),
+      api.sendMeters({ bus: 'room', channels: l.channels, level: l.bus, sides: l.sides }),
     );
   }
   audio?.setSink(i.audioSink);

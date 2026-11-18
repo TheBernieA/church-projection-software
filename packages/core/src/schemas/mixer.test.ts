@@ -51,7 +51,7 @@ describe('mixer', () => {
     m = applyMixerAction(m, { action: 'add', deviceId: 'dev1', name: 'Pulpit again' });
     const [a, b] = m.channels.slice(2);
     expect(a?.id).not.toBe(b?.id);
-    expect(a).toMatchObject({ name: 'Pulpit', room: true, stream: false });
+    expect(a).toMatchObject({ name: 'Pulpit', room: false, stream: true });
     m = applyMixerAction(m, {
       action: 'channel',
       id: a?.id ?? '',

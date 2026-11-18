@@ -80,5 +80,7 @@ export const MeterReportSchema = z.object({
   bus: z.enum(['room', 'stream']),
   channels: z.record(z.string().max(64), Level),
   level: Level,
+  /** The mix, left and right (for stereo meters). */
+  sides: z.tuple([Level, Level]),
 });
 export type MeterReport = z.infer<typeof MeterReportSchema>;

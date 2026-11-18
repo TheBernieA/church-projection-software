@@ -127,7 +127,7 @@ export function installLocalAudio(): () => void {
     if (on && !local) {
       local = new RoomAudio(window, mediaUrl);
       local.mixer.startMeters((l) =>
-        publishMeters({ bus: 'room', channels: l.channels, level: l.bus }),
+        publishMeters({ bus: 'room', channels: l.channels, level: l.bus, sides: l.sides }),
       );
     }
     if (!on && local) {

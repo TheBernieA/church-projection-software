@@ -311,7 +311,10 @@ export class AppController {
       }),
       kindOf: (e) => this.windows.kindOf(e.sender),
       onOutputReady: (e) => this.windows.outputReady(e.sender),
-      onMeters: (m) => this.windows.sendToControl(Channels.evMeters, m),
+      onMeters: (m) => {
+        if (m.bus === 'stream') this.stream.hearStream(m.level[0]);
+        this.windows.sendToControl(Channels.evMeters, m);
+      },
       onStreamWatch: (sender, fps, ready) => this.stream.watch(sender, fps, ready),
       onOscSend: (address, args) => this.osc.send(address, args),
       oscStatus: () => this.osc.current,

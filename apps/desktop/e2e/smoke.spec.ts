@@ -1585,21 +1585,30 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await control.getByRole('option', { name: 'Off', exact: true }).click();
   await expect(feed).toHaveCount(0);
 
-  // Audio inputs, in the Audio tab: a level meter that moves, and a switch to go live.
+  // Audio inputs, in the Audio tab: a level meter that moves, and where each one goes.
   await binTab('Audio');
   const panel = control.getByRole('region', { name: 'Audio inputs' });
   const meter = panel.getByRole('meter').first();
   await expect
     .poll(async () => Number(await meter.getAttribute('aria-valuenow')), { timeout: 10_000 })
     .toBeGreaterThan(0);
-  await panel.getByRole('switch').first().click();
-  // It becomes a channel on the mixer, heard in the room.
+  // To the stream: it becomes a channel on the mixer that the stream hears, and the room doesn't
+  // (the desk already puts it in the room).
+  await panel
+    .getByRole('button', { name: /^Send .* to the stream$/ })
+    .first()
+    .click();
   const channel = async () => {
     const r = await control.evaluate(() => window.lampstand.query('live.get'));
     return r.ok ? (r.value.mixer.channels.find((c) => c.kind === 'input') ?? null) : null;
   };
+  await expect.poll(async () => (await channel())?.stream).toBe(true);
+  expect((await channel())?.room).toBe(false);
+  // The room as well, and off again.
+  const room = panel.getByRole('button', { name: /^Play .* through the room$/ }).first();
+  await room.click();
   await expect.poll(async () => (await channel())?.room).toBe(true);
-  await panel.getByRole('switch').first().click();
+  await room.click();
   await expect.poll(async () => (await channel())?.room).toBe(false);
 });
 
@@ -2164,6 +2173,32 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBeGreaterThan(1);
   await control.waitForTimeout(1_500);
   await control.screenshot({ path: 'test-results/41-live-console.png' });
+  // The stream's sound shows over its picture, left and right.
+  await expect(live.getByRole('group', { name: "The stream's sound" })).toBeVisible();
+  // A scene sets what the stream shows in one click.
+  const picture = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+    return r.ok ? `${r.value.stream.picture.background} ${r.value.stream.picture.words}` : '';
+  };
+  const scene = live.getByRole('combobox', { name: 'Scene: what the stream shows' });
+  await scene.click();
+  await control.getByRole('option', { name: 'Words on black' }).click();
+  await expect.poll(picture).toBe('black full');
+  await scene.click();
+  await control.getByRole('option', { name: 'Slides with a lower third' }).click();
+  await expect.poll(picture).toBe('program lowerThird');
+  // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
+  await live.getByRole('button', { name: 'Mute Stream' }).click();
+  const silent = live.getByRole('alert').filter({ hasText: 'The stream is muted' });
+  await expect(silent).toBeVisible({ timeout: 20_000 });
+  await control.screenshot({ path: 'test-results/41b-live-silent.png' });
+  await silent.getByRole('button', { name: 'Unmute' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      return r.ok ? r.value.mixer.stream.mute : null;
+    })
+    .toBe(false);
   // The words on the stream: move them left and choose a size instead of the automatic fit.
   const shows = live.getByRole('region', { name: 'What the stream shows' });
   await shows.scrollIntoViewIfNeeded();

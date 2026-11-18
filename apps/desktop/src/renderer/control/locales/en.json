@@ -784,11 +784,11 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or Own window to move it to another display.\n2. Watch the picture: it is exactly what goes out.\n3. Read the bars: frame rate, encoder speed (1.00× keeps up), sending delay and computer load at the top; bitrate and encoder at the bottom.\nHover any reading to see what it means. Amber or red readings mean the computer or the internet connection is struggling."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or Own window to move it to another display.\n2. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound.\n3. Under the picture, pick a Scene (Slides, Camera with a lower third, Words on black…), and mute or set the stream’s level.\n4. Read the bars: frame rate, encoder speed (1.00× keeps up), sending delay and computer load at the top; bitrate and encoder at the bottom.\nIf the stream goes out with no sound, a red notice says why (muted, or no channel sent to it) with the fix. Hover any reading to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
-          "a": "1. In the Live console, open “What the stream shows”.\n2. Choose the words (full screen, a lower third, or none) and what’s behind them (the projector’s picture, a camera, or black).\n3. For a lower third, pick its theme, its position (left, centre or right) and its size: Auto fits each slide, or turn Auto off and drag.\n4. Under “What the stream hears”, pick the channels that go out. The mixer has a separate stream mix with its own faders.\nTurn on “Show the stream picture before going live” to check it first."
+          "a": "1. For the usual looks, pick a Scene under the stream picture. To build your own, use the steps below.\n2. In the Live console, open “What the stream shows”.\n3. Choose the words (full screen, a lower third, or none) and what’s behind them (the projector’s picture, a camera, or black).\n4. For a lower third, pick its theme, its position (left, centre or right) and its size: Auto fits each slide, or turn Auto off and drag.\n5. Under “What the stream hears”, switch on each channel the stream should hear (mics, the desk, video, tracks) and watch its meter move.\nTurn on “Show the stream picture before going live” to check it first."
         },
         "record": {
           "q": "Record the service",
@@ -927,7 +927,7 @@
         },
         "deskSound": {
           "q": "Bring the sound desk into Lampstand",
-          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. Open Media › Audio › Audio inputs: the desk shows with a level meter. Switch it on.\nIt becomes a channel on the mixer; send it to the room, the stream or both."
+          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. Open Media › Audio › Audio inputs: the desk shows with a level meter.\n4. Click Stream on it. The livestream and recording now hear it.\nLeave Room off: the desk already puts it on the room’s speakers, and playing it twice echoes. Check the L/R meter on the Live console’s picture moves when someone speaks."
         },
         "midi": {
           "q": "Run Lampstand from a desk or MIDI controller",
@@ -1486,7 +1486,6 @@
     "videoHint": "Click a camera to put it on Preview, then Cut or Auto. A slide that goes live replaces the camera unless Settings › Video keeps cameras under the words.",
     "noCameras": "No cameras or capture cards found. Plug one in and it appears here.",
     "audioTitle": "Audio inputs",
-    "liveAudio": "Play {{name}} through the room",
     "level": "{{name}} level",
     "volume": "{{name}} volume",
     "noMics": "No microphones or audio inputs found.",
@@ -1556,7 +1555,11 @@
     "overCamera": "When a slide goes live",
     "overCameraHelp": "Replace the camera with the slide and its background, or keep the camera under the words (for lyrics over a camera shot).",
     "overCameraReplace": "Replace the camera",
-    "overCameraKeep": "Keep camera under words"
+    "overCameraKeep": "Keep camera under words",
+    "toRoom": "Play {{name}} through the room",
+    "toStream": "Send {{name}} to the stream",
+    "toRoomHelp": "Out of this computer's room speakers. Usually off: the desk already puts mics in the room, and playing them twice echoes.",
+    "toStreamHelp": "Heard on the livestream and in the recording."
   },
   "stock": {
     "category": "Stock category",
@@ -2171,7 +2174,29 @@
       "bitrate": "Video bitrate (target {{target}} Mb/s): how much internet upload the stream uses.",
       "encoder": "The video encoder in use (a hardware one saves the computer's effort).",
       "bitrateAdapted": "The upload couldn't carry {{target}} Mb/s, so the stream lowered itself to {{rate}} Mb/s to stay live. It climbs back when the connection allows."
-    }
+    },
+    "streamSound": "The stream's sound",
+    "meterLeft": "Stream sound, left",
+    "meterRight": "Stream sound, right",
+    "scene": "Scene: what the stream shows",
+    "scenes": {
+      "slides": "Slides (as the room sees them)",
+      "slidesLowerThird": "Slides with a lower third",
+      "cameraLowerThird": "Camera with a lower third",
+      "camera": "Camera only",
+      "wordsOnBlack": "Words on black",
+      "black": "Black",
+      "custom": "Custom (set below)"
+    },
+    "muteStream": "Mute the stream",
+    "streamMuted": "The stream is muted: viewers hear nothing",
+    "unmute": "Unmute",
+    "silent": {
+      "muted": "The stream is muted: viewers hear nothing.",
+      "nothing": "Viewers hear nothing: no channel goes to the stream. Switch on the mics or desk below (Sound).",
+      "quiet": "Viewers hear nothing: {{names}} go to the stream, but there's no sound on them. Check the mic or desk is on and its level is up."
+    },
+    "soundHelp": "Switched on: the stream hears it. Mics and the desk go to the stream; the room already hears them through the desk."
   },
   "benchmark": {
     "button": "Check this computer",

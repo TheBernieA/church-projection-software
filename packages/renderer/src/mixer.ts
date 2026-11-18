@@ -8,6 +8,8 @@ export type MixBus = 'room' | 'stream' | 'cue';
 export interface MixerLevels {
   channels: Record<string, [peak: number, rms: number]>;
   bus: [peak: number, rms: number];
+  /** The finished mix, left and right. */
+  sides: [left: [peak: number, rms: number], right: [peak: number, rms: number]];
 }
 
 /** Where a channel's sound comes from in this window. */
@@ -170,7 +172,8 @@ export class MixerEngine {
   private readonly busGain: GainNode;
   private readonly limiter: DynamicsCompressorNode;
   private readonly delay: DelayNode;
-  private readonly meter: AnalyserNode;
+  /** The finished mix's meters, left and right. */
+  private readonly sideMeters: [AnalyserNode, AnalyserNode];
   private readonly strips = new Map<string, Strip>();
   private readonly sources: Record<SourceKind, Set<AudioNode>> = {
     tracks: new Set(),
@@ -193,13 +196,20 @@ export class MixerEngine {
     this.busGain = c.createGain();
     this.limiter = c.createDynamicsCompressor();
     this.delay = c.createDelay(1.5);
-    this.meter = c.createAnalyser();
-    this.meter.fftSize = 1024;
+    const side = (): AnalyserNode => {
+      const a = c.createAnalyser();
+      a.fftSize = 1024;
+      return a;
+    };
+    this.sideMeters = [side(), side()];
     this.output = c.createGain();
     this.sum.connect(this.busGain).connect(this.limiter).connect(this.delay).connect(this.output);
-    this.output.connect(this.meter);
+    const split = c.createChannelSplitter(2);
+    this.output.connect(split);
+    split.connect(this.sideMeters[0], 0);
+    split.connect(this.sideMeters[1], 1);
     if (opts.speakers) this.output.connect(c.destination);
-    this.buf = new Float32Array(this.meter.fftSize);
+    this.buf = new Float32Array(1024);
   }
 
   /** The output device for the speakers ('' = the default). */
@@ -291,7 +301,13 @@ export class MixerEngine {
   levels(): MixerLevels {
     const channels: MixerLevels['channels'] = {};
     for (const [id, s] of this.strips) channels[id] = readLevel(s.meter, this.buf);
-    return { channels, bus: readLevel(this.meter, this.buf) };
+    const left = readLevel(this.sideMeters[0], this.buf);
+    const right = readLevel(this.sideMeters[1], this.buf);
+    const bus: [number, number] = [
+      Math.max(left[0], right[0]),
+      Math.sqrt((left[1] ** 2 + right[1] ** 2) / 2),
+    ];
+    return { channels, bus, sides: [left, right] };
   }
 
   /** Report levels about `hz` times a second (for the mixer's meters). */

@@ -24,6 +24,17 @@ export function readMeter(bus: Bus, channel: string | null): [number, number] {
   return channel === null ? m.report.level : (m.report.channels[channel] ?? [0, 0]);
 }
 
+const SILENT: [[number, number], [number, number]] = [
+  [0, 0],
+  [0, 0],
+];
+
+/** The whole mix's left and right levels (silence if stale). */
+export function readSides(bus: Bus): [[number, number], [number, number]] {
+  const m = latest[bus];
+  return m && performance.now() - m.at <= 500 ? m.report.sides : SILENT;
+}
+
 export function onMeters(l: () => void): () => void {
   listeners.add(l);
   return () => listeners.delete(l);

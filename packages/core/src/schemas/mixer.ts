@@ -91,14 +91,19 @@ export function defaultMixer(): Mixer {
   };
 }
 
-/** A new input channel for a device (on in the room, off on the stream until chosen). */
+/**
+ * A new input channel for a device: on the stream, not in the room. A mic or the desk's feed is
+ * already on the room's speakers through the desk; playing it there again from the computer
+ * would echo or howl, while a stream with no sound is the mistake nobody notices until later.
+ */
 export function inputChannel(deviceId: string, name: string, id = `in-${deviceId.slice(0, 40)}`) {
   return channel({
     id,
     kind: 'input',
     deviceId,
     name: name.slice(0, 40) || 'Input',
-    stream: false,
+    room: false,
+    stream: true,
   });
 }
 

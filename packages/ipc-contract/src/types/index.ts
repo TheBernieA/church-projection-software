@@ -245,6 +245,8 @@ export interface StreamStatus {
    * runs at the performance mode's bitrate.
    */
   adaptedKbps: number | null;
+  /** Live, but the stream mix has had no sound for a while (nothing sent to it, or muted). */
+  silent: boolean;
   /** This computer's ffmpeg can send SRT (direct links); null until asked. */
   srt: boolean | null;
   destinations: StreamDestinationStatus[];
