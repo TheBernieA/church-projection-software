@@ -1785,7 +1785,7 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   // From the item's own Background button: another stock background, then the theme's again.
   const pickBg = control.getByRole('button', { name: 'Background for these slides' }).first();
   await pickBg.click();
-  // One list, no submenus: the motion backgrounds are right there.
+  await control.getByRole('menuitem', { name: 'Motion backgrounds' }).click();
   await control.getByRole('menuitem', { name: 'Glory', exact: true }).click();
   await expect.poll(bg).toBe('#FFE7B0');
   await control.screenshot({ path: 'test-results/35-slide-background.png' });
@@ -2796,6 +2796,7 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
   await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
   // One slide on a background of its own, then back to the song's.
   await song.getByRole('button', { name: 'Background of slide 2' }).click();
+  await control.getByRole('menuitem', { name: 'Built-in backgrounds' }).click();
   await control.getByRole('menuitem', { name: 'Ice halo', exact: true }).click();
   const own = song.getByRole('button', {
     name: 'Slide 2 has its own background (click to change)',

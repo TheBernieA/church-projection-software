@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, Image as ImageIcon, Layers, MonitorPlay, Palette } from 'lucide-react';
+import { Check, ChevronRight, Image as ImageIcon, Layers, MonitorPlay, Palette } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { STOCK_BACKGROUNDS, type BackgroundRef } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
@@ -55,14 +55,25 @@ function Choice({
   );
 }
 
-/** A labelled group of backgrounds in the menu. */
-function Group({ label, children }: { label: string; children: ReactNode }) {
+/** A submenu of backgrounds, opened by hovering it (motion, built in, yours). */
+function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <DropdownMenu.Group>
-      <DropdownMenu.Separator className={SEPARATOR_CLASS} />
-      <DropdownMenu.Label className={MENU_LABEL_CLASS}>{label}</DropdownMenu.Label>
-      {children}
-    </DropdownMenu.Group>
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={ITEM_CLASS}>
+        <ImageIcon size={14} />
+        <Typography className="flex-1">{label}</Typography>
+        <ChevronRight size={13} />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.SubContent
+          sideOffset={4}
+          collisionPadding={8}
+          className={`${MENU_CLASS} max-h-[60vh] w-64 overflow-y-auto`}
+        >
+          {children}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Sub>
   );
 }
 
@@ -99,12 +110,7 @@ export function BackgroundMenu({
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align={align}
-          sideOffset={4}
-          collisionPadding={8}
-          className={`${MENU_CLASS} max-h-[min(70vh,var(--radix-dropdown-menu-content-available-height))] w-72 overflow-y-auto`}
-        >
+        <DropdownMenu.Content align={align} sideOffset={4} className={MENU_CLASS}>
           <DropdownMenu.Label className={MENU_LABEL_CLASS}>{title}</DropdownMenu.Label>
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => onPick(undefined)}>
             <Palette size={14} />
@@ -119,18 +125,19 @@ export function BackgroundMenu({
             </DropdownMenu.Item>
           )}
           {children}
-          {/* One list, no submenus: motion, built in, yours, and every picture and video. */}
-          <Group label={t('itemBg.stock')}>
+          {/* Hover a kind to see its backgrounds: motion, built in, yours, every picture and video. */}
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+          <Section label={t('itemBg.stock')}>
             {STOCK_BACKGROUNDS.map((b) => (
               <Choice key={b.id} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
-          </Group>
-          <Group label={t('itemBg.builtIn')}>
+          </Section>
+          <Section label={t('itemBg.builtIn')}>
             {BUILT_IN_BACKGROUNDS.map((b) => (
               <Choice key={b.name} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
-          </Group>
-          <Group label={t('itemBg.yours')}>
+          </Section>
+          <Section label={t('itemBg.yours')}>
             {yours.length === 0 ? (
               <DropdownMenu.Item disabled className={ITEM_CLASS}>
                 {t('itemBg.noneYet')}
@@ -146,9 +153,9 @@ export function BackgroundMenu({
                 />
               ))
             )}
-          </Group>
+          </Section>
           {library.length > 0 && (
-            <Group label={t('itemBg.library')}>
+            <Section label={t('itemBg.library')}>
               {library.map((m) => (
                 <Choice
                   key={m.id}
@@ -158,7 +165,7 @@ export function BackgroundMenu({
                   onPick={onPick}
                 />
               ))}
-            </Group>
+            </Section>
           )}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>

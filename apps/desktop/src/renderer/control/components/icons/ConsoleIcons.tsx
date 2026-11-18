@@ -26,18 +26,27 @@ const svg = (size: number, children: React.ReactNode) => (
   </svg>
 );
 
-/** Auto-advance: a film strip with an arrow out of it (the slides move on by themselves). */
+/**
+ * Auto-advance: a film strip with an arrow out of it (the slides move on by themselves). Wider
+ * than the rest, as on a console: 26 by 20.
+ */
 export function AutoAdvanceGlyph({ size = 20 }: GlyphProps) {
-  return svg(
-    size,
-    <>
+  return (
+    <svg
+      width={(size * 26) / 20}
+      height={size}
+      viewBox="0 0 26 20"
+      aria-hidden
+      fill="none"
+      shapeRendering="geometricPrecision"
+    >
       <path
         fillRule="evenodd"
         fill="currentColor"
-        d="M2.5 5h10A1.5 1.5 0 0 1 14 6.5v7a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 1 13.5v-7A1.5 1.5 0 0 1 2.5 5ZM3 7v2h2V7Zm3.5 0v2h2V7ZM10 7v2h2V7ZM3 11v2h2v-2Zm3.5 0v2h2v-2ZM10 11v2h2v-2Z"
+        d="M2.5 3h14A1.5 1.5 0 0 1 18 4.5v11a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 1 15.5v-11A1.5 1.5 0 0 1 2.5 3ZM3 5v3h3V5Zm4.5 0v3h3V5ZM12 5v3h3V5ZM3 12v3h3v-3Zm4.5 0v3h3v-3ZM12 12v3h3v-3Z"
       />
-      <path d="M15 6l4 4-4 4z" fill="currentColor" />
-    </>,
+      <path d="M19.5 4.5 25 10l-5.5 5.5z" fill="currentColor" />
+    </svg>
   );
 }
 

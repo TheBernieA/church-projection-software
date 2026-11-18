@@ -39,6 +39,7 @@ import {
 } from '../slides/ItemSlides';
 import { DefaultTransitions, ItemTransition } from '../slides/Transitions';
 import { takesTransition } from '../../lib/transitions';
+import { takesAdvance } from '../../lib/advance';
 import { type PresentableSlide } from '../../types';
 
 /** A planned per-item tool: a dimmed icon with a small "soon" dot; the tooltip says what it'll do. */
@@ -301,10 +302,9 @@ function ItemSection({
           <SoonTool id="slide-actions" icon={<ClipboardGlyph />} />
           <SoonTool id="timeline" icon={<TimelineGlyph />} />
           {takesTransition(item) && <ItemTransition item={item} />}
-          {(item.kind === 'announcements' ||
-            item.kind === 'presentation' ||
-            item.kind === 'media') && <ToolDivider />}
-          {(item.kind === 'announcements' || item.kind === 'presentation') && (
+          {(takesAdvance(item) || item.kind === 'media') && <ToolDivider />}
+          {/* Every item with slides can loop on the announcements layer. */}
+          {takesAdvance(item) && (
             <IconButton
               size="2xs"
               variant="quiet"

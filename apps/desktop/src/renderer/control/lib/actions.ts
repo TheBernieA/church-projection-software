@@ -16,7 +16,7 @@ import {
 } from '@lampstand/core';
 import { knownDuration } from './mediaDurations';
 import { slideTransitionFor } from './transitions';
-import { advanceOf } from './advance';
+import { advanceOf, takesAdvance } from './advance';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
@@ -448,7 +448,7 @@ function stopAnnounceLoop(): void {
  * slide: the main presentation carries on underneath, and Looks can send it to lobby screens.
  */
 export async function runOnAnnouncementsLayer(item: ServiceItem): Promise<void> {
-  if (item.kind !== 'announcements' && item.kind !== 'presentation') return;
+  if (!takesAdvance(item)) return;
   stopAnnounceLoop();
   // Each run gets a token: a step still waiting on the previous run can never revive it.
   const run = ++announceRun;
