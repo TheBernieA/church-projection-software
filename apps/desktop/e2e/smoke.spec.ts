@@ -775,9 +775,9 @@ test('web page: shown over the output in an isolated view; Black screen takes it
     control.locator('figure').filter({ hasText: 'Live' }).locator('.ls-web-url'),
   ).toHaveText('example.com');
   await control.locator('body').click({ position: { x: 5, y: 5 } });
-  await control.keyboard.press('b'); // Black screen covers everything, the web page included
+  await control.keyboard.press('Shift+B'); // Black screen covers everything, the web page included
   await expect.poll(views).toBe(before);
-  await control.keyboard.press('b');
+  await control.keyboard.press('Shift+B');
   await expect.poll(views).toBe(before + 1);
   await control.getByRole('button', { name: /Turn off live/ }).click();
   await expect.poll(views).toBe(before);
@@ -1063,7 +1063,7 @@ test('click goes live: a video from the bin plays on every output; Turn off live
   // The operator's progress bar jumps back to the start too.
   await expect.poll(async () => Number(await position.inputValue())).toBeLessThan(1.5);
   await control.locator('body').click({ position: { x: 5, y: 5 } });
-  await control.keyboard.press('p');
+  await control.keyboard.press('Shift+P');
   await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
   // Skip buttons: forward 15 s on a 6 s clip stops at the end; back 15 s returns to the start.
   await transport.getByRole('button', { name: 'Forward 15 seconds' }).click();
@@ -2762,6 +2762,58 @@ test('control surfaces: OSC from a desk runs the show and the mixer; cues go bac
     }),
   );
   desk.close();
+});
+
+test('slide tiles: the background as its own tile, group hotkeys, a slide’s own background, Table view', async () => {
+  const out = await outputPage();
+  await mode('Show');
+  await previewFirst(false);
+  await (await servicePlan()).getByText('Test Song').first().click();
+  // The playlist has the song more than once by now: the first will do.
+  const song = control.getByRole('region', { name: 'Test Song', exact: true }).first();
+  // The song's background is a tile of its own; its slides are the words over a backdrop.
+  await expect(
+    song.getByRole('button', { name: 'Background of these slides', exact: true }),
+  ).toBeVisible();
+  await control.waitForTimeout(600);
+  await control.screenshot({ path: 'test-results/50a-slide-tiles.png' });
+  // Group hotkeys: C goes to the chorus, A to the first verse.
+  await control.locator('body').click({ position: { x: 5, y: 5 } });
+  await control.keyboard.press('c');
+  await expect(out.locator('.ls-text').last()).toContainText('Chorus test line');
+  await control.keyboard.press('a');
+  await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
+  // One slide on a background of its own, then back to the song's.
+  await song.getByRole('button', { name: 'Background of slide 2' }).click();
+  await control.getByRole('menuitem', { name: 'Built-in backgrounds' }).click();
+  await control.getByRole('menuitem').filter({ hasText: /\w/ }).last().click();
+  const own = song.getByRole('button', {
+    name: 'Slide 2 has its own background (click to change)',
+  });
+  await expect(own).toBeVisible();
+  await control.waitForTimeout(600);
+  await control.screenshot({ path: 'test-results/50b-slide-own-background.png' });
+  await own.click();
+  await control.getByRole('menuitem', { name: 'The same as the other slides' }).click();
+  await expect(song.getByRole('button', { name: 'Background of slide 2' })).toBeAttached();
+  // Table view: each slide's words beside a small thumbnail.
+  const views = control.getByRole('radiogroup', { name: 'Slide view' });
+  await views.getByRole('radio', { name: 'Table' }).click();
+  await expect(song.getByText('Chorus test line').first()).toBeVisible();
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/50c-table-view.png' });
+  await views.getByRole('radio', { name: 'Grid' }).click();
+  // Slides by group, on a black backdrop; then back as they were.
+  await control.getByRole('button', { name: 'View options' }).click();
+  await control.getByRole('menuitemcheckbox', { name: 'Slides by group' }).click();
+  await control.getByRole('button', { name: 'View options' }).click();
+  await control.getByRole('menuitemradio', { name: 'Black' }).click();
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/50d-by-group.png' });
+  await control.getByRole('button', { name: 'View options' }).click();
+  await control.getByRole('menuitemcheckbox', { name: 'Slides by group' }).click();
+  await control.getByRole('button', { name: 'View options' }).click();
+  await control.getByRole('menuitemradio', { name: 'Checkerboard' }).click();
 });
 
 test('output survives a control renderer crash', async () => {

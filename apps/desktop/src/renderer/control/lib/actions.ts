@@ -3,6 +3,7 @@ import {
   mediaEnd,
   mediaPositionAt,
   newId,
+  type BackgroundLayer,
   type BackgroundRef,
   type Layer,
   type Look,
@@ -461,6 +462,10 @@ export async function stopAnnouncementsLayer(): Promise<void> {
   stopAnnounceLoop();
   await clearLayer('announcements');
 }
+
+/** Put an item's background (with its theme's adjustments) on the screens; the words stay. */
+export const showBackgroundLayer = (background: BackgroundLayer | null): Promise<void> =>
+  safe(cmd('live.setBackground', { background }, 'ui'));
 
 /** Put a background behind the words on screen. */
 export const setBackground = (ref: BackgroundRef): Promise<void> =>

@@ -29,7 +29,7 @@ import { buildItemSlides, groupColor } from '../../lib/slides';
 import { attempt, toast, updateItem, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { SceneView } from '../SceneView';
-import { thumbScene } from '../SlideGrid';
+import { thumbScene } from '../../lib/slideThumbs';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { type PresentableSlide, type TextItem } from '../../types';
 
@@ -91,7 +91,7 @@ function ReflowEditor({
   // Previews follow the typing a beat behind, so a long song never makes keys feel slow.
   const deferred = useDeferredValue(text);
   const built = useMemo(() => build(deferred), [build, deferred]);
-  const thumbs = useMemo(() => built.slides.map(thumbScene), [built.slides]);
+  const thumbs = useMemo(() => built.slides.map((s) => thumbScene(s)), [built.slides]);
   const dirty = text !== initial;
   const active = blockAt(text, caret);
   const anyLong = built.long.some(Boolean);

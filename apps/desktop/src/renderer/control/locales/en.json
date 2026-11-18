@@ -156,7 +156,25 @@
     "viewEasy": "Easy",
     "itemSlides": "{{title}} slides",
     "edit": "Edit slide {{n}}",
-    "editLive": "Edit slide {{n}}: the screen keeps showing it as it is until you press Update live"
+    "editLive": "Edit slide {{n}}: the screen keeps showing it as it is until you press Update live",
+    "viewTable": "Table",
+    "viewOptions": "View options",
+    "byGroup": "Slides by group",
+    "backdropTitle": "Behind transparent slides",
+    "backdrop": {
+      "checker": "Checkerboard",
+      "black": "Black",
+      "grey": "Grey"
+    },
+    "hotkey": "Press {{key}} to go to {{group}}",
+    "background": "Background",
+    "noBackground": "No background",
+    "backgroundTile": "Background of these slides",
+    "backgroundTileHint": "Click to show it now, behind the words on screen. The slides without a background of their own sit on it.",
+    "slideBg": "Background of slide {{n}}",
+    "slideBgOwn": "Slide {{n}} has its own background (click to change)",
+    "slideBgTitle": "Behind this slide",
+    "slideBgItem": "The same as the other slides"
   },
   "monitor": {
     "preview": "Preview",
@@ -525,7 +543,7 @@
     "help": "Help",
     "offAir": {
       "title": "Off-air screen",
-      "footnote": "Shown on the projector whenever nothing is live: before the service, between items, and after Turn off live. \"Logo\" uses the logo above. Black screen (B) still goes fully black.",
+      "footnote": "Shown on the projector whenever nothing is live: before the service, between items, and after Turn off live. \"Logo\" uses the logo above. Black screen (⇧B) still goes fully black.",
       "show": "When nothing is live, show",
       "showHelp": "Instead of leaving the screen empty.",
       "black": "Black",
@@ -546,7 +564,7 @@
     },
     "logo": {
       "title": "Logo",
-      "footnote": "Shown when you press Logo (L), and as the off-air screen when that is set to Logo.",
+      "footnote": "Shown when you press Logo (⇧L), and as the off-air screen when that is set to Logo.",
       "show": "Logo shows",
       "showHelp": "Your church's name, or your own logo image or video.",
       "text": "Name",
@@ -769,7 +787,7 @@
       },
       "output": {
         "title": "Output",
-        "body": "The monitor shows exactly what the room sees. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: the Audience or Stage view, and Black (B), Logo (L) and Freeze (F)."
+        "body": "The monitor shows exactly what the room sees. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: the Audience or Stage view, and Black (⇧B), Logo (⇧L) and Freeze (⇧F)."
       },
       "controls": {
         "title": "Show controls",
@@ -861,6 +879,10 @@
         "arrangement": {
           "q": "Change a song’s order, key or language",
           "a": "1. Open the song in the song editor to write arrangements (a short version, say) and translations.\n2. On the Show page, pick the arrangement in the song’s header.\n3. Transpose the chords there for the stage display, or turn on the translation to show it under each line."
+        },
+        "tiles": {
+          "q": "Read the slide tiles, and jump to the chorus",
+          "a": "1. Each song, verse or set of slides starts with a Background tile: the picture behind all of its slides. Click it to put it on the screens behind the words; its button at the top left changes it.\n2. The slides after it show only their words, over a checkerboard, because they sit on that background. A slide with a background of its own shows it.\n3. To give one slide its own background, hover it and click the picture button at its top left. Pick “The same as the other slides” to undo it.\n4. A letter at a slide's top left is its section's key: C for the Chorus, A, S, D for Verses 1–3, B for the Bridge, T for the Tag, P for the Pre-chorus. Press it to go to that section of the selected song (a chorus sung again goes to the next one).\n5. Black, Logo, Freeze, play/pause and the switcher's Cut and Auto now take Shift: ⇧B, ⇧L, ⇧F, ⇧P, ⇧C, ⇧T.\n6. At the bottom right: Grid, Easy (the words, large) or Table (a small picture, the words and the notes). “…” sets Slides by group (each section on its own row) and what shows through transparent thumbnails."
         },
         "edit": {
           "q": "Make your own slides",
@@ -1607,7 +1629,8 @@
     "useForAll_other": "Use behind every item in the service ({{count}})",
     "copyToAll_one": "Use this for all {{count}} items",
     "copyToAll_other": "Use this for all {{count}} items",
-    "copyToAllHint": "Every song, reading, presentation, announcement and countdown in the service gets this background (or the theme’s, if this one uses the theme’s)"
+    "copyToAllHint": "Every song, reading, presentation, announcement and countdown in the service gets this background (or the theme’s, if this one uses the theme’s)",
+    "change": "Change the background of these slides"
   },
   "audioSettings": {
     "room": "Room audio",
@@ -2058,7 +2081,7 @@
     "tbarHelp": "Drag down to mix the Preview camera in by hand. Let go past half-way to finish the take.",
     "toPreview": "Put {{name}} on Preview ({{n}})",
     "click": "Clicking a camera",
-    "clickHelp": "Preview first: a click puts it on Preview, then Cut (C) or Auto (T) takes it to the screen; double-click takes it at once. Keys 1–9 preview a camera, Shift+1–9 take it.",
+    "clickHelp": "Preview first: a click puts it on Preview, then Cut (⇧C) or Auto (⇧T) takes it to the screen; double-click takes it at once. Keys 1–9 preview a camera, Shift+1–9 take it.",
     "clickPreview": "Preview first",
     "clickProgram": "Straight on screen",
     "pipCorner": "Picture-in-picture",

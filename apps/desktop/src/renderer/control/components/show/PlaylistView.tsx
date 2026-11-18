@@ -1,8 +1,6 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  AlignLeft,
   Clock3,
-  LayoutGrid,
   ListPlus,
   Megaphone,
   Plus,
@@ -12,15 +10,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
-import {
-  Button,
-  IconButton,
-  Segmented,
-  Slider,
-  Typography,
-  percent,
-  typographyClass,
-} from '@lampstand/ui';
+import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
 import {
   goLiveSlide,
   runOnAnnouncementsLayer,
@@ -36,13 +26,18 @@ import { editItems, openDialog, updateItem, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { KindTile } from '../kindIcons';
 import { AddMenu, SectionAdd } from '../ServicePanel';
-import { editable, thumbScene } from '../SlideGrid';
+import { editable } from '../../lib/slideThumbs';
 import { SongControls } from '../SongControls';
 import { ItemBackground } from '../ItemBackground';
 import { LoopToggle } from '../LoopToggle';
 import { takesBackground } from '../../lib/itemBackground';
-import { SlideCard, SlideRow, type SlideState } from '../slides/SlideCards';
-import { usePaneSize } from '../shell/Splitter';
+import { type SlideState } from '../slides/SlideCards';
+import {
+  ItemSlides,
+  SlideViewControls,
+  useSlideViewPrefs,
+  type SlideViewPrefs,
+} from '../slides/ItemSlides';
 import { type PresentableSlide } from '../../types';
 
 /** A planned per-item tool: a dimmed icon with a small "soon" dot; the tooltip says what it'll do. */
@@ -64,6 +59,11 @@ function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
       />
     </Typography>
   );
+}
+
+/** A thin upright line between groups of tools in an item's header. */
+function ToolDivider() {
+  return <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-[var(--hairline-strong)]" />;
 }
 
 /**
@@ -197,15 +197,13 @@ function AddSlideCard({ item, list }: { item: ServiceItem; list: boolean }) {
 function ItemSection({
   item,
   selected,
-  easy,
-  thumbSize,
+  prefs,
   register,
   onLibraryDrop,
 }: {
   item: ServiceItem;
   selected: boolean;
-  easy: boolean;
-  thumbSize: number;
+  prefs: SlideViewPrefs;
   register: (el: HTMLElement | null) => void;
   /** A song, verse or media dragged in from the library lands just before this item. */
   onLibraryDrop: (dropped: ServiceItem) => void;
@@ -220,7 +218,6 @@ function ItemSection({
   const liveKey = useStore((s) => s.live?.program.content?.key);
   const liveCursor = useStore((s) => s.liveCursor);
   const previewCursor = useStore((s) => s.previewCursor);
-  const thumbs = useMemo(() => slides.map(thumbScene), [slides]);
   const song = item.kind === 'song' ? songs.find((s) => s.id === item.songId) : undefined;
   const title = itemTitle(item, { songs, media, bookNames });
 
@@ -274,8 +271,8 @@ function ItemSection({
       }}
     >
       <header
-        className={`sticky top-0 z-[1] flex h-9 items-center gap-2 border-b border-[var(--divider)] px-3 ${
-          selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-1)]'
+        className={`sticky top-0 z-[1] flex h-8 items-center gap-2 border-b border-[var(--divider)] px-3 ${
+          selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-0)]'
         }`}
       >
         <Button
@@ -292,13 +289,19 @@ function ItemSection({
             {t('slides.count', { count: slides.length })}
           </Typography>
         </Button>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        {/* Tools in groups, as in other presentation software: the item's own settings, what's
+            coming, then where it plays. */}
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
           {item.kind === 'announcements' && <LoopToggle item={item} />}
           {takesBackground(item) && <ItemBackground item={item} />}
+          <ToolDivider />
           <SoonTool id="transitions" icon={<Shuffle size={14} />} />
           <SoonTool id="timeline" icon={<Clock3 size={14} />} />
           <SoonTool id="slide-actions" icon={<Repeat size={14} />} />
+          {(item.kind === 'announcements' ||
+            item.kind === 'presentation' ||
+            item.kind === 'media') && <ToolDivider />}
           {(item.kind === 'announcements' || item.kind === 'presentation') && (
             <IconButton
               size="2xs"
@@ -327,56 +330,22 @@ function ItemSection({
         </div>
       </header>
       {/* The selected item's slides are "the" slide list; the others are named after their item. */}
-      {easy ? (
-        <ol
-          aria-label={selected ? t('slides.list') : t('slides.itemSlides', { title })}
-          className="flex flex-col gap-1.5 p-3"
-        >
-          {slides.map((slide, i) => (
-            <SlideRow
-              key={slide.key}
-              slide={slide}
-              index={i}
-              state={stateOf(slide, i)}
-              scene={thumbs[i]}
-              onClick={() => click(i)}
-              onDoubleClick={() => live(i)}
-            />
-          ))}
-          {addsSlides && <AddSlideCard item={item} list />}
-        </ol>
-      ) : (
-        <ol
-          aria-label={selected ? t('slides.list') : t('slides.itemSlides', { title })}
-          className="grid gap-3 p-3"
-          style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${thumbSize}px, 1fr))` }}
-        >
-          {slides.map((slide, i) => (
-            <SlideCard
-              key={slide.key}
-              slide={slide}
-              index={i}
-              scene={thumbs[i] ?? thumbScene(slide)}
-              state={stateOf(slide, i)}
-              hint={editable(item) ? t('slides.quickEditHint') : undefined}
-              onClick={() => click(i)}
-              onDoubleClick={() => live(i)}
-              onEdit={editable(item) ? () => quickEdit(i) : undefined}
-              onContextMenu={(e) => {
-                if (!editable(item)) return;
-                e.preventDefault();
-                quickEdit(i);
-              }}
-            />
-          ))}
-          {addsSlides && <AddSlideCard item={item} list={false} />}
-        </ol>
-      )}
+      <ItemSlides
+        item={item}
+        slides={slides}
+        prefs={prefs}
+        stateOf={stateOf}
+        onClick={click}
+        onDoubleClick={live}
+        onQuickEdit={editable(item) ? quickEdit : undefined}
+        hint={editable(item) ? t('slides.quickEditHint') : undefined}
+        label={selected ? t('slides.list') : t('slides.itemSlides', { title })}
+        add={addsSlides ? (list) => <AddSlideCard item={item} list={list} /> : undefined}
+        className="p-3"
+      />
     </section>
   );
 }
-
-type View = 'grid' | 'easy';
 
 /**
  * Show workspace for a playlist: every item's slides on one scrolling page, in service order,
@@ -387,9 +356,7 @@ export function PlaylistView() {
   const { t } = useTranslation();
   const service = useStore((s) => s.service);
   const selected = useStore((s) => s.selectedItemId);
-  const thumb = usePaneSize('thumbWidth', 200, 130, 360);
-  const view = usePaneSize('slideView', 0, 0, 1);
-  const easy = view.size === 1;
+  const prefs = useSlideViewPrefs();
   const sections = useRef(new Map<string, HTMLElement>());
   const items = service?.items ?? [];
 
@@ -433,8 +400,7 @@ export function PlaylistView() {
               <ItemSection
                 item={item}
                 selected={selected === item.id}
-                easy={easy}
-                thumbSize={thumb.size}
+                prefs={prefs}
                 onLibraryDrop={(dropped) => {
                   update((xs) => {
                     const at = xs.findIndex((x) => x.id === item.id);
@@ -462,30 +428,7 @@ export function PlaylistView() {
           }
         />
         <span className="flex-1" />
-        <Segmented<View>
-          label={t('slides.view')}
-          value={easy ? 'easy' : 'grid'}
-          onChange={(v) => view.commit(v === 'easy' ? 1 : 0)}
-          options={[
-            { value: 'grid', label: t('slides.viewGrid'), icon: <LayoutGrid size={13} /> },
-            { value: 'easy', label: t('slides.viewEasy'), icon: <AlignLeft size={13} /> },
-          ]}
-        />
-        {!easy && (
-          <Slider
-            format={(v) => percent(v, 200)}
-            aria-label={t('slides.size')}
-            title={t('slides.size')}
-            min={130}
-            max={360}
-            step={10}
-            value={thumb.size}
-            onChange={(e) => thumb.preview(Number(e.target.value))}
-            onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-            onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-            className="w-36 shrink-0"
-          />
-        )}
+        <SlideViewControls prefs={prefs} />
       </div>
     </section>
   );

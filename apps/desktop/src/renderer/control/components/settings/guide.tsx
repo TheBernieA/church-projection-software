@@ -180,6 +180,7 @@ const HOWTO = [
   'clear',
   'backgrounds',
   'arrangement',
+  'tiles',
   'edit',
   'import',
   'web',

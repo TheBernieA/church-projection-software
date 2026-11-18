@@ -278,3 +278,13 @@ input[type='range']:focus {
 .ls-flash {
   animation: ls-flash 1600ms var(--ease-out);
 }
+/* Behind a transparent slide thumbnail: what the "no background here" parts look like. */
+.ls-backdrop-checker {
+  background: repeating-conic-gradient(#3b3d43 0% 25%, #2b2d32 0% 50%) 0 0 / 14px 14px;
+}
+.ls-backdrop-black {
+  background: #000;
+}
+.ls-backdrop-grey {
+  background: #44464c;
+}

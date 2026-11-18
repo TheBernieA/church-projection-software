@@ -230,7 +230,7 @@ export function SwitcherBar({
               title={t('shortcuts.actions.switcherCut')}
             >
               {t('switcher.cut')}
-              <Kbd>C</Kbd>
+              <Kbd>⇧C</Kbd>
             </Button>
             <Button
               size="sm"
@@ -241,7 +241,7 @@ export function SwitcherBar({
               title={t('shortcuts.actions.switcherAuto')}
             >
               {t('switcher.auto')}
-              <Kbd tone="onColor">T</Kbd>
+              <Kbd tone="onColor">⇧T</Kbd>
             </Button>
           </div>
           <TBar disabled={!canTake} />

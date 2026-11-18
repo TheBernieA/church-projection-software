@@ -468,7 +468,7 @@ export const FEATURES: Feature[] = [
     'automation',
     'Group hotkeys',
     'Jump straight to the chorus or bridge with a single key, wherever you are in the song.',
-    'soon',
+    'available',
   ),
   f(
     'media-cues',

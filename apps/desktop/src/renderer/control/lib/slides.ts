@@ -61,6 +61,26 @@ function themeBackground(theme: Theme, override?: BackgroundLayer['ref']): Backg
 
 const textBlock = (text: string): TextBlock => ({ spans: [{ text }] });
 
+/**
+ * A slide's background: its own when it has one (set from its tile), else the item's. `own`
+ * says which, so the tile can show a background of its own on its thumbnail.
+ */
+function slideBackground(
+  item: { slideBackgrounds?: Record<string, BackgroundLayer['ref']> | undefined },
+  theme: Theme,
+  itemBackground: BackgroundLayer | null,
+  key: string,
+): { background: BackgroundLayer | null; own: boolean } {
+  const ref = item.slideBackgrounds?.[key];
+  return ref
+    ? { background: themeBackground(theme, ref), own: true }
+    : { background: itemBackground, own: false };
+}
+
+/** The slide, marked when its background is its own. */
+const marked = (slide: PresentableSlide, own: boolean): PresentableSlide =>
+  own ? { ...slide, ownBackground: true } : slide;
+
 /** "10:30": a time of day a countdown runs to. */
 export const isClockTime = (s: string): boolean => /^([01]?\d|2[0-3]):[0-5]\d$/.test(s);
 
@@ -156,12 +176,16 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
           if (ls.chordLines)
             content.chords = ls.chordLines.map((l) => transposeLine(l, item.transpose ?? 0));
           if (item.notes) content.notes = item.notes;
-          return {
-            key: ls.key,
-            label: ls.label,
-            group: ls.sectionLabel,
-            action: { kind: 'content', content, background },
-          };
+          const bg = slideBackground(item, theme, background, ls.key);
+          return marked(
+            {
+              key: ls.key,
+              label: ls.label,
+              group: ls.sectionLabel,
+              action: { kind: 'content', content, background: bg.background },
+            },
+            bg.own,
+          );
         }),
       };
     }
@@ -226,7 +250,11 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
           if (copyright) content.copyright = copyright;
           if (item.notes) content.notes = item.notes;
           const label = sl.part ? `${ref} (${sl.part.index + 1}/${sl.part.count})` : ref;
-          return { key: sl.key, label, action: { kind: 'content', content, background } };
+          const bg = slideBackground(item, theme, background, sl.key);
+          return marked(
+            { key: sl.key, label, action: { kind: 'content', content, background: bg.background } },
+            bg.own,
+          );
         }),
       };
     }
@@ -294,11 +322,15 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
           };
           if (ts.notes) content.notes = ts.notes;
           if (ts.objects?.length) content.objects = ts.objects;
-          return {
-            key: content.key,
-            label: ts.title || `Slide ${i + 1}`,
-            action: { kind: 'content', content, background },
-          };
+          const bg = slideBackground(item, theme, background, content.key);
+          return marked(
+            {
+              key: content.key,
+              label: ts.title || `Slide ${i + 1}`,
+              action: { kind: 'content', content, background: bg.background },
+            },
+            bg.own,
+          );
         }),
       };
     }

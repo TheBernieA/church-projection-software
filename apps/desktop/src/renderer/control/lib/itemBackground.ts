@@ -35,6 +35,43 @@ export function setItemBackground(item: BackgroundItem, ref: BackgroundRef | und
   followLive({ ...item, background: ref });
 }
 
+/** Items whose slides can each have a background of their own. */
+export type SlideBackgroundItem = Extract<
+  ServiceItem,
+  { kind: 'song' | 'scripture' | 'presentation' | 'announcements' }
+>;
+
+export const takesSlideBackgrounds = (
+  item: ServiceItem | null | undefined,
+): item is SlideBackgroundItem =>
+  !!item &&
+  (item.kind === 'song' ||
+    item.kind === 'scripture' ||
+    item.kind === 'presentation' ||
+    item.kind === 'announcements');
+
+/**
+ * Put `ref` behind one slide of `item` (by its key) instead of the item's background;
+ * `undefined` puts it back on the item's. If that slide is on screen, the screen follows.
+ */
+export function setSlideBackground(
+  item: SlideBackgroundItem,
+  key: string,
+  ref: BackgroundRef | undefined,
+): void {
+  let latest: SlideBackgroundItem = item;
+  // From the item as it is now, so quick changes to several slides all stick.
+  patchItem<SlideBackgroundItem>(item, (cur) => {
+    const others = Object.entries(cur.slideBackgrounds ?? {}).filter(([k]) => k !== key);
+    const next: Record<string, BackgroundRef> = Object.fromEntries(
+      ref ? [...others, [key, ref]] : others,
+    );
+    latest = { ...cur, slideBackgrounds: Object.keys(next).length ? next : undefined };
+    return { slideBackgrounds: latest.slideBackgrounds };
+  });
+  followLive(latest);
+}
+
 /** If one of `item`'s slides is on screen, show its (new) background there; the words stay. */
 function followLive(item: BackgroundItem): void {
   const cur = useStore.getState().liveCursor;

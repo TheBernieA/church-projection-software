@@ -182,6 +182,8 @@ export interface PresentableSlide {
   /** Section group for colour-coding (Verse/Chorus…). */
   group?: string;
   action: SlideAction;
+  /** It has a background of its own (not the item's): its thumbnail shows it. */
+  ownBackground?: boolean;
   /** Countdown duration resolved at go-live time. */
   countdownSec?: number;
   /** A count-to-time countdown ("HH:MM"): its target is worked out when it goes live. */

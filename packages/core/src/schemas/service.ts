@@ -16,6 +16,12 @@ export type TextSlide = z.infer<typeof TextSlideSchema>;
 
 const base = { id: IdSchema, notes: z.string().max(4000).optional() };
 
+/**
+ * Backgrounds of single slides, by slide key, in place of the item's (or its theme's): one slide
+ * on its own picture, the rest on the item's.
+ */
+export const SlideBackgroundsSchema = z.record(z.string().max(160), BackgroundRefSchema);
+
 export const ServiceItemSchema = z.discriminatedUnion('kind', [
   z.object({
     ...base,
@@ -29,6 +35,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
   z.object({
     ...base,
@@ -38,6 +45,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
   z.object({
     ...base,
@@ -60,6 +68,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
   z.object({
     ...base,
@@ -72,6 +81,7 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     themeId: IdSchema.optional(),
     textFormat: TextFormatSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    slideBackgrounds: SlideBackgroundsSchema.optional(),
   }),
   z.object({
     ...base,

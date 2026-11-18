@@ -1,16 +1,8 @@
-import { useMemo } from 'react';
-import {
-  AlignLeft,
-  Keyboard,
-  LayoutGrid,
-  ListPlus,
-  MousePointerClick,
-  Pencil,
-  Plus,
-} from 'lucide-react';
+import { ListPlus, MousePointerClick, Pencil, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { makeScene, newId, type Scene, type ServiceItem } from '@lampstand/core';
-import { Button, Segmented, Slider, Typography, percent, typographyClass } from '@lampstand/ui';
+import { newId, type ServiceItem } from '@lampstand/core';
+import { editable } from '../lib/slideThumbs';
+import { Button, Typography, typographyClass } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { itemTitle } from '../lib/slides';
@@ -18,52 +10,12 @@ import { addItemToService, updateItem, useStore } from '../lib/store';
 import { AddCard } from './cards';
 import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
-import { SlideCard, SlideRow, type SlideState } from './slides/SlideCards';
+import { type SlideState } from './slides/SlideCards';
+import { ItemSlides, SlideViewControls, useSlideViewPrefs } from './slides/ItemSlides';
 import { SongControls } from './SongControls';
 import { ItemBackground } from './ItemBackground';
 import { takesBackground } from '../lib/itemBackground';
-import { SoonFeature } from './Soon';
-import { usePaneSize } from './shell/Splitter';
 import { type PresentableSlide } from '../types';
-
-type SlideView = 'grid' | 'easy';
-
-export function thumbScene(slide: PresentableSlide): Scene {
-  const a = slide.action;
-  if (a.kind === 'content') {
-    const v = slide.countdownVideo;
-    return makeScene({
-      background: a.background,
-      content: v?.hideTimer ? null : a.content,
-      // A countdown video: its first frame, under the numbers.
-      media: v
-        ? {
-            mediaId: v.mediaId,
-            kind: 'video',
-            loop: false,
-            muted: true,
-            fit: 'cover',
-            playing: false,
-            position: 0,
-            volume: 1,
-          }
-        : null,
-    });
-  }
-  if (a.kind === 'media') return makeScene({ media: a.media });
-  if (a.kind === 'web') return makeScene({ web: a.web });
-  return makeScene({ background: a.background });
-}
-
-/** Items whose slides can be edited in the Edit workspace (Quick Edit, right-click). */
-export function editable(item: ServiceItem): boolean {
-  return (
-    item.kind === 'song' ||
-    item.kind === 'presentation' ||
-    item.kind === 'announcements' ||
-    item.kind === 'countdown'
-  );
-}
 
 /**
  * The selected item's slides as a grid of thumbnails, each with a group-coloured label strip.
@@ -84,15 +36,11 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const liveCursor = useStore((s) => s.liveCursor);
   const editCursor = useStore((s) => s.editCursor);
   const inService = useInService(item);
-  const thumb = usePaneSize('thumbWidth', 200, 130, 360);
-  // Grid (thumbnails) or Easy (the words, large): remembered like the pane sizes.
-  const view = usePaneSize('slideView', 0, 0, 1);
-  const easy = view.size === 1;
+  // Grid, Easy or Table, and the thumbnails' size and backdrop: remembered like the pane sizes.
+  const prefs = useSlideViewPrefs();
 
   const isAdhoc = !!item && adhoc?.id === item.id;
   const song = item?.kind === 'song' ? songs.find((s) => s.id === item.songId) : undefined;
-  // Stable scene objects: the grid re-renders on every live change, thumbnails shouldn't re-diff.
-  const thumbScenes = useMemo(() => slides.map(thumbScene), [slides]);
   const editableText =
     inService && (item?.kind === 'presentation' || item?.kind === 'announcements');
   const addSlide = (): void => {
@@ -134,12 +82,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
         )}
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           {takesBackground(item) && <ItemBackground item={item} />}
-          {song && item?.kind === 'song' && (
-            <>
-              <SongControls item={item} song={song} />
-              <SoonFeature id="group-hotkeys" compact icon={<Keyboard size={14} />} />
-            </>
-          )}
+          {song && item?.kind === 'song' && <SongControls item={item} song={song} />}
           {item && purpose === 'show' && editable(item) && song?.origin !== 'hymnal' && (
             <Button
               size="sm"
@@ -180,86 +123,39 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
             {t('slides.noSlides')}
           </Typography>
         )}
-        {item && easy && (
-          <ol aria-label={t('slides.list')} className="flex flex-col gap-1.5">
-            {slides.map((slide, i) => (
-              <SlideRow
-                key={slide.key}
-                slide={slide}
-                index={i}
-                state={stateOf(slide, i)}
-                scene={thumbScenes[i]}
-                onClick={() => onClick(item, i)}
-                onDoubleClick={() => void goLiveSlide(item, i)}
-              />
-            ))}
-          </ol>
-        )}
-        {!easy && (
-          <ol
-            aria-label={t('slides.list')}
-            className="grid gap-3.5"
-            style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${thumb.size}px, 1fr))` }}
-          >
-            {item &&
-              slides.map((slide, i) => (
-                <SlideCard
-                  key={slide.key}
-                  slide={slide}
-                  index={i}
-                  scene={thumbScenes[i] ?? thumbScene(slide)}
-                  state={stateOf(slide, i)}
-                  hint={
-                    purpose === 'show' && editable(item) ? t('slides.quickEditHint') : undefined
-                  }
-                  onClick={() => onClick(item, i)}
-                  onDoubleClick={() => void goLiveSlide(item, i)}
-                  onContextMenu={(e) => {
-                    if (purpose !== 'show' || !editable(item)) return;
-                    e.preventDefault();
-                    quickEdit(item, i);
-                  }}
-                />
-              ))}
-            {editableText && (
-              <li>
-                <AddCard
-                  label={t('inspector.addSlide')}
-                  onClick={addSlide}
-                  className={`aspect-[16/10.4] w-full rounded-[6px] ${typographyClass({ size: 13 })}`}
-                  icon={<Plus size={22} strokeWidth={1.75} />}
-                />
-              </li>
-            )}
-          </ol>
+        {item && slides.length > 0 && (
+          <ItemSlides
+            item={item}
+            slides={slides}
+            prefs={prefs}
+            stateOf={stateOf}
+            onClick={(i) => onClick(item, i)}
+            onDoubleClick={(i) => void goLiveSlide(item, i)}
+            onQuickEdit={
+              purpose === 'show' && editable(item) ? (i) => quickEdit(item, i) : undefined
+            }
+            hint={purpose === 'show' && editable(item) ? t('slides.quickEditHint') : undefined}
+            label={t('slides.list')}
+            add={
+              editableText
+                ? (list) => (
+                    <li>
+                      <AddCard
+                        label={t('inspector.addSlide')}
+                        onClick={addSlide}
+                        className={`${list ? 'h-10 w-full' : 'aspect-[16/10.4] w-full'} rounded-[6px] ${typographyClass({ size: 13 })}`}
+                        icon={<Plus size={list ? 16 : 22} strokeWidth={1.75} />}
+                      />
+                    </li>
+                  )
+                : undefined
+            }
+          />
         )}
       </div>
       {item && slides.length > 0 && (
         <div className="flex h-10 shrink-0 items-center justify-end gap-3 border-t border-[var(--hairline)] px-3">
-          <Segmented<SlideView>
-            label={t('slides.view')}
-            value={easy ? 'easy' : 'grid'}
-            onChange={(v) => view.commit(v === 'easy' ? 1 : 0)}
-            options={[
-              { value: 'grid', label: t('slides.viewGrid'), icon: <LayoutGrid size={13} /> },
-              { value: 'easy', label: t('slides.viewEasy'), icon: <AlignLeft size={13} /> },
-            ]}
-          />
-          {!easy && (
-            <Slider
-              format={(v) => percent(v, 200)}
-              aria-label={t('slides.size')}
-              title={t('slides.size')}
-              min={130}
-              max={360}
-              step={10}
-              value={thumb.size}
-              onChange={(e) => thumb.preview(Number(e.target.value))}
-              onPointerUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-              onKeyUp={(e) => thumb.commit(Number(e.currentTarget.value))}
-              className="w-36 shrink-0"
-            />
-          )}
+          <SlideViewControls prefs={prefs} />
         </div>
       )}
     </section>

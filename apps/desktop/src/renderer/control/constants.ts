@@ -27,7 +27,11 @@ export const LIBRARY_MIME = 'application/x-lampstand-item';
 
 export const NO_TRANSLATION = '__none__';
 
-/** Defaults from §3.5 and §8.5. Fully remappable via settings.shortcuts. */
+/**
+ * Defaults from §3.5 and §8.5. Fully remappable via settings.shortcuts. Plain letters are the
+ * group hotkeys (C for the Chorus, as in other presentation software), so the show actions that
+ * had a letter of their own take Shift with it.
+ */
 export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   goLive: 'Space',
   next: 'ArrowRight',
@@ -37,19 +41,19 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   clearBackground: 'F3',
   clearOverlays: 'F4',
   clearAll: 'F5',
-  black: 'B',
-  logo: 'L',
-  freeze: 'F',
+  black: 'Shift+B',
+  logo: 'Shift+L',
+  freeze: 'Shift+F',
   panic: 'Escape',
   quickBar: 'Mod+K',
   undo: 'Mod+Z',
   redo: 'Mod+Shift+Z',
   cheatSheet: '?',
   perfHud: 'Mod+Alt+P',
-  mediaToggle: 'P',
+  mediaToggle: 'Shift+P',
   settings: 'Mod+,',
-  switcherCut: 'C',
-  switcherAuto: 'T',
+  switcherCut: 'Shift+C',
+  switcherAuto: 'Shift+T',
 };
 
 /**

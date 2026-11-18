@@ -29,12 +29,13 @@ export interface StageViewOptions {
 }
 
 /**
- * The stage screen's look, scoped to `.ls-stage` and sized in container units (cqh), so the
+ * The stage screen's look, scoped to `.ls-stage-display` (not `.ls-stage`: that's every scene
+ * renderer's canvas, which must stay transparent) and sized in container units (cqh), so the
  * same layout reads the same on a projector and in the small editor preview.
  */
 const STYLE = `
-.ls-stage{position:absolute;inset:0;container-type:size;background:#07080c;color:#eceef4;font-family:'Inter',system-ui,sans-serif;overflow:hidden}
-.ls-stage *{box-sizing:border-box}
+.ls-stage-display{position:absolute;inset:0;container-type:size;background:#07080c;color:#eceef4;font-family:'Inter',system-ui,sans-serif;overflow:hidden}
+.ls-stage-display *{box-sizing:border-box}
 .ls-st-el{position:absolute;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
 .ls-st-el[hidden]{display:none}
 .ls-st-tag{font-size:2.2cqh;text-transform:uppercase;letter-spacing:.12em;color:#9aa1b5;margin-bottom:.8cqh;flex:none}
@@ -47,16 +48,16 @@ const STYLE = `
 .ls-st-notes{color:#c8ccd8;white-space:pre-line}
 .ls-st-text{white-space:pre-line;font-weight:600}
 .ls-st-timers{flex-direction:row;flex-wrap:wrap;gap:1.4cqh;align-content:flex-start}
-.ls-stage .timer{display:inline-flex;align-items:baseline;gap:1cqh;padding:.6cqh 1.2cqh;border-radius:1cqh;background:rgba(255,255,255,.06)}
-.ls-stage .timer-name{font-size:.5em;text-transform:uppercase;letter-spacing:.08em;color:#9aa1b5}
-.ls-stage .timer-value{font-weight:700;font-variant-numeric:tabular-nums}
-.ls-stage .timer.over .timer-value{color:#ef4a50}
-.ls-stage .timer.paused{opacity:.6}
+.ls-stage-display .timer{display:inline-flex;align-items:baseline;gap:1cqh;padding:.6cqh 1.2cqh;border-radius:1cqh;background:rgba(255,255,255,.06)}
+.ls-stage-display .timer-name{font-size:.5em;text-transform:uppercase;letter-spacing:.08em;color:#9aa1b5}
+.ls-stage-display .timer-value{font-weight:700;font-variant-numeric:tabular-nums}
+.ls-stage-display .timer.over .timer-value{color:#ef4a50}
+.ls-stage-display .timer.paused{opacity:.6}
 .ls-st-chords{padding:1cqh 1.2cqh;border-radius:1cqh;background:rgba(255,255,255,.05);font-family:'IBM Plex Mono',ui-monospace,Menlo,monospace;line-height:1.15}
-.ls-stage .chord-line+.chord-line{margin-top:.6cqh}
-.ls-stage .chord-row{position:relative;height:1.2em;color:#f0a73a;font-weight:700}
-.ls-stage .chord-row span{position:absolute;top:0;white-space:nowrap}
-.ls-stage .lyric-row{white-space:pre}
+.ls-stage-display .chord-line+.chord-line{margin-top:.6cqh}
+.ls-stage-display .chord-row{position:relative;height:1.2em;color:#f0a73a;font-weight:700}
+.ls-stage-display .chord-row span{position:absolute;top:0;white-space:nowrap}
+.ls-stage-display .lyric-row{white-space:pre}
 .ls-st-message{align-items:center;justify-content:center;padding:2cqh 3cqh;background:#e8b04b;color:#171a24;font-weight:800;text-align:center;border-radius:1.2cqh;z-index:2}
 .ls-st-message.flash{animation:ls-st-flash 1s ease-in-out 4}
 @keyframes ls-st-flash{50%{opacity:.25}}
@@ -111,7 +112,7 @@ export class StageView {
       style.textContent = STYLE;
       doc.head.append(style);
     }
-    this.root = el(doc, 'div', 'ls-stage');
+    this.root = el(doc, 'div', 'ls-stage-display');
     host.append(this.root);
     this.timer = setInterval(() => this.tick(), 500);
   }

@@ -23,6 +23,7 @@ import {
 } from '../lib/itemBackground';
 import { useStore } from '../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from './menu';
+import { TILE_TOOL } from './slides/SlideCards';
 
 /** A little preview of a background, for menus and the header chip. */
 export function Swatch({ bg, size = 'md' }: { bg: BackgroundRef | undefined; size?: 'sm' | 'md' }) {
@@ -90,66 +91,59 @@ function Section({
 }
 
 /**
- * "Background" in an item's header: what sits behind all of its slides. Its theme's background
- * (the default), the one on screen now, any stock or built-in motion background, or one of
- * yours. The button shows the item's own background when it has one.
+ * The background menu: the default (the theme's, or the item's for one slide), the one on screen
+ * now, any stock or built-in motion background, or one of yours. Extra items (e.g. "use for
+ * every item") go after the first two.
  */
-export function ItemBackground({ item }: { item: BackgroundItem }) {
+export function BackgroundMenu({
+  trigger,
+  current,
+  onPick,
+  title,
+  defaultLabel,
+  align = 'end',
+  children,
+}: {
+  trigger: ReactNode;
+  current: BackgroundRef | undefined;
+  onPick: (bg: BackgroundRef | undefined) => void;
+  title: string;
+  /** The first choice: no background of its own. */
+  defaultLabel: string;
+  align?: 'start' | 'end';
+  children?: ReactNode;
+}) {
   const { t } = useTranslation();
   const yours = useStore((s) => s.media).filter((m) => m.isBackground && m.kind !== 'audio');
   const onScreen = useStore((s) => s.live?.program.background?.ref);
-  const current = item.background;
-  const allCount = useBackgroundItemCount();
-  const pick = (bg: BackgroundRef | undefined): void => setItemBackground(item, bg);
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild>
-        <IconButton
-          size="2xs"
-          variant="quiet"
-          aria-label={t('itemBg.button')}
-          title={current ? t('itemBg.own') : t('itemBg.theme')}
-          active={!!current}
-        >
-          {current ? <Swatch bg={current} size="sm" /> : <ImageIcon size={14} />}
-        </IconButton>
-      </DropdownMenu.Trigger>
+      <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
-          <DropdownMenu.Label className={MENU_LABEL_CLASS}>{t('itemBg.title')}</DropdownMenu.Label>
-          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => pick(undefined)}>
+        <DropdownMenu.Content align={align} sideOffset={4} className={MENU_CLASS}>
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>{title}</DropdownMenu.Label>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => onPick(undefined)}>
             <Palette size={14} />
-            <Typography className="flex-1">{t('itemBg.useTheme')}</Typography>
+            <Typography className="flex-1">{defaultLabel}</Typography>
             {!current && <Check size={14} />}
           </DropdownMenu.Item>
           {onScreen && onScreen.kind !== 'none' && (
-            <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => pick(onScreen)}>
+            <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => onPick(onScreen)}>
               <MonitorPlay size={14} />
               <Typography className="flex-1">{t('itemBg.useOnScreen')}</Typography>
               <Swatch bg={onScreen} size="sm" />
             </DropdownMenu.Item>
           )}
-          {allCount > 1 && (
-            <DropdownMenu.Item
-              className={ITEM_CLASS}
-              onSelect={() => setServiceBackground(current)}
-              title={t('itemBg.copyToAllHint')}
-            >
-              <Layers size={14} />
-              <Typography className="flex-1">
-                {t('itemBg.copyToAll', { count: allCount })}
-              </Typography>
-            </DropdownMenu.Item>
-          )}
+          {children}
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <Section icon={<ImageIcon size={14} />} label={t('itemBg.stock')}>
             {STOCK_BACKGROUNDS.map((b) => (
-              <Choice key={b.id} name={b.name} bg={b.ref} current={current} onPick={pick} />
+              <Choice key={b.id} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
           </Section>
           <Section icon={<ImageIcon size={14} />} label={t('itemBg.builtIn')}>
             {BUILT_IN_BACKGROUNDS.map((b) => (
-              <Choice key={b.name} name={b.name} bg={b.ref} current={current} onPick={pick} />
+              <Choice key={b.name} name={b.name} bg={b.ref} current={current} onPick={onPick} />
             ))}
           </Section>
           <Section icon={<ImageIcon size={14} />} label={t('itemBg.yours')}>
@@ -164,7 +158,7 @@ export function ItemBackground({ item }: { item: BackgroundItem }) {
                   name={m.name}
                   bg={mediaBackground(m)}
                   current={current}
-                  onPick={pick}
+                  onPick={onPick}
                 />
               ))
             )}
@@ -172,5 +166,64 @@ export function ItemBackground({ item }: { item: BackgroundItem }) {
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+  );
+}
+
+/**
+ * "Background" in an item's header: what sits behind all of its slides (its theme's by
+ * default). The button shows the item's own background when it has one.
+ */
+export function ItemBackground({
+  item,
+  tile = false,
+}: {
+  item: BackgroundItem;
+  /** On the background tile: a small round button over the picture. */
+  tile?: boolean;
+}) {
+  const { t } = useTranslation();
+  const current = item.background;
+  const allCount = useBackgroundItemCount();
+  return (
+    <BackgroundMenu
+      current={current}
+      onPick={(bg) => setItemBackground(item, bg)}
+      title={t('itemBg.title')}
+      defaultLabel={t('itemBg.useTheme')}
+      trigger={
+        tile ? (
+          <IconButton
+            size="2xs"
+            variant="bare"
+            aria-label={t('itemBg.change')}
+            title={current ? t('itemBg.own') : t('itemBg.theme')}
+            className={TILE_TOOL}
+          >
+            <ImageIcon size={12} />
+          </IconButton>
+        ) : (
+          <IconButton
+            size="2xs"
+            variant="quiet"
+            aria-label={t('itemBg.button')}
+            title={current ? t('itemBg.own') : t('itemBg.theme')}
+            active={!!current}
+          >
+            {current ? <Swatch bg={current} size="sm" /> : <ImageIcon size={14} />}
+          </IconButton>
+        )
+      }
+    >
+      {allCount > 1 && (
+        <DropdownMenu.Item
+          className={ITEM_CLASS}
+          onSelect={() => setServiceBackground(current)}
+          title={t('itemBg.copyToAllHint')}
+        >
+          <Layers size={14} />
+          <Typography className="flex-1">{t('itemBg.copyToAll', { count: allCount })}</Typography>
+        </DropdownMenu.Item>
+      )}
+    </BackgroundMenu>
   );
 }

@@ -1,4 +1,5 @@
-import { clearLayer, goLive, step, toggleMask } from './actions';
+import { clearLayer, goLive, slidesFor, step, toggleMask, triggerSlide } from './actions';
+import { slideForHotkey } from './groupKeys';
 import { api, cmd } from './api';
 import { openDialog, redo, undo, useStore } from './store';
 import { auto, cut, previewSource, switcherSource, take } from './switcher';
@@ -26,7 +27,8 @@ export function comboFromEvent(e: KeyboardEvent): string {
   if (e.altKey && e.code.startsWith('Key')) key = e.code.slice(3);
   if (key === '?') return mod ? 'Mod+?' : '?';
   if (e.shiftKey && key.length > 1) parts.push('Shift');
-  else if (e.shiftKey && /^[A-Z]$/.test(key) && mod) parts.push('Shift');
+  // Shift+letter is its own combo ("Shift+B" for Black): plain letters are group hotkeys.
+  else if (e.shiftKey && /^[A-Z]$/.test(key)) parts.push('Shift');
   parts.push(key);
   return parts.join('+');
 }
@@ -78,6 +80,23 @@ const RUN: Record<ShortcutAction, () => void> = {
   },
 };
 
+/**
+ * A plain letter: go to that section (C → the Chorus) of the item being worked on, the one
+ * selected in the plan (or picked from the library), from where it is on screen now. Only in
+ * Show, with no dialog open. Returns whether the letter did something.
+ */
+function goToGroup(letter: string): boolean {
+  const s = useStore.getState();
+  if (s.mode !== 'show' || (s.dialog && s.dialog !== 'perf')) return false;
+  const item = s.adhoc ?? s.service?.items.find((i) => i.id === s.selectedItemId) ?? null;
+  if (!item) return false;
+  const from = s.liveCursor?.itemId === item.id ? s.liveCursor.index : -1;
+  const i = slideForHotkey(slidesFor(item), letter, from);
+  if (i < 0) return false;
+  void triggerSlide(item, i);
+  return true;
+}
+
 /** Run a show action (a key, or a button on a desk or controller). */
 export const runShowAction = (action: ShortcutAction): void => RUN[action]();
 
@@ -109,7 +128,11 @@ export function installShortcuts(): () => void {
     const map = effectiveShortcuts();
     let action = (Object.keys(map) as ShortcutAction[]).find((a) => map[a] === combo);
     if (!action) action = ALIASES[combo];
-    if (!action) return;
+    if (!action) {
+      // A plain letter with no show action of its own: a group hotkey.
+      if (/^[A-Z]$/.test(combo) && !isTyping(e.target) && goToGroup(combo)) e.preventDefault();
+      return;
+    }
     const hasModifier = combo.includes('Mod');
     if (isTyping(e.target) && !hasModifier && !/^F\d+$/.test(combo)) return;
     // In a text field, ⌘Z / ⌘⇧Z undo the typing (native), not the service plan.
