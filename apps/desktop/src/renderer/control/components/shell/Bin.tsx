@@ -7,6 +7,7 @@ import {
   Images,
   Music,
   ListVideo,
+  Mic,
   Pencil,
   Star,
   History,
@@ -35,6 +36,7 @@ import { useStore } from '../../lib/store';
 import { BackgroundsPanel } from '../MediaPanel';
 import { inMediaBin, MediaBrowser } from '../media/MediaBrowser';
 import { VideoInputs } from '../media/VideoInputs';
+import { AudioInputs } from '../bins/AudioInputs';
 import { StockMedia } from '../media/StockMedia';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { type BinTab } from '../../types';
@@ -49,6 +51,7 @@ const LIBRARY: { tab: BinTab; icon: LucideIcon }[] = [
 ];
 const SOURCES: { tab: BinTab; icon: LucideIcon }[] = [
   { tab: 'video-input', icon: Video },
+  { tab: 'audio-input', icon: Mic },
   { tab: 'stock-media', icon: Store },
 ];
 
@@ -283,6 +286,10 @@ export function Bin({ height }: { height: number }) {
     <section aria-label={t('bin.label')} className="flex shrink-0 flex-col" style={{ height }}>
       {tab === 'video-input' ? (
         <VideoInputs />
+      ) : tab === 'audio-input' ? (
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--surface-0)]">
+          <AudioInputs wide />
+        </div>
       ) : tab === 'stock-media' ? (
         <StockMedia />
       ) : tab === 'backgrounds' ? (

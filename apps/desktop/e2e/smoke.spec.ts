@@ -1610,6 +1610,14 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await expect.poll(async () => (await channel())?.room).toBe(true);
   await room.click();
   await expect.poll(async () => (await channel())?.room).toBe(false);
+  // The same inputs are a source in the media sidebar, across the full width.
+  await control
+    .getByRole('navigation', { name: 'Media library' })
+    .getByRole('button', { name: 'Audio input', exact: true })
+    .click();
+  await expect(
+    control.getByRole('region', { name: 'Bin' }).getByRole('region', { name: 'Audio inputs' }),
+  ).toBeVisible();
 });
 
 test('mixer: a desk along the bottom; faders, mute and routing change the live mix', async () => {
@@ -2180,12 +2188,14 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     const r = await control.evaluate(() => window.lampstand.query('settings.get'));
     return r.ok ? `${r.value.stream.picture.background} ${r.value.stream.picture.words}` : '';
   };
-  const scene = live.getByRole('combobox', { name: 'Scene: what the stream shows' });
-  await scene.click();
-  await control.getByRole('option', { name: 'Words on black' }).click();
+  const scenes = live.getByRole('group', { name: 'Scene: what the stream shows' });
+  await scenes.getByRole('button', { name: 'Words on black' }).click();
   await expect.poll(picture).toBe('black full');
-  await scene.click();
-  await control.getByRole('option', { name: 'Slides with a lower third' }).click();
+  await expect(scenes.getByRole('button', { name: 'Words on black' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await scenes.getByRole('button', { name: 'Slides with a lower third' }).click();
   await expect.poll(picture).toBe('program lowerThird');
   // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
   await live.getByRole('button', { name: 'Mute Stream' }).click();

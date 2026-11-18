@@ -73,6 +73,7 @@ export type BinTab =
   | 'backgrounds'
   | 'playlist'
   | 'video-input'
+  | 'audio-input'
   | 'stock-media';
 /** Show-controls tabs (under the output monitor). */
 export type ControlsTab = 'audio' | 'stage' | 'timers' | 'messages' | 'props' | 'macros';

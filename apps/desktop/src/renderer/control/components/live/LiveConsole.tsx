@@ -23,7 +23,7 @@ import { PicturePanel } from './PicturePanel';
 import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
-import { SilentNotice, StreamBar, StreamMeterOverlay } from './StreamBar';
+import { ScenePreviews, SilentNotice, StreamMeterOverlay, StreamSound } from './StreamBar';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
@@ -203,8 +203,9 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
             )}
             {(preview || running) && <StreamMeterOverlay />}
           </div>
-          <StreamBar st={st} />
+          <ScenePreviews st={st} streaming={!!s?.streaming} />
           {s && <SilentNotice s={s} />}
+          <StreamSound />
         </div>
       </div>
 

@@ -114,11 +114,14 @@ function InputRow({ device }: { device: InputDevice }) {
  * Audio inputs (Audio tab): microphones and desk feeds, each with a level meter. Send one to
  * the stream, the room, or both; each is a channel on the Mixer (EQ, compressor, routing).
  */
-export function AudioInputs() {
+export function AudioInputs({ wide = false }: { wide?: boolean }) {
   const { t } = useTranslation();
   const devices = useInputDevices('audioinput');
   return (
-    <section aria-label={t('inputs.audioTitle')} className="flex flex-col gap-1.5 px-2.5 pb-2.5">
+    <section
+      aria-label={t('inputs.audioTitle')}
+      className={`flex flex-col gap-1.5 ${wide ? 'p-4' : 'px-2.5 pb-2.5'}`}
+    >
       <div className="flex items-center justify-between px-0.5 pt-1">
         <Typography as="h3" variant="overline">
           {t('inputs.audioTitle')}
@@ -137,7 +140,12 @@ export function AudioInputs() {
           {t('inputs.noMics')}
         </Typography>
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul
+          className={wide ? 'grid gap-2.5' : 'flex flex-col gap-1.5'}
+          style={
+            wide ? { gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' } : undefined
+          }
+        >
           {(devices ?? []).map((d) => (
             <InputRow key={d.deviceId} device={d} />
           ))}

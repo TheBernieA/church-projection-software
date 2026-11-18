@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Mic, Music, Video, VolumeX } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MixerChannel } from '@lampstand/core';
@@ -53,13 +53,15 @@ function ChannelRow({ c }: { c: MixerChannel }) {
 }
 
 /**
- * What the stream hears: every channel, with its level in the stream mix and a switch to send it
- * or not. (The stream's own mute and level sit under its picture; the full desk is the Mixer.)
+ * What else the stream hears: the music and video channels, each with its level in the stream mix
+ * and a switch to send it or not. (Mics, and the stream's own level, sit under its picture.)
  */
 export function SoundPanel() {
   const { t } = useTranslation();
-  const channels = useStore((s) => s.live?.mixer.channels ?? null);
-  if (!channels) return null;
+  const all = useStore((s) => s.live?.mixer.channels ?? null);
+  // Mics and the desk sit under the stream picture, at hand; here, the music and video.
+  const channels = useMemo(() => all?.filter((c) => c.kind !== 'input') ?? null, [all]);
+  if (!channels?.length) return null;
   return (
     <Section
       title={t('console.sound')}

@@ -30,7 +30,8 @@ export const WORDS_ALIGNS: Choice<Picture['wordsAlign']>[] = [
 
 /**
  * Scenes: the usual looks for the stream, one click each (what's behind, and how the words
- * show). Anything else made with the controls below is a custom look.
+ * show). A camera scene is offered once per camera. Anything else is made with the controls
+ * below.
  */
 export const STREAM_SCENES = [
   { id: 'slides', background: 'program', words: 'full' },
@@ -44,12 +45,6 @@ export const STREAM_SCENES = [
   background: Picture['background'];
   words: Picture['words'];
 }[];
-export type StreamSceneId = (typeof STREAM_SCENES)[number]['id'];
-
-/** The scene a picture is set to, or null for a custom look. */
-export const sceneOf = (p: Pick<Picture, 'background' | 'words'>): StreamSceneId | null =>
-  STREAM_SCENES.find((x) => x.background === p.background && x.words === p.words)?.id ?? null;
-
 /** The lower third's size when chosen by hand, as % of the words' full-screen size. */
 export const WORDS_SIZE = { min: 25, max: 100, step: 5 } as const;
 
