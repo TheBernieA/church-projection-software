@@ -396,12 +396,12 @@ function InputStrip({
         />
       <Slider
         aria-label={t('mixer.levelOf', { name: c.name })}
-        title={formatDb(c.gainDb)}
         min={MIN_DB}
         max={MAX_DB}
         step={0.5}
         value={c.gainDb}
-        format={null}
+        format={formatDb}
+        readoutAt="thumb"
         onChange={(e) =>
           mixerLive({ action: 'channel', id: c.id, patch: { gainDb: Number(e.target.value) } })
         }
@@ -469,12 +469,13 @@ export function StreamSound() {
         </IconButton>
         <Slider
           aria-label={t('mixer.levelOf', { name: t('mixer.bus.stream') })}
-          title={`${t('console.streamLevel')}: ${formatDb(bus.gainDb)}`}
+          title={t('console.streamLevel')}
           min={MIN_DB}
           max={MAX_DB}
           step={0.5}
           value={bus.gainDb}
-          format={null}
+          format={formatDb}
+          readoutAt="thumb"
           onChange={(e) =>
             mixerLive({ action: 'bus', bus: 'stream', patch: { gainDb: Number(e.target.value) } })
           }

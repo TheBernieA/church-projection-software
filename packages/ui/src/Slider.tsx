@@ -17,6 +17,11 @@ export interface SliderProps extends Omit<
    * the range it is, as a percentage; `null` hides it (e.g. a scrubber with its times elsewhere).
    */
   format?: ((value: number) => string) | null;
+  /**
+   * Where the readout sits: beside the track (default), or just under the thumb, following it
+   * (for tight rows where there's no room beside it).
+   */
+  readoutAt?: 'end' | 'thumb';
   /** Track fill colour (defaults to the text colour; e.g. red as a clip runs out). */
   fill?: string;
   /** Wrapper classes: width and flex behaviour. */
@@ -34,6 +39,7 @@ export function Slider({
   min = 0,
   max,
   format,
+  readoutAt = 'end',
   fill,
   className = '',
   style,
@@ -43,7 +49,7 @@ export function Slider({
   const at = span > 0 ? Math.min(100, Math.max(0, ((value - min) / span) * 100)) : 0;
   const readout = format === null ? null : format ? format(value) : `${Math.round(at)}%`;
   return (
-    <span className={`flex min-w-0 items-center gap-2 ${className}`}>
+    <span className={`relative flex min-w-0 items-center gap-2 ${className}`}>
       <input
         type="range"
         min={min}
@@ -60,7 +66,20 @@ export function Slider({
         }
         className="ls-range min-w-0 flex-1"
       />
-      {readout !== null && (
+      {readout !== null && readoutAt === 'thumb' && (
+        <Typography
+          size={10}
+          tone="muted"
+          tabular
+          aria-hidden
+          // Under the thumb's centre (the thumb's 14px keeps it inside the track at each end).
+          style={{ left: `calc(${at}% + ${(7 - (at / 100) * 14).toFixed(1)}px)` }}
+          className="pointer-events-none absolute top-full -translate-x-1/2 whitespace-nowrap leading-none"
+        >
+          {readout}
+        </Typography>
+      )}
+      {readout !== null && readoutAt === 'end' && (
         <Typography size={10} tone="muted" tabular className="min-w-[3.25ch] shrink-0 text-right">
           {readout}
         </Typography>
