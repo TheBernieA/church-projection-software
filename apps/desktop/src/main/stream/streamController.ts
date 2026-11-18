@@ -960,6 +960,7 @@ export class StreamController {
     if (this.pipeline !== 'gpu' || !this.want.stream || this.status.state !== 'live') return;
     if (process.env.LAMPSTAND_ABR === '0') return; // measurements: the stream as it was without it
     const action = this.abr.next({ delayMs, sentKbps, at });
+    this.adviseOnUpload(at);
     if (!action) return;
     if (action.kind === 'reconnect') {
       this.d.log.warn('stream fell behind; reconnecting to catch up', {
@@ -979,6 +980,15 @@ export class StreamController {
     this.win?.webContents.send(Channels.evEncode, { bitrate: action.kbps });
     const full = this.winProfile?.videoKbps ?? action.kbps;
     this.setStatus({ adaptedKbps: action.kbps < full ? action.kbps : null }, true);
+  }
+
+  /** The upload has held the bitrate far under the target: Light would look sharper. */
+  private adviseOnUpload(at: number): void {
+    const starved = this.abr.starved(at) && this.profile().mode !== 'light';
+    if (starved && !this.status.advice) {
+      this.d.log.warn('upload too slow for this picture size', { kbps: this.abr.current });
+      this.setStatus({ advice: 'upload' }, true);
+    } else if (!starved && this.status.advice === 'upload') this.setStatus({ advice: null }, true);
   }
 
   /** Sound from the stream page's mix, on to ffmpeg. */
@@ -1076,14 +1086,17 @@ export class StreamController {
     this.history.kbps.push(this.status.kbps);
     this.history.speed.push(this.status.speed);
     this.history.cpu.push(Math.round(appCpu + (enc?.cpu ?? 0)));
-    const struggling = isStruggling(this.samples) && this.profile().mode !== 'light';
+    // Falling behind while the bitrate is lowered is the upload, not this computer (that advice
+    // is the upload one).
+    const struggling =
+      isStruggling(this.samples) && this.profile().mode !== 'light' && !this.status.adaptedKbps;
     if (struggling && !this.status.advice)
       this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
     this.setStatus({
       droppedLocal: droppedTotal,
       dropped: droppedTotal + this.ffmpegDropped,
       recordingBytes,
-      advice: struggling ? 'lighter' : this.status.advice,
+      advice: struggling && !this.status.advice ? 'lighter' : this.status.advice,
       health: {
         appCpu: Math.round(appCpu),
         appMemMB,

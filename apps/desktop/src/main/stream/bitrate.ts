@@ -39,6 +39,10 @@ const CEILING = 0.85;
 const CEILING_MS = 5 * 60_000;
 /** Never reconnect more often than this. */
 const RECONNECT_GAP_MS = 45_000;
+/** Held at or under this share of the target for this long: the upload is too slow for this
+ *  picture size (a smaller one would look better at the rate it carries). */
+const STARVED = 0.5;
+const STARVED_MS = 30_000;
 
 export class BitrateController {
   private kbps: number;
@@ -53,6 +57,11 @@ export class BitrateController {
   private ceiling = Infinity;
   private ceilingAt = -Infinity;
   private lastCongestion = -Infinity;
+  /** Falling behind right now (from the first late reading until the stream is live again). */
+  private congested = false;
+  /** What was getting through when this episode began. */
+  private choked = Infinity;
+  private lowSince: number | null = null;
 
   constructor(
     /** The bitrate the performance mode asks for: never above it. */
@@ -77,6 +86,13 @@ export class BitrateController {
     this.lowered = false;
     this.ceiling = Infinity;
     this.lastCongestion = -Infinity;
+    this.congested = false;
+    this.lowSince = null;
+  }
+
+  /** The bitrate has been held well under the target for a while: the upload is the limit. */
+  starved(at: number): boolean {
+    return this.lowSince !== null && at - this.lowSince > STARVED_MS;
   }
 
   /** After a reconnect: the backlog is gone, so give the lowered bitrate time to prove itself. */
@@ -87,6 +103,13 @@ export class BitrateController {
   }
 
   next(s: BitrateSample): BitrateAction {
+    const action = this.decide(s);
+    if (this.kbps <= this.target * STARVED) this.lowSince ??= s.at;
+    else this.lowSince = null;
+    return action;
+  }
+
+  private decide(s: BitrateSample): BitrateAction {
     if (s.delayMs > CONGESTED_MS) {
       this.clearSince = null;
       // A backlog the lower bitrate can't drain quickly: only reconnecting throws it away.
@@ -97,16 +120,22 @@ export class BitrateController {
         s.at - this.lastReconnect > RECONNECT_GAP_MS
       )
         return { kind: 'reconnect' };
-      if (s.at - this.lastChange < SETTLE_MS) return null; // the last change is still arriving
-      // Well under what was getting through (the encoder often sends less than it's asked for).
-      const through = s.sentKbps > 0 ? Math.min(s.sentKbps, this.kbps) : this.kbps;
-      // Choked again soon after the last time: that rate is more than the upload carries, so
-      // climbing back stops short of it. (A one-off stall, a network blip, sets no ceiling.)
-      if (s.at - this.lastCongestion < REPEAT_MS) {
-        this.ceiling = Math.round(through * CEILING);
-        this.ceilingAt = s.at;
+      // The start of an episode: remember the rate that choked (what was getting through: the
+      // encoder often sends less than it's asked for). Later readings in the same episode only
+      // show the lowered encoder (and a still slide sends next to nothing), not the upload.
+      if (!this.congested) {
+        this.congested = true;
+        this.choked = s.sentKbps > 0 ? Math.min(s.sentKbps, this.kbps) : this.kbps;
+        // Choked again soon after the last time: that rate is more than the upload carries, so
+        // climbing back stops short of it (a one-off stall, a network blip, sets no ceiling).
+        if (s.at - this.lastCongestion < REPEAT_MS) {
+          this.ceiling = Math.max(this.floor, Math.round(this.choked * CEILING));
+          this.ceilingAt = s.at;
+        }
       }
       this.lastCongestion = s.at;
+      if (s.at - this.lastChange < SETTLE_MS) return null; // the last change is still arriving
+      const through = Math.min(this.choked, this.kbps);
       const next = Math.max(this.floor, Math.round(through * DOWN));
       if (next >= this.kbps) return null;
       this.kbps = next;
@@ -114,8 +143,10 @@ export class BitrateController {
       this.lowered = true;
       return { kind: 'set', kbps: next, reason: 'congested' };
     }
-    if (s.delayMs < CLEAR_MS) this.clearSince ??= s.at;
-    else this.clearSince = null;
+    if (s.delayMs < CLEAR_MS) {
+      this.clearSince ??= s.at;
+      this.congested = false;
+    } else this.clearSince = null;
     // The remembered ceiling fades after a while: the connection may have got better.
     if (s.at - this.ceilingAt > CEILING_MS) this.ceiling = Infinity;
     const top = Math.min(this.target, this.ceiling);

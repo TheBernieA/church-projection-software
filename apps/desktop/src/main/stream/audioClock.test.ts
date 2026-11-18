@@ -56,17 +56,30 @@ describe('the stream sound clock', () => {
     expect(clock.report().audioDroppedMs).toBe(100);
   });
 
-  it('lets up to half a second wait for ffmpeg, no more', () => {
+  it('lets up to three seconds wait for ffmpeg, no more', () => {
     const { clock, out, at } = setup();
     at(20);
-    out.writableLength = BYTES_PER_SECOND * 0.4;
+    out.writableLength = BYTES_PER_SECOND * 2.9;
     expect(clock.write(Buffer.alloc(ms(20)))).toBe(true);
-    out.writableLength = BYTES_PER_SECOND * 0.6;
+    out.writableLength = BYTES_PER_SECOND * 3.1;
     expect(clock.write(Buffer.alloc(ms(20)))).toBe(false);
     out.writable = false;
     out.writableLength = 0;
     expect(clock.write(Buffer.alloc(ms(20)))).toBe(false);
     expect(clock.report().audioDroppedMs).toBe(40); // both refused batches are counted
+  });
+
+  it('keeps the sound whole through a two-second stalled upload (late, not silent)', () => {
+    const { clock, out, sent, at } = setup();
+    // ffmpeg stops reading for two seconds: every batch waits in the pipe.
+    for (let t = 20; t <= 2000; t += 20) {
+      at(t);
+      out.writableLength += ms(20);
+      expect(clock.write(Buffer.alloc(ms(20)))).toBe(true);
+      clock.topUp();
+    }
+    expect(sent).toHaveLength(100);
+    expect(clock.report()).toEqual({ audioLeadMs: 0, audioPaddedMs: 0, audioDroppedMs: 0 });
   });
 
   it('starts clean for a new session', () => {

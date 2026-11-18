@@ -283,9 +283,17 @@ was filled with silence while it waited.
 progress). Past 1.2 s it lowers the hardware encoder's bitrate on the fly (WebCodecs
 `configure`, no restart, from a keyframe) to 60% of what was actually being sent. Once the
 stream has been live for 10 s it climbs back (×1.25 every 10 s) to the mode's bitrate. If
-lowering choked again within two minutes, that rate becomes a ceiling for five minutes. If the
+it chokes again within two minutes, 85% of the rate that choked (taken once, at the start of
+that episode, never from the lowered readings after it) becomes a ceiling for five minutes. If the
 delay is still over 3 s after lowering, it reconnects (rate-limited) to throw the backlog away.
-The Live console's bitrate reading turns amber and explains when it has lowered itself.
+The Live console's bitrate reading turns amber and explains when it has lowered itself. If the
+bitrate is held at half the mode's or less for 30 s, the console suggests Light: at around
+1 Mb/s, 540p looks sharper than 1080p (whose encoder also drops frames at that rate). The
+"computer is struggling" advice is not shown while the bitrate is lowered (the upload is the cause).
+
+During a stall ffmpeg stops reading its inputs. Up to 3 s of sound waits in its pipe (longer than
+the picture is allowed to), so it arrives late but whole, instead of becoming silence. A real
+stream before this change lost about 2 s of sound to each stall.
 
 Measured with the slow-link relay (`LAMPSTAND_LATENCY_KBPS=1000`, `e2e/fixtures/throttle.py`,
 1080p30): without it the delay climbed to 17 s in a minute with 39 s of sound replaced by

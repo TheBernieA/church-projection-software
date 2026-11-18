@@ -245,8 +245,9 @@ export interface StreamStatus {
   profile: StreamProfile;
   /** Frames Lampstand couldn't hand to the encoder in time (in `dropped` too). */
   droppedLocal: number;
-  /** The computer can't keep up: suggest Light. */
-  advice: 'lighter' | null;
+  /** Suggest Light: the computer can't keep up (`lighter`), or the upload carries too little for
+   *  this picture size (`upload`: a smaller picture looks sharper at the rate it carries). */
+  advice: 'lighter' | 'upload' | null;
   /** CPU and memory while running (every 2 s), with recent history for sparklines. */
   health: StreamHealth | null;
   /** The recording's size so far, in bytes. */

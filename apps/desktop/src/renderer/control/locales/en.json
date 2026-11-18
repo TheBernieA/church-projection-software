@@ -1986,6 +1986,7 @@
     "cpu": "Computer load",
     "cpuSplit": "Lampstand {{app}}% · encoder {{encoder}}% · {{mem}}",
     "advice": "This computer is struggling to keep up. Light mode streams smoothly with a smaller picture (a two-second pause, and the recording carries on).",
+    "adviceUpload": "Your internet upload is only carrying about {{rate}} Mb/s, too little for this picture size. Light mode (540p) will look sharper and smoother (a two-second pause, and the recording carries on).",
     "switchLight": "Switch to Light",
     "recordingTitle": "Recording",
     "addDestination": "Add",

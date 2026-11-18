@@ -8,9 +8,11 @@ const FRAME_BYTES = 8;
 /** How far the sound may run behind the clock before silence fills the gap, and ahead of it
  *  before a late batch is dropped (filling sooner turns every small delay into a click). */
 const SLACK_BYTES = BYTES_PER_SECOND * 0.15;
-/** How much may wait for ffmpeg (it opens the sound a moment after the picture: dropping those
- *  first batches would leave the sound short for the whole stream). */
-const MAX_WAITING_BYTES = BYTES_PER_SECOND / 2;
+/** How much may wait for ffmpeg. It opens the sound a moment after the picture, and a stalled
+ *  upload stops it reading for a second or two: sound that waits arrives late (as the picture
+ *  does) but whole, where sound that's refused becomes silence on the stream. Longer than the
+ *  picture is allowed to wait (a stall past that is ended by skipping or reconnecting). */
+const MAX_WAITING_BYTES = BYTES_PER_SECOND * 3;
 
 const toMs = (bytes: number): number => Math.round((bytes / BYTES_PER_SECOND) * 1000);
 

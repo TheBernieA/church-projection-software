@@ -83,4 +83,28 @@ describe('adaptive bitrate', () => {
     for (let t = 1000; t < 200_000; t += 1000) c.next({ delayMs: 100, sentKbps: c.current, at: t });
     expect(c.current).toBe(6000);
   });
+
+  it('climbs back to just under the rate that choked, even when it hit the floor on the way', () => {
+    // A real stream (1080p30 to YouTube over a ~1.1 Mb/s upload): choked at 1116, recovered,
+    // choked again at 1103, and was still behind 4 s later while a still slide sent 484.
+    const c = new BitrateController(4500);
+    c.next({ delayMs: 1277, sentKbps: 1116, at: 0 });
+    for (let t = 1000; t < 37_000; t += 1000) c.next({ delayMs: 50, sentKbps: 500, at: t });
+    c.next({ delayMs: 1322, sentKbps: 1103, at: 37_000 });
+    c.next({ delayMs: 2003, sentKbps: 484, at: 41_000 });
+    expect(c.current).toBe(662); // 60% of the 1103 that choked, not of the 484 sent later
+    for (let t = 42_000; t < 120_000; t += 1000) c.next({ delayMs: 50, sentKbps: 400, at: t });
+    // 85% of the 1103 that choked; not stuck at the floor under a ceiling below it.
+    expect(c.current).toBe(938);
+  });
+
+  it('says when the upload has held the bitrate well under the target for a while', () => {
+    const c = new BitrateController(4500);
+    c.next({ delayMs: 2000, sentKbps: 1100, at: 0 }); // → 660
+    expect(c.starved(10_000)).toBe(false);
+    for (let t = 1000; t < 40_000; t += 1000) c.next({ delayMs: 2000, sentKbps: 600, at: t });
+    expect(c.starved(40_000)).toBe(true);
+    c.reset(4500);
+    expect(c.starved(40_000)).toBe(false);
+  });
 });
