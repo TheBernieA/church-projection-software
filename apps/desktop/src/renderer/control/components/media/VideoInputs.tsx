@@ -350,7 +350,10 @@ function fitSwitcher(width: number, height: number): SwitcherFit {
   if (stackedRoom - Math.max(STRIP_MIN, 90) >= 80) {
     const byWidth = (((width - SWITCHER_FIXED_WIDTH) / 2) * 9) / 16;
     const monitor = Math.round(clamp(Math.min(stackedRoom * 0.55, byWidth), 90, 220));
-    const tile = Math.round(clamp(stackedRoom - Math.max(STRIP_MIN, monitor), 80, 200));
+    // A camera is a source, never bigger than the monitors it feeds.
+    const tile = Math.round(
+      clamp(Math.min(stackedRoom - Math.max(STRIP_MIN, monitor), monitor), 80, 200),
+    );
     return { inline: false, monitor, tile };
   }
   // The first camera and the two monitors share the width evenly (more cameras scroll).

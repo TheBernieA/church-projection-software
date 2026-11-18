@@ -41,7 +41,12 @@ function BusMonitor({
 }) {
   const color = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <figure className="shrink-0 self-center" style={{ width: (height * 16) / 9 }}>
+    // Sized from the pane, and free to shrink a little more rather than push the controls
+    // out of line.
+    <figure
+      className="min-w-0 shrink self-center"
+      style={{ flexBasis: (height * 16) / 9, maxWidth: (height * 16) / 9 }}
+    >
       <div
         className="relative overflow-hidden rounded-[6px] bg-black"
         style={{ boxShadow: `0 0 0 2px ${color}` }}
@@ -169,7 +174,7 @@ export function SwitcherBar({
   return (
     <section
       aria-label={t('switcher.title')}
-      className="flex shrink-0 flex-wrap items-stretch gap-x-5 gap-y-3 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
+      className="flex shrink-0 items-stretch gap-5 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
     >
       {sources && (
         <div className="flex min-w-0 flex-1 items-center border-r border-[var(--divider)] pr-5">
@@ -177,7 +182,7 @@ export function SwitcherBar({
         </div>
       )}
       {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <BusMonitor
           scene={previewScene}
           tone="preview"

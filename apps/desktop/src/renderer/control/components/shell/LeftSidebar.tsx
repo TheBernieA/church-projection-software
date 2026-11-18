@@ -106,6 +106,8 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
   const services = useStore((s) => s.services);
   const current = useStore((s) => s.service?.id);
   const outline = usePaneSize('libraryHeight', 220, 110, 520);
+  // The media sidebar has its own height, whatever the bin beside it does (drag the line above it).
+  const mediaNav = usePaneSize('mediaNavHeight', 340, 120, 720);
   const playlists = services.filter((s) => !s.isTemplate);
 
   const library = (id: 'songs' | 'hymns') => () =>
@@ -166,11 +168,11 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
       <div className="flex min-h-0 flex-1 flex-col pt-2">
         {view === 'library' ? <SongList hymns={tab === 'hymns'} /> : <ServicePanel />}
       </div>
-      {/* With the media bin open, its sidebar sits here, level with the bin beside it. */}
+      {/* With the media bin open, its sidebar sits here, sized on its own (drag the line above). */}
       {binHeight !== null && (
         <>
-          <div aria-hidden className="h-px shrink-0 bg-[var(--divider)]" />
-          <div className="flex shrink-0 flex-col" style={{ height: binHeight }}>
+          <Splitter axis="y" pane={mediaNav} invert label={t('layout.resizeMediaNav')} />
+          <div className="flex shrink-0 flex-col" style={{ height: mediaNav.size }}>
             <BinNav />
           </div>
         </>

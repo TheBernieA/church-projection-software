@@ -181,8 +181,8 @@ function PlaylistRow({ p, count }: { p: MediaPlaylist; count: number }) {
 
 /**
  * The media sidebar, in the left column under the playlist (as in a media-library app): the
- * library views (all media, pictures, videos, audio, backgrounds), the sources (cameras, stock
- * media), and the operator's media playlists. Its top lines up with the media browser's.
+ * library views (all media, pictures, videos, audio, backgrounds), the operator's media
+ * playlists, and the sources (cameras, stock media). Its height is its own (a splitter above it). Its top lines up with the media browser's.
  */
 export function BinNav() {
   const { t } = useTranslation();
@@ -220,20 +220,6 @@ export function BinNav() {
 
       <SoonNavItem id="media-recent" icon={<History size={14} />} />
 
-      {/* Cameras and stock media above the playlists: a list that grows can't push them away. */}
-      <SectionHeading title={t('mediaBin.sources')} />
-      {SOURCES.map(({ tab: x, icon: Icon }) => (
-        <NavItem
-          key={x}
-          aria-pressed={tab === x}
-          selected={tab === x}
-          onClick={() => useStore.setState({ binTab: x })}
-          icon={<Icon size={14} className="text-[var(--text-3)]" />}
-          label={t(`bin.tabs.${x}`)}
-          className="w-[calc(100%-12px)]"
-        />
-      ))}
-
       <SectionHeading
         title={t('mediaBin.playlists')}
         action={
@@ -259,6 +245,19 @@ export function BinNav() {
         ))}
 
       <SoonNavItem id="playlist-folders" icon={<FolderPlus size={14} />} />
+
+      <SectionHeading title={t('mediaBin.sources')} />
+      {SOURCES.map(({ tab: x, icon: Icon }) => (
+        <NavItem
+          key={x}
+          aria-pressed={tab === x}
+          selected={tab === x}
+          onClick={() => useStore.setState({ binTab: x })}
+          icon={<Icon size={14} className="text-[var(--text-3)]" />}
+          label={t(`bin.tabs.${x}`)}
+          className="w-[calc(100%-12px)]"
+        />
+      ))}
     </nav>
   );
 }

@@ -926,6 +926,7 @@
   },
   "layout": {
     "resizeLibrary": "Resize library",
+    "resizeMediaNav": "Resize the media sidebar",
     "resizeLeft": "Resize sidebar",
     "resizeBin": "Resize bin",
     "resizeRight": "Resize output column",
