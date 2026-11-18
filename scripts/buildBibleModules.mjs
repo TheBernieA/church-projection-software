@@ -403,6 +403,48 @@ function parseBook(usfm, bookId, headings, missing) {
   return chapters;
 }
 
+/**
+ * A book's name in its own language, as the source gives it: its running head (\\h), or its short
+ * title (\\toc2) when the head is in capitals (Segond's "GENÈSE" → "Genèse"). Where both are in
+ * capitals (Diodati), it's put in ordinary case: "I CORINTI" → "1 Corinti".
+ */
+function ownName(usfm) {
+  const field = (m) =>
+    new RegExp(`^\\\\${m}\\s+(.+?)\\s*$`, 'm').exec(usfm)?.[1]?.replace(/\s+/g, ' ');
+  const caps = (t) => t === t.toUpperCase();
+  const head = field('h');
+  const short = field('toc2');
+  if (head && !caps(head)) return head;
+  if (short && !caps(short) && short.length <= 40) return short;
+  return head ? ordinaryCase(head) : undefined;
+}
+
+/** Small words that stay lower case inside a book's name. */
+const SMALL_WORDS = new Set([
+  'de',
+  'dei',
+  'del',
+  'della',
+  'des',
+  'di',
+  'du',
+  'e',
+  'et',
+  'la',
+  'le',
+  'les',
+  'aux',
+]);
+
+function ordinaryCase(t) {
+  return t
+    .toLowerCase()
+    .replace(/^(i{1,3})\s/, (_, n) => `${n.length} `)
+    .split(' ')
+    .map((w, i) => (i > 0 && SMALL_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(' ');
+}
+
 /** A section heading that is the last text-bearing line of the book (Pauline subscriptions). */
 function isSubscription(usfm, line) {
   const after = usfm.slice(usfm.indexOf(line) + line.length);
@@ -443,7 +485,7 @@ async function buildVersion(v) {
     const usfm = byBook.get(id);
     assert(usfm, `${v.id}: missing book ${id}`);
     // English versions keep the English names; others take the book's own heading.
-    const own = /^\\h\s+(.+?)\s*$/m.exec(usfm)?.[1];
+    const own = ownName(usfm);
     const name = v.language === 'en' || !own ? english : own.slice(0, 100);
     names.set(id, name);
     const chapters = parseBook(usfm, id, headings, missing);

@@ -15,6 +15,7 @@ export const useStore = create<ControlState>((set) => ({
   mediaPlaylists: [],
   versions: [],
   verseCounts: {},
+  bookNames: {},
   chapters: {},
   services: [],
   service: null,
@@ -119,8 +120,14 @@ export function loadChapter(versionId: string, book: BookId, chapter: number): P
 
 export async function loadVerseCounts(versionId: string): Promise<void> {
   if (get().verseCounts[versionId]) return;
-  const counts = await q('bible.verseCounts', { versionId });
-  patch({ verseCounts: { ...get().verseCounts, [versionId]: counts } });
+  const [counts, names] = await Promise.all([
+    q('bible.verseCounts', { versionId }),
+    q('bible.bookNames', { versionId }),
+  ]);
+  patch({
+    verseCounts: { ...get().verseCounts, [versionId]: counts },
+    bookNames: { ...get().bookNames, [versionId]: names },
+  });
 }
 
 export async function refresh(

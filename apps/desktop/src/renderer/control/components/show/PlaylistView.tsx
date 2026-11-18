@@ -216,12 +216,13 @@ function ItemSection({
   const announcing = useStore((s) => s.announceItemId === item.id);
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
+  const bookNames = useStore((s) => s.bookNames);
   const liveKey = useStore((s) => s.live?.program.content?.key);
   const liveCursor = useStore((s) => s.liveCursor);
   const previewCursor = useStore((s) => s.previewCursor);
   const thumbs = useMemo(() => slides.map(thumbScene), [slides]);
   const song = item.kind === 'song' ? songs.find((s) => s.id === item.songId) : undefined;
-  const title = itemTitle(item, { songs, media });
+  const title = itemTitle(item, { songs, media, bookNames });
 
   const stateOf = (slide: PresentableSlide, i: number): SlideState => {
     const here = (c: { itemId: string; index: number } | null): boolean =>

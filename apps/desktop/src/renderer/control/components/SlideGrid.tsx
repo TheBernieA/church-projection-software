@@ -78,6 +78,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   const adhoc = useStore((s) => s.adhoc);
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
+  const bookNames = useStore((s) => s.bookNames);
   const liveKey = useStore((s) => s.live?.program.content?.key);
   const previewCursor = useStore((s) => s.previewCursor);
   const liveCursor = useStore((s) => s.liveCursor);
@@ -124,7 +125,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-3">
         {item && <KindTile kind={item.kind} size={22} />}
         <Typography as="h2" variant="title" truncate className="min-w-0">
-          {item ? itemTitle(item, { songs, media }) : t('slides.title')}
+          {item ? itemTitle(item, { songs, media, bookNames }) : t('slides.title')}
         </Typography>
         {item && slides.length > 0 && (
           <Typography variant="caption" className="shrink-0">

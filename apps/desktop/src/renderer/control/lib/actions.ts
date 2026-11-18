@@ -42,6 +42,7 @@ export function slideContext(): SlideContext {
     settings: s.settings,
     versions: s.versions,
     verseCounts: s.verseCounts,
+    bookNames: s.bookNames,
     chapters: s.chapters,
   };
 }

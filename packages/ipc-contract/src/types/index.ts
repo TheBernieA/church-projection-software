@@ -114,6 +114,8 @@ export interface QueryResults {
   'bible.versions': BibleVersionInfo[];
   'bible.chapter': { verses: string[] };
   'bible.verseCounts': Partial<Record<BookId, number[]>>;
+  /** A version's own book names; empty for English (the built-in names are used). */
+  'bible.bookNames': Partial<Record<BookId, string>>;
   'search.query': SearchHit[];
   'displays.list': DisplayInfo[];
   'history.state': { canUndo: boolean; canRedo: boolean };

@@ -17,6 +17,7 @@ export const QUERY_NAMES = [
   'bible.versions',
   'bible.chapter',
   'bible.verseCounts',
+  'bible.bookNames',
   'search.query',
   'displays.list',
   'history.state',

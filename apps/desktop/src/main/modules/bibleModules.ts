@@ -81,6 +81,7 @@ export async function installBibleModule(
 export class BibleStore {
   private versions = new Map<string, BibleVersionInfo>();
   private counts = new Map<string, Partial<Record<BookId, number[]>>>();
+  private names = new Map<string, Partial<Record<BookId, string>>>();
   private books = new Map<string, BibleBookFile>();
 
   constructor(private readonly root: string) {}
@@ -88,6 +89,7 @@ export class BibleStore {
   async refresh(): Promise<BibleVersionInfo[]> {
     this.versions.clear();
     this.counts.clear();
+    this.names.clear();
     this.books.clear();
     const dirs = (await listDir(this.root))
       .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
@@ -131,6 +133,28 @@ export class BibleStore {
       }
     }
     this.counts.set(versionId, out);
+    return out;
+  }
+
+  /**
+   * The version's own book names, from its book files ("Genesi", "1 Corinzi"). English versions
+   * get none: the built-in names know "Psalm 23" from "Psalms 23–24".
+   */
+  async bookNames(versionId: string): Promise<Partial<Record<BookId, string>>> {
+    const cached = this.names.get(versionId);
+    if (cached) return cached;
+    const info = this.versions.get(versionId);
+    if (!info) throw new AppError('bible-not-found', 'That Bible version is not installed.');
+    const out: Partial<Record<BookId, string>> = {};
+    if (!/^en\b/i.test(info.language))
+      for (const id of BOOK_IDS) {
+        const res = await readJson(
+          join(this.root, versionId, 'books', `${id}.json`),
+          BibleBookFileSchema,
+        );
+        if (res.status === 'ok' && res.value.name.trim()) out[id] = res.value.name.trim();
+      }
+    this.names.set(versionId, out);
     return out;
   }
 

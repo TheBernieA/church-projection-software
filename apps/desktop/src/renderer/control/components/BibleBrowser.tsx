@@ -26,6 +26,9 @@ export function BibleBrowser() {
   // for the verses); the Chapter button brings them back.
   const [chaptersOpen, setChaptersOpen] = useState(true);
   const counts = useStore((s) => s.verseCounts[versionId]);
+  // The version's own book names ("Genesi", "Juan"); English versions use the built-in ones.
+  const names = useStore((s) => s.bookNames[versionId]);
+  const nameOf = (id: BookId): string => names?.[id] ?? bookName(id);
   const verses = useStore((s) =>
     book ? s.chapters[chapterKey(versionId, book, chapter)] : undefined,
   );
@@ -90,7 +93,7 @@ export function BibleBrowser() {
             onClick={() => setBook(null)}
             className={`-ml-2 mr-auto min-w-0 !gap-1 !font-semibold !text-[var(--text-1)] ${typographyClass({ size: 15, important: true })}`}
           >
-            <Typography truncate>{bookName(book)}</Typography>
+            <Typography truncate>{nameOf(book)}</Typography>
           </Button>
         ) : (
           <input
@@ -123,14 +126,14 @@ export function BibleBrowser() {
             variant="ghost"
             icon={<ChevronLeft size={16} className="shrink-0" />}
             aria-label={
-              prevBook ? t('bible.prevBook', { name: prevBook.name }) : t('bible.firstBook')
+              prevBook ? t('bible.prevBook', { name: nameOf(prevBook.id) }) : t('bible.firstBook')
             }
-            title={prevBook ? t('bible.prevBook', { name: prevBook.name }) : undefined}
+            title={prevBook ? t('bible.prevBook', { name: nameOf(prevBook.id) }) : undefined}
             disabled={!prevBook}
             onClick={() => prevBook && openBook(prevBook.id)}
             className="min-w-0 justify-self-start"
           >
-            {prevBook && <Typography truncate>{prevBook.name}</Typography>}
+            {prevBook && <Typography truncate>{nameOf(prevBook.id)}</Typography>}
           </Button>
           <Button
             size="sm"
@@ -150,14 +153,14 @@ export function BibleBrowser() {
             size="sm"
             variant="ghost"
             aria-label={
-              nextBook ? t('bible.nextBook', { name: nextBook.name }) : t('bible.lastBook')
+              nextBook ? t('bible.nextBook', { name: nameOf(nextBook.id) }) : t('bible.lastBook')
             }
-            title={nextBook ? t('bible.nextBook', { name: nextBook.name }) : undefined}
+            title={nextBook ? t('bible.nextBook', { name: nameOf(nextBook.id) }) : undefined}
             disabled={!nextBook}
             onClick={() => nextBook && openBook(nextBook.id)}
             className="min-w-0 justify-self-end"
           >
-            {nextBook && <Typography truncate>{nextBook.name}</Typography>}
+            {nextBook && <Typography truncate>{nameOf(nextBook.id)}</Typography>}
             <ChevronRight size={16} className="shrink-0" />
           </Button>
         </div>
@@ -166,7 +169,10 @@ export function BibleBrowser() {
         <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
           {(['OT', 'NT'] as const).map((tst) => {
             const list = BOOKS.filter(
-              (b) => b.testament === tst && (!f || b.name.toLowerCase().includes(f)),
+              // The filter finds a book by its name in this version or in English.
+              (b) =>
+                b.testament === tst &&
+                (!f || nameOf(b.id).toLowerCase().includes(f) || b.name.toLowerCase().includes(f)),
             );
             if (!list.length) return null;
             return (
@@ -185,7 +191,7 @@ export function BibleBrowser() {
                       }}
                       className={`rounded-[7px] px-2 py-1.5 text-left transition-colors hover:bg-[var(--surface-3)] ${typographyClass({ size: 13, tone: 'primary', truncate: true })}`}
                     >
-                      {b.name}
+                      {nameOf(b.id)}
                     </Button>
                   ))}
                 </div>

@@ -111,6 +111,8 @@ export interface ControlState {
   mediaPlaylists: MediaPlaylist[];
   versions: BibleVersionInfo[];
   verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
+  /** Each version's own book names (none for English). */
+  bookNames: Record<string, Partial<Record<BookId, string>>>;
   chapters: Record<string, string[]>;
   services: ServiceSummary[];
   service: ServicePlan | null;
@@ -195,6 +197,7 @@ export interface SlideContext {
   settings: Settings | null;
   versions: BibleVersionInfo[];
   verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
+  bookNames: Record<string, Partial<Record<BookId, string>>>;
   chapters: Record<string, string[]>;
 }
 

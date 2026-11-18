@@ -33,6 +33,7 @@ export const QuerySchemas = {
     chapter: z.number().int().min(1).max(200),
   }),
   'bible.verseCounts': z.object({ versionId: z.string().max(32) }),
+  'bible.bookNames': z.object({ versionId: z.string().max(32) }),
   'search.query': z.object({
     text: z.string().max(200),
     limit: z.number().int().min(1).max(100).default(30),

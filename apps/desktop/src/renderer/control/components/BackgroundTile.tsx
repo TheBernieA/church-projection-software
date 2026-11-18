@@ -26,7 +26,8 @@ export function BackgroundMenu({ bg, name }: { bg: BackgroundRef; name: string }
   const target = useTargetItem();
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
-  const targetName = target ? itemTitle(target, { songs, media }) : '';
+  const bookNames = useStore((s) => s.bookNames);
+  const targetName = target ? itemTitle(target, { songs, media, bookNames }) : '';
   const allCount = useBackgroundItemCount();
   return (
     <DropdownMenu.Root>

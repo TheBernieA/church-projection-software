@@ -75,12 +75,18 @@ export function countdownTarget(target: string | { durationSec: number }, nowMs:
   return target;
 }
 
-export function itemTitle(item: ServiceItem, ctx: Pick<SlideContext, 'songs' | 'media'>): string {
+export function itemTitle(
+  item: ServiceItem,
+  ctx: Pick<SlideContext, 'songs' | 'media'> & Partial<Pick<SlideContext, 'bookNames'>>,
+): string {
   switch (item.kind) {
     case 'song':
       return ctx.songs.find((s) => s.id === item.songId)?.title ?? 'Missing song';
     case 'scripture':
-      return formatPassage(item.passage);
+      // In the first version's own language ("Giovanni 3:16").
+      return formatPassage(item.passage, {
+        names: ctx.bookNames?.[item.versionIds[0] ?? ''],
+      });
     case 'media':
       return ctx.media.find((m) => m.id === item.mediaId)?.name ?? 'Missing media';
     case 'presentation':
@@ -205,7 +211,10 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         slides: built.map((sl) => {
           const first = sl.verses[0];
           const last = sl.verses[sl.verses.length - 1];
-          const ref = first && last ? formatPassage({ start: first, end: last }) : '';
+          const ref =
+            first && last
+              ? formatPassage({ start: first, end: last }, { names: ctx.bookNames[primary.id] })
+              : '';
           const content: ContentLayer = {
             key: sl.key,
             kind: 'scripture',

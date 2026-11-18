@@ -90,6 +90,7 @@ export function ServicePanel() {
   const previewItem = useStore((s) => s.previewCursor?.itemId);
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
+  const bookNames = useStore((s) => s.bookNames);
   const subtitle = useItemSubtitle();
   const [drag, setDrag] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
@@ -280,7 +281,7 @@ export function ServicePanel() {
                   {/* One line: the title, and its source (song, version…) in muted text on the right. */}
                   <span className="flex min-w-0 flex-1 items-baseline gap-2">
                     <Typography variant="body" truncate className="min-w-0 flex-1">
-                      {itemTitle(item, { songs, media })}
+                      {itemTitle(item, { songs, media, bookNames })}
                     </Typography>
                     <Typography variant="caption" truncate className="ls-sub max-w-[45%] shrink-0">
                       {subtitle(item)}

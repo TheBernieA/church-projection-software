@@ -31,10 +31,11 @@ export function useSlideContext(): SlideContext {
   const settings = useStore((s) => s.settings);
   const versions = useStore((s) => s.versions);
   const verseCounts = useStore((s) => s.verseCounts);
+  const bookNames = useStore((s) => s.bookNames);
   const chapters = useStore((s) => s.chapters);
   return useMemo(
-    () => ({ songs, themes, media, settings, versions, verseCounts, chapters }),
-    [songs, themes, media, settings, versions, verseCounts, chapters],
+    () => ({ songs, themes, media, settings, versions, verseCounts, bookNames, chapters }),
+    [songs, themes, media, settings, versions, verseCounts, bookNames, chapters],
   );
 }
 

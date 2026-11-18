@@ -96,6 +96,7 @@ export function createQueries({
       verses: await s.bibles.chapter(a.versionId, a.book, a.chapter),
     }),
     'bible.verseCounts': (a: QueryArgs<'bible.verseCounts'>) => s.bibles.verseCounts(a.versionId),
+    'bible.bookNames': (a: QueryArgs<'bible.bookNames'>) => s.bibles.bookNames(a.versionId),
     'search.query': (a: QueryArgs<'search.query'>) =>
       search.query(a.text, a.limit ?? 30, a.versionId),
     'displays.list': () => windows.listDisplays(),

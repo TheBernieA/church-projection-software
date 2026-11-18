@@ -96,6 +96,7 @@ export function TextBar() {
   const item = useSelectedItem();
   const songs = useStore((s) => s.songs);
   const media = useStore((s) => s.media);
+  const bookNames = useStore((s) => s.bookNames);
   const target = isFormattable(item) ? item : null;
   const { slides } = useItemSlides(target);
   const first = slides.find((s) => s.action.kind === 'content');
@@ -160,9 +161,9 @@ export function TextBar() {
             weight="medium"
             truncate
             className="mr-1 max-w-[180px]"
-            title={itemTitle(target, { songs, media })}
+            title={itemTitle(target, { songs, media, bookNames })}
           >
-            {itemTitle(target, { songs, media })}
+            {itemTitle(target, { songs, media, bookNames })}
           </Typography>
           <div className="w-48">
             <Select

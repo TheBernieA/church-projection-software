@@ -35,6 +35,7 @@ function QuickBarBody() {
   const open = true;
   const songs = useStore((s) => s.songs);
   const versionId = useStore((s) => s.settings?.defaultBibleVersion ?? 'kjv');
+  const bookNames = useStore((s) => s.bookNames);
   const [text, setText] = useState('');
   const [rawHits, setHits] = useState<SearchHit[]>([]);
   const [active, setActive] = useState(0);
@@ -70,7 +71,7 @@ function QuickBarBody() {
       out.push({
         id: `ref-${out.length}`,
         group: 'references',
-        title: formatPassages(c.passages),
+        title: formatPassages(c.passages, { names: bookNames[versionId] }),
         subtitle: versionId.toUpperCase(),
         item: { id: newId(), kind: 'scripture', passage, versionIds: [versionId] },
       });
@@ -156,7 +157,7 @@ function QuickBarBody() {
     ];
     out.push(...cmds.filter((c) => c.title.toLowerCase().includes(s.toLowerCase())));
     return out;
-  }, [text, rawHits, songs, versionId, t]);
+  }, [text, rawHits, songs, versionId, bookNames, t]);
 
   const choose = (row: Row | undefined, mode: 'preview' | 'live' | 'add'): void => {
     if (!row) return;

@@ -234,3 +234,32 @@ describe('nav', () => {
     expect(expandPassage(all, () => 176).length).toBe(10_000);
   });
 });
+
+describe('formatPassage with a version’s own book names', () => {
+  const names = { JHN: 'Giovanni', PSA: 'Salmi' } as const;
+  const v = (book: 'JHN' | 'PSA' | 'ROM', chapter: number, verse: number) => ({
+    book,
+    chapter,
+    verse,
+  });
+  it('uses the given name, and the English one where none is given', () => {
+    expect(formatPassage({ start: v('JHN', 3, 16), end: v('JHN', 3, 16) }, { names })).toBe(
+      'Giovanni 3:16',
+    );
+    expect(formatPassage({ start: v('PSA', 23, 1), end: v('PSA', 23, 6) }, { names })).toBe(
+      'Salmi 23:1–6',
+    );
+    expect(formatPassage({ start: v('ROM', 8, 28), end: v('ROM', 8, 28) }, { names })).toBe(
+      'Romans 8:28',
+    );
+    expect(
+      formatPassages(
+        [
+          { start: v('JHN', 3, 16), end: v('JHN', 3, 16) },
+          { start: v('JHN', 3, 18), end: v('JHN', 3, 18) },
+        ],
+        { names },
+      ),
+    ).toBe('Giovanni 3:16, 18');
+  });
+});

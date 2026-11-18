@@ -889,6 +889,14 @@ test('drag from the library into the service plan (songs and verses)', async () 
   await bible.getByRole('button', { name: 'Next book: Exodus' }).click();
   await bible.getByRole('button', { name: 'Next book: Leviticus' }).click();
   await control.screenshot({ path: 'test-results/14b-bible-books.png' });
+  // Other languages show their own book names: Riveduta's Leviticus is "Levitico".
+  await bible.getByRole('combobox', { name: 'Version' }).click();
+  await control.getByRole('option', { name: /RIV/ }).click();
+  await expect(bible.getByRole('button', { name: 'Next book: Numeri' })).toBeVisible();
+  await expect(bible.getByRole('button', { name: 'Previous book: Esodo' })).toBeVisible();
+  await control.screenshot({ path: 'test-results/14c-bible-italian.png' });
+  await bible.getByRole('combobox', { name: 'Version' }).click();
+  await control.getByRole('option', { name: /KJV/ }).click();
 });
 
 test('undo / redo: ⌘Z and ⌘⇧Z revert and re-apply service edits', async () => {
