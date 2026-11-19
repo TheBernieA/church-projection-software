@@ -257,6 +257,45 @@ function LowerThirdRow() {
   );
 }
 
+/**
+ * Room / Next, beside the LIVE line: the monitor shows what the room sees, or the slide that
+ * comes next (as the stage display shows it). Only the monitor changes, never the screens.
+ */
+function MonitorViewSwitch({
+  view,
+  onChange,
+}: {
+  view: 'room' | 'next';
+  onChange: (v: 'room' | 'next') => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      role="radiogroup"
+      aria-label={t('monitor.view')}
+      className="flex shrink-0 items-center rounded-[4px] bg-[var(--surface-2)] p-px"
+    >
+      {(['room', 'next'] as const).map((v) => (
+        <Button
+          key={v}
+          variant="bare"
+          role="radio"
+          aria-checked={view === v}
+          title={t(`monitor.viewHint.${v}`)}
+          onClick={() => onChange(v)}
+          className={`h-[18px] cursor-pointer rounded-[3px] px-1.5 ${
+            view === v ? 'bg-[var(--surface-4)]' : ''
+          }`}
+        >
+          <Typography as="span" size={10} weight="semibold" tone={view === v ? 'primary' : 'muted'}>
+            {t(`monitor.viewName.${v}`)}
+          </Typography>
+        </Button>
+      ))}
+    </div>
+  );
+}
+
 /** The live slide was edited: say so, and put the new version up only when asked. */
 function LiveEditedBar() {
   const { t } = useTranslation();
@@ -334,6 +373,8 @@ export function RightColumn() {
   const keys = effectiveShortcuts();
   const standby = useStandby();
   const hasMainOutput = useHasMainOutput();
+  // The monitor shows what the room sees, or the next slide (as the stage display has it).
+  const [view, setView] = useState<'room' | 'next'>('room');
 
   const previewScene: Scene | null = useMemo(() => {
     if (!live) return null;
@@ -345,6 +386,12 @@ export function RightColumn() {
     });
   }, [live]);
 
+  const nextScene: Scene | null = useMemo(
+    () =>
+      live ? makeScene({ background: live.program.background, content: live.next ?? null }) : null,
+    [live],
+  );
+
   // The Program monitor shows the audience screens' shape (Settings › Screens).
   const audienceMask = useStore((s) => (s.settings ? maskForRole(s.settings, 'main') : null));
   // The Program monitor shows what the audience screens show under the active Look.
@@ -355,7 +402,7 @@ export function RightColumn() {
         : null,
     [live],
   );
-  if (!live || !previewScene || !audienceScene) return null;
+  if (!live || !previewScene || !audienceScene || !nextScene) return null;
   const p = live.program;
   const mediaName = p.media
     ? media.find((m) => m.id === p.media?.mediaId)?.name
@@ -462,17 +509,20 @@ export function RightColumn() {
         <figure className="flex flex-col gap-2">
           <figcaption className="sr-only">{t('monitor.live')}</figcaption>
           {/* What's on air: one line, red while live. */}
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex h-5 items-center justify-between gap-3 px-0.5"
-          >
-            <TallyLabel tone="program" active={onAir}>
-              {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
-            </TallyLabel>
-            <Typography size={11} tone="muted" truncate className="min-w-0">
-              {p.content?.label ?? mediaName ?? ''}
-            </Typography>
+          <div className="flex h-5 items-center gap-3 px-0.5">
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex min-w-0 flex-1 items-center justify-between gap-3"
+            >
+              <TallyLabel tone="program" active={onAir}>
+                {onAir ? t('top.live').toUpperCase() : t('top.offAirShort')}
+              </TallyLabel>
+              <Typography size={11} tone="muted" truncate className="min-w-0">
+                {view === 'next' ? t('monitor.nextSlide') : (p.content?.label ?? mediaName ?? '')}
+              </Typography>
+            </div>
+            <MonitorViewSwitch view={view} onChange={setView} />
           </div>
           <LiveEditedBar />
           <div className="flex gap-2">
@@ -480,6 +530,7 @@ export function RightColumn() {
               <div
                 className={`relative overflow-hidden rounded-[3px] ${onAir ? 'shadow-[var(--tally-program-glow)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
               >
+                {/* The room's picture stays drawn (its video sound carries on) under the next slide. */}
                 <SceneView
                   scene={audienceScene}
                   label={t('monitor.live')}
@@ -487,7 +538,13 @@ export function RightColumn() {
                   audio={!hasMainOutput}
                   mask={audienceMask}
                 />
-                <BackgroundSoundButton />
+                {view === 'next' ? (
+                  <div className="absolute inset-0">
+                    <SceneView scene={nextScene} label={t('monitor.nextSlide')} />
+                  </div>
+                ) : (
+                  <BackgroundSoundButton />
+                )}
               </div>
               {!clickGoesLive && (
                 <>

@@ -1859,6 +1859,13 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   await expect.poll(sound).toBe(false);
   await pickBg.click();
   await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
+  // Room / Next over the monitor: the next slide shows there, the screens don't change.
+  const view = control.getByRole('radiogroup', { name: 'What the monitor shows' });
+  await view.getByRole('radio', { name: 'Next' }).click();
+  await expect(control.getByRole('img', { name: 'Next slide' })).toBeVisible();
+  await expect(control.getByRole('status').filter({ hasText: 'Next slide' })).toBeVisible();
+  await view.getByRole('radio', { name: 'Room' }).click();
+  await expect(control.getByRole('img', { name: 'Next slide' })).toHaveCount(0);
 });
 
 test('Easy view shows a picture for slides without words; Settings › Audio', async () => {

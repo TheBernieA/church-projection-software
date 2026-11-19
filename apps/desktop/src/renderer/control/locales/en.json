@@ -190,6 +190,13 @@
     "pip": "Camera in a corner"
   },
   "monitor": {
+    "view": "What the monitor shows",
+    "viewName": { "room": "Room", "next": "Next" },
+    "viewHint": {
+      "room": "Show what the room sees",
+      "next": "Show the next slide, as the stage display has it (the screens don’t change)"
+    },
+    "nextSlide": "Next slide",
     "preview": "Preview",
     "program": "Program",
     "goLive": "Go live",
