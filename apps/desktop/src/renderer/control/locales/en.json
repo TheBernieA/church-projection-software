@@ -231,9 +231,6 @@
     },
     "masksSoon": "Masks",
     "clearAllLayers": "Clear all",
-    "screen": "Screen",
-    "next": "Next slide",
-    "stageNext": "Stage (next)",
     "moreLayers": "More layers",
     "moreLayersHint": "More layers and clear groups (drop a layer here to move it into this menu)",
     "dragToMove": "Drag to move it, or onto … to tuck it away",
@@ -1646,6 +1643,8 @@
     "change": "Change the background of these slides",
     "library": "Your pictures and videos",
     "sound": "Play the video’s sound",
+    "soundOn": "The background video’s sound is on (click to mute it)",
+    "soundOff": "The background video is silent (click to hear it)",
     "soundHint": "Heard in the room (Settings › Audio › room output) and on the stream, like any video"
   },
   "audioSettings": {

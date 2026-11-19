@@ -62,6 +62,7 @@ import {
   type Align,
 } from '../../lib/screenScenes';
 import { ScreenScenes } from './ScreenScenes';
+import { BackgroundSoundButton } from './BackgroundSoundButton';
 import { useHasMainOutput, useLiveEdited, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -333,8 +334,6 @@ export function RightColumn() {
   const keys = effectiveShortcuts();
   const standby = useStandby();
   const hasMainOutput = useHasMainOutput();
-  // The monitor shows the audience screen, or what the stage screen shows next.
-  const [screen, setScreen] = useState<'audience' | 'stage'>('audience');
 
   const previewScene: Scene | null = useMemo(() => {
     if (!live) return null;
@@ -346,12 +345,6 @@ export function RightColumn() {
     });
   }, [live]);
 
-  const nextScene: Scene | null = useMemo(
-    () =>
-      live ? makeScene({ background: live.program.background, content: live.next ?? null }) : null,
-    [live],
-  );
-
   // The Program monitor shows the audience screens' shape (Settings › Screens).
   const audienceMask = useStore((s) => (s.settings ? maskForRole(s.settings, 'main') : null));
   // The Program monitor shows what the audience screens show under the active Look.
@@ -362,7 +355,7 @@ export function RightColumn() {
         : null,
     [live],
   );
-  if (!live || !previewScene || !nextScene || !audienceScene) return null;
+  if (!live || !previewScene || !audienceScene) return null;
   const p = live.program;
   const mediaName = p.media
     ? media.find((m) => m.id === p.media?.mediaId)?.name
@@ -484,23 +477,18 @@ export function RightColumn() {
           <LiveEditedBar />
           <div className="flex gap-2">
             <div className="flex min-w-0 flex-1 flex-col gap-2">
-              {screen === 'audience' ? (
-                <div
-                  className={`overflow-hidden rounded-[3px] ${onAir ? 'shadow-[var(--tally-program-glow)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
-                >
-                  <SceneView
-                    scene={audienceScene}
-                    label={t('monitor.live')}
-                    standby={standby}
-                    audio={!hasMainOutput}
-                    mask={audienceMask}
-                  />
-                </div>
-              ) : (
-                <div className="overflow-hidden rounded-[3px] shadow-[0_0_0_1px_var(--hairline-strong)]">
-                  <SceneView scene={nextScene} label={t('monitor.next')} />
-                </div>
-              )}
+              <div
+                className={`relative overflow-hidden rounded-[3px] ${onAir ? 'shadow-[var(--tally-program-glow)]' : 'shadow-[0_0_0_1px_var(--hairline-strong)]'}`}
+              >
+                <SceneView
+                  scene={audienceScene}
+                  label={t('monitor.live')}
+                  standby={standby}
+                  audio={!hasMainOutput}
+                  mask={audienceMask}
+                />
+                <BackgroundSoundButton />
+              </div>
               {!clickGoesLive && (
                 <>
                   <MonitorCard
@@ -565,16 +553,6 @@ export function RightColumn() {
           </div>
         </figure>
         <div className="flex items-center gap-1.5">
-          <Select<'audience' | 'stage'>
-            size="sm"
-            aria-label={t('monitor.screen')}
-            value={screen}
-            onChange={setScreen}
-            options={[
-              { value: 'audience', label: t('toolbar.audience') },
-              { value: 'stage', label: t('monitor.stageNext') },
-            ]}
-          />
           <span className="flex-1" />
           <MaskButton
             on={p.masks.black}

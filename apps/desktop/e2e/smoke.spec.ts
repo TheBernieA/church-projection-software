@@ -1835,6 +1835,30 @@ test("slide backgrounds: a stock background behind an item's slides, from the ti
   await pickBg.click();
   await control.getByRole('menuitem', { name: /^Use this for all/ }).click();
   await expect.poll(bg).not.toBe('#4B1D8F');
+  // A video of yours behind the words starts silent; the speaker on the live monitor turns its
+  // sound on (kept with the item's background) and off again.
+  await pickBg.click();
+  await control.getByRole('menuitem', { name: 'Your pictures and videos' }).click();
+  await control.getByRole('menuitem', { name: 'Seed clip', exact: true }).click();
+  const sound = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    const ref = r.ok ? r.value.program.background?.ref : undefined;
+    return ref?.kind === 'video' ? !!ref.sound : null;
+  };
+  await expect.poll(sound).toBe(false);
+  await control.getByRole('button', { name: /^The background video is silent/ }).click();
+  await expect.poll(sound).toBe(true);
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/35b-background-sound.png' });
+  await pickBg.click();
+  await expect(
+    control.getByRole('menuitemcheckbox', { name: 'Play the video’s sound' }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await control.keyboard.press('Escape');
+  await control.getByRole('button', { name: /^The background video’s sound is on/ }).click();
+  await expect.poll(sound).toBe(false);
+  await pickBg.click();
+  await control.getByRole('menuitem', { name: 'The theme’s background' }).click();
 });
 
 test('Easy view shows a picture for slides without words; Settings › Audio', async () => {

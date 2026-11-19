@@ -134,3 +134,25 @@ const unsounded = (r: BackgroundRef | undefined) =>
 /** Same background? (to tick the current one in a menu). */
 export const sameBackground = (a: BackgroundRef | undefined, b: BackgroundRef | undefined) =>
   JSON.stringify(unsounded(a)) === JSON.stringify(unsounded(b));
+
+/**
+ * Switch the sound of the video behind the words on screen. The item it belongs to keeps the
+ * choice (its own background, or the slide's), so it stays on the next time it's shown.
+ */
+export function setLiveBackgroundSound(on: boolean): void {
+  const s = useStore.getState();
+  const bg = s.live?.program.background;
+  if (bg?.ref.kind !== 'video') return;
+  const ref: BackgroundRef = { ...bg.ref, sound: on || undefined };
+  const cur = s.liveCursor;
+  const item = cur
+    ? s.adhoc?.id === cur.itemId
+      ? s.adhoc
+      : s.service?.items.find((i) => i.id === cur.itemId)
+    : undefined;
+  if (takesBackground(item) && sameBackground(item.background, ref)) {
+    setItemBackground(item, ref);
+    return;
+  }
+  void attempt(() => cmd('live.setBackground', { background: { ...bg, ref } }));
+}
