@@ -361,6 +361,23 @@ describe('off-air screen', () => {
     r.render(withVideo(true));
     expect(host.querySelector('.ls-bg video')).toBe(v);
     expect(v.muted).toBe(false);
+    // A video over everything silences it; it's heard again when that goes.
+    r.render({
+      ...withVideo(true),
+      media: {
+        mediaId: 'm',
+        kind: 'video',
+        loop: false,
+        muted: false,
+        fit: 'cover',
+        playing: true,
+        position: 0,
+        volume: 1,
+      },
+    });
+    expect(v.muted).toBe(true);
+    r.render(withVideo(true));
+    expect(v.muted).toBe(false);
     // Only the renderer that plays the room's sound is heard.
     r.setAudio(false);
     expect(v.muted).toBe(true);

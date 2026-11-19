@@ -180,10 +180,13 @@ export class SceneRenderer {
 
   /** A background video's sound, in line with this renderer's audio, room output and mix. */
   private syncBgSound(): void {
+    // A picture or video over everything covers the background: its sound stops with it
+    // (the video keeps going, silent, so it carries on where it was when the media goes).
+    const covered = !!this.last?.media;
     if (this.bg)
       syncBackgroundSound(
         this.bg.node,
-        this.last?.background ?? null,
+        covered ? null : (this.last?.background ?? null),
         this.opts.mode,
         this.audio,
         this.audioSink,
@@ -247,6 +250,7 @@ export class SceneRenderer {
     if (this.frozen) return;
     this.renderBackground(scene, instant);
     this.renderMedia(scene, instant);
+    this.syncBgSound(); // media over it or gone: the background's sound follows
     this.renderInput(scene, instant);
     this.renderContent(scene.content, scene.transition, instant);
     this.renderWeb(scene);

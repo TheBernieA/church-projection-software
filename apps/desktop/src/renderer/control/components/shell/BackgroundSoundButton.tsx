@@ -11,7 +11,9 @@ import { useStore } from '../../lib/store';
 export function BackgroundSoundButton() {
   const { t } = useTranslation();
   const ref = useStore((s) => s.live?.program.background?.ref);
-  if (ref?.kind !== 'video') return null;
+  // Media over everything covers the background (and silences it): its own controls are below.
+  const covered = useStore((s) => !!s.live?.program.media);
+  if (ref?.kind !== 'video' || covered) return null;
   const on = !!ref.sound;
   const label = on ? t('itemBg.soundOn') : t('itemBg.soundOff');
   return (
@@ -21,7 +23,11 @@ export function BackgroundSoundButton() {
       aria-label={label}
       aria-pressed={on}
       title={label}
-      onClick={() => setLiveBackgroundSound(!on)}
+      onClick={(e) => {
+        setLiveBackgroundSound(!on);
+        // Clicked, not tabbed to: no focus ring left on the picture.
+        e.currentTarget.blur();
+      }}
       // A round chip over the picture: icon centred, a focus ring for the keyboard only (a click
       // leaves no outline behind).
       className={`!absolute bottom-1.5 right-1.5 inline-flex cursor-pointer items-center justify-center !rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.4)] outline-none backdrop-blur-sm transition-colors focus-visible:shadow-[var(--focus-ring)] ${
