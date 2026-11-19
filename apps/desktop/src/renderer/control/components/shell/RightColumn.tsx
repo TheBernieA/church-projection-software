@@ -59,6 +59,7 @@ import {
   useScreenMask,
 } from '../../lib/screenViews';
 import { BackgroundSoundButton } from './BackgroundSoundButton';
+import { SendToStreamButton } from './SendToStreamButton';
 import { useHasMainOutput, useLiveEdited, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -518,7 +519,10 @@ export function RightColumn() {
                     <SceneView scene={nextScene} label={t('monitor.nextSlide')} />
                   </div>
                 ) : (
-                  <BackgroundSoundButton />
+                  <>
+                    <SendToStreamButton />
+                    <BackgroundSoundButton />
+                  </>
                 )}
               </div>
               {!clickGoesLive && (

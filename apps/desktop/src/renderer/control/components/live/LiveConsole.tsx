@@ -2,6 +2,8 @@ import { useRef } from 'react';
 import {
   Circle,
   ExternalLink,
+  Eye,
+  EyeOff,
   FolderOpen,
   PanelRightClose,
   PictureInPicture2,
@@ -110,12 +112,12 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
               {t('live.noFfmpeg')}
             </Typography>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {s?.streaming ? (
                 <Button
                   size="md"
                   variant="live"
-                  className="flex-1"
+                  className="min-w-[140px] flex-1"
                   icon={<Square size={14} fill="currentColor" />}
                   onClick={endStream}
                 >
@@ -125,7 +127,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                 <Button
                   size="md"
                   variant="live"
-                  className="flex-1"
+                  className="min-w-[140px] flex-1"
                   icon={<Radio size={15} />}
                   disabled={!enabled.length}
                   title={enabled.length ? undefined : t('live.noDestinations')}
@@ -151,6 +153,19 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                   onClick={() => run('stream.start', { record: true })}
                 >
                   {t('live.record')}
+                </Button>
+              )}
+              {/* Something that mustn't go out: the stream shows the cover picture instead. */}
+              {(s?.streaming || s?.recording) && (
+                <Button
+                  size="md"
+                  variant={s.covered ? 'live' : 'subtle'}
+                  aria-pressed={s.covered}
+                  title={s.covered ? t('live.uncoverHelp') : t('live.coverHelp')}
+                  icon={s.covered ? <Eye size={14} /> : <EyeOff size={14} />}
+                  onClick={() => run('stream.cover', { on: !s.covered })}
+                >
+                  {s.covered ? t('live.uncover') : t('live.cover')}
                 </Button>
               )}
             </div>

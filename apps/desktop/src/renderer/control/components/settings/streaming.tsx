@@ -21,9 +21,9 @@ import {
   NONE,
   PERFORMANCE_MODES,
   pickWordsTheme,
-  WORDS_ALIGNS,
   WORDS_MODES,
   WORDS_SIZE,
+  WORDS_WIDTH,
   wordsThemeOptions,
 } from '../../lib/streamOptions';
 import { DeferredInput } from '../DeferredControls';
@@ -32,6 +32,7 @@ import { Select } from '../Select';
 import { Group, Notice, Row, SettingsPage, Tag } from './parts';
 import { CheckComputer } from '../live/CheckComputer';
 import { DestinationFields, KindBadge } from '../live/destinationFields';
+import { WordsPlacement } from '../live/WordsPlacement';
 
 type Update = (patch: Partial<Settings>) => void;
 const ENCODERS = ['auto', ...STREAM_ENCODERS];
@@ -133,6 +134,9 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   const cameras = useInputDevices('videoinput');
   const mixer = useStore((x) => x.live?.mixer ?? null);
   const themes = useStore((x) => x.themes);
+  // Pictures and videos the stream can be covered with.
+  const media = useStore((x) => x.media);
+  const visuals = media.filter((m) => m.kind === 'image' || m.kind === 'video');
   const {
     keys,
     loadKeys,
@@ -266,11 +270,24 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         )}
         {st.picture.words === 'lowerThird' && (
           <Row label={t('streaming.wordsAlign')} description={t('streaming.wordsAlignHelp')}>
-            <Segmented<StreamSettings['picture']['wordsAlign']>
-              label={t('streaming.wordsAlign')}
-              value={st.picture.wordsAlign}
-              onChange={(wordsAlign) => set({ picture: { ...st.picture, wordsAlign } })}
-              options={choices(WORDS_ALIGNS, t)}
+            <WordsPlacement
+              edge={st.picture.wordsEdge}
+              align={st.picture.wordsAlign}
+              onChange={(p) => set({ picture: { ...st.picture, ...p } })}
+            />
+          </Row>
+        )}
+        {st.picture.words === 'lowerThird' && (
+          <Row label={t('streaming.wordsWidth')} description={t('streaming.wordsWidthHelp')}>
+            <Slider
+              aria-label={t('streaming.wordsWidth')}
+              {...WORDS_WIDTH}
+              value={st.picture.wordsWidth}
+              format={(v) => `${v}%`}
+              className="w-56"
+              onChange={(e) =>
+                set({ picture: { ...st.picture, wordsWidth: Number(e.currentTarget.value) } })
+              }
             />
           </Row>
         )}
@@ -481,6 +498,31 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
               value={st.quality.encoder}
               onChange={(encoder) => setQuality({ encoder })}
               options={ENCODERS.map((e) => ({ value: e, label: t(`streaming.encoders.${e}`) }))}
+            />
+          </div>
+        </Row>
+      </Group>
+
+      <Group>
+        <Row label={t('streaming.cover')} description={t('streaming.coverHelp')}>
+          <div className="w-60">
+            <Select<string>
+              size="sm"
+              aria-label={t('streaming.cover')}
+              value={st.cover.kind === 'logo' ? NONE : st.cover.mediaId}
+              onChange={(id) => {
+                const m = visuals.find((x) => x.id === id);
+                set({
+                  cover:
+                    m && (m.kind === 'image' || m.kind === 'video')
+                      ? { kind: m.kind, mediaId: m.id }
+                      : { kind: 'logo' },
+                });
+              }}
+              options={[
+                { value: NONE, label: t('streaming.coverLogo') },
+                ...visuals.map((m) => ({ value: m.id, label: m.name })),
+              ]}
             />
           </div>
         </Row>

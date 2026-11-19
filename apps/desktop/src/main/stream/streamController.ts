@@ -6,6 +6,7 @@ import type { Writable } from 'node:stream';
 import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'electron';
 import {
   resolvePerformance,
+  type ScreenVisual,
   streamSize,
   StreamSettingsSchema,
   type MachineInfo,
@@ -111,6 +112,7 @@ const idle = (
   delayMs: null,
   adaptedKbps: null,
   silent: false,
+  covered: false,
   destinations: [],
   recordingPath: null,
   recordingBytes: 0,
@@ -358,6 +360,8 @@ export class StreamController {
       this.stopHealth();
       this.setStatus({ ...idle(this.status.available, this.status.encoder, this.profile()) }, true);
       this.syncWindow();
+      // (Uncovered too: a cover ends with the stream.)
+      this.sendConfig();
       return;
     }
     await this.restartEncoder(wasRecording && this.want.record);
@@ -412,6 +416,23 @@ export class StreamController {
     });
     this.setStatus({ profile: this.profile() }, true);
     return { mode, encoder, runs };
+  }
+
+  /**
+   * Cover the stream (something on screen mustn't go out on it): the stream and recording show
+   * the cover picture instead, until uncovered. The sound carries on. Ends with the stream.
+   */
+  cover(on: boolean): void {
+    if (this.status.covered === on) return;
+    this.d.log.info(on ? 'stream covered' : 'stream uncovered');
+    this.setStatus({ covered: on }, true);
+    this.sendConfig();
+  }
+
+  /** The cover picture from Settings › Streaming: the logo card, or a picture or video. */
+  private coverVisual(): ScreenVisual {
+    const c = this.d.getSettings().stream.cover;
+    return c.kind === 'logo' ? this.d.logo() : c;
   }
 
   /** Try a failed destination again (restarts the encoder; the recording continues). */
@@ -579,6 +600,7 @@ export class StreamController {
       meters: busy,
       mix: busy,
       probe: this.winGpu ? { ...size, fps: profile.fps, kbps: profile.videoKbps } : null,
+      cover: this.status.covered ? this.coverVisual() : null,
     });
   }
 

@@ -17,16 +17,22 @@ export interface WordsOptions {
   size: number;
   /** 'theme': keep the words where the theme put them across the picture. */
   align: 'theme' | 'left' | 'center' | 'right';
+  /** Along the bottom of the picture (the default), or the top. */
+  edge?: 'bottom' | 'top';
+  /** The most of the picture's width the words may take (0–1; default: all but the margins). */
+  width?: number;
 }
 
-/** Space kept clear at the sides and under the words, as a share of the picture. */
+/** Space kept clear at the sides, and between the words and the picture's edge (top or bottom). */
 const SIDE = 0.05;
-const BOTTOM = 0.06;
+const EDGE = 0.06;
 /** Automatic sizing: the words take at most this much of the picture's height and width. */
 const AUTO_HEIGHT = 0.26;
 const AUTO_WIDTH = 1 - SIDE * 2;
+/** The largest a lower third's words are drawn (as a scale of full size). */
+export const AUTO_MAX_SCALE = 0.75;
 /** Automatic sizing never goes above or below these (as a scale of full size). */
-const AUTO_MAX = 0.75;
+const AUTO_MAX = AUTO_MAX_SCALE;
 const AUTO_MIN = 0.25;
 
 export function lowerThird(
@@ -38,7 +44,8 @@ export function lowerThird(
   const top = Math.min(...boxes.map((b) => b.y));
   const w = Math.max(1, Math.max(...boxes.map((b) => b.x + b.w)) - left);
   const h = Math.max(1, Math.max(...boxes.map((b) => b.y + b.h)) - top);
-  const fit = Math.min((canvas.width * AUTO_WIDTH) / w, (canvas.height * AUTO_HEIGHT) / h);
+  const maxWidth = Math.min(AUTO_WIDTH, o.width ?? AUTO_WIDTH);
+  const fit = Math.min((canvas.width * maxWidth) / w, (canvas.height * AUTO_HEIGHT) / h);
   const scale = o.auto
     ? Math.max(AUTO_MIN, Math.min(AUTO_MAX, fit))
     : Math.max(0.1, Math.min(1, o.size / 100));
@@ -55,13 +62,26 @@ export function lowerThird(
               side,
               Math.min(canvas.width - side - w * scale, left + w / 2 - (w * scale) / 2),
             );
-  // Tall words at a large chosen size: keep the top on the picture.
-  const targetY = Math.max(canvas.height * 0.02, canvas.height * (1 - BOTTOM) - h * scale);
+  // Tall words at a large chosen size: keep them on the picture.
+  const targetY =
+    o.edge === 'top'
+      ? Math.min(canvas.height * EDGE, canvas.height * 0.98 - h * scale)
+      : Math.max(canvas.height * 0.02, canvas.height * (1 - EDGE) - h * scale);
   return {
     scale: Math.round(scale * 1000) / 1000,
     x: Math.round(targetX - left * scale),
     y: Math.round(targetY - top * scale),
-    // The dark band behind them: the words, their margin, and a soft edge above.
-    band: Math.min(1, (h * scale) / canvas.height + BOTTOM + 0.12),
+    // The dark band behind them: the words, their margin, and a soft edge beyond.
+    band: Math.min(1, (h * scale) / canvas.height + EDGE + 0.12),
   };
+}
+
+/**
+ * The side margins (% of the width, each side) that give the words a text box this wide when
+ * laid out full size, so that at a lower third's size they spread to about `widthPct` of the
+ * picture: a wide box makes fewer, longer lines (a long verse isn't squeezed into a column).
+ */
+export function wordsSideMargin(widthPct: number): number {
+  const box = Math.min(100, widthPct / AUTO_MAX_SCALE);
+  return Math.max(2, (100 - box) / 2);
 }

@@ -1,18 +1,18 @@
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StreamSettings } from '@lampstand/core';
-import { Button, Segmented, Slider, Typography } from '@lampstand/ui';
+import { Button, Slider, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
 import { useStore } from '../../lib/store';
 import {
-  choices,
   NONE,
   pickWordsTheme,
-  WORDS_ALIGNS,
   WORDS_SIZE,
+  WORDS_WIDTH,
   wordsThemeOptions,
 } from '../../lib/streamOptions';
+import { WordsPlacement } from './WordsPlacement';
 import { Select } from '../Select';
 import { Section } from './consoleParts';
 
@@ -52,11 +52,17 @@ export function LowerThirdPanel({ st }: { st: StreamSettings }) {
         />
       </PictureRow>
       <PictureRow label={t('streaming.wordsAlign')}>
-        <Segmented<StreamSettings['picture']['wordsAlign']>
-          label={t('streaming.wordsAlign')}
-          value={pic.wordsAlign}
-          onChange={(wordsAlign) => set({ wordsAlign })}
-          options={choices(WORDS_ALIGNS, t)}
+        <WordsPlacement edge={pic.wordsEdge} align={pic.wordsAlign} onChange={set} />
+      </PictureRow>
+      <PictureRow label={t('streaming.wordsWidth')}>
+        <Slider
+          aria-label={t('streaming.wordsWidth')}
+          title={t('streaming.wordsWidthHelp')}
+          {...WORDS_WIDTH}
+          value={pic.wordsWidth}
+          format={(v) => `${v}%`}
+          onChange={(e) => set({ wordsWidth: Number(e.target.value) })}
+          className="min-w-0 flex-1"
         />
       </PictureRow>
       <PictureRow label={t('streaming.wordsSize')}>

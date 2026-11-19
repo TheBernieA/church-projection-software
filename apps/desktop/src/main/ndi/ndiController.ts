@@ -38,6 +38,8 @@ const FULL = {
   wordsAuto: false,
   wordsSize: 100,
   wordsAlign: 'theme',
+  wordsEdge: 'bottom',
+  wordsWidth: 100,
   wordsTheme: null,
 } as const;
 
@@ -245,6 +247,8 @@ export class NdiController {
       meters: false,
       probe: null,
       mix: f.feed.sound,
+      // Covering is for the livestream; NDI feeds go to the room's own gear.
+      cover: null,
     });
   }
 

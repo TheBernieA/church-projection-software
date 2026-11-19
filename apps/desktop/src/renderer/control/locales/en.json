@@ -249,7 +249,11 @@
     "resetStrip": "Reset the strip",
     "liveEdited": "Edited since it went live",
     "liveEditedHelp": "This slide was changed while it was on screen. The room still sees the old version until you update it.",
-    "updateLive": "Update live"
+    "updateLive": "Update live",
+    "takeover": "Send to stream",
+    "takeoverOn": "On stream · Undo",
+    "takeoverHelp": "Put what the screens show on the stream (it shows something else now). Click again to put the stream back as it was.",
+    "takeoverOnHelp": "The stream shows the screens. Click to put it back as it was."
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -869,6 +873,18 @@
         "trouble": {
           "q": "Fix a stream that won’t start or keeps stopping",
           "a": "1. Hover a destination that says Stopped to see why.\n2. “Key needed”, or a key that doesn’t look right: copy the Stream key again (not the Stream URL) and save it.\n3. Can’t connect: check the internet connection. Lampstand tries YouTube’s second address by itself.\n4. Amber bitrate: the upload can’t carry the chosen quality and the stream has lowered itself to stay live. If it stays amber, pick a lighter Performance mode.\n5. Picture jumps or readings turn red: the computer can’t keep up; pick a lighter mode.\nClick Retry to bring a stopped destination back without ending the stream."
+        },
+        "cover": {
+          "q": "Hide something from the stream for a moment",
+          "a": "1. While streaming or recording, click Cover in the Live console.\n2. Viewers (and the recording) see the cover picture instead; the sound carries on.\n3. Click Uncover to show the service again.\nChoose the cover picture in Settings › Streaming › Cover picture: the logo card, or one of your pictures or videos."
+        },
+        "sendToStream": {
+          "q": "Put the slide on the stream while it shows a camera",
+          "a": "1. While streaming, if the stream shows something else (a camera, say), Send to stream appears on the live monitor.\n2. Click it: the stream shows what the screens show, words and all.\n3. Click On stream · Undo to put the stream back as it was.\nPicking another scene meanwhile ends it, and that scene stays."
+        },
+        "lowerThirdLayout": {
+          "q": "Place the stream’s lower third, and give the words more room",
+          "a": "1. In the Live console, with a lower-third scene on air, open Lower third on the stream.\n2. Pick one of the six spots: top or bottom, left, centre or right.\n3. Drag Width to let the words spread further across the picture: wider means fewer, longer lines, so a long verse isn’t squeezed into a narrow column.\nThe same settings are in Settings › Streaming."
         }
       }
     },
@@ -1792,7 +1808,11 @@
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
       "encoderStopped": "The encoder stopped and couldn’t restart.",
       "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming."
-    }
+    },
+    "cover": "Cover",
+    "uncover": "Uncover",
+    "coverHelp": "Hide what’s happening from the stream: viewers see the cover picture (Settings › Streaming) until you show the stream again. The sound carries on.",
+    "uncoverHelp": "The stream shows the cover picture. Click to show the service again."
   },
   "streaming": {
     "destinations": "Where it streams",
@@ -1943,7 +1963,25 @@
     "bgSwitcher": "Switcher",
     "bgLayout": "Two cameras",
     "cameraA": "First camera",
-    "cameraB": "Second camera"
+    "cameraB": "Second camera",
+    "wordsPlace": "Where the words sit",
+    "place": {
+      "top": {
+        "left": "Top left",
+        "center": "Top",
+        "right": "Top right"
+      },
+      "bottom": {
+        "left": "Bottom left",
+        "center": "Bottom",
+        "right": "Bottom right"
+      }
+    },
+    "wordsWidth": "Width",
+    "wordsWidthHelp": "How far across the picture the words may spread. Wider: fewer, longer lines.",
+    "cover": "Cover picture",
+    "coverHelp": "What the stream shows while it’s covered (the Cover button in the Live console): the logo card, or one of your pictures or videos.",
+    "coverLogo": "The logo card"
   },
   "surfaces": {
     "connections": "Connections",

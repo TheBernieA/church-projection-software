@@ -83,6 +83,13 @@ export const StreamSettingsSchema = z.object({
       /** Where the words sit across the picture: lower third only (full-screen words stay as
        *  their theme has them). */
       wordsAlign: z.enum(['left', 'center', 'right']).default('center').catch('center'),
+      /** Lower third only: along the bottom of the picture, or the top. */
+      wordsEdge: z.enum(['bottom', 'top']).default('bottom').catch('bottom'),
+      /**
+       * Lower third only: how wide the words may spread, as % of the picture's width. Wider
+       * means fewer, longer lines (a long verse isn't squeezed into a narrow column).
+       */
+      wordsWidth: z.number().int().min(30).max(100).default(80).catch(80),
       /**
        * Lower third: the theme the words are drawn with (one made for lower thirds); null: each
        * slide's own theme, made smaller.
@@ -99,8 +106,20 @@ export const StreamSettingsSchema = z.object({
       wordsAuto: true,
       wordsSize: 60,
       wordsAlign: 'center',
+      wordsEdge: 'bottom',
+      wordsWidth: 80,
       wordsTheme: null,
     }),
+  /**
+   * What the stream shows while it's covered (the console's Cover button: something that
+   * mustn't go out on the stream is happening): the logo card, or a picture or video.
+   */
+  cover: z
+    .discriminatedUnion('kind', [
+      z.object({ kind: z.literal('logo') }),
+      z.object({ kind: z.enum(['image', 'video']), mediaId: IdSchema }),
+    ])
+    .default({ kind: 'logo' }),
   /**
    * Legacy: the stream's sound before the Mixer. Read once to build the mixer for older settings
    * (mixerFromSettings); the Mixer's stream bus is what the stream hears now.

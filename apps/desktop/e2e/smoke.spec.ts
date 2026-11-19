@@ -2313,6 +2313,20 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await scenes.getByRole('radio', { name: 'Cameras' }).click();
   await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
   await expect.poll(picture).toBe('switcher none');
+  // Send to stream (on the live monitor): the screens go on the stream; again, it goes back.
+  const sendToStream = control.getByRole('button', { name: 'Send to stream' });
+  await sendToStream.click();
+  await expect.poll(picture).toBe('program full');
+  await control.getByRole('button', { name: 'On stream · Undo' }).click();
+  await expect.poll(picture).toBe('switcher none');
+  // Cover: the stream shows the cover picture until shown again.
+  const covered = async () => (await stream())?.covered;
+  await live.getByRole('button', { name: 'Cover', exact: true }).click();
+  await expect.poll(covered).toBe(true);
+  await control.waitForTimeout(600);
+  await control.screenshot({ path: 'test-results/41f-live-covered.png' });
+  await live.getByRole('button', { name: 'Uncover' }).click();
+  await expect.poll(covered).toBe(false);
   await scenes.getByRole('radio', { name: 'Screens' }).click();
   await scenes.getByRole('button', { name: 'Stage display' }).click();
   await expect.poll(mirror).toBe('stage');
@@ -2357,10 +2371,27 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await expect(low).toContainText('the stream −40.0 dB');
   await low.getByRole('button', { name: 'Turn up to 0 dB' }).click();
   await expect.poll(streamGain).toBe(0);
-  // The stream's lower third (Slides + lower third is on air): move it left, choose a size.
+  // The stream's lower third (Slides + lower third is on air): move it to the top left, let
+  // the words spread wider, choose a size.
   const shows = live.getByRole('region', { name: 'Lower third on the stream' });
   await shows.scrollIntoViewIfNeeded();
-  await shows.getByRole('radio', { name: 'Left' }).click();
+  await shows.getByRole('radio', { name: 'Top left' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? r.value.stream.picture.wordsEdge : '';
+    })
+    .toBe('top');
+  await shows.getByRole('slider', { name: 'Width' }).fill('95');
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+      return r.ok ? r.value.stream.picture.wordsWidth : 0;
+    })
+    .toBe(95);
+  await control.waitForTimeout(600);
+  await control.screenshot({ path: 'test-results/41g-live-words-top.png' });
+  await shows.getByRole('radio', { name: 'Bottom left' }).click();
   await shows.getByRole('button', { name: 'Auto', exact: true }).click();
   await expect(shows.getByRole('slider', { name: 'Size' })).toBeVisible();
   await expect
@@ -2371,7 +2402,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBe('left false');
   await control.waitForTimeout(700);
   await control.screenshot({ path: 'test-results/41a-live-words.png' });
-  await shows.getByRole('radio', { name: 'Centre' }).click();
+  await shows.getByRole('radio', { name: 'Bottom', exact: true }).click();
   await shows.getByRole('button', { name: 'Auto', exact: true }).click();
   // The stream's lower third in a theme made for it.
   await shows.getByRole('combobox', { name: 'Theme' }).click();

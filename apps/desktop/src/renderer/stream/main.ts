@@ -23,7 +23,7 @@ import { mediaUrl } from '../shared/mediaUrl';
 // (inlined, the tap failed to load and the stream had no sound).
 import pcmTapUrl from './pcmTap.worklet.js?url&no-inline';
 import { StreamEncoder } from './encoder';
-import { lowerThird } from './wordsLayout';
+import { lowerThird, wordsSideMargin } from './wordsLayout';
 
 /**
  * The livestream picture and sound, drawn offscreen (main encodes what it paints). Layers, back
@@ -96,8 +96,10 @@ function draw(): void {
       : [config, latest.program, latest.look, latest.audio, latest.mixer, latest.lowerThird];
   if (inputs.length === drawn.length && inputs.every((x, i) => x === drawn[i])) return;
   drawn = inputs;
+  // Covered: only the cover shows (drawn as the Logo mask over everything; the sound goes on).
+  const covered = !!config.cover;
   // Mirroring the stage display: it's all that shows (the sound mix carries on below).
-  syncStage(config.picture.mirror === 'stage');
+  syncStage(config.picture.mirror === 'stage' && !covered);
   // Mirroring the alternate output: the projector's picture with the words full screen, in
   // that output's themes and under its Look.
   const alternate = config.picture.mirror === 'alternate';
@@ -148,21 +150,30 @@ function draw(): void {
         ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
         : program;
   themed = worded.content?.theme.layout === 'lower-third';
+  // A lower third that's moved and sized here: its words get a box as wide as the width chosen
+  // (laid out wider, they wrap into fewer, longer lines).
+  const moved = pic.words === 'lowerThird' && !(themed && pic.wordsAuto);
+  const spread = moved ? widened(worded, pic.wordsWidth) : worded;
   words.render({
-    ...worded,
+    ...spread,
     background: null,
     media: null,
     input: null,
     inputNext: null,
     pip: null,
     web: null,
-    content: showWords ? worded.content : null,
+    content: showWords ? spread.content : null,
+    masks: covered ? { ...worded.masks, logo: true } : worded.masks,
     announcement: showWords ? program.announcement : null,
   });
   // Behind the words is the camera or black: the projector's pictures and videos stay off the
   // stream (a video keeps playing, unseen, so its sound still reaches the stream mix).
   back.setMediaHidden(pic.background !== 'program');
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
+  document.body.classList.toggle(
+    'words-top',
+    pic.words === 'lowerThird' && pic.wordsEdge === 'top',
+  );
   document.body.classList.toggle('has-words', showWords && !!program.content);
   // A lower third sits left, centre or right, whatever the theme says (full-screen words
   // stay as their theme has them).
@@ -175,6 +186,25 @@ function draw(): void {
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);
   mix.sync(config.mix ? latest.mixer : silent(latest.mixer));
+}
+
+/** The slide's words in a text box `widthPct` of the picture wide (at a lower third's size). */
+const widenCache = new WeakMap<Scene, { width: number; scene: Scene }>();
+function widened(scene: Scene, widthPct: number): Scene {
+  const c = scene.content;
+  if (!c) return scene;
+  const hit = widenCache.get(scene);
+  if (hit?.width === widthPct) return hit.scene;
+  const side = wordsSideMargin(widthPct);
+  const out: Scene = {
+    ...scene,
+    content: {
+      ...c,
+      theme: { ...c.theme, safeArea: { ...c.theme.safeArea, left: side, right: side } },
+    },
+  };
+  widenCache.set(scene, { width: widthPct, scene: out });
+  return out;
 }
 
 /** The words are being drawn with a theme laid out as a lower third. */
@@ -212,7 +242,13 @@ function placeWords(): void {
   const placed = lowerThird(
     boxes,
     { width: slide.offsetWidth, height: slide.offsetHeight },
-    { auto: pic.wordsAuto, size: pic.wordsSize, align: pic.wordsAlign },
+    {
+      auto: pic.wordsAuto,
+      size: pic.wordsSize,
+      align: pic.wordsAlign,
+      edge: pic.wordsEdge,
+      width: pic.wordsWidth / 100,
+    },
   );
   layer.style.transform = `translate(${placed.x}px, ${placed.y}px) scale(${placed.scale})`;
   band.style.height = `${Math.round(placed.band * 100)}%`;
@@ -288,9 +324,10 @@ api.onConfig((c) => {
   if (!c.meters) mix.stopMeters();
   document.body.classList.toggle('transparent', c.transparent);
   config = c;
-  // The Logo mask covers the stream too. (No off-air card: the words layer is often empty on
-  // purpose, and the stream shows its camera or black when nothing is live.)
-  words.setLogo(c.logo);
+  // The Logo mask covers the stream too, and so does its cover when covered. (No off-air card:
+  // the words layer is often empty on purpose, and the stream shows its camera or black when
+  // nothing is live.)
+  words.setLogo(c.cover ?? c.logo);
   draw();
 });
 api.onLiveState((s) => {

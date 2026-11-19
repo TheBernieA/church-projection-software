@@ -493,6 +493,16 @@ export class AppController {
       undoable: false,
       handle: async () => ({ result: await this.stream.benchmark() }),
     });
+    // Cover the stream (and recording) with the cover picture, or uncover it.
+    bus.register({
+      type: 'stream.cover',
+      schema: z.object({ on: z.boolean() }),
+      undoable: false,
+      handle: ({ on }) => {
+        this.stream.cover(on);
+        return { result: null };
+      },
+    });
     // Try failed destinations again.
     bus.register({
       type: 'stream.retry',

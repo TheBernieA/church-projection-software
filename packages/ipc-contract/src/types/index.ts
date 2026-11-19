@@ -15,6 +15,7 @@ import type {
   ServicePlan,
   Settings,
   Song,
+  StreamSettings,
   ScreenVisual,
   ScreenMask,
   StageLayout,
@@ -257,6 +258,8 @@ export interface StreamStatus {
   adaptedKbps: number | null;
   /** Live, but the stream mix has had no sound for a while (nothing sent to it, or muted). */
   silent: boolean;
+  /** Covered: the stream shows the cover picture (Settings › Streaming) instead of the show. */
+  covered: boolean;
   /** This computer's ffmpeg can send SRT (direct links); null until asked. */
   srt: boolean | null;
   destinations: StreamDestinationStatus[];
@@ -304,21 +307,15 @@ export interface StreamHealth {
 export interface StreamConfig {
   width: number;
   height: number;
-  picture: {
-    camera: string | null;
-    words: 'full' | 'lowerThird' | 'none';
-    /** 'none': nothing behind the words (a transparent NDI key feed). */
-    background: 'program' | 'camera' | 'switcher' | 'layout' | 'black' | 'none';
-    layout: 'sideBySide' | 'pip';
-    secondCamera: string | null;
-    mirror: 'own' | 'alternate' | 'stage';
-    /** Lower third: fit the words to the band automatically, or use `wordsSize` (%). */
-    wordsAuto: boolean;
-    wordsSize: number;
-    /** Lower third only. 'theme' (where the theme puts them) is for feeds that don't move words. */
-    wordsAlign: 'theme' | 'left' | 'center' | 'right';
-    wordsTheme: string | null;
+  /**
+   * What the picture shows: the stream's settings, or (NDI feeds) the words alone over nothing
+   * (`background: 'none'`) or where the theme put them (`wordsAlign: 'theme'`).
+   */
+  picture: Omit<StreamSettings['picture'], 'background' | 'wordsAlign'> & {
+    background: StreamSettings['picture']['background'] | 'none';
+    wordsAlign: StreamSettings['picture']['wordsAlign'] | 'theme';
   };
+
   /** Themes the stream uses instead of each slide's own, by kind of slide. */
   kindThemes: ResolvedKindThemes;
   /** Lower third: the theme to draw the words with (resolved from `picture.wordsTheme`). */
@@ -341,6 +338,8 @@ export interface StreamConfig {
   meters: boolean;
   logo: ScreenVisual;
   standby: Standby;
+  /** The stream is covered: this shows instead of everything (the sound carries on). */
+  cover: ScreenVisual | null;
 }
 
 /**

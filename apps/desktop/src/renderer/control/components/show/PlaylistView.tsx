@@ -377,7 +377,7 @@ export function PlaylistView() {
 
   return (
     <section
-      className="flex min-h-0 flex-1 flex-col bg-[var(--surface-0)]"
+      className="@container flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]"
       aria-label={t('slides.title')}
     >
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -425,7 +425,7 @@ export function PlaylistView() {
           );
         })}
       </div>
-      <div className="flex h-9 shrink-0 items-center gap-3 border-t border-[var(--divider)] bg-[var(--surface-1)] px-2">
+      <div className="flex h-9 shrink-0 items-center gap-3 overflow-hidden border-t border-[var(--divider)] bg-[var(--surface-1)] px-2 @max-[560px]:gap-1.5">
         <AddMenu
           update={update}
           trigger={

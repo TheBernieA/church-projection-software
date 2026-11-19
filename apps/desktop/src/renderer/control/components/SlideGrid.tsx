@@ -70,7 +70,10 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col" aria-label={t('slides.title')}>
+    <section
+      className="@container flex min-h-0 min-w-0 flex-1 flex-col"
+      aria-label={t('slides.title')}
+    >
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[var(--hairline)] px-3">
         {item && <KindTile kind={item.kind} size={22} />}
         <Typography as="h2" variant="title" truncate className="min-w-0">
@@ -155,7 +158,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
         )}
       </div>
       {item && slides.length > 0 && (
-        <div className="flex h-10 shrink-0 items-center gap-3 border-t border-[var(--hairline)] px-3">
+        <div className="flex h-10 shrink-0 items-center gap-3 overflow-hidden border-t border-[var(--hairline)] px-3 @max-[560px]:gap-1.5 @max-[560px]:px-2">
           <DefaultTransitions />
           <span className="flex-1" />
           <SlideViewControls prefs={prefs} />

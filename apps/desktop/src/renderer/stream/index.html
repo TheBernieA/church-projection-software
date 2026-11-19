@@ -56,6 +56,12 @@
       body.lower-third.has-words #band {
         display: block;
       }
+      /* Words along the top: the band comes down from the top instead. */
+      body.words-top #band {
+        top: 0;
+        bottom: auto;
+        background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.72) 55%);
+      }
       /* Two cameras: side by side (each half, cropped to fill), or the second in a corner. */
       #camera.layout-sideBySide > .ls-input:nth-child(1) {
         right: 50% !important;

@@ -24,12 +24,6 @@ export const BACKGROUNDS: Choice<Picture['background']>[] = [
   { value: 'black', label: 'streaming.bgBlack' },
 ];
 
-export const WORDS_ALIGNS: Choice<Picture['wordsAlign']>[] = [
-  { value: 'left', label: 'streaming.align.left' },
-  { value: 'center', label: 'streaming.align.center' },
-  { value: 'right', label: 'streaming.align.right' },
-];
-
 /** A scene template: the usual looks for the stream, one click each. */
 export interface SceneTemplate {
   id: string;
@@ -119,6 +113,8 @@ export const SCENE_GROUPS = ['slides', 'cameras', 'screens'] as const;
 
 /** The lower third's size when chosen by hand, as % of the words' full-screen size. */
 export const WORDS_SIZE = { min: 25, max: 100, step: 5 } as const;
+/** How wide the lower third's words may spread, as % of the picture. */
+export const WORDS_WIDTH = { min: 30, max: 100, step: 5 } as const;
 
 /** The performance modes offered as a quick choice (Custom is set in Settings). */
 export const QUICK_MODES = ['auto', 'light', 'balanced', 'quality'] as const;

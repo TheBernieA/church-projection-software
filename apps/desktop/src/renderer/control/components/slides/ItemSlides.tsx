@@ -59,6 +59,12 @@ export function useSlideViewPrefs() {
 }
 export type SlideViewPrefs = ReturnType<typeof useSlideViewPrefs>;
 
+const VIEW_OPTIONS: { value: SlideView; label: string; icon: React.ReactNode }[] = [
+  { value: 'grid', label: 'slides.viewGrid', icon: <LayoutGrid size={13} /> },
+  { value: 'easy', label: 'slides.viewEasy', icon: <AlignLeft size={13} /> },
+  { value: 'table', label: 'slides.viewTable', icon: <Rows3 size={13} /> },
+];
+
 /**
  * The view controls at the bottom right of the slides: Grid, Easy or Table; the view's options
  * (slides by group, what shows through transparent thumbnails); and the thumbnail size.
@@ -67,16 +73,25 @@ export function SlideViewControls({ prefs }: { prefs: SlideViewPrefs }) {
   const { t } = useTranslation();
   return (
     <>
-      <Segmented<SlideView>
-        label={t('slides.view')}
-        value={prefs.view}
-        onChange={prefs.setView}
-        options={[
-          { value: 'grid', label: t('slides.viewGrid'), icon: <LayoutGrid size={13} /> },
-          { value: 'easy', label: t('slides.viewEasy'), icon: <AlignLeft size={13} /> },
-          { value: 'table', label: t('slides.viewTable'), icon: <Rows3 size={13} /> },
-        ]}
-      />
+      {/* Named in full where there's room; icons alone in a narrow pane. */}
+      {(['wide', 'narrow'] as const).map((fit) => (
+        <span
+          key={fit}
+          className={`shrink-0 ${fit === 'wide' ? '@max-[640px]:hidden' : 'hidden @max-[640px]:block'}`}
+        >
+          <Segmented<SlideView>
+            label={t('slides.view')}
+            value={prefs.view}
+            onChange={prefs.setView}
+            options={VIEW_OPTIONS.map((v) => ({
+              value: v.value,
+              label: fit === 'wide' ? t(v.label) : '',
+              name: t(v.label),
+              icon: v.icon,
+            }))}
+          />
+        </span>
+      ))}
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <IconButton size="xs" variant="quiet" aria-label={t('slides.viewOptions')}>
@@ -127,7 +142,7 @@ export function SlideViewControls({ prefs }: { prefs: SlideViewPrefs }) {
           onChange={(e) => prefs.thumb.preview(Number(e.target.value))}
           onPointerUp={(e) => prefs.thumb.commit(Number(e.currentTarget.value))}
           onKeyUp={(e) => prefs.thumb.commit(Number(e.currentTarget.value))}
-          className="w-36 shrink-0"
+          className="w-36 shrink-0 @max-[640px]:w-20 @max-[420px]:hidden"
         />
       )}
     </>

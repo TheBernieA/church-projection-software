@@ -38,6 +38,7 @@ export const useStore = create<ControlState>((set) => ({
   binOpen: true,
   mixerOpen: false,
   liveConsole: 'closed',
+  streamTakeover: null,
   textBarOpen: false,
   settingsPage: 'general',
   dialog: null,

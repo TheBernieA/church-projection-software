@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lowerThird } from './wordsLayout';
+import { lowerThird, wordsSideMargin } from './wordsLayout';
 
 const canvas = { width: 1920, height: 1080 };
 /** A centred block of text as a theme lays it out full screen. */
@@ -62,5 +62,22 @@ describe('lower-third words', () => {
     const p = lowerThird([leftish], canvas, { auto: false, size: 50, align: 'theme' });
     // The block's centre stays at 420.
     expect(p.x + (leftish.x + leftish.w / 2) * p.scale).toBeCloseTo(420, 0);
+  });
+
+  it('sits along the top when asked', () => {
+    const p = lowerThird([text], canvas, { auto: true, size: 60, align: 'center', edge: 'top' });
+    expect(p.y + text.y * p.scale).toBeCloseTo(1080 * 0.06, 0);
+  });
+
+  it('never spreads wider than the width chosen', () => {
+    const wide = { x: 0, y: 500, w: 1920, h: 100 };
+    const p = lowerThird([wide], canvas, { auto: true, size: 60, align: 'center', width: 0.5 });
+    expect(wide.w * p.scale).toBeLessThanOrEqual(1920 * 0.5 + 1);
+  });
+
+  it('gives the words a wider box to wrap in as the width grows', () => {
+    expect(wordsSideMargin(30)).toBeCloseTo(30, 0); // a 40% box
+    expect(wordsSideMargin(60)).toBeCloseTo(10, 0); // an 80% box
+    expect(wordsSideMargin(100)).toBe(2); // never right to the edge
   });
 });

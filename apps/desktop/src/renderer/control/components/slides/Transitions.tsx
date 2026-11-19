@@ -181,7 +181,12 @@ function TransitionPill({
       >
         <TransitionGlyph size={11} />
       </span>
-      <Typography size={11} tone="secondary" truncate className="max-w-[110px]">
+      <Typography
+        size={11}
+        tone="secondary"
+        truncate
+        className="max-w-[110px] @max-[760px]:max-w-[56px] @max-[560px]:hidden"
+      >
         {value}
       </Typography>
     </Button>

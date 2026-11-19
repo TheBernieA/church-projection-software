@@ -1,5 +1,6 @@
 import type {
   BackgroundLayer,
+  StreamSettings,
   BibleVersionInfo,
   BookId,
   ContentLayer,
@@ -146,6 +147,11 @@ export interface ControlState {
   mixerOpen: boolean;
   /** The Live console: hidden, docked beside the output, or in its own window. */
   liveConsole: 'closed' | 'docked' | 'window';
+  /**
+   * The screens sent to the stream (the monitor's Send to stream): the stream's picture before,
+   * to put back, and the one sent (so a scene picked meanwhile ends it).
+   */
+  streamTakeover: { previous: StreamSettings['picture']; sent: StreamSettings['picture'] } | null;
   /** The toolbar's Text bar (formatting for the selected item) is showing. */
   textBarOpen: boolean;
   /** Open page of the Settings window (remembered between openings). */
