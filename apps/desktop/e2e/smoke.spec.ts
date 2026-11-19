@@ -532,6 +532,13 @@ test('settings: category pages, installed Bible packages', async () => {
   await control.locator('[data-howto="direct"] summary').click();
   await expect(control.locator('[data-howto="direct"]')).toContainText('udp://192.168.1.50:9000');
   await expect(control.locator('[data-howto="youtube"]')).toHaveCount(1);
+  // The screen recipes: fitting a projector, blending, the multi-view.
+  await control.locator('[data-howto="edgeBlend"] summary').click();
+  await expect(control.locator('[data-howto="edgeBlend"]')).toContainText(
+    'Blend the audience screens',
+  );
+  await expect(control.locator('[data-howto="fitScreens"]')).toHaveCount(1);
+  await expect(control.locator('[data-howto="multiview"]')).toHaveCount(1);
   await control.locator('[data-howto="midi"] summary').click();
   await expect(control.locator('[data-howto="midi"]')).toContainText('Press Learn');
   await control.locator('[data-howto="midi"]').scrollIntoViewIfNeeded();
