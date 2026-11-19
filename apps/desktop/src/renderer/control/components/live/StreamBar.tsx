@@ -117,10 +117,13 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
 function InputStrip({
   c,
   choices,
+  onSwitch,
 }: {
   c: MixerChannel;
   /** The inputs it can be switched to: its own, and any not on another channel. */
   choices: { deviceId: string; label: string }[];
+  /** Switch this channel to another input. */
+  onSwitch: (c: MixerChannel, d: { deviceId: string; label: string }) => void;
 }) {
   const { t } = useTranslation();
   const heard = c.stream && !c.mute;
@@ -143,12 +146,7 @@ function InputStrip({
         value={c.deviceId}
         onChange={(deviceId) => {
           const d = choices.find((x) => x.deviceId === deviceId);
-          if (d && d.deviceId !== c.deviceId)
-            void mixerCmd({
-              action: 'channel',
-              id: c.id,
-              patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
-            });
+          if (d && d.deviceId !== c.deviceId) onSwitch(c, d);
         }}
         options={[
           ...(choices.some((d) => d.deviceId === c.deviceId)
@@ -211,11 +209,30 @@ export function StreamSound() {
   }, [mixer, inputs.length, devices]);
   if (!mixer) return null;
   const bus = mixer.stream;
-  const choicesFor = (c: MixerChannel) =>
-    (devices ?? []).filter(
-      (d) => d.deviceId === c.deviceId || !inputs.some((o) => o.deviceId === d.deviceId),
-    );
-  const [first, ...more] = inputs;
+  /**
+   * This row now hears `d`. If another channel already had it, the two swap inputs (each keeps
+   * its own levels and settings), so nothing is lost and no second row appears.
+   */
+  const switchInput = (c: MixerChannel, d: { deviceId: string; label: string }): void => {
+    const other = inputs.find((o) => o.id !== c.id && o.deviceId === d.deviceId);
+    void mixerCmd({
+      action: 'channel',
+      id: c.id,
+      patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
+    });
+    if (other)
+      void mixerCmd({
+        action: 'channel',
+        id: other.id,
+        patch: { deviceId: c.deviceId, name: c.name },
+      });
+  };
+  // Every input can be picked from every row: one already on another channel swaps with it.
+  const choices = devices ?? [];
+  // The inputs the stream hears (else the first one): one row for one mic. A sound card added
+  // beside the built-in mic is switched to with the dropdown, not given a row of its own.
+  const onStream = inputs.filter((c) => c.stream);
+  const [first, ...more] = onStream.length ? onStream : inputs.slice(0, 1);
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -248,13 +265,13 @@ export function StreamSound() {
         {first && (
           <>
             <span aria-hidden className="h-6 w-px shrink-0 bg-[var(--hairline)]" />
-            <InputStrip c={first} choices={choicesFor(first)} />
+            <InputStrip c={first} choices={choices} onSwitch={switchInput} />
           </>
         )}
       </div>
       {more.map((c) => (
         <div key={c.id} className="flex justify-end">
-          <InputStrip c={c} choices={choicesFor(c)} />
+          <InputStrip c={c} choices={choices} onSwitch={switchInput} />
         </div>
       ))}
     </div>

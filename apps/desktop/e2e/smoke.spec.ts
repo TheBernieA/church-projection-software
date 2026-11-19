@@ -2373,6 +2373,43 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await expect(low).toContainText('the stream −40.0 dB');
   await low.getByRole('button', { name: 'Turn up to 0 dB' }).click();
   await expect.poll(streamGain).toBe(0);
+  // A second input (a sound card) on the mixer but not sent to the stream: still one mic row in
+  // the console, and its dropdown switches the stream to it (the two channels swap inputs).
+  const mics = await control.evaluate(async () =>
+    (await navigator.mediaDevices.enumerateDevices())
+      .filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default')
+      .map((d) => ({ id: d.deviceId, label: d.label })),
+  );
+  const inputs = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.mixer.channels.filter((c) => c.kind === 'input') : [];
+  };
+  const onStream = (await inputs()).find((c) => c.stream);
+  const spare = mics.find((m) => m.id !== onStream?.deviceId);
+  expect(onStream && spare).toBeTruthy(); // the test machine has two (fake) mics
+  if (onStream && spare) {
+    await control.evaluate(
+      (d) =>
+        window.lampstand.command({
+          type: 'live.mixer',
+          payload: { action: 'add', deviceId: d.id, name: d.label, room: false, stream: false },
+        }),
+      spare,
+    );
+    await expect.poll(async () => (await inputs()).length).toBe(2);
+    const which = live.getByRole('combobox', { name: /^Which input / });
+    await expect(which).toHaveCount(1);
+    await which.click();
+    await control.getByRole('option', { name: spare.label }).click();
+    await expect
+      .poll(async () => (await inputs()).find((c) => c.id === onStream.id)?.deviceId)
+      .toBe(spare.id);
+    // The other channel took the first input: nothing lost, still one row.
+    await expect
+      .poll(async () => (await inputs()).find((c) => c.id !== onStream.id)?.deviceId)
+      .toBe(onStream.deviceId);
+    await expect(which).toHaveCount(1);
+  }
   // The stream's lower third (Slides + lower third is on air): move it to the top left, let
   // the words spread wider, choose a size.
   const shows = live.getByRole('region', { name: 'Lower third on the stream' });
