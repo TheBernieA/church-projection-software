@@ -1,6 +1,12 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
 import type { BlendPart, LiveState, OutputRole, ScreenAdjust, ScreenMask } from '@lampstand/core';
-import { lookLayersFor, maskForRole, resolveStageLayout } from '@lampstand/core';
+import {
+  blendOrder,
+  lookLayersFor,
+  maskForRole,
+  resolveStageLayout,
+  screenAdjustFor,
+} from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences } from '../security/hardening';
@@ -104,6 +110,7 @@ export class WindowManager {
       scaleFactor: d.scaleFactor,
       isPrimary: d.id === primaryId,
       isControl: d.id === controlId,
+      x: d.bounds.x,
       role: roles.get(d.id) ?? 'none',
     }));
   }
@@ -149,8 +156,9 @@ export class WindowManager {
         this.createOutput(id, want.role, want.display);
         changed = true;
       }
-    // Outputs that stay learn their new place in an edge blend (a screen joined or left it).
-    if (changed) this.refreshOutputInfo();
+    // Outputs that stay learn their new place in an edge blend (a screen joined or left it, or
+    // the displays were re-arranged).
+    if (changed || s.edgeBlend.enabled) this.refreshOutputInfo();
     this.updatePowerBlocker();
   }
 
@@ -238,6 +246,8 @@ export class WindowManager {
       if (this.outputs.get(outputId) === entry) {
         this.outputs.delete(outputId);
         this.updatePowerBlocker();
+        // A blended screen closed: the others close up the picture.
+        if (this.d.getSettings().edgeBlend.enabled) this.refreshOutputInfo();
       }
     });
     void win.loadURL(
@@ -285,15 +295,16 @@ export class WindowManager {
     const parts = new Map<string, BlendPart>();
     if (!s.edgeBlend.enabled) return parts;
     const displays = screen.getAllDisplays();
-    const mains = [...this.outputs.values()].filter((o) => o.role === 'main');
-    const rank = (o: OutputWindow): number => {
-      if (o.displayId === null) return blendSlot(o.outputId);
-      const d = displays.find((x) => x.id === o.displayId);
-      const at = d ? s.edgeBlend.order.indexOf(fingerprint(d)) : -1;
-      // Ordered ones first, the rest by where they sit (left to right).
-      return at >= 0 ? at : 1000 + (d?.bounds.x ?? 0) / 100_000;
-    };
-    const ordered = mains.sort((a, b) => rank(a) - rank(b));
+    const mains = [...this.outputs.values()]
+      .filter((o) => o.role === 'main')
+      .map((o) => {
+        const d = displays.find((x) => x.id === o.displayId);
+        // Rehearsal windows stand in a row with the main one on the right (stand-ins to its left).
+        return d
+          ? { o, fingerprint: fingerprint(d), x: d.bounds.x }
+          : { o, fingerprint: o.outputId, x: -blendSlot(o.outputId) };
+      });
+    const ordered = blendOrder(mains, s.edgeBlend.order).map((m) => m.o);
     if (ordered.length < 2) return parts;
     ordered.forEach((o, index) =>
       parts.set(o.outputId, {
@@ -308,8 +319,10 @@ export class WindowManager {
 
   /** A screen's fitting and colour (by its display, or the rehearsal window's id). */
   private adjustFor(o: OutputWindow, d: Display | undefined): ScreenAdjust | null {
-    const key = d ? fingerprint(d) : o.outputId;
-    return this.d.getSettings().screenAdjust[key] ?? null;
+    return (
+      screenAdjustFor(this.d.getSettings().screenAdjust, d ? fingerprint(d) : o.outputId)?.adjust ??
+      null
+    );
   }
 
   private outputInfo(o: OutputWindow): OutputInfo {

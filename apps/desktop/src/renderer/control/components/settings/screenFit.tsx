@@ -3,7 +3,10 @@ import { ArrowDown, ArrowUp, Grid3x3, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   adjustedCorners,
+  blendOrder,
+  isConvexQuad,
   isPlainAdjust,
+  screenAdjustFor,
   screenFilterCss,
   ScreenAdjustSchema,
   type CornerOffset,
@@ -46,6 +49,7 @@ function useFitTargets(s: Settings): FitTarget[] {
         label: t('screenFit.rehearsalN', { n: i + 2 }),
         outputId: `${BLEND_WINDOW}${i + 1}`,
       })),
+      { key: 'window-stage', label: t('screenFit.rehearsalStage'), outputId: 'window-stage' },
     ];
   }
   return displays
@@ -79,7 +83,13 @@ function CornerPad({
   const H = 180;
   // The outline drawn at the pad's size, with the screen's other adjustments too.
   const shape = adjustedCorners({ ...adjust, corners, flipH: false, flipV: false }, W, H);
-  const move = (id: CornerId, c: CornerOffset): void => setDraft({ ...corners, [id]: c });
+  /** A corner moved, unless that would cross the edges or flatten the shape (no picture then). */
+  const proper = (next: ScreenAdjust['corners']): boolean =>
+    isConvexQuad(adjustedCorners({ ...adjust, corners: next }, W, H));
+  const move = (id: CornerId, c: CornerOffset): void => {
+    const next = { ...corners, [id]: c };
+    if (proper(next)) setDraft(next);
+  };
   // Arrow-key nudges save once the keys rest (each press builds on the last, unsaved one).
   const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -119,6 +129,7 @@ function CornerPad({
     e.preventDefault();
     const c = corners[id];
     const next = { ...corners, [id]: { x: clampPct(c.x + dx), y: clampPct(c.y + dy) } };
+    if (!proper(next)) return;
     setDraft(next);
     if (idle.current) clearTimeout(idle.current);
     idle.current = setTimeout(() => {
@@ -183,12 +194,14 @@ export function ScreenFitGroup({ s, update }: { s: Settings; update: Update }) {
         <Notice>{t('screenFit.noScreens')}</Notice>
       </Group>
     );
-  const adjust = s.screenAdjust[target.key] ?? PLAIN;
+  // Found even if the display has moved since it was fitted (saved again under where it is now).
+  const found = screenAdjustFor(s.screenAdjust, target.key);
+  const adjust = found?.adjust ?? PLAIN;
   const save = (patch: Partial<ScreenAdjust>): void => {
     const next = { ...adjust, ...patch };
     // An untouched screen keeps no entry.
     const rest = Object.fromEntries(
-      Object.entries(s.screenAdjust).filter(([k]) => k !== target.key),
+      Object.entries(s.screenAdjust).filter(([k]) => k !== target.key && k !== found?.key),
     );
     update({ screenAdjust: isPlainAdjust(next) ? rest : { ...rest, [target.key]: next } });
   };
@@ -348,12 +361,8 @@ export function EdgeBlendGroup({ s, update }: { s: Settings; update: Update }) {
   const blend = s.edgeBlend;
   const save = (patch: Partial<EdgeBlend>): void => update({ edgeBlend: { ...blend, ...patch } });
   const audience = displays.filter((d) => d.role === 'main');
-  // Left to right: the saved order first, then the rest as the displays sit.
-  const rank = (fp: string): number => {
-    const i = blend.order.indexOf(fp);
-    return i >= 0 ? i : 1000;
-  };
-  const ordered = [...audience].sort((a, b) => rank(a.fingerprint) - rank(b.fingerprint));
+  // Left to right as the outputs will show them: the saved order, then as the displays sit.
+  const ordered = blendOrder(audience, blend.order);
   const count = s.windowMode ? blend.windows : ordered.length;
   const swap = (i: number, j: number): void => {
     const fps = ordered.map((d) => d.fingerprint);

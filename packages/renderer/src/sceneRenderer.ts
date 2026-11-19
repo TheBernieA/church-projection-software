@@ -17,6 +17,7 @@ import {
   mediaKey,
   syncBackgroundSound,
   syncMedia,
+  syncScrim,
 } from './background';
 import { maskStyle } from './mask';
 import { buildVideoInput } from './inputs';
@@ -179,6 +180,11 @@ export class SceneRenderer {
   }
 
   /** A background video's sound, in line with this renderer's audio, room output and mix. */
+  /** The readability overlay over the background, changed in place (the background keeps playing). */
+  private syncBgScrim(): void {
+    if (this.bg) syncScrim(this.doc, this.bg.node, this.last?.background ?? null);
+  }
+
   private syncBgSound(): void {
     // A picture or video over everything covers the background: its sound stops with it
     // (the video keeps going, silent, so it carries on where it was when the media goes).
@@ -526,7 +532,9 @@ export class SceneRenderer {
   private renderBackground(scene: Scene, instant: boolean): void {
     const key = backgroundKey(scene.background);
     if (this.bg?.key === key || (!this.bg && key === 'none')) {
-      this.syncBgSound(); // continuity: never restart (its sound may have been switched)
+      // Continuity: never restart (its sound or overlay may have changed).
+      this.syncBgSound();
+      this.syncBgScrim();
       return;
     }
     const old = this.bg;
@@ -539,6 +547,7 @@ export class SceneRenderer {
       this.bgLayer.append(node);
       this.bg = { key, node };
       this.syncBgSound();
+      this.syncBgScrim();
       if (fade)
         void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing: 'ease' });
     }
@@ -614,6 +623,9 @@ export class SceneRenderer {
         mediaUrl: (id) => this.opts.mediaUrl(id),
       });
       built.root.style.opacity = '0';
+      // A canvas wider than the theme's (edge blending): the words sit in the middle of it.
+      const spare = this.canvas.width - content.theme.canvas.width;
+      if (spare > 0) built.root.style.left = `${spare / 2}px`;
       layer.append(built.root);
       built.fit();
       built.root.style.opacity = duration ? '0' : '1';

@@ -50,9 +50,11 @@ export function gradientCss(ref: Extract<BackgroundRef, { kind: 'gradient' }>): 
 /** Stable identity of a background — same key means "keep playing, don't restart" (§12). */
 export function backgroundKey(bg: BackgroundLayer | null): string {
   if (!bg || bg.ref.kind === 'none') return 'none';
-  // A video's sound switches in place: turning it on or off never restarts the video.
+  // A video's sound and the readability overlay change in place: neither restarts the video.
   const ref = bg.ref.kind === 'video' ? { ...bg.ref, sound: undefined } : bg.ref;
-  return JSON.stringify(bg.adjust ? [ref, bg.adjust] : ref);
+  const adjust = bg.adjust ? { ...bg.adjust, scrim: undefined } : undefined;
+  const changesPicture = adjust && Object.values(adjust).some((v) => v !== undefined);
+  return JSON.stringify(changesPicture ? [ref, adjust] : ref);
 }
 
 /** CSS filter for a background's adjustments (blur, brightness, contrast, saturation). */

@@ -3005,19 +3005,20 @@ test('screens: fit each screen, edge blending, a readability overlay, the multi-
     .toBe(1);
   const second = app.windows().find((w) => w.url().includes('id=window-blend-1'));
   if (!second) throw new Error('no blend window');
-  await expect(out.locator('.ls-blend-right')).toHaveCount(1);
-  await expect(out.locator('.ls-blend-left')).toHaveCount(0);
-  await expect(second.locator('.ls-blend-left')).toHaveCount(1, { timeout: 10_000 });
-  // 15% overlap: the picture is 1.85 screens wide; the second screen starts 0.85 in.
+  // The stand-in sits to the left of the main window, so it shows the picture's left part.
+  await expect(second.locator('.ls-blend-right')).toHaveCount(1, { timeout: 10_000 });
+  await expect(second.locator('.ls-blend-left')).toHaveCount(0);
+  await expect(out.locator('.ls-blend-left')).toHaveCount(1);
+  // 15% overlap: the picture is 1.85 screens wide; the right-hand screen starts 0.85 in.
   await expect
-    .poll(() => second.locator('#picture').evaluate((e) => (e as HTMLElement).style.left))
+    .poll(() => out.locator('#picture').evaluate((e) => (e as HTMLElement).style.left))
     .toBe('-85%');
   await control.screenshot({ path: 'test-results/52b-edge-blend.png' });
   await blendGroup.getByRole('switch', { name: 'Blend the audience screens' }).click();
   await expect
     .poll(() => app.windows().filter((w) => w.url().includes('id=window-blend-1')).length)
     .toBe(0);
-  await expect(out.locator('.ls-blend-right')).toHaveCount(0);
+  await expect(out.locator('.ls-blend-left')).toHaveCount(0);
   await control.keyboard.press('Escape');
 
   // A readability overlay over an item's background: the bottom shaded behind the words.

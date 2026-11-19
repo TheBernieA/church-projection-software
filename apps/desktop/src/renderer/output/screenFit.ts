@@ -1,12 +1,5 @@
-import {
-  blendSpan,
-  blendStops,
-  isPlainAdjust,
-  screenFilterCss,
-  screenTransformCss,
-  type BlendPart,
-  type ScreenAdjust,
-} from '@lampstand/core';
+import { blendSpan, blendStops, type BlendPart, type ScreenAdjust } from '@lampstand/core';
+import { applyScreenAdjust } from '../shared/screenAdjust';
 
 /** The logical height every output draws at; widths follow each screen's shape. */
 const CANVAS_HEIGHT = 1080;
@@ -17,7 +10,8 @@ const CANVAS_HEIGHT = 1080;
  *   overlaps faded to black so neighbouring projectors add up to an even brightness;
  * - screen adjustments: the whole screen (picture, fades, test pattern) is pinned to where the
  *   projector really lands (keystone, scale, move, flips) and colour-matched.
- * Returns the canvas the renderer should draw on (wider when blending).
+ * Returns the canvas the renderer should draw on (wider when blending), and a key that changes
+ * when it does.
  */
 export function fitScreen(
   screen: HTMLElement,
@@ -28,11 +22,13 @@ export function fitScreen(
   const blend = info.blend;
   layoutPicture(picture, blend);
   drawFades(screen, blend);
-  watchAdjust(screen, info.adjust);
-  const span = blend ? blendSpan(blend) : { width: 1, start: 0 };
+  applyScreenAdjust(screen, info.adjust);
+  // A screen of its own keeps the usual 16:9 canvas (letterboxed on other shapes); a blend's
+  // canvas spans every projector, at their shape.
+  if (!blend) return { canvas: { width: 1920, height: CANVAS_HEIGHT }, canvasKey: 'single' };
   return {
-    canvas: { width: Math.round(screenWidth * span.width), height: CANVAS_HEIGHT },
-    canvasKey: blend ? `${blend.count}|${blend.overlap}|${screenWidth}` : `1|${screenWidth}`,
+    canvas: { width: Math.round(screenWidth * blendSpan(blend).width), height: CANVAS_HEIGHT },
+    canvasKey: `${blend.count}|${blend.overlap}|${screenWidth}`,
   };
 }
 
@@ -75,30 +71,4 @@ function drawFades(screen: HTMLElement, blend: BlendPart | null): void {
   // Only the inner edges overlap a neighbour.
   if (blend.index > 0) screen.append(fade('left'));
   if (blend.index < blend.count - 1) screen.append(fade('right'));
-}
-
-/** The current adjustment, re-applied when the window changes size. */
-let current: { screen: HTMLElement; adjust: ScreenAdjust | null } | null = null;
-let observer: ResizeObserver | null = null;
-
-function watchAdjust(screen: HTMLElement, adjust: ScreenAdjust | null): void {
-  current = { screen, adjust };
-  if (!observer && typeof ResizeObserver !== 'undefined') {
-    observer = new ResizeObserver(() => current && applyAdjust(current.screen, current.adjust));
-    observer.observe(screen);
-  }
-  applyAdjust(screen, adjust);
-}
-
-function applyAdjust(screen: HTMLElement, adjust: ScreenAdjust | null): void {
-  const st = screen.style;
-  if (!adjust || isPlainAdjust(adjust)) {
-    st.transform = '';
-    st.filter = '';
-    return;
-  }
-  // Pinned in the window's own pixels (the transform maps its box onto the four corners).
-  st.transformOrigin = '0 0';
-  st.transform = screenTransformCss(adjust, screen.clientWidth, screen.clientHeight);
-  st.filter = screenFilterCss(adjust);
 }

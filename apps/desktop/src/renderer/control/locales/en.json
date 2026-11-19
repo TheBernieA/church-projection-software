@@ -2346,7 +2346,8 @@
     "flipH": "Mirror left–right",
     "flipHHelp": "For rear projection: the projector shines from behind the screen.",
     "flipV": "Upside down",
-    "flipVHelp": "For a projector mounted upside down on the ceiling."
+    "flipVHelp": "For a projector mounted upside down on the ceiling.",
+    "rehearsalStage": "Stage rehearsal window"
   },
   "edgeBlend": {
     "title": "Edge blending",

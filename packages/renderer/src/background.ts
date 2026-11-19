@@ -81,10 +81,26 @@ export function buildBackground(
     );
   if (bg.adjust?.dim)
     wrap.append(el(doc, 'div', '', { ...FILL, background: `rgba(0,0,0,${bg.adjust.dim})` }));
-  const scrim = bg.adjust?.scrim;
-  if (scrim && scrim.strength > 0)
-    wrap.append(el(doc, 'div', 'ls-bg-scrim', { ...FILL, background: scrimCss(scrim) }));
+  syncScrim(doc, wrap, bg);
   return wrap;
+}
+
+/**
+ * The readability overlay over a background (its last layer): added, changed or removed in
+ * place, so changing it never rebuilds the background (a video keeps playing).
+ */
+export function syncScrim(doc: Document, wrap: HTMLElement, bg: BackgroundLayer | null): void {
+  const scrim = bg?.adjust?.scrim;
+  let layer = wrap.querySelector<HTMLElement>(':scope > .ls-bg-scrim');
+  if (!scrim || scrim.strength <= 0) {
+    layer?.remove();
+    return;
+  }
+  if (!layer) {
+    layer = el(doc, 'div', 'ls-bg-scrim', { ...FILL });
+    wrap.append(layer);
+  }
+  layer.style.background = scrimCss(scrim);
 }
 
 /** Send a video's sound to `sinkId` (the room output), where the engine can (not in jsdom). */

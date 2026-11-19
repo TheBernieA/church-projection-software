@@ -2,6 +2,7 @@ import { parseChordLine } from '@lampstand/lyrics';
 import { StageView } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
+import { applyScreenAdjust } from '../shared/screenAdjust';
 import '../shared/outputApi.d';
 
 /**
@@ -13,6 +14,10 @@ const host = document.getElementById('stage');
 if (!host) throw new Error('stage');
 const view = new StageView(host, { mediaUrl, parseChords: parseChordLine });
 
-api.onInfo((info) => view.setLayout(info.stageLayout));
+api.onInfo((info) => {
+  view.setLayout(info.stageLayout);
+  // Fitted to its screen like the audience outputs (keystone, flips, colour).
+  applyScreenAdjust(host, info.adjust);
+});
 api.onLiveState((state) => view.update(state));
 void fontsReady().then(() => api.ready());

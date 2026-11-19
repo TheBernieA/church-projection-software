@@ -71,11 +71,33 @@ export function adjustedCorners(a: ScreenAdjust, w: number, h: number): Quad {
   return placed;
 }
 
-/** CSS `matrix3d` taking a w×h element (transform-origin 0 0) onto the screen's adjusted corners. */
+/**
+ * The four corners still make a proper (convex) shape: no three in a line, no edges crossing.
+ * Anything else has no sensible picture (the maths divides by zero, or turns it inside out).
+ */
+export function isConvexQuad(q: Quad): boolean {
+  let sign = 0;
+  for (let i = 0; i < 4; i++) {
+    const [ax, ay] = q[i] ?? [0, 0];
+    const [bx, by] = q[(i + 1) % 4] ?? [0, 0];
+    const [cx, cy] = q[(i + 2) % 4] ?? [0, 0];
+    const cross = (bx - ax) * (cy - by) - (by - ay) * (cx - bx);
+    if (Math.abs(cross) < 1e-6) return false;
+    const s = Math.sign(cross);
+    if (sign && s !== sign) return false;
+    sign = s;
+  }
+  return true;
+}
+
+/**
+ * CSS `matrix3d` taking a w×h element (transform-origin 0 0) onto the screen's adjusted corners
+ * ('' when they don't make a proper shape: the picture is then left as it is).
+ */
 export function screenTransformCss(a: ScreenAdjust, w: number, h: number): string {
-  const [ma = 0, mb = 0, mc = 0, md = 0, me = 0, mf = 0, mg = 0, mh = 0] = squareToQuad(
-    adjustedCorners(a, w, h),
-  );
+  const corners = adjustedCorners(a, w, h);
+  if (!isConvexQuad(corners)) return '';
+  const [ma = 0, mb = 0, mc = 0, md = 0, me = 0, mf = 0, mg = 0, mh = 0] = squareToQuad(corners);
   // Column-major: x' = a/w·x + b/h·y + c, y' = d/w·x + e/h·y + f, w' = g/w·x + h/h·y + 1.
   const cols = [ma / w, md / w, 0, mg / w, mb / h, me / h, 0, mh / h, 0, 0, 1, 0, mc, mf, 0, 1];
   return `matrix3d(${cols.map((n) => +n.toFixed(8)).join(',')})`;
@@ -137,4 +159,41 @@ export function blendStops(gamma: number, steps = 12): { at: number; opacity: nu
     const share = t * t * (3 - 2 * t); // smoothstep: the two shares sum to 1 everywhere
     return { at: t, opacity: +(1 - Math.pow(share, 1 / gamma)).toFixed(4) };
   });
+}
+
+/**
+ * Display fingerprints are "name|size|position". A display that moved (re-arranged, or plugged
+ * back in elsewhere) keeps its name and size, so settings saved for it still find it.
+ */
+const nameAndSize = (fp: string): string => fp.split('|').slice(0, 2).join('|');
+
+/** The key a screen's settings were saved under: its exact fingerprint, else the same display moved. */
+export function savedKeyFor(keys: readonly string[], fp: string): string | undefined {
+  return keys.find((k) => k === fp) ?? keys.find((k) => nameAndSize(k) === nameAndSize(fp));
+}
+
+/** A screen's fitting and colour from Settings (found even if the display has moved). */
+export function screenAdjustFor(
+  saved: Readonly<Record<string, ScreenAdjust>>,
+  fp: string,
+): { key: string; adjust: ScreenAdjust } | null {
+  const key = savedKeyFor(Object.keys(saved), fp);
+  const adjust = key === undefined ? undefined : saved[key];
+  return key !== undefined && adjust ? { key, adjust } : null;
+}
+
+/**
+ * Edge blending's left-to-right order: the order saved in Settings first, then the rest as the
+ * displays sit (by their left edge). The control window and the outputs both use this.
+ */
+export function blendOrder<T extends { fingerprint: string; x: number }>(
+  screens: readonly T[],
+  order: readonly string[],
+): T[] {
+  const rank = (s: T): number => {
+    const key = savedKeyFor(order, s.fingerprint);
+    const i = key === undefined ? -1 : order.indexOf(key);
+    return i >= 0 ? i : 1000 + s.x / 100_000;
+  };
+  return [...screens].sort((a, b) => rank(a) - rank(b));
 }

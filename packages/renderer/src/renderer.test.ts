@@ -383,6 +383,43 @@ describe('off-air screen', () => {
     expect(v.muted).toBe(true);
   });
 
+  it('changes the readability overlay without rebuilding the background', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const withOverlay = (style?: 'bottom' | 'even'): Scene => ({
+      ...scene('one'),
+      background: {
+        ref: { kind: 'video', mediaId: 'v', loop: true },
+        ...(style ? { adjust: { scrim: { style, strength: 0.5 } } } : {}),
+      },
+    });
+    r.render(withOverlay());
+    const bg = host.querySelector('.ls-bg');
+    expect(host.querySelector('.ls-bg-scrim')).toBeNull();
+    r.render(withOverlay('bottom'));
+    expect(host.querySelector('.ls-bg')).toBe(bg);
+    expect(host.querySelector<HTMLElement>('.ls-bg-scrim')?.style.background).toContain(
+      'linear-gradient',
+    );
+    r.render(withOverlay('even'));
+    expect(host.querySelectorAll('.ls-bg-scrim')).toHaveLength(1);
+    r.render(withOverlay());
+    expect(host.querySelector('.ls-bg')).toBe(bg);
+    expect(host.querySelector('.ls-bg-scrim')).toBeNull();
+  });
+
+  it('centres the words on a canvas wider than the theme (edge blending)', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, {
+      mode: 'output',
+      mediaUrl: (id) => id,
+      canvas: { width: 3552, height: 1080 },
+    });
+    r.render(scene('wide'));
+    const words = host.querySelector<HTMLElement>('.ls-layer-content > *');
+    expect(words?.style.left).toBe(`${(3552 - theme.canvas.width) / 2}px`);
+  });
+
   it('is never drawn in thumbnails', () => {
     const host = document.createElement('div');
     const r = new SceneRenderer(host, { mode: 'thumbnail', mediaUrl: (id) => id });

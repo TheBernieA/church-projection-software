@@ -53,6 +53,8 @@ export interface DisplayInfo {
   isPrimary: boolean;
   /** True for the display the control window is on. */
   isControl: boolean;
+  /** Its left edge in the desktop's arrangement (edge blending orders screens by it). */
+  x: number;
   role: OutputRole;
 }
 

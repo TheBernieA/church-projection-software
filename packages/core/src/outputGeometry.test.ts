@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   adjustedCorners,
+  blendOrder,
+  isConvexQuad,
+  screenAdjustFor,
   blendSpan,
   blendStops,
   isPlainAdjust,
@@ -81,5 +84,39 @@ describe('edge blending', () => {
     );
     // A real projector's gamma lifts the fade's middle (less black over it).
     expect(blendStops(2.2, 10)[5]?.opacity ?? 1).toBeLessThan(stops[5]?.opacity ?? 0);
+  });
+});
+
+describe('screens that move, and impossible corners', () => {
+  it('a crossed or flattened shape is refused rather than turned inside out', () => {
+    const square = [
+      [0, 0],
+      [10, 0],
+      [10, 10],
+      [0, 10],
+    ] as const;
+    expect(isConvexQuad(square)).toBe(true);
+    expect(isConvexQuad([square[1], square[0], square[2], square[3]])).toBe(false);
+    const a = {
+      ...plain,
+      corners: { ...plain.corners, tl: { x: 50, y: 50 }, tr: { x: -50, y: 50 } },
+    };
+    expect(screenTransformCss(a, 100, 100)).toBe('');
+  });
+
+  it('settings saved for a display still find it after it moves', () => {
+    const saved = { 'Epson|1920x1080|1920,0': { ...plain, flipH: true } };
+    expect(screenAdjustFor(saved, 'Epson|1920x1080|3840,0')?.adjust.flipH).toBe(true);
+    expect(screenAdjustFor(saved, 'BenQ|1920x1080|1920,0')).toBeNull();
+  });
+
+  it('blends left to right: the saved order, then by position', () => {
+    const screens = [
+      { fingerprint: 'B|1|0,0', x: 3840 },
+      { fingerprint: 'A|1|0,0', x: 1920 },
+      { fingerprint: 'C|1|0,0', x: 0 },
+    ];
+    expect(blendOrder(screens, []).map((s) => s.x)).toEqual([0, 1920, 3840]);
+    expect(blendOrder(screens, ['B|1|9,9']).map((s) => s.x)).toEqual([3840, 0, 1920]);
   });
 });
