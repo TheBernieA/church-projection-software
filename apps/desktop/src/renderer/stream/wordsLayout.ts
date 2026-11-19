@@ -78,10 +78,12 @@ export function lowerThird(
 
 /**
  * The side margins (% of the width, each side) that give the words a text box this wide when
- * laid out full size, so that at a lower third's size they spread to about `widthPct` of the
- * picture: a wide box makes fewer, longer lines (a long verse isn't squeezed into a column).
+ * laid out full size, so that at a lower third's size (`scaled`) they spread to about `widthPct`
+ * of the picture: a wide box makes fewer, longer lines (a long verse isn't squeezed into a
+ * column). A lower-third theme drawn at its own size isn't scaled: its box is `widthPct` wide.
  */
-export function wordsSideMargin(widthPct: number): number {
-  const box = Math.min(100, widthPct / AUTO_MAX_SCALE);
+export function wordsSideMargin(widthPct: number, scaled = true): number {
+  // Drawn at full size (a lower-third theme at its own size), the box is simply that wide.
+  const box = Math.min(100, scaled ? widthPct / AUTO_MAX_SCALE : widthPct);
   return Math.max(2, (100 - box) / 2);
 }

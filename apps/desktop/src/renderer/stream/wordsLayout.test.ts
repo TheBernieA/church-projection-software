@@ -79,5 +79,7 @@ describe('lower-third words', () => {
     expect(wordsSideMargin(30)).toBeCloseTo(30, 0); // a 40% box
     expect(wordsSideMargin(60)).toBeCloseTo(10, 0); // an 80% box
     expect(wordsSideMargin(100)).toBe(2); // never right to the edge
+    // A lower-third theme at its own size: the box is simply that wide.
+    expect(wordsSideMargin(90, false)).toBe(5);
   });
 });

@@ -150,10 +150,15 @@ function draw(): void {
         ? withWordsTheme(program, config.wordsTheme ?? latest.lowerThird)
         : program;
   themed = worded.content?.theme.layout === 'lower-third';
-  // A lower third that's moved and sized here: its words get a box as wide as the width chosen
-  // (laid out wider, they wrap into fewer, longer lines).
-  const moved = pic.words === 'lowerThird' && !(themed && pic.wordsAuto);
-  const spread = moved ? widened(worded, pic.wordsWidth) : worded;
+  // A lower third's words get a box as wide as the width chosen (laid out wider, they wrap into
+  // fewer, longer lines): sized for scaling down when they're moved and sized here, or exactly
+  // that wide when a lower-third theme draws them at its own size (then the theme also moves to
+  // the top when the top is chosen).
+  const ownSize = themed && pic.wordsAuto;
+  const spread =
+    pic.words === 'lowerThird'
+      ? widened(worded, pic.wordsWidth, !ownSize, ownSize && pic.wordsEdge === 'top')
+      : worded;
   words.render({
     ...spread,
     background: null,
@@ -189,21 +194,21 @@ function draw(): void {
 }
 
 /** The slide's words in a text box `widthPct` of the picture wide (at a lower third's size). */
-const widenCache = new WeakMap<Scene, { width: number; scene: Scene }>();
-function widened(scene: Scene, widthPct: number): Scene {
+const widenCache = new WeakMap<Scene, { key: string; scene: Scene }>();
+function widened(scene: Scene, widthPct: number, scaled: boolean, toTop: boolean): Scene {
   const c = scene.content;
   if (!c) return scene;
+  const key = `${widthPct}|${scaled}|${toTop}`;
   const hit = widenCache.get(scene);
-  if (hit?.width === widthPct) return hit.scene;
-  const side = wordsSideMargin(widthPct);
-  const out: Scene = {
-    ...scene,
-    content: {
-      ...c,
-      theme: { ...c.theme, safeArea: { ...c.theme.safeArea, left: side, right: side } },
-    },
+  if (hit?.key === key) return hit.scene;
+  const side = wordsSideMargin(widthPct, scaled);
+  const theme = {
+    ...c.theme,
+    safeArea: { ...c.theme.safeArea, left: side, right: side },
+    ...(toTop ? { layout: 'top' as const } : {}),
   };
-  widenCache.set(scene, { width: widthPct, scene: out });
+  const out: Scene = { ...scene, content: { ...c, theme } };
+  widenCache.set(scene, { key, scene: out });
   return out;
 }
 
