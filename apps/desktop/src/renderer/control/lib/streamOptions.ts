@@ -1,4 +1,4 @@
-import type { StreamSettings } from '@lampstand/core';
+import { themeAlignOf, type StreamSettings, type Theme } from '@lampstand/core';
 
 /**
  * The stream's choices, listed once for the Live console and Settings › Streaming. Each label is
@@ -132,3 +132,26 @@ export const choices = <T extends string>(
   list: readonly Choice<T>[],
   t: (key: string) => string,
 ): { value: T; label: string }[] => list.map((c) => ({ value: c.value, label: t(c.label) }));
+
+/** The lower-third themes to pick from, after "each slide's own (made smaller)". */
+export const wordsThemeOptions = (
+  lowerThirds: readonly Theme[],
+  t: (key: string) => string,
+): { value: string; label: string }[] => [
+  { value: NONE, label: t('streaming.wordsThemeOwn') },
+  ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
+];
+
+/**
+ * Choosing the stream's lower-third theme: a theme brings its own position (which can still be
+ * moved afterwards); NONE goes back to each slide's own theme.
+ */
+export function pickWordsTheme(
+  id: string,
+  lowerThirds: readonly Theme[],
+): Pick<Picture, 'wordsTheme'> & Partial<Pick<Picture, 'wordsAlign'>> {
+  const picked = lowerThirds.find((th) => th.id === id);
+  return picked
+    ? { wordsTheme: picked.id, wordsAlign: themeAlignOf(picked) }
+    : { wordsTheme: null };
+}

@@ -1763,7 +1763,6 @@
     }
   },
   "live": {
-    "title": "Livestream & recording",
     "open": "Livestream and recording",
     "onAir": "Livestreaming now",
     "recording": "Recording now",
@@ -1791,7 +1790,6 @@
       "noFfmpeg": "The video encoder (ffmpeg) is missing.",
       "noDestinations": "No destination could start: check each one has its stream key.",
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
-      "reconnecting": "Reconnecting…",
       "encoderStopped": "The encoder stopped and couldn’t restart.",
       "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming."
     }

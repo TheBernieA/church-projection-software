@@ -1,6 +1,6 @@
 import { Gauge } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatClock, secondsSince } from '@lampstand/core';
+import { ENCODER_SHORT_NAMES, formatClock, secondsSince } from '@lampstand/core';
 import type { StreamStatus } from '@lampstand/ipc-contract';
 import { Button, Typography } from '@lampstand/ui';
 import { useNow } from '../../lib/hooks';
@@ -97,14 +97,7 @@ export function StatusPill({ s }: { s: StreamStatus | null }) {
 }
 
 /** "VideoToolbox", "NVENC"… for the stats strip. */
-const ENCODER_NAMES: Record<string, string> = {
-  h264_videotoolbox: 'VideoToolbox',
-  h264_nvenc: 'NVENC',
-  h264_qsv: 'Quick Sync',
-  h264_amf: 'AMF',
-  libx264: 'x264',
-  webcodecs: 'GPU · hardware encoder',
-};
+const ENCODER_NAMES: Record<string, string> = ENCODER_SHORT_NAMES;
 
 type Tone = 'ok' | 'warn' | 'bad' | 'plain';
 const TONE: Record<Tone, string> = {

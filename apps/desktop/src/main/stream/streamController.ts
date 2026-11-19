@@ -7,34 +7,22 @@ import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'ele
 import {
   resolvePerformance,
   streamSize,
-  resolveStageLayout,
   StreamSettingsSchema,
-  type LiveState,
   type MachineInfo,
   type PerformanceMode,
-  type ResolvedKindThemes,
-  type ScreenVisual,
   type Settings,
-  type Standby,
   type StreamProfile,
-  type Theme,
-  type VideoInputLayer,
 } from '@lampstand/core';
 import {
   Channels,
   type EncodeConfig,
   type EncoderReport,
   type Notice,
-  type StreamConfig,
   type StreamDestinationStatus,
   type StreamStatus,
 } from '@lampstand/ipc-contract';
 import { isTrustedFrameUrl } from '../ipc/router';
-import { rendererUrl } from '../security/protocols';
-import { secureWebPreferences } from '../security/hardening';
 import type { SecretStore } from '../secrets/secretStore';
-import type { WindowManager } from '../windows/windowManager';
-import { type Logger } from '../types';
 import { findFfmpeg, probeAacEncoder, probeEncoders, probeProtocols } from './ffmpeg';
 import {
   buildArgs,
@@ -43,6 +31,7 @@ import {
   hasFallbackIngest,
   redactKeys,
   parseProgress,
+  type Progress,
   pickEncoder,
   recordingName,
   type Encoder,
@@ -57,22 +46,17 @@ import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
 import { FramePump } from './framePump';
 import { isStruggling, Ring, sampleProcess, type HealthSample } from './health';
 import { pickBenchmarkMode, runBenchmark, type BenchmarkRun } from './benchmark';
+import {
+  bitmapOf,
+  openPictureWindow,
+  sendPictureConfig,
+  streamPictureExtras,
+  type PictureSources,
+} from './pictureWindow';
 
-export interface StreamDeps {
-  log: Logger;
-  windows: WindowManager;
+export interface StreamDeps extends PictureSources {
   secrets: SecretStore;
-  getSettings: () => Settings;
   updateSettings: (patch: Partial<Settings>) => void;
-  getLiveState: () => LiveState;
-  logo: () => ScreenVisual;
-  standby: () => Standby;
-  /** The theme chosen for the stream's lower third (resolved from its id), or null. */
-  wordsTheme: () => Theme | null;
-  /** Themes the stream uses instead of each slide's own, by kind of slide. */
-  kindThemes: () => ResolvedKindThemes;
-  /** The alternate (HDMI) output's themes, for a stream that mirrors it. */
-  alternateThemes: () => ResolvedKindThemes;
   onStatus: (s: StreamStatus) => void;
   notice: (n: Notice) => void;
 }
@@ -110,7 +94,12 @@ const DEFAULT_PROFILE: StreamProfile = resolvePerformance(
 const sizeOf = (p: Pick<StreamProfile, 'height'>): { width: number; height: number } =>
   streamSize(p.height);
 
-const idle = (available: boolean, encoder: string, profile: StreamProfile): StreamStatus => ({
+/** A stopped stream's status (what ffmpeg can do, e.g. SRT, is kept: it doesn't change). */
+const idle = (
+  available: boolean,
+  encoder: string,
+  profile: StreamProfile,
+): Omit<StreamStatus, 'srt'> => ({
   state: 'idle',
   streaming: false,
   recording: false,
@@ -122,8 +111,6 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   delayMs: null,
   adaptedKbps: null,
   silent: false,
-  srt: null,
-  droppedLocal: 0,
   destinations: [],
   recordingPath: null,
   recordingBytes: 0,
@@ -137,43 +124,6 @@ const idle = (available: boolean, encoder: string, profile: StreamProfile): Stre
   available,
   encoder,
 });
-
-/**
- * A camera as a screen layer, with its saved settings; its capture size is never larger than
- * the stream (a 4K webcam is asked for 720p on a 720p stream: far less to decode).
- */
-function cameraLayerFor(s: Settings, id: string | null, height: number): VideoInputLayer | null {
-  if (!id) return null;
-  const c = s.cameras[id];
-  const cap = height >= 1080 ? '1080' : '720';
-  const wanted = c?.resolution ?? 'auto';
-  const resolution = wanted === 'auto' || Number(wanted) > Number(cap) ? cap : wanted;
-  return {
-    deviceId: id,
-    label: c?.name || 'Camera',
-    fit: c?.fit ?? 'cover',
-    mirror: c?.mirror ?? false,
-    resolution,
-  };
-}
-
-/**
- * What a stream picture needs besides its settings: its cameras (the second only for a layout),
- * and the stage layout and alternate output's themes when it mirrors one of those screens.
- */
-export function streamPictureExtras(
-  s: Settings,
-  height: number,
-  alternateThemes: ResolvedKindThemes,
-): Pick<StreamConfig, 'cameraLayer' | 'secondCameraLayer' | 'alternateThemes' | 'stageLayout'> {
-  const p = s.stream.picture;
-  return {
-    cameraLayer: cameraLayerFor(s, p.camera, height),
-    secondCameraLayer: p.background === 'layout' ? cameraLayerFor(s, p.secondCamera, height) : null,
-    alternateThemes: p.mirror === 'alternate' ? alternateThemes : {},
-    stageLayout: resolveStageLayout(s.stageLayouts, s.stageLayoutId),
-  };
-}
 
 /** Most video (in seconds) allowed to wait for ffmpeg before skipping ahead to stay live. */
 const MAX_BACKLOG_S = 1.2;
@@ -277,7 +227,6 @@ export class StreamController {
   /** GPU pipeline: the hardware encoder's time per frame (ms), from the page. */
   private encodeMs = 0;
   /** This ffmpeg can send SRT (null until asked). */
-  private srt: boolean | null = null;
   private videoChunks = 0;
   private audioTimer: ReturnType<typeof setInterval> | null = null;
   /** The stream's sound, kept to the clock (time zero: the first frame to the encoder). */
@@ -292,7 +241,7 @@ export class StreamController {
   private steadyTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly d: StreamDeps) {
-    this.status = idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE);
+    this.status = { ...idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE), srt: null };
     this.relay = new TextureRelay({
       log: d.log,
       pageFrame: () =>
@@ -566,32 +515,26 @@ export class StreamController {
     // GPU pipeline when it can be: the picture stays on the GPU as shared textures.
     const gpu = !opts.cpu && this.gpuPossible(width, height, profile.fps);
     this.winGpu = gpu;
-    const win = new BrowserWindow({
-      show: false,
+    const win = openPictureWindow({
+      windows: this.d.windows,
       width,
       height,
-      useContentSize: true,
-      frame: false,
-      paintWhenInitiallyHidden: true,
-      backgroundColor: '#000000',
-      webPreferences: secureWebPreferences('stream', {
-        offscreen: gpu ? { useSharedTexture: true } : { deviceScaleFactor: 1 },
-        backgroundThrottling: false,
-        autoplayPolicy: 'no-user-gesture-required',
-      }),
-    });
-    win.webContents.setFrameRate(profile.fps);
-    this.d.windows.attachFollower(win, 'stream');
-    win.webContents.on('paint', (e, _dirty, image) => {
-      if (gpu) {
-        this.relay.onTexture(e.texture ?? null, this.watchers);
-        return;
-      }
-      const sz = image.getSize();
-      // Only the raw picture is kept (one copy); the preview is made from it when wanted.
-      this.latest = (
-        sz.width === width && sz.height === height ? image : image.resize({ width, height })
-      ).toBitmap();
+      fps: profile.fps,
+      offscreen: gpu ? { useSharedTexture: true } : { deviceScaleFactor: 1 },
+      onPaint: (e, image) => {
+        if (gpu) this.relay.onTexture(e.texture ?? null, this.watchers);
+        // Only the raw picture is kept (one copy); the preview is made from it when wanted.
+        else this.latest = bitmapOf(image, width, height);
+      },
+      onCrash: () => {
+        if (this.win !== win) return;
+        this.d.log.warn('stream window crashed; reopening');
+        this.win = null;
+        // Live: start again in a fresh window (the encoder must restart with it: the old one is
+        // waiting for a page that's gone). Otherwise just reopen it if it's wanted.
+        if (this.encoding) void this.restartWithNewWindow();
+        else this.syncWindow();
+      },
     });
     // Problems inside the stream page (it has no window to show them) go to the log.
     win.webContents.on('console-message', (e) => {
@@ -601,19 +544,9 @@ export class StreamController {
       )
         this.d.log.warn('stream page', { level: e.level, message: e.message.slice(0, 400) });
     });
-    win.webContents.on('render-process-gone', () => {
-      if (this.win !== win) return;
-      this.d.log.warn('stream window crashed; reopening');
-      this.win = null;
-      // Live: start again in a fresh window (the encoder must restart with it: the old one is
-      // waiting for a page that's gone). Otherwise just reopen it if it's wanted.
-      if (this.encoding) void this.restartWithNewWindow();
-      else this.syncWindow();
-    });
     this.win = win;
     this.pageReady = false;
     this.black = gpu ? null : Buffer.alloc(width * height * 4);
-    void win.loadURL(rendererUrl('stream'));
     this.setStatus({ ready: true, profile, pipeline: gpu ? 'gpu' : 'cpu' }, true);
     this.syncPreview();
   }
@@ -632,26 +565,21 @@ export class StreamController {
   private sendConfig(): void {
     if (!this.win || this.win.isDestroyed()) return;
     const settings = this.d.getSettings();
-    const s = settings.stream;
     const profile = this.winProfile ?? this.profile();
     const size = sizeOf(profile);
-    const config: StreamConfig = {
-      ...size,
-      picture: s.picture,
+    // Meters and the sound mix only while someone can hear or see them: live, or a console
+    // watching (so its meters show the mics working before going live).
+    const busy = this.encoding || this.watchers.size > 0;
+    sendPictureConfig(this.win.webContents, this.d, size, {
+      picture: settings.stream.picture,
       wordsTheme: this.d.wordsTheme(),
       kindThemes: this.d.kindThemes(),
       ...streamPictureExtras(settings, profile.height, this.d.alternateThemes()),
       transparent: false,
-      // Meters only while someone can see them (a console, or the mixer while live).
-      meters: this.encoding || this.watchers.size > 0,
-      // The sound is mixed while live, and while a console watches (so the meters show the
-      // mics working before going live); with nothing watching and not live, no mic is open.
-      mix: this.encoding || this.watchers.size > 0,
+      meters: busy,
+      mix: busy,
       probe: this.winGpu ? { ...size, fps: profile.fps, kbps: profile.videoKbps } : null,
-      logo: this.d.logo(),
-      standby: this.d.standby(),
-    };
-    this.win.webContents.send(Channels.evStreamConfig, config);
+    });
   }
 
   /** The preview JPEG, only while a console watches (at the fastest rate any asks for). */
@@ -807,10 +735,10 @@ export class StreamController {
     const ffmpeg = findFfmpeg();
     const encoder = ffmpeg ? await this.usableEncoder(ffmpeg) : 'libx264';
     this.machine = { ...this.machine, hardwareEncoder: encoder !== 'libx264' };
-    this.srt = ffmpeg ? (await probeProtocols(ffmpeg)).includes('srt') : false;
+    const srt = ffmpeg ? (await probeProtocols(ffmpeg)).includes('srt') : false;
     if (this.status.state === 'idle')
-      this.setStatus({ available: !!ffmpeg, encoder, profile: this.profile(), srt: this.srt });
-    else this.setStatus({ srt: this.srt });
+      this.setStatus({ available: !!ffmpeg, encoder, profile: this.profile(), srt });
+    else this.setStatus({ srt });
   }
 
   /** (Re)start ffmpeg with what's wanted now; a recording carried over continues as a new part. */
@@ -1182,10 +1110,8 @@ export class StreamController {
     this.lastDropped = droppedTotal;
 
     const metrics = app.getAppMetrics();
-    const winPid = this.win && !this.win.isDestroyed() ? this.win.webContents.getOSProcessId() : 0;
     const appCpu = metrics.reduce((a, m) => a + m.cpu.percentCPUUsage, 0);
     const appMemMB = Math.round(metrics.reduce((a, m) => a + m.memory.workingSetSize, 0) / 1024);
-    const windowCpu = metrics.find((m) => m.pid === winPid)?.cpu.percentCPUUsage ?? 0;
     const enc = ff.pid ? await sampleProcess(ff.pid) : null;
     const recordingBytes = this.status.recordingPath
       ? await stat(this.status.recordingPath).then(
@@ -1208,14 +1134,12 @@ export class StreamController {
       this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
     this.setStatus({
       silent: this.checkSilence(),
-      droppedLocal: droppedTotal,
       dropped: droppedTotal + this.ffmpegDropped,
       recordingBytes,
       advice: struggling && !this.status.advice ? 'lighter' : this.status.advice,
       health: {
         appCpu: Math.round(appCpu),
         appMemMB,
-        windowCpu: Math.round(windowCpu),
         encoderCpu: enc ? Math.round(enc.cpu) : null,
         encoderMemMB: enc?.memMB ?? null,
         history: {
@@ -1228,86 +1152,87 @@ export class StreamController {
     });
   }
 
+  /** A line from ffmpeg: a progress reading, or something to remember (and maybe act on). */
   private onLog(line: string): void {
     if (!line.trim()) return;
     if (DEBUG) this.d.log.info('ffmpeg', { line: redactKeys(line) });
     const p = parseProgress(line);
-    if (p) {
-      const destinations =
-        p.time > 1
-          ? this.markDestinations('ok', undefined, (x) => x.state === 'connecting')
-          : this.status.destinations;
-      const first = this.status.state === 'starting' && p.time > 1;
-      this.ffmpegDropped = p.dropped;
-      // How far behind live the stream leaves here: time since the first frame, less the
-      // stream time ffmpeg has sent on (it grows when a destination can't keep up), plus what
-      // comes before ffmpeg: a frame's wait for its turn and the encoder's time.
-      const delayMs =
-        this.audio.started && p.time > 1
-          ? Math.max(0, Math.round(this.audio.elapsedMs() - p.time * 1000)) +
-            (this.pipeline === 'gpu' ? Math.round(1000 / (p.fps || 30)) + this.encodeMs : 0)
-          : null;
-      // ffmpeg gives no bitrate when it sends to several places at once: count our own bytes.
-      const at = performance.now();
-      const videoKbps = this.rateAt
-        ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt))
-        : 0;
-      const kbps =
-        p.kbps > 0
-          ? p.kbps
-          : this.pipeline === 'gpu' && this.rateAt
-            ? videoKbps + (this.winProfile?.audioKbps ?? 0)
-            : this.status.kbps;
-      this.rateAt = at;
-      this.rateBytes = this.videoBytes;
-      if (delayMs !== null) this.adaptBitrate(delayMs, videoKbps, at);
-      this.setStatus(
-        {
-          state: p.time > 1 ? 'live' : this.status.state,
-          fps: p.fps,
-          kbps,
-          delayMs,
-          speed: p.speed,
-          dropped: this.localDropped() + p.dropped,
-          destinations,
-        },
-        first,
-      );
-      if (first && this.want.stream && destinations.some((x) => x.state === 'ok'))
-        this.d.notice({ level: 'info', key: 'streamLive' });
-      // Back and steady for a minute: a later drop starts the backoff afresh.
-      if (first && this.status.restarts > 0) {
-        if (this.steadyTimer) clearTimeout(this.steadyTimer);
-        const ff = this.ff;
-        this.steadyTimer = setTimeout(() => {
-          this.steadyTimer = null;
-          if (this.ff === ff && this.status.state === 'live') this.setStatus({ restarts: 0 });
-        }, STEADY_MS);
-      }
-      return;
-    }
+    if (p) return this.onProgress(p);
     const before = this.lastStderr;
     this.lastStderr = [...this.lastStderr.slice(-30), redactKeys(line)];
     // tee: "Slave muxer #N failed: …" (that destination is dropped; the rest carry on).
     const slave = /Slave muxer #(\d+) failed/i.exec(line);
-    if (slave) {
-      const id = this.slaves[Number(slave[1])];
-      const reason = destinationFailure(line, before.slice(-8));
-      this.d.log.warn('stream destination failed', {
-        id,
-        reason,
-        context: before.slice(-6),
-      });
-      this.setStatus(
-        {
-          destinations: this.markDestinations('failed', reason, (x) => x.id === id),
-          error: 'destinationFailed',
-        },
-        true,
-      );
-      if (id && id !== 'record')
-        this.d.notice({ level: 'warning', key: 'streamDestinationFailed' });
+    if (slave) this.onDestinationFailed(Number(slave[1]), line, before);
+  }
+
+  /** ffmpeg's progress (every second): live yet?, the readings, and the bitrate to aim for. */
+  private onProgress(p: Progress): void {
+    const destinations =
+      p.time > 1
+        ? this.markDestinations('ok', undefined, (x) => x.state === 'connecting')
+        : this.status.destinations;
+    const first = this.status.state === 'starting' && p.time > 1;
+    this.ffmpegDropped = p.dropped;
+    // How far behind live the stream leaves here: time since the first frame, less the
+    // stream time ffmpeg has sent on (it grows when a destination can't keep up), plus what
+    // comes before ffmpeg: a frame's wait for its turn and the encoder's time.
+    const delayMs =
+      this.audio.started && p.time > 1
+        ? Math.max(0, Math.round(this.audio.elapsedMs() - p.time * 1000)) +
+          (this.pipeline === 'gpu' ? Math.round(1000 / (p.fps || 30)) + this.encodeMs : 0)
+        : null;
+    // ffmpeg gives no bitrate when it sends to several places at once: count our own bytes.
+    const at = performance.now();
+    const videoKbps = this.rateAt
+      ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt))
+      : 0;
+    const kbps =
+      p.kbps > 0
+        ? p.kbps
+        : this.pipeline === 'gpu' && this.rateAt
+          ? videoKbps + (this.winProfile?.audioKbps ?? 0)
+          : this.status.kbps;
+    this.rateAt = at;
+    this.rateBytes = this.videoBytes;
+    if (delayMs !== null) this.adaptBitrate(delayMs, videoKbps, at);
+    this.setStatus(
+      {
+        state: p.time > 1 ? 'live' : this.status.state,
+        fps: p.fps,
+        kbps,
+        delayMs,
+        speed: p.speed,
+        dropped: this.localDropped() + p.dropped,
+        destinations,
+      },
+      first,
+    );
+    if (first && this.want.stream && destinations.some((x) => x.state === 'ok'))
+      this.d.notice({ level: 'info', key: 'streamLive' });
+    // Back and steady for a minute: a later drop starts the backoff afresh.
+    if (first && this.status.restarts > 0) {
+      if (this.steadyTimer) clearTimeout(this.steadyTimer);
+      const ff = this.ff;
+      this.steadyTimer = setTimeout(() => {
+        this.steadyTimer = null;
+        if (this.ff === ff && this.status.state === 'live') this.setStatus({ restarts: 0 });
+      }, STEADY_MS);
     }
+  }
+
+  /** One of the tee's outputs failed: mark that destination (the rest carry on). */
+  private onDestinationFailed(slave: number, line: string, before: string[]): void {
+    const id = this.slaves[slave];
+    const reason = destinationFailure(line, before.slice(-8));
+    this.d.log.warn('stream destination failed', { id, reason, context: before.slice(-6) });
+    this.setStatus(
+      {
+        destinations: this.markDestinations('failed', reason, (x) => x.id === id),
+        error: 'destinationFailed',
+      },
+      true,
+    );
+    if (id && id !== 'record') this.d.notice({ level: 'warning', key: 'streamDestinationFailed' });
   }
 
   private onExit(ff: ChildProcess, encoder: string, code: number | null): void {
@@ -1455,7 +1380,7 @@ export class StreamController {
    */
   private setStatus(patch: Partial<StreamStatus>, now = false): void {
     const stateChanged = patch.state !== undefined && patch.state !== this.status.state;
-    this.status = { ...this.status, ...patch, srt: this.srt };
+    this.status = { ...this.status, ...patch };
     const since = Date.now() - this.lastEmit;
     if (now || stateChanged || since >= STATUS_MS) {
       if (this.statusTimer) clearTimeout(this.statusTimer);

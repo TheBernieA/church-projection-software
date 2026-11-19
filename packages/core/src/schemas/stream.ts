@@ -1,6 +1,29 @@
 import { z } from 'zod';
 import { IdSchema } from './common';
 
+/**
+ * The H.264 encoders Lampstand drives through ffmpeg, best first (each platform has its own
+ * hardware one; libx264 always works). Settings › Streaming offers these, plus 'auto'.
+ */
+export const STREAM_ENCODERS = [
+  'h264_videotoolbox',
+  'h264_nvenc',
+  'h264_qsv',
+  'h264_amf',
+  'libx264',
+] as const;
+export type StreamEncoderId = (typeof STREAM_ENCODERS)[number];
+
+/** Short names for the console's readout (webcodecs: the GPU pipeline's hardware encoder). */
+export const ENCODER_SHORT_NAMES: Record<StreamEncoderId | 'webcodecs', string> = {
+  h264_videotoolbox: 'VideoToolbox',
+  h264_nvenc: 'NVENC',
+  h264_qsv: 'Quick Sync',
+  h264_amf: 'AMF',
+  libx264: 'x264',
+  webcodecs: 'GPU · hardware encoder',
+};
+
 /** A place the stream goes. Its key is stored encrypted on this computer, never here. */
 export const StreamDestinationSchema = z.object({
   id: IdSchema,
@@ -57,8 +80,8 @@ export const StreamSettingsSchema = z.object({
       wordsAuto: z.boolean().default(true),
       /** Lower third, when not automatic: the words' size, as % of their full-screen size. */
       wordsSize: z.number().int().min(25).max(100).default(60),
-      /** Where the words sit across the picture. */
-      /** Lower third only (full-screen words stay as their theme has them). */
+      /** Where the words sit across the picture: lower third only (full-screen words stay as
+       *  their theme has them). */
       wordsAlign: z.enum(['left', 'center', 'right']).default('center').catch('center'),
       /**
        * Lower third: the theme the words are drawn with (one made for lower thirds); null: each
@@ -78,6 +101,10 @@ export const StreamSettingsSchema = z.object({
       wordsAlign: 'center',
       wordsTheme: null,
     }),
+  /**
+   * Legacy: the stream's sound before the Mixer. Read once to build the mixer for older settings
+   * (mixerFromSettings); the Mixer's stream bus is what the stream hears now.
+   */
   sound: z
     .object({
       /** Tracks from the Audio tab and the sound of videos. */

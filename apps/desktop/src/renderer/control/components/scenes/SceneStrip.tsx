@@ -8,7 +8,7 @@ import { useStore } from '../../lib/store';
 import { SCENE_GROUPS, type SceneTemplate } from '../../lib/streamOptions';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { usePref } from '../live/consoleParts';
+import { usePref } from '../../lib/prefs';
 
 /**
  * Scenes, as small live previews (real cameras, the real slide), one click each: the same strip

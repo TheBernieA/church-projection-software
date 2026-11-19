@@ -28,10 +28,14 @@ CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
 - **Staying live when the upload can't keep up.** ffmpeg's input queues are about half a second
   (they were 512 packets, 8 s at 60 fps), and main measures the video waiting for ffmpeg *in
   seconds* (`backlog.ts`; bytes can't say, a still slide is tiny). Past 1.2 s it skips ahead to
-  the next keyframe: the picture jumps, but the stream doesn't fall behind live for good.
+  the next keyframe: the picture jumps, but the stream doesn't fall behind live for good. What
+  was already queued still counts while it drains: the stream resumes (asking for one keyframe)
+  only once under 0.3 s is waiting, so the delay it skipped doesn't come straight back.
   `LAMPSTAND_LATENCY_STALL=1` with the latency spec freezes the server for 4 s to check it.
 - The sound is timed by counting samples, so it's kept to the clock both ways: silence fills a
-  gap, and a batch that arrives after its gap was filled is dropped.
+  gap, and a batch that arrives after its gap was filled is dropped. The sound card's clock
+  drifts from the computer's (tens of ppm); past 40 ms each batch is nudged by one sample
+  (0.2 %, inaudible), so a long service never reaches a dropped batch or a burst of silence.
 - The window paints only on change, so the page always receives the newest picture: main holds at
   most one picture while the last is still on its way. Encoding can start on a still screen.
 - Start is sent once the page has loaded. The frame clock, and main's sound clock (on the first
@@ -73,20 +77,32 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
 - **Frames.** Main keeps only the latest painted frame (one BGRA buffer) and a **frame clock**
   (`framePump.ts`) writes frames on wall-clock time: after a late tick it writes the frames that
   were due (the same buffer, no copies), and aims the next tick at the next frame's time, so the
-  picture never falls behind the sound. If ffmpeg's input is backed up the frame is dropped and
-  counted (never queued). ffmpeg runs at above-normal priority.
+  picture never falls behind the sound. If ffmpeg's input is backed up (more than 3 frames in
+  the pipe; ffmpeg queues 8 more) the frame is *owed*: written later as a repeat of the picture,
+  a few a tick. ffmpeg times raw video by counting frames, so skipping one would put the picture
+  a frame ahead of the sound for the rest of the stream. ffmpeg runs at above-normal priority.
+- **Colour.** BGRA becomes BT.709, limited range, converted accurately (`accurate_rnd`) and
+  labelled (`setparams`): players and services assume BT.709 for HD; ffmpeg's default would be
+  BT.601 and untagged. The GPU pipeline's frames come out of Chromium already BT.709 and tagged.
 - **Sound.** The stream window runs the Mixer's **stream bus** (see below): tracks, video sound and
-  inputs whose Stream send is on. An `AudioWorklet` sends ~21 ms batches of stereo float32 to main,
+  inputs whose Stream send is on. An `AudioWorklet` sends ~11 ms batches (512 samples) of stereo
+  float32 to main, clipped at full scale,
   which writes them to ffmpeg's fd 3. Main tops up with silence whenever the mix falls behind the
   clock, so ffmpeg never waits for sound and audio and video stay in step.
-- **Encoding.** ffmpeg encodes once (H.264 + AAC, a keyframe every 2 s) and the `tee` muxer sends it
-  to every destination (FLV, each `onfail=ignore` so one failing doesn't stop the others) and to the
-  recording (fragmented MP4: playable even after a crash).
+- **Encoding.** ffmpeg encodes once (H.264 High + AAC, a keyframe every 2 s, a one-second rate
+  buffer) and the `tee` muxer sends it to every destination (FLV, each `onfail=ignore` so one
+  failing doesn't stop the others; MPEG-TS for direct links, each sound frame sent at once) and to
+  the recording (fragmented MP4: playable even after a crash), which writes through its own queue
+  (`use_fifo`) so a slow disk never holds up the live outputs. AAC is Apple's (`aac_at`) where
+  ffmpeg has it, else ffmpeg's own.
 - **Encoder.** The best available is chosen: `h264_videotoolbox` (macOS), `h264_nvenc`,
-  `h264_qsv`, `h264_amf`, else `libx264` (veryfast, zerolatency). A hardware encoder that fails at
-  start is dropped for the rest of the session.
+  `h264_qsv`, `h264_amf`, else `libx264` (veryfast, zerolatency). Hardware encoders run with no
+  B-frames and no frame queueing (NVENC `zerolatency`, Quick Sync `async_depth 1`). A hardware
+  encoder that fails at start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
-  tries); a recording carries on as "part 2". Quitting the app finishes the recording first.
+  tries; the count starts again after a steady minute live); a recording carries on as "part 2".
+  A stream page that crashes is reopened and the encoder restarted with it. A recording folder
+  that can't be made falls back to the usual one, else the stream carries on without recording. Quitting the app finishes the recording first.
 
 ## Sound that reaches the mixers
 
@@ -138,6 +154,13 @@ heard: the **room** in the main output (or the control window with no output; `R
 output in the control window. Media elements join a mix through `createMediaElementSource`
 (SceneRenderer's `audioTap`), so they never also play straight to the speakers. The room and
 stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters.
+
+Gain staging: Web Audio's `DynamicsCompressorNode` adds its own makeup gain ((1/gain at full
+scale)^0.6: about +7 dB for a −18 dB, 3:1 channel compressor). The engine takes it back out
+(`autoMakeupDb`), so the makeup knob means what it says and the bus limiter's ceiling sits where
+it's set (−1.5 dBFS, 20:1; fast peaks that slip past are clipped at the stream's sound tap). A
+one-channel mic is folded to both sides like a channel marked Mono (left alone, the stereo panner
+would play it 3 dB quieter).
 
 ## Video switcher
 

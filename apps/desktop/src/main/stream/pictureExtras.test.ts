@@ -7,7 +7,7 @@ vi.mock('electron', () => ({
   ipcMain: {},
   nativeImage: {},
 }));
-const { streamPictureExtras } = await import('./streamController');
+const { streamPictureExtras } = await import('./pictureWindow');
 
 const withPicture = (p: Partial<Settings['stream']['picture']>): Settings => {
   const s = defaultSettings();

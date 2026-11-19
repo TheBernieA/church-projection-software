@@ -4,8 +4,9 @@
  * unit-tested.
  */
 import { existsSync } from 'node:fs';
+import { STREAM_ENCODERS, type StreamDestination, type StreamEncoderId } from '@lampstand/core';
 
-export type DestinationKind = 'youtube' | 'facebook' | 'custom' | 'direct';
+export type DestinationKind = StreamDestination['kind'];
 type ServiceKind = Exclude<DestinationKind, 'custom' | 'direct'>;
 
 /** Where each kind of service takes a stream (the key is appended). */
@@ -16,14 +17,8 @@ const INGEST: Record<ServiceKind, string> = {
 };
 
 /** H.264 encoders we know how to drive, best first per platform; libx264 always works. */
-const ENCODER_PREFERENCE = [
-  'h264_videotoolbox',
-  'h264_nvenc',
-  'h264_qsv',
-  'h264_amf',
-  'libx264',
-] as const;
-export type Encoder = (typeof ENCODER_PREFERENCE)[number];
+const ENCODER_PREFERENCE = STREAM_ENCODERS;
+export type Encoder = StreamEncoderId;
 
 /** Only RTMP(S) ingest addresses, with a host. */
 export function isStreamUrl(url: string): boolean {

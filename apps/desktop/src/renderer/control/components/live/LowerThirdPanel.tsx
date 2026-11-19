@@ -1,11 +1,18 @@
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { themeAlignOf, type StreamSettings } from '@lampstand/core';
+import type { StreamSettings } from '@lampstand/core';
 import { Button, Segmented, Slider, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
 import { useStore } from '../../lib/store';
-import { choices, NONE, WORDS_ALIGNS, WORDS_SIZE } from '../../lib/streamOptions';
+import {
+  choices,
+  NONE,
+  pickWordsTheme,
+  WORDS_ALIGNS,
+  WORDS_SIZE,
+  wordsThemeOptions,
+} from '../../lib/streamOptions';
 import { Select } from '../Select';
 import { Section } from './consoleParts';
 
@@ -40,18 +47,8 @@ export function LowerThirdPanel({ st }: { st: StreamSettings }) {
           size="sm"
           aria-label={t('streaming.wordsTheme')}
           value={pic.wordsTheme ?? NONE}
-          onChange={(id) => {
-            // A theme brings its own position; Position can still move it afterwards.
-            const picked = lowerThirds.find((th) => th.id === id);
-            set({
-              wordsTheme: picked ? picked.id : null,
-              ...(picked ? { wordsAlign: themeAlignOf(picked) } : {}),
-            });
-          }}
-          options={[
-            { value: NONE, label: t('streaming.wordsThemeOwn') },
-            ...lowerThirds.map((th) => ({ value: th.id, label: th.name })),
-          ]}
+          onChange={(id) => set(pickWordsTheme(id, lowerThirds))}
+          options={wordsThemeOptions(lowerThirds, t)}
         />
       </PictureRow>
       <PictureRow label={t('streaming.wordsAlign')}>

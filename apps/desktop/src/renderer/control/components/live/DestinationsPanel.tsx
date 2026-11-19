@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ChevronDown, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { newId, type StreamDestination, type StreamSettings } from '@lampstand/core';
+import type { StreamDestination, StreamSettings } from '@lampstand/core';
 import type { StreamStatus } from '@lampstand/ipc-contract';
 import { Button, IconButton, Switch, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
-import { cmd, q } from '../../lib/api';
-import { attempt, openDialog, useStore } from '../../lib/store';
+import { openDialog, useStore } from '../../lib/store';
+import { useDestinations } from '../../lib/streamDestinations';
 import { DeferredInput } from '../DeferredControls';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { run, Section } from './consoleParts';
@@ -40,28 +40,21 @@ export function DestinationsPanel({ s, st }: { s: StreamStatus | null; st: Strea
   const { t } = useTranslation();
   const live = !!s?.streaming;
   const failed = live && s.destinations.some((d) => d.state === 'failed');
-  const [keys, setKeys] = useState<Record<string, boolean>>({});
   const [open, setOpen] = useState<string | null>(null);
-  const loadKeys = useCallback(() => void q('stream.keys').then(setKeys, () => undefined), []);
-  useEffect(loadKeys, [loadKeys, st.destinations.length]);
+  const {
+    keys,
+    loadKeys,
+    patch,
+    add: addKind,
+    remove,
+  } = useDestinations(
+    st.destinations,
+    (destinations) => void saveSettings({ stream: { ...st, destinations } }),
+  );
   const ndi = useStore((x) => x.ndi);
   const ndiFeeds = useStore((x) => x.settings?.ndi.feeds.filter((f) => f.enabled).length ?? 0);
-  const setDestinations = (destinations: StreamDestination[]): void =>
-    void saveSettings({ stream: { ...st, destinations } });
-  const patch = (id: string, p: Partial<StreamDestination>): void =>
-    setDestinations(st.destinations.map((x) => (x.id === id ? { ...x, ...p } : x)));
-  const add = (kind: StreamDestination['kind']): void => {
-    const id = newId();
-    setDestinations([
-      ...st.destinations,
-      { id, kind, name: t(`streaming.kinds.${kind}`), url: '', enabled: true },
-    ]);
-    setOpen(id); // straight to what it needs
-  };
-  const remove = async (d: StreamDestination): Promise<void> => {
-    await attempt(() => cmd('stream.setKey', { destinationId: d.id, key: null }), 'errors.save');
-    setDestinations(st.destinations.filter((x) => x.id !== d.id));
-  };
+  // Straight to what a new one needs.
+  const add = (kind: StreamDestination['kind']): void => setOpen(addKind(kind));
   const openNdi = (): void => openDialog('settings', { settingsPage: 'ndi' });
   const dot = (id: string): string => {
     const state = s?.destinations.find((d) => d.id === id)?.state;

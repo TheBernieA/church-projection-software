@@ -9,6 +9,7 @@ import type { SceneChoice } from '../components/scenes/SceneStrip';
 import { setLowerThird } from './actions';
 import { cmd } from './api';
 import { inputLayerFor } from './inputs';
+import { remembered } from './prefs';
 import { lowerThirdThemes } from './slides';
 import { attempt, useStore } from './store';
 
@@ -21,22 +22,6 @@ import { attempt, useStore } from './store';
 export const LT_THEME_KEY = 'lampstand.lowerThird.theme';
 export const LT_ALIGN_KEY = 'lampstand.lowerThird.align';
 export type Align = 'left' | 'center' | 'right';
-
-export function remembered(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-export function remember(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* this session only */
-  }
-}
 
 /** The lower third to switch on: the theme and position used last, else the first one there is. */
 export function rememberedLowerThird(themes: Theme[]): Theme | null {

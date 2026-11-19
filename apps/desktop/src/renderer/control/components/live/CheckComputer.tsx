@@ -16,11 +16,9 @@ interface Result {
  */
 export function CheckComputer({
   size = 'xs',
-  showResult = true,
   compact = false,
 }: {
   size?: 'xs' | 'sm';
-  showResult?: boolean;
   /** Just an icon (its name on hover), for tight spaces. */
   compact?: boolean;
 }) {
@@ -61,7 +59,7 @@ export function CheckComputer({
       >
         {busy ? t('benchmark.running') : t('benchmark.button')}
       </Button>
-      {showResult && last && !busy && (
+      {last && !busy && (
         <Typography size={11} tone="muted" truncate>
           {t('benchmark.last', { mode: t(`streaming.modes.${last.mode}`) })}
         </Typography>

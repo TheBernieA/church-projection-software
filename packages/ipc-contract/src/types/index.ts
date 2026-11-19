@@ -273,8 +273,6 @@ export interface StreamStatus {
   ready: boolean;
   /** Size, rate and effort in use (or that the next start will use). */
   profile: StreamProfile;
-  /** Frames Lampstand couldn't hand to the encoder in time (in `dropped` too). */
-  droppedLocal: number;
   /** Suggest Light: the computer can't keep up (`lighter`), or the upload carries too little for
    *  this picture size (`upload`: a smaller picture looks sharper at the rate it carries). */
   advice: 'lighter' | 'upload' | null;
@@ -292,10 +290,9 @@ export interface StreamStatus {
 
 /** CPU (% of one core) and memory (MB) while streaming or recording. */
 export interface StreamHealth {
-  /** All of Lampstand, and the stream window on its own. */
+  /** All of Lampstand. */
   appCpu: number;
   appMemMB: number;
-  windowCpu: number;
   /** The encoder (null where it can't be measured). */
   encoderCpu: number | null;
   encoderMemMB: number | null;
@@ -380,7 +377,6 @@ export type EncoderReport =
 export interface StreamApi {
   /** GPU pipeline: each new stream picture, as a frame on the GPU (close it when done). */
   onFrame(cb: (frame: GpuFrame) => void): void;
-  /** Start encoding with these settings, stop (null), or make the next frame a keyframe. */
   /** Start encoding, change the bitrate on the fly, ask for a keyframe, or stop (null). */
   onEncode(
     cb: (cmd: EncodeConfig | { keyframe: true } | { bitrate: number } | null) => void,

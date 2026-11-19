@@ -1,27 +1,30 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Cast, FolderOpen, Globe, Link2, Plus, SlidersVertical, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
-  newId,
   recommendedKbps,
   type Settings,
   type StreamDestination,
   type StreamSettings,
+  STREAM_ENCODERS,
 } from '@lampstand/core';
 import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
-import { cmd, q } from '../../lib/api';
+import { q } from '../../lib/api';
 import { useInputDevices } from '../../lib/inputs';
-import { attempt, closeDialog, openDialog, useStore } from '../../lib/store';
+import { closeDialog, openDialog, useStore } from '../../lib/store';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { lowerThirdThemes } from '../../lib/slides';
+import { useDestinations } from '../../lib/streamDestinations';
 import {
   BACKGROUNDS,
   choices,
   NONE,
   PERFORMANCE_MODES,
+  pickWordsTheme,
   WORDS_ALIGNS,
   WORDS_MODES,
   WORDS_SIZE,
+  wordsThemeOptions,
 } from '../../lib/streamOptions';
 import { DeferredInput } from '../DeferredControls';
 import { CameraAccess } from '../media/CameraAccess';
@@ -31,7 +34,7 @@ import { CheckComputer } from '../live/CheckComputer';
 import { DestinationFields, KindBadge } from '../live/destinationFields';
 
 type Update = (patch: Partial<Settings>) => void;
-const ENCODERS = ['auto', 'h264_videotoolbox', 'h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264'];
+const ENCODERS = ['auto', ...STREAM_ENCODERS];
 
 /** One destination: its name, on/off, and what it needs (a key, an address). */
 export function DestinationRow({
@@ -130,9 +133,13 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   const cameras = useInputDevices('videoinput');
   const mixer = useStore((x) => x.live?.mixer ?? null);
   const themes = useStore((x) => x.themes);
-  const [keys, setKeys] = useState<Record<string, boolean>>({});
-  const loadKeys = (): void => void q('stream.keys').then(setKeys, () => undefined);
-  useEffect(loadKeys, [st.destinations.length]);
+  const {
+    keys,
+    loadKeys,
+    patch: setDest,
+    add: addDest,
+    remove: removeDest,
+  } = useDestinations(st.destinations, (destinations) => set({ destinations }));
   const [kbpsDraft, setKbpsDraft] = useState<number | null>(null);
   const setQuality = (patch: Partial<StreamSettings['quality']>): void =>
     set({ quality: { ...st.quality, ...patch } });
@@ -147,19 +154,6 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
   /** Changing size, rate or bitrate by hand makes the mode Custom (starting from what it was). */
   const setCustom = (patch: Partial<StreamSettings['quality']>): void =>
     set({ performance: 'custom', quality: { ...shown, ...patch } });
-  const setDest = (id: string, patch: Partial<StreamDestination>): void =>
-    set({ destinations: st.destinations.map((d) => (d.id === id ? { ...d, ...patch } : d)) });
-  const addDest = (kind: StreamDestination['kind']): void =>
-    set({
-      destinations: [
-        ...st.destinations,
-        { id: newId(), kind, name: t(`streaming.kinds.${kind}`), url: '', enabled: true },
-      ],
-    });
-  const removeDest = async (d: StreamDestination): Promise<void> => {
-    await attempt(() => cmd('stream.setKey', { destinationId: d.id, key: null }), 'errors.save');
-    set({ destinations: st.destinations.filter((x) => x.id !== d.id) });
-  };
   const live = !!status && status.state !== 'idle';
   const ndi = useStore((x) => x.ndi);
   const ndiOn = s.ndi.feeds.filter((f) => f.enabled).length;
@@ -261,12 +255,11 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
                 aria-label={t('streaming.wordsTheme')}
                 value={st.picture.wordsTheme ?? NONE}
                 onChange={(v) =>
-                  set({ picture: { ...st.picture, wordsTheme: v === NONE ? null : v } })
+                  set({
+                    picture: { ...st.picture, ...pickWordsTheme(v, lowerThirdThemes(themes)) },
+                  })
                 }
-                options={[
-                  { value: NONE, label: t('streaming.wordsThemeOwn') },
-                  ...lowerThirdThemes(themes).map((th) => ({ value: th.id, label: th.name })),
-                ]}
+                options={wordsThemeOptions(lowerThirdThemes(themes), t)}
               />
             </div>
           </Row>

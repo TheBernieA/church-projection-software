@@ -262,15 +262,15 @@ export function StreamSound() {
 }
 
 /**
- * Live with no sound: why, and the one click that most likely fixes it (unmute the stream, or
- * open the channels it hears).
- */
-/**
  * Turned down this far in total (stream level plus the loudest channel's), ordinary speech no
  * longer reaches viewers: the levels, not the mic, are why the stream is silent.
  */
 const TOO_LOW_DB = -20;
 
+/**
+ * Live with no sound: why, and the one click that most likely fixes it (unmute the stream, or
+ * turn the levels back up).
+ */
 export function SilentNotice({ s }: { s: StreamStatus }) {
   const { t } = useTranslation();
   const mixer = useStore((x) => x.live?.mixer ?? null);

@@ -37,6 +37,7 @@ import { installAppMenu } from './menu';
 import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
+import type { PictureSources } from '../stream/pictureWindow';
 import { NdiController } from '../ndi/ndiController';
 import { cleanStreamKey, isStreamKey, pasteShape, plausibleKey } from '../stream/ffmpegArgs';
 import { registerLibraryCommands } from '../commands/libraryCommands';
@@ -230,35 +231,31 @@ export class AppController {
 
     // Livestream and recording; stream keys encrypted on this computer (never in settings).
     this.secrets = new SecretStore(join(paths.userData, 'secrets.json'));
-    this.stream = new StreamController({
-      log: log.child('stream'),
+    // What every stream picture (the livestream, each NDI feed) is drawn from.
+    const pictures = (mod: string): PictureSources => ({
+      log: log.child(mod),
       windows: this.windows,
-      secrets: this.secrets,
       getSettings: () => settings.get(),
-      updateSettings: (patch) => {
-        settings.update(patch);
-        this.windows.sendToControl(Channels.evRepo, 'settings');
-      },
       getLiveState: () => live.get(),
       logo: () => this.logo,
       standby: () => this.standby,
       wordsTheme: () => this.wordsTheme,
       kindThemes: () => this.outputThemes.stream,
       alternateThemes: () => this.outputThemes.alternate,
+    });
+    this.stream = new StreamController({
+      ...pictures('stream'),
+      secrets: this.secrets,
+      updateSettings: (patch) => {
+        settings.update(patch);
+        this.windows.sendToControl(Channels.evRepo, 'settings');
+      },
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
     // NDI feeds (Settings › NDI), with the NDI runtime from NDI Tools when it's installed.
     this.ndi = new NdiController({
-      log: log.child('ndi'),
-      windows: this.windows,
-      getSettings: () => settings.get(),
-      getLiveState: () => live.get(),
-      logo: () => this.logo,
-      standby: () => this.standby,
-      wordsTheme: () => this.wordsTheme,
-      kindThemes: () => this.outputThemes.stream,
-      alternateThemes: () => this.outputThemes.alternate,
+      ...pictures('ndi'),
       onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
     });
     this.ndi.settingsChanged();

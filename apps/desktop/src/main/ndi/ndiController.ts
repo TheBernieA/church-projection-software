@@ -1,36 +1,20 @@
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
-import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
-import { resolveStageLayout, streamSize } from '@lampstand/core';
-import type {
-  LiveState,
-  NdiFeed,
-  ResolvedKindThemes,
-  ScreenVisual,
-  Settings,
-  Standby,
-  Theme,
-} from '@lampstand/core';
+import { ipcMain, type BrowserWindow, type IpcMainEvent } from 'electron';
+import { resolveStageLayout, streamSize, type NdiFeed, type Settings } from '@lampstand/core';
 import { Channels, type NdiStatus, type StreamConfig } from '@lampstand/ipc-contract';
 import { isTrustedFrameUrl } from '../ipc/router';
-import { rendererUrl } from '../security/protocols';
-import { secureWebPreferences } from '../security/hardening';
-import type { WindowManager } from '../windows/windowManager';
-import { type Logger } from '../types';
 import { findNdiRuntime } from './ndiRuntime';
-import { streamPictureExtras } from '../stream/streamController';
+import {
+  bitmapOf,
+  openPictureWindow,
+  sendPictureConfig,
+  streamPictureExtras,
+  type PictureSources,
+} from '../stream/pictureWindow';
 import type { NdiWorkerIn, NdiWorkerOut } from './ndiWorker';
 
-export interface NdiDeps {
-  log: Logger;
-  windows: WindowManager;
-  getSettings: () => Settings;
-  getLiveState: () => LiveState;
-  logo: () => ScreenVisual;
-  standby: () => Standby;
-  wordsTheme: () => Theme | null;
-  kindThemes: () => ResolvedKindThemes;
-  alternateThemes: () => ResolvedKindThemes;
+export interface NdiDeps extends PictureSources {
   onStatus: (s: NdiStatus) => void;
 }
 
@@ -44,7 +28,6 @@ interface Feed {
   keepAlive: ReturnType<typeof setInterval>;
 }
 
-/** What a feed's window draws. */
 /** The words as the theme draws them: full screen, nothing resized or moved. */
 const FULL = {
   camera: null,
@@ -181,23 +164,26 @@ export class NdiController {
     const height = feed.height;
     const { width } = streamSize(height);
     const transparent = feed.content === 'words';
-    const win = new BrowserWindow({
-      show: false,
+    // The window's paint and crash handlers need the feed, made just below.
+    let feedRef: Feed | null = null;
+    const win = openPictureWindow({
+      windows: this.d.windows,
       width,
       height,
-      useContentSize: true,
-      frame: false,
+      fps: feed.fps,
+      offscreen: true,
       transparent,
-      paintWhenInitiallyHidden: true,
-      backgroundColor: transparent ? '#00000000' : '#000000',
-      webPreferences: secureWebPreferences('stream', {
-        offscreen: true,
-        backgroundThrottling: false,
-        autoplayPolicy: 'no-user-gesture-required',
-      }),
+      onPaint: (_e, image) => {
+        if (!feedRef) return;
+        feedRef.latest = bitmapOf(image, width, height);
+        this.sendFrame(feedRef);
+      },
+      onCrash: () => {
+        this.d.log.warn('ndi feed window crashed; reopening', { feed: feed.name });
+        this.closeFeed(feed.id);
+        this.settingsChanged();
+      },
     });
-    win.webContents.setFrameRate(feed.fps);
-    this.d.windows.attachFollower(win, 'stream');
     const f: Feed = {
       feed,
       win,
@@ -210,22 +196,10 @@ export class NdiController {
         if (Date.now() - f.lastSent > 900) this.sendFrame(f);
       }, 1000),
     };
-    win.webContents.on('paint', (_e, _dirty, image) => {
-      const sz = image.getSize();
-      const img =
-        sz.width === width && sz.height === height ? image : image.resize({ width, height });
-      f.latest = img.toBitmap();
-      this.sendFrame(f);
-    });
-    win.webContents.on('render-process-gone', () => {
-      this.d.log.warn('ndi feed window crashed; reopening', { feed: feed.name });
-      this.closeFeed(feed.id);
-      this.settingsChanged();
-    });
+    feedRef = f;
     this.feeds.set(feed.id, f);
     this.keys.set(feed.id, feedKey(feed));
     this.post({ type: 'open', id: feed.id, name: feed.name });
-    void win.loadURL(rendererUrl('stream'));
   }
 
   private sendFrame(f: Feed): void {
@@ -252,14 +226,16 @@ export class NdiController {
 
   private sendConfig(f: Feed): void {
     if (f.win.isDestroyed()) return;
-    const config: StreamConfig = {
-      width: f.width,
-      height: f.height,
-      ...pictureOf(f.feed, this.d.getSettings()),
-      wordsTheme: f.feed.content === 'stream' ? this.d.wordsTheme() : null,
-      kindThemes: f.feed.content === 'stream' ? this.d.kindThemes() : {},
-      ...(f.feed.content === 'stream'
-        ? streamPictureExtras(this.d.getSettings(), f.height, this.d.alternateThemes())
+    const settings = this.d.getSettings();
+    // A feed of the stream's picture uses the stream's themes and cameras; the others draw the
+    // screens' words as they are.
+    const asStream = f.feed.content === 'stream';
+    sendPictureConfig(f.win.webContents, this.d, f, {
+      ...pictureOf(f.feed, settings),
+      wordsTheme: asStream ? this.d.wordsTheme() : null,
+      kindThemes: asStream ? this.d.kindThemes() : {},
+      ...(asStream
+        ? streamPictureExtras(settings, f.height, this.d.alternateThemes())
         : {
             cameraLayer: null,
             secondCameraLayer: null,
@@ -269,10 +245,7 @@ export class NdiController {
       meters: false,
       probe: null,
       mix: f.feed.sound,
-      logo: this.d.logo(),
-      standby: this.d.standby(),
-    };
-    f.win.webContents.send(Channels.evStreamConfig, config);
+    });
   }
 
   /** Close every feed (the app is quitting). */

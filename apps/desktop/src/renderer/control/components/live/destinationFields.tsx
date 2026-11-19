@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Check, KeyRound } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { StreamDestination } from '@lampstand/core';
+import { StreamDestinationSchema, type StreamDestination } from '@lampstand/core';
 import { Button, Segmented, Typography } from '@lampstand/ui';
 import { cmd } from '../../lib/api';
 import { attempt, toast } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 
-export const DESTINATION_KINDS = ['youtube', 'facebook', 'custom', 'direct'] as const;
+export const DESTINATION_KINDS = StreamDestinationSchema.shape.kind.options;
 
 const KIND_COLOR: Record<StreamDestination['kind'], string> = {
   youtube: '#d43b30',

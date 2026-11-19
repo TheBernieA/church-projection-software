@@ -49,13 +49,8 @@ import {
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
-import {
-  LT_ALIGN_KEY,
-  LT_THEME_KEY,
-  remember,
-  remembered,
-  type Align,
-} from '../../lib/screenScenes';
+import { LT_ALIGN_KEY, LT_THEME_KEY, type Align } from '../../lib/screenScenes';
+import { remember, remembered } from '../../lib/prefs';
 import { ScreenScenes } from './ScreenScenes';
 import {
   useAudienceScene,
