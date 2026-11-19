@@ -6,6 +6,7 @@ import type { Writable } from 'node:stream';
 import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'electron';
 import {
   resolvePerformance,
+  streamSize,
   resolveStageLayout,
   StreamSettingsSchema,
   type LiveState,
@@ -34,7 +35,7 @@ import { secureWebPreferences } from '../security/hardening';
 import type { SecretStore } from '../secrets/secretStore';
 import type { WindowManager } from '../windows/windowManager';
 import { type Logger } from '../types';
-import { findFfmpeg, probeEncoders, probeProtocols } from './ffmpeg';
+import { findFfmpeg, probeAacEncoder, probeEncoders, probeProtocols } from './ffmpeg';
 import {
   buildArgs,
   destinationFailure,
@@ -105,11 +106,9 @@ const DEFAULT_PROFILE: StreamProfile = resolvePerformance(
   { cores: 4, memoryGB: 8, hardwareEncoder: false },
 );
 
-/** A 16:9 picture of this height. */
-const sizeOf = (p: Pick<StreamProfile, 'height'>): { width: number; height: number } => ({
-  width: Math.round((p.height * 16) / 9),
-  height: p.height,
-});
+/** A profile's 16:9 picture size. */
+const sizeOf = (p: Pick<StreamProfile, 'height'>): { width: number; height: number } =>
+  streamSize(p.height);
 
 const idle = (available: boolean, encoder: string, profile: StreamProfile): StreamStatus => ({
   state: 'idle',
@@ -178,6 +177,12 @@ export function streamPictureExtras(
 
 /** Most video (in seconds) allowed to wait for ffmpeg before skipping ahead to stay live. */
 const MAX_BACKLOG_S = 1.2;
+/** After skipping ahead, the stream resumes once less than this is still waiting (seconds). */
+const RESUME_BACKLOG_S = 0.3;
+/** CPU pipeline: raw frames allowed to wait in the pipe to ffmpeg (each is a whole picture). */
+const PIPE_FRAMES = 3;
+/** Live and steady this long after a reconnect: the next drop starts the backoff afresh. */
+const STEADY_MS = 60_000;
 
 /**
  * Livestream and recording, done by Lampstand itself. A hidden (offscreen) stream window draws
@@ -244,6 +249,8 @@ export class StreamController {
   private pageEncoded = 0;
   private pageDropped = 0;
   private waitForKey = false;
+  /** While waiting for a keyframe: one has been asked of the encoder. */
+  private keyAsked = false;
   /** GPU pipeline: the FLV stream to this ffmpeg has been opened, and its time zero. */
   private flvOpen = false;
   private flvBase = 0;
@@ -281,6 +288,8 @@ export class StreamController {
   private readonly abr = new BitrateController(DEFAULT_PROFILE.videoKbps);
   /** Counts encoder starts, so one that was overtaken while it waited gives way. */
   private spawnSeq = 0;
+  /** After a reconnect: clears the restart count once the stream has been steady a while. */
+  private steadyTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly d: StreamDeps) {
     this.status = idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE);
@@ -393,6 +402,8 @@ export class StreamController {
         params: { file: basename(this.status.recordingPath) },
       });
     if (!this.encoding) {
+      // A start still on its way (looking up keys, making the folder) gives way.
+      this.spawnSeq += 1;
       this.setStatus({ state: 'stopping' }, true);
       await this.stopEncoder();
       this.stopHealth();
@@ -419,6 +430,8 @@ export class StreamController {
   private async restartWithNewWindow(): Promise<void> {
     await this.stopEncoder();
     this.closeWindow();
+    // Stopped meanwhile: no window to reopen.
+    if (!this.encoding) return this.syncWindow();
     this.openWindow();
     if (this.want.record) this.part += 1;
     await this.spawnEncoder();
@@ -544,13 +557,14 @@ export class StreamController {
     return resolvePerformance(this.d.getSettings().stream, this.machine);
   }
 
-  private openWindow(): void {
+  /** `cpu`: the hardware encoder can't take this stream: frames are copied for ffmpeg. */
+  private openWindow(opts: { cpu?: boolean } = {}): void {
     // A new window always takes the profile as it is now (never a previous window's).
     const profile = this.freshProfile();
     this.winProfile = profile;
     const { width, height } = sizeOf(profile);
     // GPU pipeline when it can be: the picture stays on the GPU as shared textures.
-    const gpu = this.gpuPossible(width, height, profile.fps);
+    const gpu = !opts.cpu && this.gpuPossible(width, height, profile.fps);
     this.winGpu = gpu;
     const win = new BrowserWindow({
       show: false,
@@ -588,11 +602,13 @@ export class StreamController {
         this.d.log.warn('stream page', { level: e.level, message: e.message.slice(0, 400) });
     });
     win.webContents.on('render-process-gone', () => {
+      if (this.win !== win) return;
       this.d.log.warn('stream window crashed; reopening');
-      if (this.win === win) {
-        this.win = null;
-        this.openWindow();
-      }
+      this.win = null;
+      // Live: start again in a fresh window (the encoder must restart with it: the old one is
+      // waiting for a page that's gone). Otherwise just reopen it if it's wanted.
+      if (this.encoding) void this.restartWithNewWindow();
+      else this.syncWindow();
     });
     this.win = win;
     this.pageReady = false;
@@ -732,7 +748,21 @@ export class StreamController {
     const stdin = this.ff?.stdin;
     if (this.pipeline !== 'gpu' || !stdin?.writable) return;
     // Every (re)start begins at a keyframe: it carries the picture size ffmpeg needs first.
-    if (this.waitForKey && !key) return;
+    // After a skip, the next keyframe is taken only once what was waiting has gone (else the
+    // delay it was skipping comes straight back); one is asked for as soon as it has.
+    if (this.waitForKey) {
+      const draining =
+        this.flvOpen && this.backlog.seconds(stdin.writableLength) > RESUME_BACKLOG_S;
+      if (draining) return;
+      if (!key) {
+        if (!this.keyAsked) {
+          this.keyAsked = true;
+          this.win?.webContents.send(Channels.evEncode, { keyframe: true });
+          this.repaint();
+        }
+        return;
+      }
+    }
     if (!this.flvOpen) {
       if (!config) return; // a keyframe without its configuration: wait for the next
       stdin.write(Buffer.concat([FLV_HEADER, flvSequenceHeader(config)]));
@@ -752,11 +782,10 @@ export class StreamController {
     // about a second is waiting. The picture jumps; the delay doesn't grow.
     // Measured in seconds of video waiting (a still slide is tiny in bytes).
     if (this.backlog.seconds(stdin.writableLength) > MAX_BACKLOG_S) {
+      // The frames already queued still count until ffmpeg takes them (not forgotten).
       this.waitForKey = true;
+      this.keyAsked = false;
       this.congested += 1;
-      this.backlog.reset();
-      this.win?.webContents.send(Channels.evEncode, { keyframe: true });
-      this.repaint();
       return;
     }
     this.videoBytes += data.byteLength;
@@ -789,6 +818,28 @@ export class StreamController {
     await this.stopEncoder();
     if (continuingRecording) this.part += 1;
     await this.spawnEncoder();
+  }
+
+  /** Stopped, or started again by something else, while start `run` was waiting. */
+  private overtaken(run: number): boolean {
+    return !this.encoding || run !== this.spawnSeq;
+  }
+
+  /**
+   * A new recording file: in the chosen folder, else (it can't be made, e.g. a drive that was
+   * unplugged) the usual one; null when neither can be.
+   */
+  private async recordingPath(chosen: string | null): Promise<string | null> {
+    const name = recordingName(this.sessionStart ?? new Date(), this.part);
+    for (const folder of [...new Set([recordingsFolder(chosen), recordingsFolder(null)])]) {
+      try {
+        await mkdir(folder, { recursive: true });
+        return freeName(join(folder, name));
+      } catch (err) {
+        this.d.log.warn('recording folder unavailable', { folder, error: String(err) });
+      }
+    }
+    return null;
   }
 
   /** Where the stream goes now (nowhere when only recording). */
@@ -830,23 +881,31 @@ export class StreamController {
         return;
       }
     }
-    let record: string | null = null;
-    if (this.want.record) {
-      const folder = recordingsFolder(s.recording.folder);
-      await mkdir(folder, { recursive: true });
-      record = freeName(join(folder, recordingName(this.sessionStart ?? new Date(), this.part)));
+    const record = this.want.record ? await this.recordingPath(s.recording.folder) : null;
+    if (this.overtaken(run)) return;
+    if (this.want.record && !record) {
+      // Nowhere to record (the folder can't be made): carry on streaming without it.
+      this.want.record = false;
+      this.d.notice({ level: 'error', key: 'recordingFolderFailed' });
+      if (!this.want.stream) {
+        this.fail('recordingFolderFailed');
+        return;
+      }
     }
     if (!this.win) this.openWindow();
     let profile = this.winProfile ?? this.profile();
-    // GPU pipeline when the window shares textures and the hardware encoder can do this size;
-    // otherwise the window comes back on the CPU pipeline (frames copied to ffmpeg).
+    // GPU pipeline when the window shares textures, the settings still allow it (an encoder
+    // chosen by hand means ffmpeg encodes) and the hardware encoder can do this size; otherwise
+    // the window comes back on the CPU pipeline (frames copied to ffmpeg).
     const wanted = sizeOf(profile);
-    const gpu = this.winGpu && (await this.gpuCapsFor(wanted.width, wanted.height, profile.fps));
-    // Stopped, or started again by something else, while we waited.
-    if (!this.encoding || run !== this.spawnSeq || this.ff) return;
+    const gpu =
+      this.winGpu &&
+      this.gpuPossible(wanted.width, wanted.height, profile.fps) &&
+      (await this.gpuCapsFor(wanted.width, wanted.height, profile.fps));
+    if (this.overtaken(run) || this.ff) return;
     if (this.winGpu && !gpu) {
       this.closeWindow();
-      this.openWindow();
+      this.openWindow({ cpu: true });
       profile = this.winProfile ?? this.profile();
     }
     const { width, height } = sizeOf(profile);
@@ -858,6 +917,7 @@ export class StreamController {
       fps: profile.fps,
       videoKbps: profile.videoKbps,
       audioKbps: profile.audioKbps,
+      audioEncoder: await probeAacEncoder(ffmpeg),
       x264Preset: profile.x264Preset,
       encoder,
       streams: urls,
@@ -890,6 +950,11 @@ export class StreamController {
       for (const line of lines) this.onLog(line);
     });
     ff.on('exit', (code) => this.onExit(ff, encoder, code));
+    // ffmpeg couldn't be started at all (not executable, blocked): handled like it stopping.
+    ff.on('error', (err) => {
+      this.d.log.error('encoder could not run', { error: String(err) });
+      this.onExit(ff, encoder, null);
+    });
     this.d.log.info('encoder started', {
       pipeline: this.pipeline,
       encoder,
@@ -924,6 +989,7 @@ export class StreamController {
       this.lastSent = 0;
       this.lastDropped = 0;
       this.waitForKey = true;
+      this.keyAsked = true; // a fresh encoder starts with one
       this.flvOpen = false;
       this.backlog.reset();
       this.videoBytes = 0;
@@ -935,6 +1001,7 @@ export class StreamController {
       else this.pendingEncode = cfg; // sent when the page has loaded
     } else {
       // The frame pump starts now, and the sound with it.
+      this.encodeLive = true;
       this.audio.begin();
       this.sound.start(performance.now());
       this.startPump(profile.fps);
@@ -969,8 +1036,9 @@ export class StreamController {
       write: () => {
         const stdin = this.ff?.stdin;
         if (!stdin?.writable) return false;
-        // Backed up by more than ~half a second: drop rather than let memory grow.
-        if (stdin.writableLength > (this.black?.length ?? 0) * Math.max(2, fps / 2)) return false;
+        // More than a few frames waiting: hold this one (it's written once there's room, so
+        // the picture stays with the sound), rather than let delay and memory grow.
+        if (stdin.writableLength > (this.black?.length ?? 0) * PIPE_FRAMES) return false;
         stdin.write(this.latest ?? this.black ?? Buffer.alloc(0));
         return true;
       },
@@ -1181,16 +1249,15 @@ export class StreamController {
           : null;
       // ffmpeg gives no bitrate when it sends to several places at once: count our own bytes.
       const at = performance.now();
+      const videoKbps = this.rateAt
+        ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt))
+        : 0;
       const kbps =
         p.kbps > 0
           ? p.kbps
           : this.pipeline === 'gpu' && this.rateAt
-            ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt)) +
-              this.d.getSettings().stream.quality.audioKbps
+            ? videoKbps + (this.winProfile?.audioKbps ?? 0)
             : this.status.kbps;
-      const videoKbps = this.rateAt
-        ? Math.round(((this.videoBytes - this.rateBytes) * 8) / (at - this.rateAt))
-        : 0;
       this.rateAt = at;
       this.rateBytes = this.videoBytes;
       if (delayMs !== null) this.adaptBitrate(delayMs, videoKbps, at);
@@ -1208,6 +1275,15 @@ export class StreamController {
       );
       if (first && this.want.stream && destinations.some((x) => x.state === 'ok'))
         this.d.notice({ level: 'info', key: 'streamLive' });
+      // Back and steady for a minute: a later drop starts the backoff afresh.
+      if (first && this.status.restarts > 0) {
+        if (this.steadyTimer) clearTimeout(this.steadyTimer);
+        const ff = this.ff;
+        this.steadyTimer = setTimeout(() => {
+          this.steadyTimer = null;
+          if (this.ff === ff && this.status.state === 'live') this.setStatus({ restarts: 0 });
+        }, STEADY_MS);
+      }
       return;
     }
     const before = this.lastStderr;
@@ -1331,6 +1407,8 @@ export class StreamController {
   private async stopEncoder(): Promise<void> {
     if (this.retry) clearTimeout(this.retry);
     this.retry = null;
+    if (this.steadyTimer) clearTimeout(this.steadyTimer);
+    this.steadyTimer = null;
     this.stopFeeding();
     const ff = this.ff;
     if (!ff) return;
@@ -1354,6 +1432,7 @@ export class StreamController {
 
   private fail(error: string): void {
     this.want = { stream: false, record: false };
+    this.spawnSeq += 1;
     this.stopFeeding();
     this.stopHealth();
     // Destinations that failed keep their reason, so the console can say why.

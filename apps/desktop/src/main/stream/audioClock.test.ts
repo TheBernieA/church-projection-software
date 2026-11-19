@@ -79,7 +79,12 @@ describe('the stream sound clock', () => {
       clock.topUp();
     }
     expect(sent).toHaveLength(100);
-    expect(clock.report()).toEqual({ audioLeadMs: 0, audioPaddedMs: 0, audioDroppedMs: 0 });
+    expect(clock.report()).toEqual({
+      audioLeadMs: 0,
+      audioPaddedMs: 0,
+      audioDroppedMs: 0,
+      audioNudged: 0,
+    });
   });
 
   it('starts clean for a new session', () => {
@@ -89,5 +94,24 @@ describe('the stream sound clock', () => {
     clock.reset();
     expect(clock.started).toBe(false);
     expect(clock.report().audioPaddedMs).toBe(0);
+  });
+
+  it('follows a sound card that runs fast or slow without dropping or padding (drift)', () => {
+    for (const ppm of [300, -300]) {
+      const { clock, at } = setup();
+      const batch = ms(512 / 48); // 512 samples, about 10.7 ms
+      // An hour of batches, the card's clock off by `ppm` from the computer's.
+      const n = 3600 * (48000 / 512);
+      for (let i = 1; i <= n; i++) {
+        at(((i * 512) / 48) * (1 + ppm / 1e6));
+        clock.write(Buffer.alloc(Math.round(batch / 8) * 8));
+        clock.topUp();
+      }
+      const r = clock.report();
+      expect(Math.abs(r.audioLeadMs)).toBeLessThan(60);
+      expect(r.audioDroppedMs).toBe(0);
+      expect(r.audioPaddedMs).toBe(0);
+      expect(r.audioNudged).toBeGreaterThan(0);
+    }
   });
 });

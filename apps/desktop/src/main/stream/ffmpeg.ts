@@ -47,20 +47,32 @@ export function probeProtocols(ffmpeg: string): Promise<string[]> {
   return protocols;
 }
 
-let encoders: Promise<string[]> | null = null;
+let encoders: Promise<{ video: string[]; audio: string[] }> | null = null;
 
-/** The H.264 encoders this ffmpeg has (asked once). */
-export function probeEncoders(ffmpeg: string): Promise<string[]> {
+/** The encoders this ffmpeg has, video and audio (asked once). */
+function probeAll(ffmpeg: string): Promise<{ video: string[]; audio: string[] }> {
   encoders ??= new Promise((resolve) => {
     execFile(ffmpeg, ['-hide_banner', '-encoders'], { timeout: 10_000 }, (err, stdout) => {
-      if (err) return resolve([]);
-      resolve(
-        stdout
-          .split('\n')
-          .map((l) => /^\s*V\S*\s+(\S+)/.exec(l)?.[1])
-          .filter((n): n is string => !!n && /264/.test(n)),
-      );
+      if (err) return resolve({ video: [], audio: [] });
+      // Lines like " V....D h264_videotoolbox  …" or " A....D aac  …".
+      const rows = stdout.split('\n').map((l) => /^\s*([VA])\S*\s+(\S+)/.exec(l));
+      const of = (kind: 'V' | 'A'): string[] =>
+        rows.flatMap((m) => (m?.[1] === kind && m[2] ? [m[2]] : []));
+      resolve({ video: of('V'), audio: of('A') });
     });
   });
   return encoders;
+}
+
+/** The H.264 encoders this ffmpeg has. */
+export async function probeEncoders(ffmpeg: string): Promise<string[]> {
+  return (await probeAll(ffmpeg)).video.filter((n) => /264/.test(n));
+}
+
+/**
+ * The AAC encoder to use: Apple's (AudioToolbox, macOS) when this ffmpeg has it, which sounds
+ * clearly better at stream bitrates (speech sibilance, music); else ffmpeg's own.
+ */
+export async function probeAacEncoder(ffmpeg: string): Promise<'aac_at' | 'aac'> {
+  return (await probeAll(ffmpeg)).audio.includes('aac_at') ? 'aac_at' : 'aac';
 }

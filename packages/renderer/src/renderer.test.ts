@@ -459,3 +459,14 @@ describe('motion backgrounds and logo cards', () => {
     }
   });
 });
+
+describe('mixer gain staging', () => {
+  it("takes the Web Audio compressor's hidden makeup gain back out", async () => {
+    const { autoMakeupDb } = await import('./mixer');
+    // A channel compressor at −18 dB, 3:1 would add about 7 dB by itself.
+    expect(autoMakeupDb(-18, 3)).toBeCloseTo(7.2, 1);
+    // The limiter (20:1 near the top) adds under a dB; none at all when it's off.
+    expect(autoMakeupDb(-1.5, 20)).toBeCloseTo(0.855, 2);
+    expect(autoMakeupDb(0, 1)).toBeCloseTo(0, 6);
+  });
+});

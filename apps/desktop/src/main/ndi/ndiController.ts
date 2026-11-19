@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { BrowserWindow, ipcMain, type IpcMainEvent } from 'electron';
-import { resolveStageLayout } from '@lampstand/core';
+import { resolveStageLayout, streamSize } from '@lampstand/core';
 import type {
   LiveState,
   NdiFeed,
@@ -179,7 +179,7 @@ export class NdiController {
 
   private openFeed(feed: NdiFeed): void {
     const height = feed.height;
-    const width = Math.round((height * 16) / 9);
+    const { width } = streamSize(height);
     const transparent = feed.content === 'words';
     const win = new BrowserWindow({
       show: false,

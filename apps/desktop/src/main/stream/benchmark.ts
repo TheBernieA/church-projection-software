@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import type { PerformanceMode } from '@lampstand/core';
-import { performanceProfile } from '@lampstand/core';
-import { parseProgress, videoCodecArgs, type Encoder } from './ffmpegArgs';
+import { performanceProfile, streamSize } from '@lampstand/core';
+import { colourFilter, parseProgress, videoCodecArgs, type Encoder } from './ffmpegArgs';
 
 /** One mode tried: how fast this computer encoded it (1 = just real time). */
 export interface BenchmarkRun {
@@ -27,8 +27,7 @@ export function pickBenchmarkMode(runs: readonly BenchmarkRun[]): PerformanceMod
 /** ffmpeg's arguments to encode a generated test picture for `seconds`, as a mode would. */
 export function benchmarkArgs(mode: PerformanceMode, encoder: Encoder, seconds = 4): string[] {
   const p = performanceProfile(mode);
-  const width = Math.round((p.height * 16) / 9);
-  const hw = encoder !== 'libx264' && encoder !== 'h264_amf';
+  const { width } = streamSize(p.height);
   return [
     '-hide_banner',
     '-nostdin',
@@ -44,9 +43,7 @@ export function benchmarkArgs(mode: PerformanceMode, encoder: Encoder, seconds =
     String(seconds),
     // The stream's frames arrive as BGRA: convert from it, as the real thing does.
     '-vf',
-    'format=bgra',
-    '-pix_fmt',
-    hw ? 'nv12' : 'yuv420p',
+    `format=bgra,${colourFilter(encoder)}`,
     ...videoCodecArgs({ encoder, fps: p.fps, videoKbps: p.videoKbps, x264Preset: p.x264Preset }),
     '-f',
     'null',

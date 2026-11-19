@@ -13,6 +13,13 @@ const SLACK_BYTES = BYTES_PER_SECOND * 0.15;
  *  does) but whole, where sound that's refused becomes silence on the stream. Longer than the
  *  picture is allowed to wait (a stall past that is ended by skipping or reconnecting). */
 const MAX_WAITING_BYTES = BYTES_PER_SECOND * 3;
+/**
+ * The sound card's clock and the computer's drift apart (tens of parts per million: over a long
+ * service, seconds). Past this much, each batch is nudged by one sample (about 0.2%, which no
+ * one can hear) back towards the clock, so the gap never grows to a dropped batch or a burst of
+ * silence.
+ */
+const DRIFT_BYTES = BYTES_PER_SECOND * 0.04;
 
 const toMs = (bytes: number): number => Math.round((bytes / BYTES_PER_SECOND) * 1000);
 
@@ -27,6 +34,8 @@ export class AudioClock {
   private written = 0;
   private padded = 0;
   private dropped = 0;
+  /** Samples taken out or repeated to follow the clock (drift). */
+  private nudged = 0;
 
   constructor(
     private readonly out: () => Writable | null,
@@ -45,6 +54,7 @@ export class AudioClock {
     this.written = 0;
     this.padded = 0;
     this.dropped = 0;
+    this.nudged = 0;
   }
 
   get started(): boolean {
@@ -64,11 +74,32 @@ export class AudioClock {
   write(chunk: Buffer): boolean {
     // Too late (its gap was filled), or ffmpeg isn't taking sound (a backed-up upload): either
     // way this batch is lost, and counted, so the log tells the truth about gaps in the sound.
-    if ((this.started && this.written - this.dueBytes() > SLACK_BYTES) || !this.send(chunk)) {
+    if (
+      (this.started && this.written - this.dueBytes() > SLACK_BYTES) ||
+      !this.send(this.followClock(chunk))
+    ) {
       this.dropped += chunk.length;
       return false;
     }
     return true;
+  }
+
+  /**
+   * Drift: sound running ahead of the clock loses its last sample, sound running behind repeats
+   * it (one sample in a batch of hundreds).
+   */
+  private followClock(chunk: Buffer): Buffer {
+    if (!this.started || chunk.length < FRAME_BYTES * 2) return chunk;
+    const lead = this.written - this.dueBytes();
+    if (lead > DRIFT_BYTES) {
+      this.nudged += 1;
+      return chunk.subarray(0, chunk.length - FRAME_BYTES);
+    }
+    if (lead < -DRIFT_BYTES) {
+      this.nudged += 1;
+      return Buffer.concat([chunk, chunk.subarray(chunk.length - FRAME_BYTES)]);
+    }
+    return chunk;
   }
 
   /** Fill with silence once the sound is well behind the clock. */
@@ -88,11 +119,17 @@ export class AudioClock {
   }
 
   /** For the log: how far the sound leads the clock, and what was filled in or dropped. */
-  report(): { audioLeadMs: number; audioPaddedMs: number; audioDroppedMs: number } {
+  report(): {
+    audioLeadMs: number;
+    audioPaddedMs: number;
+    audioDroppedMs: number;
+    audioNudged: number;
+  } {
     return {
       audioLeadMs: toMs(this.written - this.dueBytes()),
       audioPaddedMs: toMs(this.padded),
       audioDroppedMs: toMs(this.dropped),
+      audioNudged: this.nudged,
     };
   }
 }

@@ -17,8 +17,10 @@ class PcmTap extends AudioWorkletProcessor {
     if (!l) return true;
     const r = input[1] || l;
     for (let i = 0; i < l.length; i++) {
-      this.buf[this.at++] = l[i];
-      this.buf[this.at++] = r[i];
+      // Never past full scale: a peak that got by the limiter is clipped here, not wrapped or
+      // distorted by the AAC encoder.
+      this.buf[this.at++] = l[i] > 1 ? 1 : l[i] < -1 ? -1 : l[i];
+      this.buf[this.at++] = r[i] > 1 ? 1 : r[i] < -1 ? -1 : r[i];
       if (this.at === this.buf.length) {
         this.port.postMessage(this.buf, [this.buf.buffer]);
         this.buf = new Float32Array(FRAMES * 2);

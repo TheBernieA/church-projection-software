@@ -202,6 +202,8 @@ export interface EncodeOptions {
    * (no re-encoding).
    */
   input?: 'raw' | 'flv';
+  /** The AAC encoder: Apple's where this ffmpeg has it (better sound), else ffmpeg's own. */
+  audioEncoder?: 'aac' | 'aac_at';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
   x264Preset?: 'ultrafast' | 'superfast' | 'veryfast' | 'faster';
   /** Full destination URLs (keys included): RTMP(S) services, and SRT/UDP direct links. */
@@ -211,10 +213,21 @@ export interface EncodeOptions {
 }
 
 /** VideoToolbox, NVENC and Quick Sync work in NV12. */
-const takesNv12 = (e: Encoder): boolean =>
+export const takesNv12 = (e: Encoder): boolean =>
   e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv';
 
-/** Encoder settings: constant bitrate-ish, a keyframe every 2 s, no B-frame surprises. */
+/**
+ * BGRA frames to the encoder's YUV, as HD colour (BT.709, limited range: what players and
+ * services assume), converted accurately and labelled so. Hardware encoders take NV12 natively
+ * (no second conversion inside them).
+ */
+export const colourFilter = (e: Encoder): string =>
+  `scale=out_color_matrix=bt709:out_range=tv:flags=accurate_rnd,format=${takesNv12(e) ? 'nv12' : 'yuv420p'},setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv`;
+
+/**
+ * Encoder settings: constant bitrate-ish, a keyframe every 2 s, High profile (sharper text), and
+ * no B-frames or frame queueing inside the encoder (each adds delay).
+ */
 export function videoCodecArgs(
   o: Pick<EncodeOptions, 'encoder' | 'fps' | 'videoKbps' | 'x264Preset'>,
 ): string[] {
@@ -223,8 +236,10 @@ export function videoCodecArgs(
     `${o.videoKbps}k`,
     '-maxrate',
     `${o.videoKbps}k`,
+    // A one-second rate buffer (as OBS uses): keyframe bursts stay small, so on an upload near
+    // its limit they don't queue for long.
     '-bufsize',
-    `${o.videoKbps * 2}k`,
+    `${o.videoKbps}k`,
   ];
   const gop = ['-g', String(o.fps * 2), '-keyint_min', String(o.fps * 2)];
   switch (o.encoder) {
@@ -242,11 +257,54 @@ export function videoCodecArgs(
         ...gop,
       ];
     case 'h264_nvenc':
-      return ['-c:v', 'h264_nvenc', '-preset', 'p4', '-tune', 'll', '-rc', 'cbr', ...rate, ...gop];
+      return [
+        '-c:v',
+        'h264_nvenc',
+        '-preset',
+        'p4',
+        '-tune',
+        'll',
+        '-rc',
+        'cbr',
+        '-profile:v',
+        'high',
+        '-bf',
+        '0',
+        '-zerolatency',
+        '1',
+        ...rate,
+        ...gop,
+      ];
     case 'h264_qsv':
-      return ['-c:v', 'h264_qsv', '-preset', 'veryfast', ...rate, ...gop];
+      return [
+        '-c:v',
+        'h264_qsv',
+        '-preset',
+        'veryfast',
+        '-profile:v',
+        'high',
+        '-bf',
+        '0',
+        '-async_depth',
+        '1',
+        ...rate,
+        ...gop,
+      ];
     case 'h264_amf':
-      return ['-c:v', 'h264_amf', '-usage', 'lowlatency', '-rc', 'cbr', ...rate, ...gop];
+      return [
+        '-c:v',
+        'h264_amf',
+        '-usage',
+        'lowlatency',
+        '-rc',
+        'cbr',
+        '-profile:v',
+        'high',
+        '-bf',
+        '0',
+        ...rate,
+        ...gop,
+      ];
     case 'libx264':
       return [
         '-c:v',
@@ -272,7 +330,8 @@ export function videoCodecArgs(
  */
 const STREAM_OPTIONS = {
   flv: '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]',
-  ts: '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:bsfs/v=h264_mp4toannexb]',
+  // pes_payload_size=0: each sound frame goes out on its own (not gathered for up to 50 ms).
+  ts: '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb]',
 } as const;
 
 /**
@@ -288,8 +347,12 @@ export function buildArgs(o: EncodeOptions): string[] {
     ...o.streams.map(
       (u) => `${STREAM_OPTIONS[protocolOf(u) === 'rtmp' ? 'flv' : 'ts']}${teeEscape(u)}`,
     ),
+    // The recording writes through its own queue: a slow disk never holds up the live outputs
+    // (the queue waits rather than drops, so the file stays whole).
     ...(o.record
-      ? [`[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]${teeEscape(o.record)}`]
+      ? [
+          `[f=mp4:use_fifo=1:fifo_options=queue_size=120:movflags=+frag_keyframe+empty_moov+default_base_moof]${teeEscape(o.record)}`,
+        ]
       : []),
   ];
   return [
@@ -303,7 +366,9 @@ export function buildArgs(o: EncodeOptions): string[] {
     // A short queue (about half a second): when a destination can't keep up, the app must feel
     // it at once and skip frames, rather than let seconds of delay pile up inside ffmpeg.
     '-thread_queue_size',
-    String(Math.max(8, Math.round(o.fps / 2))),
+    // Raw pictures are big and already held in the pipe: a few is plenty (less delay). Encoded
+    // frames are small: about half a second.
+    String(gpu ? Math.max(8, Math.round(o.fps / 2)) : 8),
     ...(gpu
       ? // Encoded frames in FLV, each with its real time. Start at once (the picture size is in
         // the first tag), and don't hold packets back to study them.
@@ -339,17 +404,15 @@ export function buildArgs(o: EncodeOptions): string[] {
       ? // Already encoded, already timed: copy it.
         ['-c:v', 'copy']
       : [
-          // Hardware encoders take NV12 natively (no second conversion inside the encoder).
-          '-pix_fmt',
-          takesNv12(o.encoder) ? 'nv12' : 'yuv420p',
+          '-vf',
+          colourFilter(o.encoder),
           '-r',
           String(o.fps),
           '-fps_mode',
           'cfr',
           ...videoCodecArgs(o),
         ]),
-    '-c:a',
-    'aac',
+    ...(o.audioEncoder === 'aac_at' ? ['-c:a', 'aac_at', '-aac_at_mode', 'cbr'] : ['-c:a', 'aac']),
     '-b:a',
     `${o.audioKbps}k`,
     '-ar',

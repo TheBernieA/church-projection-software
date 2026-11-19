@@ -36,7 +36,10 @@ describe('stream encoder arguments', () => {
     expect(a.join(' ')).toContain('-f rawvideo -pix_fmt bgra -s 1280x720 -r 30 -i pipe:0');
     expect(a.join(' ')).toContain('-f f32le -ar 48000 -ac 2 -i pipe:3');
     expect(a[a.indexOf('-g') + 1]).toBe('60');
-    expect(a.at(-1)).toBe('[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof]/tmp/a.mp4');
+    // The recording writes through its own queue, so a slow disk can't hold up the stream.
+    expect(a.at(-1)).toBe(
+      '[f=mp4:use_fifo=1:fifo_options=queue_size=120:movflags=+frag_keyframe+empty_moov+default_base_moof]/tmp/a.mp4',
+    );
   });
 
   it('sends to every destination, each allowed to fail alone, plus the recording', () => {
@@ -52,16 +55,37 @@ describe('stream encoder arguments', () => {
     );
   });
 
+  it('uses Apple’s AAC encoder when ffmpeg has it', () => {
+    expect(buildArgs({ ...base, audioEncoder: 'aac_at' }).join(' ')).toContain(
+      '-c:a aac_at -aac_at_mode cbr',
+    );
+    expect(buildArgs(base).join(' ')).toContain('-c:a aac');
+  });
+
+  it('hardware encoders: High profile, no B-frames, a one-second rate buffer', () => {
+    for (const encoder of ['h264_nvenc', 'h264_qsv', 'h264_amf'] as const) {
+      const a = buildArgs({ ...base, encoder }).join(' ');
+      expect(a).toContain('-profile:v high');
+      expect(a).toContain('-bf 0');
+      expect(a).toContain(`-bufsize ${base.videoKbps}k`);
+    }
+  });
+
   it('uses each hardware encoder by name', () => {
     expect(buildArgs({ ...base, encoder: 'h264_videotoolbox' })).toContain('h264_videotoolbox');
     expect(buildArgs({ ...base, encoder: 'h264_nvenc' })).toContain('h264_nvenc');
   });
 
-  it('feeds hardware encoders NV12 and software yuv420p; the preset follows the mode', () => {
+  it('converts to HD colour (BT.709), labelled; NV12 for hardware, yuv420p for x264; the preset follows the mode', () => {
+    const filter = (a: string[]) => a[a.indexOf('-vf') + 1] ?? '';
     const vt = buildArgs({ ...base, encoder: 'h264_videotoolbox' });
-    expect(vt[vt.lastIndexOf('-pix_fmt') + 1]).toBe('nv12');
+    expect(filter(vt)).toContain('out_color_matrix=bt709');
+    expect(filter(vt)).toContain('format=nv12');
+    expect(filter(vt)).toContain(
+      'setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709',
+    );
     const sw = buildArgs({ ...base, encoder: 'libx264', x264Preset: 'superfast' });
-    expect(sw[sw.lastIndexOf('-pix_fmt') + 1]).toBe('yuv420p');
+    expect(filter(sw)).toContain('format=yuv420p');
     expect(sw[sw.indexOf('-preset') + 1]).toBe('superfast');
     expect(buildArgs({ ...base, width: 960, height: 540 }).join(' ')).toContain('-s 960x540');
   });
@@ -71,7 +95,7 @@ describe('stream encoder arguments', () => {
     expect(a).toContain('-probesize 1024 -analyzeduration 0 -f flv -i pipe:0');
     expect(a).toContain('-c:v copy');
     expect(a).not.toContain('rawvideo');
-    expect(a).not.toContain('-pix_fmt');
+    expect(a).not.toContain('-vf');
     expect(a).not.toContain('setts');
     expect(a).toContain('-c:a aac');
     expect(a).toContain('-flush_packets 1');
@@ -222,7 +246,7 @@ describe('direct links', () => {
     const tee = args.at(-1) ?? '';
     expect(tee.split('|')[0]).toMatch(/^\[f=flv:/);
     expect(tee.split('|')[1]).toBe(
-      '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:bsfs/v=h264_mp4toannexb]udp://10.0.0.2:9000?pkt_size=1316',
+      '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb]udp://10.0.0.2:9000?pkt_size=1316',
     );
   });
 

@@ -656,7 +656,8 @@
     "streamReconnecting": "The stream dropped: reconnecting…",
     "streamDestinationFailed": "One stream destination stopped. The others carry on.",
     "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again.",
-    "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder."
+    "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder.",
+    "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming."
   },
   "perf": {
     "fps": "Control FPS",
@@ -1791,7 +1792,8 @@
       "noDestinations": "No destination could start: check each one has its stream key.",
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
       "reconnecting": "Reconnecting…",
-      "encoderStopped": "The encoder stopped and couldn’t restart."
+      "encoderStopped": "The encoder stopped and couldn’t restart.",
+      "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming."
     }
   },
   "streaming": {

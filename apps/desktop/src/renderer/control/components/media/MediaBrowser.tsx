@@ -375,6 +375,9 @@ function TileMenu({
   const playlists = usePlaylists('media');
   const renaming = useContext(Renaming);
   const others = playlists.filter((p) => p.id !== playlistId);
+  // Rename was picked: the name field takes focus, so the closing menu mustn't take it back to
+  // its button (that would end the rename at once).
+  const toRename = useRef(false);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -388,7 +391,17 @@ function TileMenu({
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={4} className={MENU_CLASS}>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={4}
+          className={MENU_CLASS}
+          onCloseAutoFocus={(e) => {
+            if (!toRename.current) return;
+            toRename.current = false;
+            e.preventDefault();
+            renaming.set(m.id);
+          }}
+        >
           {/* What it is, at a glance. */}
           <DropdownMenu.Label className={MENU_LABEL_CLASS}>{mediaInfo(m)}</DropdownMenu.Label>
           {m.kind === 'audio' ? (
@@ -454,8 +467,10 @@ function TileMenu({
           </DropdownMenu.Sub>
           <DropdownMenu.Item
             className={ITEM_CLASS}
-            // Wait for the menu to hand focus back before the field takes it.
-            onSelect={() => setTimeout(() => renaming.set(m.id), 0)}
+            // The field opens once the menu has closed (see onCloseAutoFocus).
+            onSelect={() => {
+              toRename.current = true;
+            }}
           >
             <Pencil size={14} />
             {t('mediaBin.rename')}

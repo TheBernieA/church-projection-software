@@ -87,3 +87,9 @@ export function resolvePerformance(s: StreamSettings, m: MachineInfo): StreamPro
 
 /** The profile a mode stands for (Settings shows what each one means). */
 export const performanceProfile = (mode: PerformanceMode): StreamProfile => PROFILES[mode];
+
+/** The size of a 16:9 stream picture of this height (the stream, NDI feeds, the benchmark). */
+export const streamSize = (height: number): { width: number; height: number } => ({
+  width: Math.round((height * 16) / 9),
+  height,
+});

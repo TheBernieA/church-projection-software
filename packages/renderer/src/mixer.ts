@@ -16,6 +16,13 @@ export interface MixerLevels {
 type SourceKind = 'tracks' | 'video';
 
 const HPF_HZ = 80;
+/**
+ * The bus limiter: a ceiling of −1.5 dBFS, hard (20:1). The Web Audio compressor isn't a perfect
+ * brickwall (fast peaks slip a little past it), so it sits a little under −1 and the stream's
+ * sound tap clips anything left over.
+ */
+const LIMIT_DB = -1.5;
+const LIMIT_RATIO = 20;
 
 /** Point a context at an output device (Chromium's AudioContext.setSinkId). */
 function routeContext(ctx: AudioContext, sinkId: string): void {
@@ -42,6 +49,19 @@ function ramp(p: AudioParam, value: number, ctx: BaseAudioContext): void {
 }
 
 /**
+ * The gain a Web Audio compressor adds by itself, in dB. The spec's DynamicsCompressorNode
+ * applies an automatic makeup gain of (1 / its gain at full scale)^0.6, so a compressor with a
+ * low threshold makes things much louder (about +7 dB at −18 dB and 3:1) and the limiter adds
+ * half a dB. Taking it back out makes the makeup knob (and the limiter's ceiling) mean what they
+ * say.
+ */
+export function autoMakeupDb(thresholdDb: number, ratio: number): number {
+  // A 0 dBFS input comes out at threshold + (0 − threshold) / ratio.
+  const fullScaleGainDb = thresholdDb * (1 - 1 / ratio);
+  return -0.6 * fullScaleGainDb;
+}
+
+/**
  * One channel strip: input (a sum of its sources) → mono fold → high-pass → low shelf → mid
  * bell → high shelf → compressor → make-up → pan → send to the bus. A meter reads it after
  * the fader (before mute, so you can see a muted mic is working).
@@ -61,6 +81,9 @@ class Strip {
   private readonly send: GainNode;
   readonly meter: AnalyserNode;
   private mono = false;
+  /** The device gives one channel (most built-in and USB mics): it's folded to both sides. */
+  nativeMono = false;
+  private last: { c: MixerChannel; bus: MixBus } | null = null;
   /** A live input's device stream, while it's open. */
   device: {
     id: string;
@@ -109,11 +132,14 @@ class Strip {
 
   apply(c: MixerChannel, bus: MixBus): void {
     const ctx = this.ctx;
-    if (c.mono !== this.mono) {
-      this.mono = c.mono;
-      // Mono: both sides hear the first input (a mic plugged into input 1 of a stereo device).
+    this.last = { c, bus };
+    // Mono: both sides hear the first input (a mic plugged into input 1 of a stereo device, or
+    // a one-channel mic, which would otherwise be panned to the middle 3 dB quieter).
+    const mono = c.mono || this.nativeMono;
+    if (mono !== this.mono) {
+      this.mono = mono;
       this.input.disconnect();
-      this.input.connect(c.mono ? this.split : this.hpf);
+      this.input.connect(mono ? this.split : this.hpf);
     }
     this.hpf.frequency.value = c.hpf ? HPF_HZ : 10;
     ramp(this.low.gain, c.eq.low, ctx);
@@ -125,11 +151,20 @@ class Strip {
     this.comp.knee.value = on ? 6 : 0;
     this.comp.attack.value = 0.005;
     this.comp.release.value = 0.15;
-    ramp(this.makeup.gain, on ? dbToGain(c.comp.makeupDb) : 1, ctx);
+    ramp(
+      this.makeup.gain,
+      on ? dbToGain(c.comp.makeupDb - autoMakeupDb(c.comp.thresholdDb, c.comp.ratio)) : 1,
+      ctx,
+    );
     ramp(this.pan.pan, c.pan, ctx);
     ramp(this.fader.gain, dbToGain(c.gainDb), ctx);
     // The fader is applied above; the send only opens or closes.
     ramp(this.send.gain, sendGain(c, bus) > 0 ? 1 : 0, ctx);
+  }
+
+  /** Apply the channel again (its device turned out to be mono). */
+  reapply(): void {
+    if (this.last) this.apply(this.last.c, this.last.bus);
   }
 
   closeDevice(): void {
@@ -262,8 +297,10 @@ export class MixerEngine {
     const c = this.ctx;
     ramp(this.busGain.gain, b ? (b.mute ? 0 : dbToGain(b.gainDb)) : 1, c);
     const limit = b ? b.limiter : true;
-    this.limiter.threshold.value = limit ? -1 : 0;
-    this.limiter.ratio.value = limit ? 20 : 1;
+    this.limiter.threshold.value = limit ? LIMIT_DB : 0;
+    this.limiter.ratio.value = limit ? LIMIT_RATIO : 1;
+    // Without the limiter's own makeup gain, its ceiling is where it's set (not half a dB over).
+    this.output.gain.value = limit ? dbToGain(-autoMakeupDb(LIMIT_DB, LIMIT_RATIO)) : 1;
     this.limiter.knee.value = 0;
     this.limiter.attack.value = 0.001;
     this.limiter.release.value = 0.08;
@@ -293,6 +330,9 @@ export class MixerEngine {
         device.stream = stream;
         device.source = this.ctx.createMediaStreamSource(stream);
         device.source.connect(strip.input);
+        const channels = stream.getAudioTracks()[0]?.getSettings().channelCount;
+        strip.nativeMono = channels === 1;
+        strip.reapply();
       })
       .catch(() => undefined);
   }

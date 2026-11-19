@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FramePump, framesDue, msToNextFrame } from './framePump';
+import { framesDue, msToNextFrame } from '@lampstand/core';
+import { FramePump } from './framePump';
 
 afterEach(() => vi.useRealTimers());
 
@@ -28,7 +29,7 @@ describe('frame clock', () => {
     pump.stop();
   });
 
-  it('after a long stall, stays in time without flooding the encoder', () => {
+  it('catches up after a long stall a few frames a tick, never skipping (picture stays with the sound)', () => {
     vi.useFakeTimers();
     let clock = 0;
     let written = 0;
@@ -37,19 +38,35 @@ describe('frame clock', () => {
     clock = 1000; // a one-second freeze
     pump.tick();
     expect(written).toBe(5); // the first frame, then at most 4
-    expect(pump.framesSent).toBe(31);
-    expect(pump.dropped).toBe(26);
+    expect(pump.behind).toBe(26);
+    // The next ticks (on time again) repay what's owed, 4 at a time.
+    for (let i = 0; i < 20; i++) {
+      clock += 1000 / 30;
+      pump.tick();
+    }
+    expect(pump.behind).toBe(0);
+    expect(pump.framesSent).toBe(framesDue(0, clock, 30, 0));
     pump.stop();
   });
 
-  it('counts frames the encoder could not take', () => {
+  it('frames the encoder could not take are written once it can (none lost)', () => {
     vi.useFakeTimers();
     let clock = 0;
-    const pump = new FramePump(30, { write: () => false }, () => clock);
+    let open = false;
+    let written = 0;
+    const pump = new FramePump(30, { write: () => open && (written++, true) }, () => clock);
     pump.begin();
     clock = 100;
     pump.tick();
     expect(pump.dropped).toBe(4);
+    expect(written).toBe(0);
+    open = true;
+    for (let i = 0; i < 3; i++) {
+      clock += 1000 / 30;
+      pump.tick();
+    }
+    expect(pump.behind).toBe(0);
+    expect(written).toBe(framesDue(0, clock, 30, 0));
     pump.stop();
   });
 });

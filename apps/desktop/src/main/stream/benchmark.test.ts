@@ -28,8 +28,8 @@ describe('Check this computer', () => {
     const a = benchmarkArgs('balanced', 'libx264').join(' ');
     expect(a).toContain('testsrc2=size=1280x720:rate=30');
     expect(a).toContain('-preset veryfast');
-    expect(a).toContain('-pix_fmt yuv420p');
+    expect(a).toContain('format=yuv420p');
     expect(a).toMatch(/-f null -$/);
-    expect(benchmarkArgs('quality', 'h264_videotoolbox').join(' ')).toContain('-pix_fmt nv12');
+    expect(benchmarkArgs('quality', 'h264_videotoolbox').join(' ')).toContain('format=nv12');
   });
 });
