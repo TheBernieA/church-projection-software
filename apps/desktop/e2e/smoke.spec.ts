@@ -2316,10 +2316,11 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await expect.poll(mirror).toBe('own');
   await expect.poll(picture).toBe('program lowerThird');
   // The scenes fold away (and come back) with the arrow beside them.
+  // Folded, the strip keeps only its header (the tiles go).
   await live.getByRole('button', { name: 'Hide the scenes' }).click();
-  await expect(scenes).toBeHidden();
+  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeHidden();
   await live.getByRole('button', { name: 'Show the scenes' }).click();
-  await expect(scenes).toBeVisible();
+  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeVisible();
   // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
   await live.getByRole('button', { name: 'Mute Stream' }).click();
   const silent = live.getByRole('alert').filter({ hasText: 'The stream is muted' });
@@ -2962,6 +2963,114 @@ test('slide tiles: the background as its own tile, group hotkeys, a slide’s ow
     .first()
     .click();
   await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
+});
+
+test('screens: fit each screen, edge blending, a readability overlay, the multi-view', async () => {
+  const out = await outputPage();
+  const settingsOf = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('settings.get'));
+    if (!r.ok) throw new Error('no settings');
+    return r.value;
+  };
+  // Fit the rehearsal window: nudge its top-left corner with the keyboard (keystone), flip it.
+  await control.getByRole('banner').getByRole('button', { name: 'More' }).click();
+  await control.getByRole('menuitem', { name: 'Masks…' }).click();
+  const fit = control.locator('section[data-section="Fit each screen"]');
+  const corner = fit.getByRole('button', { name: 'Top-left corner' });
+  await corner.focus();
+  for (let i = 0; i < 4; i++) await control.keyboard.press('ArrowRight');
+  await expect
+    .poll(async () => (await settingsOf()).screenAdjust['window-main']?.corners.tl.x)
+    .toBe(2);
+  const screen = out.locator('#host');
+  await expect
+    .poll(() => screen.evaluate((e) => (e as HTMLElement).style.transform))
+    .toContain('matrix3d(');
+  await fit.getByRole('switch', { name: 'Upside down' }).click();
+  await expect.poll(async () => (await settingsOf()).screenAdjust['window-main']?.flipV).toBe(true);
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/52-screen-fit.png' });
+  await fit.getByRole('button', { name: 'Reset' }).click();
+  await expect.poll(async () => (await settingsOf()).screenAdjust['window-main']).toBeUndefined();
+  await expect.poll(() => screen.evaluate((e) => (e as HTMLElement).style.transform)).toBe('');
+
+  // Edge blending: rehearsing, a second window stands in for the second projector; each shows
+  // its part of one wide picture, the overlap faded on the inner edges.
+  const blendGroup = control.locator('section[data-section="Edge blending"]');
+  await blendGroup.getByRole('switch', { name: 'Blend the audience screens' }).click();
+  await expect
+    .poll(() => app.windows().filter((w) => w.url().includes('id=window-blend-1')).length, {
+      timeout: 10_000,
+    })
+    .toBe(1);
+  const second = app.windows().find((w) => w.url().includes('id=window-blend-1'));
+  if (!second) throw new Error('no blend window');
+  await expect(out.locator('.ls-blend-right')).toHaveCount(1);
+  await expect(out.locator('.ls-blend-left')).toHaveCount(0);
+  await expect(second.locator('.ls-blend-left')).toHaveCount(1, { timeout: 10_000 });
+  // 15% overlap: the picture is 1.85 screens wide; the second screen starts 0.85 in.
+  await expect
+    .poll(() => second.locator('#picture').evaluate((e) => (e as HTMLElement).style.left))
+    .toBe('-85%');
+  await control.screenshot({ path: 'test-results/52b-edge-blend.png' });
+  await blendGroup.getByRole('switch', { name: 'Blend the audience screens' }).click();
+  await expect
+    .poll(() => app.windows().filter((w) => w.url().includes('id=window-blend-1')).length)
+    .toBe(0);
+  await expect(out.locator('.ls-blend-right')).toHaveCount(0);
+  await control.keyboard.press('Escape');
+
+  // A readability overlay over an item's background: the bottom shaded behind the words.
+  await control.keyboard.press(process.platform === 'darwin' ? 'Meta+K' : 'Control+K');
+  await control.keyboard.type('jn 3 16');
+  await expect(control.getByRole('option').first()).toContainText('John 3:16');
+  await control.keyboard.press('Shift+Enter');
+  await control.getByRole('button', { name: 'Background for these slides' }).first().click();
+  await control.getByRole('menuitem', { name: /^Readability overlay/ }).click();
+  await control.getByRole('menuitemradio', { name: 'Shade the bottom' }).click();
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      return r.ok ? (r.value.program.background?.adjust?.scrim?.style ?? null) : null;
+    })
+    .toBe('bottom');
+  await expect(out.locator('.ls-bg-scrim').last()).toBeAttached();
+  // (Picking closes the menu: an Escape now would reach the show and clear the words.)
+  await control.getByRole('button', { name: 'Background for these slides' }).first().click();
+  await control.getByRole('menuitem', { name: /^Readability overlay/ }).click();
+  await control.getByRole('menuitemradio', { name: 'None (the theme’s)' }).click();
+  await expect(out.locator('.ls-bg-scrim')).toHaveCount(0);
+
+  // The multi-view: every screen and camera in a window of its own (from Outputs).
+  await control.getByRole('button', { name: /^Stage:/ }).click();
+  await control.getByRole('menuitem', { name: 'Output settings…' }).click();
+  const outputs = control.getByRole('dialog', { name: 'Outputs' });
+  await outputs.getByText('More output types').click();
+  // SDI and Syphon are still to come; the rest are real.
+  await expect(outputs.locator('[data-testid="soon-list"] li')).toHaveCount(2);
+  await outputs.getByRole('button', { name: 'Open multi-view' }).click();
+  await expect
+    .poll(() => app.windows().filter((w) => w.url().includes('view=multiview')).length, {
+      timeout: 10_000,
+    })
+    .toBe(1);
+  const mv = app.windows().find((w) => w.url().includes('view=multiview'));
+  if (!mv) throw new Error('no multi-view');
+  await expect(mv.getByRole('group', { name: 'Program' })).toBeVisible();
+  await expect(mv.getByRole('group', { name: 'Stage display' })).toBeVisible();
+  await expect(mv.getByRole('img', { name: 'Program' })).toBeVisible();
+  await mv.waitForTimeout(600);
+  await mv.screenshot({ path: 'test-results/52c-multiview.png' });
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'multiview.open', payload: { open: false } }),
+  );
+  await expect
+    .poll(() => app.windows().filter((w) => w.url().includes('view=multiview')).length)
+    .toBe(0);
+  // Closed with its button: Escape in the show would clear the words on screen.
+  await outputs.getByRole('button', { name: 'Close' }).first().click();
+  await expect(outputs).toHaveCount(0);
+  await expect(out.locator('.ls-text').last()).toContainText('For God so loved');
 });
 
 test('output survives a control renderer crash', async () => {

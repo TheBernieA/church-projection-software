@@ -1,4 +1,4 @@
-import type { BackgroundRef, MediaItem, ServiceItem } from '@lampstand/core';
+import type { BackgroundRef, MediaItem, Scrim, ServiceItem } from '@lampstand/core';
 import { slidesFor } from './actions';
 import { cmd } from './api';
 import { attempt, editItems, patchItem, useStore } from './store';
@@ -34,6 +34,23 @@ export function setItemBackground(item: BackgroundItem, ref: BackgroundRef | und
   patchItem<BackgroundItem>(item, { background: ref });
   followLive({ ...item, background: ref });
 }
+
+/**
+ * A readability overlay over `item`'s backgrounds, under the words (`undefined`: its theme's).
+ * If one of its slides is on screen, the screen follows at once.
+ */
+export function setItemOverlay(item: BackgroundItem, overlay: Scrim | undefined): void {
+  patchItem<BackgroundItem>(item, { backgroundOverlay: overlay });
+  followLive({ ...item, backgroundOverlay: overlay });
+}
+
+/** The overlay's presets: how dark each strength is. */
+export const OVERLAY_STRENGTHS = { light: 0.3, medium: 0.5, strong: 0.7 } as const;
+export type OverlayStrength = keyof typeof OVERLAY_STRENGTHS;
+
+/** The preset nearest an overlay's strength (for ticking the menu). */
+export const strengthOf = (s: Scrim): OverlayStrength =>
+  s.strength < 0.4 ? 'light' : s.strength < 0.6 ? 'medium' : 'strong';
 
 /** Items whose slides can each have a background of their own. */
 export type SlideBackgroundItem = Extract<

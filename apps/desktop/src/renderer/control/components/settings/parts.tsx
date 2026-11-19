@@ -20,7 +20,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { DeferredInput } from '../DeferredControls';
-import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
+import { Button, IconButton, Slider, Typography, typographyClass } from '@lampstand/ui';
 
 /** What the page frame knows about the page it shows (set by the Settings window). */
 export interface PageFrame {
@@ -558,5 +558,55 @@ export function LayerChips({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * A labelled slider that saves once, when it's let go (dragging only moves the readout), so a
+ * drag is one settings change and one undo step, not dozens.
+ */
+export function CommitSlider({
+  label,
+  value,
+  min = 0,
+  max,
+  step = 1,
+  format,
+  onCommit,
+  labelWidth = 'w-16',
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max: number;
+  step?: number;
+  format: (v: number) => string;
+  onCommit: (v: number) => void;
+  labelWidth?: string;
+}) {
+  const [draft, setDraft] = useState<number | null>(null);
+  const commit = (): void => {
+    if (draft !== null && draft !== value) onCommit(draft);
+    setDraft(null);
+  };
+  return (
+    <label className="flex items-center gap-3">
+      <Typography size={12} tone="secondary" className={`${labelWidth} shrink-0`}>
+        {label}
+      </Typography>
+      <Slider
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={draft ?? value}
+        format={format}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onPointerUp={commit}
+        onKeyUp={commit}
+        onBlur={commit}
+        className="flex-1"
+      />
+    </label>
   );
 }

@@ -255,8 +255,7 @@ export const FEATURES: Feature[] = [
     'edge-blend',
     'screens',
     'Edge blending',
-    'Blend several projectors into one wide canvas.',
-    'soon',
+    'Blend several projectors into one wide canvas, the overlaps faded so no seam shows (Settings › Screens).',
   ),
   f(
     'ndi',
@@ -264,7 +263,13 @@ export const FEATURES: Feature[] = [
     'NDI output',
     'Send the program, or the words alone over transparency, to vMix, OBS and other NDI gear (Settings › NDI; needs NDI Tools).',
   ),
-  f('sdi', 'screens', 'SDI output', 'Output to broadcast switchers through capture cards.', 'soon'),
+  f(
+    'sdi',
+    'screens',
+    'SDI output',
+    'Output to broadcast switchers through Blackmagic DeckLink cards (needs the card and Desktop Video).',
+    'soon',
+  ),
   f(
     'alpha-key',
     'screens',
@@ -275,8 +280,7 @@ export const FEATURES: Feature[] = [
     'multiview',
     'screens',
     'Operator multi-view',
-    'See every input and output on one screen.',
-    'soon',
+    'See every screen, the stream and each camera on one screen, in a window of its own (Outputs).',
   ),
 
   // Stage display
@@ -547,15 +551,14 @@ export const FEATURES: Feature[] = [
     'syphon',
     'screens',
     'Syphon output',
-    'Share outputs with other apps on the same Mac, like OBS.',
+    'Share outputs with other apps on the same Mac, like OBS (needs the Syphon framework).',
     'soon',
   ),
   f(
     'output-adjust',
     'screens',
     'Screen adjustments',
-    'Keystone, corner pinning, scaling and colour correction for each screen.',
-    'soon',
+    'Keystone, corner pinning, scaling, flips and colour correction for each screen (Settings › Screens).',
   ),
   f(
     'timecode',

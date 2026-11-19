@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,58 +8,27 @@ import {
   type Settings,
   LookLayerSchema,
 } from '@lampstand/core';
-import { Button, IconButton, Segmented, Slider, Typography } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Typography } from '@lampstand/ui';
 import { BUILT_IN_BACKGROUNDS } from '../../constants';
 import { usePictures } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { Group, LayerChips, NameRow, Row, SettingsPage } from './parts';
+import { CommitSlider, Group, LayerChips, NameRow, Row, SettingsPage } from './parts';
+import { EdgeBlendGroup, ScreenFitGroup } from './screenFit';
 
 type Update = (patch: Partial<Settings>) => void;
 type Shape = ScreenMask['shape'];
 const SIDES = ['top', 'right', 'bottom', 'left'] as const;
 
-/** A mask's edge or corner amount: a slider with its value. */
-function Amount({
-  label,
-  value,
-  max,
-  onCommit,
-}: {
+/** A mask's edge or corner amount, in %. */
+const Amount = (p: {
   label: string;
   value: number;
   max: number;
   onCommit: (v: number) => void;
-}) {
-  const [draft, setDraft] = useState<number | null>(null);
-  const shown = draft ?? value;
-  const commit = (): void => {
-    if (draft !== null && draft !== value) onCommit(draft);
-    setDraft(null);
-  };
-  return (
-    <label className="flex items-center gap-3">
-      <Typography size={12} tone="secondary" className="w-16 shrink-0">
-        {label}
-      </Typography>
-      <Slider
-        aria-label={label}
-        min={0}
-        max={max}
-        step={1}
-        value={shown}
-        format={(v) => `${v}%`}
-        onChange={(e) => setDraft(Number(e.target.value))}
-        onPointerUp={commit}
-        onKeyUp={commit}
-        onBlur={commit}
-        className="flex-1"
-      />
-    </label>
-  );
-}
+}) => <CommitSlider {...p} format={(v) => `${v}%`} />;
 
 /** Sample picture for the mask preview: a bright background with a line of text. */
 const SAMPLE = makeScene({
@@ -259,6 +227,8 @@ export function ScreensPage({ s, update }: { s: Settings; update: Update }) {
           </Row>
         ))}
       </Group>
+      <ScreenFitGroup s={s} update={update} />
+      <EdgeBlendGroup s={s} update={update} />
       <LooksGroup s={s} update={update} />
       <Group title={t('masks.title')} footnote={t('masks.help')}>
         {masks.map((m) => (

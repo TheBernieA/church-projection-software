@@ -2,6 +2,7 @@ import type {
   BackgroundAdjust,
   BackgroundLayer,
   BackgroundRef,
+  Scrim,
   TextStyle,
   Theme,
 } from '@lampstand/core';
@@ -79,4 +80,19 @@ export function safeAreaPx(theme: Theme): {
     left: (theme.safeArea.left / 100) * width,
     right: (theme.safeArea.right / 100) * width,
   };
+}
+
+/** The readability overlay's CSS: black, evenly, at the edges, or as a band at the bottom or top. */
+export function scrimCss(s: Scrim): string {
+  const a = (k: number): string => `rgba(0,0,0,${+(s.strength * k).toFixed(3)})`;
+  switch (s.style) {
+    case 'even':
+      return a(1);
+    case 'edges':
+      return `radial-gradient(ellipse at 50% 50%, ${a(0.35)} 0%, ${a(0.6)} 55%, ${a(1)} 100%)`;
+    case 'bottom':
+      return `linear-gradient(to top, ${a(1)} 0%, ${a(0.85)} 25%, ${a(0)} 60%)`;
+    case 'top':
+      return `linear-gradient(to bottom, ${a(1)} 0%, ${a(0.85)} 25%, ${a(0)} 60%)`;
+  }
 }

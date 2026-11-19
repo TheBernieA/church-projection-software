@@ -96,7 +96,13 @@ export function sceneChoices(
 }
 
 /** A camera's live picture, small (the tile shows the very camera it would switch to). */
-function CameraThumb({ deviceId, className = '' }: { deviceId: string; className?: string }) {
+export function CameraThumb({
+  deviceId,
+  className = '',
+}: {
+  deviceId: string;
+  className?: string;
+}) {
   const stream = useDeviceStream('videoinput', deviceId);
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {

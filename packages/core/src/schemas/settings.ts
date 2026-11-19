@@ -64,6 +64,62 @@ export const LookLayerSchema = z.enum([
 export type LookLayer = z.infer<typeof LookLayerSchema>;
 const LAYER_COUNT = LookLayerSchema.options.length;
 
+/** One corner's nudge for corner pinning (keystone), in % of the output's width and height. */
+export const CornerOffsetSchema = z.object({
+  x: z.number().min(-50).max(50).default(0),
+  y: z.number().min(-50).max(50).default(0),
+});
+export type CornerOffset = z.infer<typeof CornerOffsetSchema>;
+
+const NO_CORNER = { x: 0, y: 0 };
+
+/**
+ * How one screen's picture is fitted to it (Settings › Screens): its corners pinned where the
+ * projector really lands (keystone), scaled and moved, flipped for rear projection, and its colour
+ * matched to the other screens. Applied by that output window only; the slides don't change.
+ */
+export const ScreenAdjustSchema = z.object({
+  corners: z
+    .object({
+      tl: CornerOffsetSchema,
+      tr: CornerOffsetSchema,
+      br: CornerOffsetSchema,
+      bl: CornerOffsetSchema,
+    })
+    .default({ tl: NO_CORNER, tr: NO_CORNER, br: NO_CORNER, bl: NO_CORNER }),
+  /** 1 = the full screen. */
+  scale: z.number().min(0.5).max(1.5).default(1),
+  /** Moves the picture, in % of the screen's width and height. */
+  offsetX: z.number().min(-50).max(50).default(0),
+  offsetY: z.number().min(-50).max(50).default(0),
+  /** Mirror left-right / upside down (rear projection, ceiling mounts). */
+  flipH: z.boolean().default(false),
+  flipV: z.boolean().default(false),
+  /** Colour matching: 1 = unchanged; hue in degrees. */
+  brightness: z.number().min(0.2).max(2).default(1),
+  contrast: z.number().min(0.2).max(2).default(1),
+  saturate: z.number().min(0).max(2).default(1),
+  hue: z.number().min(-180).max(180).default(0),
+});
+export type ScreenAdjust = z.infer<typeof ScreenAdjustSchema>;
+
+/**
+ * Edge blending: several projectors side by side make one wide picture, overlapping a little;
+ * the overlaps fade so the seams can't be seen. The audience screens take part, left to right in
+ * `order` (by display fingerprint), else as the displays are arranged.
+ */
+export const EdgeBlendSchema = z.object({
+  enabled: z.boolean().default(false),
+  /** How much neighbouring screens overlap, in % of one screen's width. */
+  overlap: z.number().min(0).max(40).default(15),
+  /** The projectors' gamma: the fade is shaped so the overlap is as bright as the rest. */
+  gamma: z.number().min(1).max(3).default(2.2),
+  order: z.array(z.string().max(300)).max(8).default([]),
+  /** Rehearsal (window mode): how many windows stand in for the projectors. */
+  windows: z.number().int().min(2).max(4).default(2),
+});
+export type EdgeBlend = z.infer<typeof EdgeBlendSchema>;
+
 /** A theme id for each kind of slide (any may be left out). */
 export const KindThemesSchema = z.object({
   scripture: z.string().max(64).optional(),
@@ -208,6 +264,15 @@ export const SettingsSchema = z
         click: 'listen',
       }),
     screenMasks: z.array(ScreenMaskSchema).max(20).default([]),
+    /** Each screen's fitting and colour, by display fingerprint (or the rehearsal window's id). */
+    screenAdjust: z.record(z.string().max(300), ScreenAdjustSchema).default({}),
+    edgeBlend: EdgeBlendSchema.default({
+      enabled: false,
+      overlap: 15,
+      gamma: 2.2,
+      order: [],
+      windows: 2,
+    }),
     /** Saved Looks (the toolbar's Looks button switches between them). */
     looks: z.array(LookSchema).max(20).default([]),
     /** Which mask each kind of screen uses (null: none). */

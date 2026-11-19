@@ -79,6 +79,17 @@ export const BackgroundRefSchema = z.discriminatedUnion('kind', [
 ]);
 export type BackgroundRef = z.infer<typeof BackgroundRefSchema>;
 
+/**
+ * A readability overlay: a dark layer over the background, under the words, so they stand out on
+ * a busy picture. Even all over, darker at the edges, or a band behind words at the bottom or top.
+ */
+export const ScrimSchema = z.object({
+  style: z.enum(['even', 'edges', 'bottom', 'top']),
+  /** How dark, 0–1. */
+  strength: z.number().min(0).max(1),
+});
+export type Scrim = z.infer<typeof ScrimSchema>;
+
 export const BackgroundAdjustSchema = z.object({
   dim: z.number().min(0).max(1).optional(),
   blur: z.number().min(0).max(40).optional(),
@@ -88,6 +99,7 @@ export const BackgroundAdjustSchema = z.object({
   saturate: z.number().min(0).max(2).optional(),
   /** A colour wash over the background (e.g. brand colour at 30%). */
   tint: z.object({ color: ColorSchema, opacity: z.number().min(0).max(1) }).optional(),
+  scrim: ScrimSchema.optional(),
 });
 export type BackgroundAdjust = z.infer<typeof BackgroundAdjustSchema>;
 

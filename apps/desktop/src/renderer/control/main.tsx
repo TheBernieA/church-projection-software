@@ -8,12 +8,25 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { LiveWindow } from './LiveWindow';
-import { bootstrap, connect, refresh } from './lib/store';
+import { MultiviewWindow } from './MultiviewWindow';
+import { bootstrap, connect, refresh, type RepoKind } from './lib/store';
 
-// The Live console's own window loads only what the console needs.
-const liveOnly = new URLSearchParams(location.search).get('view') === 'live';
-connect({ lean: liveOnly });
-void (liveOnly ? refresh('settings') : bootstrap());
+/**
+ * The control page, or one of its panels in a window of its own (`?view=live` for the Live
+ * console, `?view=multiview`), which loads only what it shows.
+ */
+const view = new URLSearchParams(location.search).get('view');
+const PANELS: Record<string, { needs: readonly RepoKind[]; page: () => React.JSX.Element }> = {
+  live: { needs: ['settings'], page: () => <LiveWindow /> },
+  multiview: {
+    needs: ['settings', 'themes', 'displays', 'media'],
+    page: () => <MultiviewWindow />,
+  },
+};
+const panel = view ? PANELS[view] : undefined;
+connect(panel ? { only: panel.needs } : {});
+if (panel) for (const kind of panel.needs) void refresh(kind);
+else void bootstrap();
 
 const root = document.getElementById('root');
-if (root) createRoot(root).render(<StrictMode>{liveOnly ? <LiveWindow /> : <App />}</StrictMode>);
+if (root) createRoot(root).render(<StrictMode>{panel ? panel.page() : <App />}</StrictMode>);

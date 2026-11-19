@@ -7,20 +7,25 @@ import {
   Layers,
   MonitorPlay,
   Palette,
+  SunDim,
   Volume2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { STOCK_BACKGROUNDS, type BackgroundRef } from '@lampstand/core';
+import { STOCK_BACKGROUNDS, type BackgroundRef, type Scrim } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
 import { BUILT_IN_BACKGROUNDS } from '../constants';
 import {
   backgroundSwatch,
   mediaBackground,
+  OVERLAY_STRENGTHS,
   sameBackground,
   setItemBackground,
+  setItemOverlay,
   setServiceBackground,
+  strengthOf,
   useBackgroundItemCount,
   type BackgroundItem,
+  type OverlayStrength,
 } from '../lib/itemBackground';
 import { useStore } from '../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from './menu';
@@ -193,6 +198,84 @@ export function BackgroundMenu({
   );
 }
 
+const OVERLAY_STYLES: Scrim['style'][] = ['even', 'edges', 'bottom', 'top'];
+
+/**
+ * The readability overlay (hover to open): a dark layer over the item's backgrounds, under the
+ * words. Its style (even, darker edges, a band at the bottom or top) and how strong.
+ */
+function OverlayMenu({ item }: { item: BackgroundItem }) {
+  const { t } = useTranslation();
+  const cur = item.backgroundOverlay;
+  const set = (o: Scrim | undefined): void => setItemOverlay(item, o);
+  const strength: OverlayStrength = cur ? strengthOf(cur) : 'medium';
+  return (
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger className={ITEM_CLASS}>
+        <SunDim size={14} />
+        <Typography className="flex-1">{t('overlay.title')}</Typography>
+        {cur && (
+          <Typography size={11} tone="muted">
+            {t(`overlay.style.${cur.style}`)}
+          </Typography>
+        )}
+        <ChevronRight size={13} />
+      </DropdownMenu.SubTrigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.SubContent
+          sideOffset={4}
+          collisionPadding={8}
+          className={`${MENU_CLASS} w-64`}
+        >
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>{t('overlay.help')}</DropdownMenu.Label>
+          <DropdownMenu.RadioGroup
+            value={cur?.style ?? 'none'}
+            onValueChange={(v) =>
+              set(
+                v === 'none'
+                  ? undefined
+                  : { style: v as Scrim['style'], strength: OVERLAY_STRENGTHS[strength] },
+              )
+            }
+          >
+            <DropdownMenu.RadioItem value="none" className={ITEM_CLASS}>
+              <Typography className="flex-1">{t('overlay.none')}</Typography>
+              {!cur && <Check size={14} />}
+            </DropdownMenu.RadioItem>
+            {OVERLAY_STYLES.map((st) => (
+              <DropdownMenu.RadioItem key={st} value={st} className={ITEM_CLASS}>
+                <Typography className="flex-1">{t(`overlay.style.${st}`)}</Typography>
+                {cur?.style === st && <Check size={14} />}
+              </DropdownMenu.RadioItem>
+            ))}
+          </DropdownMenu.RadioGroup>
+          {cur && (
+            <>
+              <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+              <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+                {t('overlay.strength')}
+              </DropdownMenu.Label>
+              <DropdownMenu.RadioGroup
+                value={strength}
+                onValueChange={(v) =>
+                  set({ ...cur, strength: OVERLAY_STRENGTHS[v as OverlayStrength] })
+                }
+              >
+                {(Object.keys(OVERLAY_STRENGTHS) as OverlayStrength[]).map((k) => (
+                  <DropdownMenu.RadioItem key={k} value={k} className={ITEM_CLASS}>
+                    <Typography className="flex-1">{t(`overlay.strengths.${k}`)}</Typography>
+                    {strength === k && <Check size={14} />}
+                  </DropdownMenu.RadioItem>
+                ))}
+              </DropdownMenu.RadioGroup>
+            </>
+          )}
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Sub>
+  );
+}
+
 /**
  * "Background" in an item's header: what sits behind all of its slides (its theme's by
  * default). The button shows the item's own background when it has one.
@@ -239,6 +322,7 @@ export function ItemBackground({
         )
       }
     >
+      <OverlayMenu item={item} />
       {allCount > 1 && (
         <DropdownMenu.Item
           className={ITEM_CLASS}

@@ -9,6 +9,8 @@ import {
   type ResolvedKindThemes,
 } from '@lampstand/core';
 import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
+import type { OutputInfo } from '@lampstand/ipc-contract';
+import { fitScreen } from './screenFit';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
 import '../shared/outputApi.d';
@@ -17,9 +19,15 @@ import '../shared/outputApi.d';
  * Projector output. Deliberately dumb and resilient (§3.2): it only renders snapshots. If IPC
  * goes quiet it keeps the last frame; if it crashes, main respawns it and resends state.
  */
-const host = document.getElementById('host');
-if (!host) throw new Error('missing host');
+const screenEl = document.getElementById('host');
+if (!screenEl) throw new Error('missing host');
 const api = window.lampstandOutput;
+/** The picture's own element: the whole screen, or (edge blending) this screen's slice of a wider one. */
+const host = document.createElement('div');
+host.id = 'picture';
+screenEl.append(host);
+/** Which canvas the renderer was made for (edge blending changes it). */
+let canvasKey = '';
 
 let renderer: SceneRenderer | null = null;
 let outputId = new URLSearchParams(location.search).get('id') ?? '';
@@ -57,26 +65,37 @@ function draw(state: LiveState): void {
   if (showPattern && !pattern) {
     pattern = buildTestPattern(document, info);
     pattern.style.zIndex = '10';
-    host?.append(pattern);
+    screenEl?.append(pattern);
   } else if (!showPattern && pattern) {
     pattern.remove();
     pattern = null;
   }
 }
 
-api.onInfo((i) => {
+api.onInfo((i: OutputInfo) => {
   outputId = i.outputId;
   role = i.role;
   themes = i.themes;
   key = i.key;
   info = { label: i.label, width: i.width, height: i.height, audio: i.audio };
-  if (!renderer) {
+  // Fit the picture to the screen (keystone, scale, flips, colour) and lay out its slice when
+  // blending; a new canvas size means a new renderer (the scene is drawn into it again below).
+  const fit = fitScreen(screenEl, host, i);
+  if (!renderer || fit.canvasKey !== canvasKey) {
+    if (renderer) {
+      renderer.setAudioTap(undefined);
+      renderer.destroy();
+    }
+    canvasKey = fit.canvasKey;
     renderer = new SceneRenderer(host, {
       mode: 'output',
       mediaUrl,
       audio: i.audio,
+      canvas: fit.canvas,
     });
+    if (audio) renderer.setAudioTap(audio.tapVideo);
   }
+  renderer.setAudio(i.audio);
   if (i.audio && !audio) {
     // The room mix lives here: video sound joins it, and its levels feed the Mixer's meters.
     audio = new RoomAudio(window, mediaUrl);

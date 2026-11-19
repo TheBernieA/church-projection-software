@@ -5,7 +5,9 @@ import { KEY_COLORS, type KeyFeedMode, type OutputRole } from '@lampstand/core';
 import { Button, Segmented, Switch, Typography } from '@lampstand/ui';
 import { saveSettings } from '../lib/actions';
 import { cmd } from '../lib/api';
-import { closeDialog, refresh, useStore } from '../lib/store';
+import { closeDialog, openDialog, refresh, useStore } from '../lib/store';
+import { feature } from '../lib/features';
+import type { SettingsPageId } from '../types';
 import { EMPTY_LIST } from '../constants';
 import { assignDisplay } from './shell/ScreensMenu';
 import { Dialog } from './Dialog';
@@ -111,6 +113,30 @@ function KeyFeed({ hasAlternate }: { hasAlternate: boolean }) {
         </Button>
       </div>
     </section>
+  );
+}
+
+/** Open Settings at one of its pages (the Outputs dialog makes way for it). */
+const openSettingsPage = (page: SettingsPageId): void =>
+  openDialog('settings', { settingsPage: page });
+
+/** A ready output type: what it does, and a button to where it's set up. */
+function MoreOutput({ id, action, onClick }: { id: string; action: string; onClick: () => void }) {
+  const f = feature(id);
+  return (
+    <li className="flex items-start gap-3 px-4 py-3" data-feature={id}>
+      <div className="min-w-0 flex-1">
+        <Typography as="p" size={13} tone="primary" weight="medium">
+          {f.name}
+        </Typography>
+        <Typography as="p" variant="caption" leading="snug" className="mt-0.5">
+          {f.description}
+        </Typography>
+      </div>
+      <Button size="xs" variant="ghost" onClick={onClick} className="shrink-0">
+        {action}
+      </Button>
+    </li>
   );
 }
 
@@ -234,7 +260,29 @@ export function OutputsDialog() {
         >
           {t('outputs.more')}
         </Typography>
-        <SoonList ids={['ndi', 'sdi', 'syphon', 'edge-blend', 'output-adjust', 'multiview']} />
+        <ul className="divide-y divide-[var(--hairline)]">
+          <MoreOutput
+            id="ndi"
+            action={t('outputs.openNdi')}
+            onClick={() => openSettingsPage('ndi')}
+          />
+          <MoreOutput
+            id="multiview"
+            action={t('outputs.openMultiview')}
+            onClick={() => void cmd('multiview.open', { open: true })}
+          />
+          <MoreOutput
+            id="edge-blend"
+            action={t('outputs.openScreens')}
+            onClick={() => openSettingsPage('screens')}
+          />
+          <MoreOutput
+            id="output-adjust"
+            action={t('outputs.openScreens')}
+            onClick={() => openSettingsPage('screens')}
+          />
+        </ul>
+        <SoonList ids={['sdi', 'syphon']} />
       </details>
     </Dialog>
   );

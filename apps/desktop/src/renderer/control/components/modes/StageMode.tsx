@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { Copy, Lock, MonitorPlay, Pencil, Plus, Smartphone, Trash2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,13 +11,11 @@ import {
   type StageElementKind,
   type StageLayout,
 } from '@lampstand/core';
-import { parseChordLine } from '@lampstand/lyrics';
-import { StageView } from '@lampstand/renderer';
 import { Button, IconButton, Slider, Typography } from '@lampstand/ui';
-import { mediaUrl } from '../../../shared/mediaUrl';
 import { saveSettings } from '../../lib/actions';
 import { useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
+import { StagePreview } from '../StagePreview';
 import { SoonFeature } from '../Soon';
 
 const EMPTY: StageLayout[] = [];
@@ -45,34 +37,6 @@ const NEW_BOX: Record<StageElementKind, Pick<StageElement, 'x' | 'y' | 'w' | 'h'
 
 const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
 const snap = (v: number): number => Math.round(v * 2) / 2;
-
-/** A live render of a stage layout: the same view the stage screen uses. */
-function StagePreview({ layout, editing }: { layout: StageLayout; editing: boolean }) {
-  const { t } = useTranslation();
-  const host = useRef<HTMLDivElement>(null);
-  const view = useRef<StageView | null>(null);
-  const live = useStore((s) => s.live);
-  useEffect(() => {
-    if (!host.current) return;
-    const v = new StageView(host.current, {
-      mediaUrl,
-      parseChords: parseChordLine,
-      labels: { now: t('stage.now'), next: t('stage.next') },
-      showEmpty: editing,
-      names: Object.fromEntries(KINDS.map((k) => [k, t(`stageLayouts.kinds.${k}`)])),
-    });
-    view.current = v;
-    return () => {
-      v.destroy();
-      view.current = null;
-    };
-  }, [editing, t]);
-  useEffect(() => view.current?.setLayout(layout), [layout, editing, t]);
-  useEffect(() => {
-    if (live) view.current?.update(live);
-  }, [live, editing, t]);
-  return <div ref={host} aria-hidden className="absolute inset-0" />;
-}
 
 /**
  * The boxes over the preview, for moving (drag the box) and resizing (drag its corner) the

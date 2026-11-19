@@ -130,18 +130,11 @@ export async function loadVerseCounts(versionId: string): Promise<void> {
   });
 }
 
-export async function refresh(
-  kind:
-    | 'songs'
-    | 'services'
-    | 'themes'
-    | 'media'
-    | 'mediaPlaylists'
-    | 'bibles'
-    | 'settings'
-    | 'displays'
-    | 'all',
-): Promise<void> {
+/** The kinds of library data the store loads (each refreshed on its own). */
+export type RepoKind =
+  'songs' | 'services' | 'themes' | 'media' | 'mediaPlaylists' | 'bibles' | 'settings' | 'displays';
+
+export async function refresh(kind: RepoKind | 'all'): Promise<void> {
   const all = kind === 'all';
   const tasks: Promise<void>[] = [];
   if (all || kind === 'settings')
@@ -296,11 +289,11 @@ export async function bootstrap(attempt = 0): Promise<void> {
 }
 
 /** Wire main → renderer events. */
-export function connect(opts: { lean?: boolean } = {}): void {
+export function connect(opts: { only?: readonly RepoKind[] } = {}): void {
   api.onLiveState((live) => patch({ live }));
-  // The Live console window only needs settings (not songs, media or services).
+  // Panel windows (the Live console, the multi-view) keep only what they show up to date.
   api.onRepoChanged((kind) => {
-    if (!opts.lean || kind === 'settings') void refresh(kind);
+    if (!opts.only || opts.only.includes(kind)) void refresh(kind);
   });
   api.onDisplaysChanged(() => void refresh('displays'));
   api.onHistoryChanged((history) => patch({ history }));

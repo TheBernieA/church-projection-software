@@ -1,5 +1,6 @@
 import type {
   BibleVersionInfo,
+  BlendPart,
   BookId,
   KeyFeedMode,
   LiveState,
@@ -9,6 +10,7 @@ import type {
   OscMessage,
   OutputRole,
   ResolvedKindThemes,
+  ScreenAdjust,
   Result,
   ServicePlan,
   Settings,
@@ -74,6 +76,10 @@ export interface OutputInfo {
   themes: ResolvedKindThemes;
   /** A key feed for a video mixer: words only, over this flat colour ('off': the full picture). */
   key: KeyFeedMode;
+  /** How the picture is fitted to this screen: keystone, scale, flips, colour (null: as is). */
+  adjust: ScreenAdjust | null;
+  /** Edge blending: this screen's part of one wide picture (null: a picture of its own). */
+  blend: BlendPart | null;
 }
 
 export interface ServiceSummary {

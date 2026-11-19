@@ -19,15 +19,10 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
-  applyLook,
-  lookLayersFor,
-  maskForRole,
-  makeScene,
   overlayGroup,
   sceneIsVisible,
   themeAligned,
   themeAlignOf,
-  withWordsTheme,
   type Layer,
   type MediaLayer,
   type RestorableLayer,
@@ -62,6 +57,12 @@ import {
   type Align,
 } from '../../lib/screenScenes';
 import { ScreenScenes } from './ScreenScenes';
+import {
+  useAudienceScene,
+  useNextScene,
+  usePreviewScene,
+  useScreenMask,
+} from '../../lib/screenViews';
 import { BackgroundSoundButton } from './BackgroundSoundButton';
 import { useHasMainOutput, useLiveEdited, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
@@ -376,32 +377,11 @@ export function RightColumn() {
   // The monitor shows what the room sees, or the next slide (as the stage display has it).
   const [view, setView] = useState<'room' | 'next'>('room');
 
-  const previewScene: Scene | null = useMemo(() => {
-    if (!live) return null;
-    return makeScene({
-      background: live.preview.background ?? live.program.background,
-      content: live.preview.content,
-      media: live.preview.media ?? null,
-      web: live.preview.web ?? null,
-    });
-  }, [live]);
-
-  const nextScene: Scene | null = useMemo(
-    () =>
-      live ? makeScene({ background: live.program.background, content: live.next ?? null }) : null,
-    [live],
-  );
-
-  // The Program monitor shows the audience screens' shape (Settings › Screens).
-  const audienceMask = useStore((s) => (s.settings ? maskForRole(s.settings, 'main') : null));
-  // The Program monitor shows what the audience screens show under the active Look.
-  const audienceScene = useMemo(
-    () =>
-      live
-        ? applyLook(withWordsTheme(live.program, live.lowerThird), lookLayersFor(live.look, 'main'))
-        : null,
-    [live],
-  );
+  const previewScene = usePreviewScene();
+  const nextScene = useNextScene();
+  // The Program monitor shows the audience screens' shape and what they show under the Look.
+  const audienceMask = useScreenMask('main');
+  const audienceScene = useAudienceScene();
   if (!live || !previewScene || !audienceScene || !nextScene) return null;
   const p = live.program;
   const mediaName = p.media

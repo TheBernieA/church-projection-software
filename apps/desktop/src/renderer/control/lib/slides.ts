@@ -8,6 +8,7 @@ import {
   type BibleVersionInfo,
   type BookId,
   type ContentLayer,
+  type Scrim,
   type ServiceItem,
   type TextBlock,
   type Theme,
@@ -50,12 +51,18 @@ export function themeFor(ctx: SlideContext, kind: ThemeContentKind, themeId?: st
   return findTheme(ctx.themes, themeId ?? ctx.settings?.defaultThemes[settingsKey], fallback);
 }
 
-function themeBackground(theme: Theme, override?: BackgroundLayer['ref']): BackgroundLayer | null {
+function themeBackground(
+  theme: Theme,
+  override?: BackgroundLayer['ref'],
+  overlay?: Scrim,
+): BackgroundLayer | null {
   const ref = override ?? theme.background;
   if (ref.kind === 'none') return null;
   const bg: BackgroundLayer = { ref };
-  // The theme's dim/blur/colour adjustments apply to an item's own background too.
-  if (theme.backgroundAdjust) bg.adjust = theme.backgroundAdjust;
+  // The theme's dim/blur/colour adjustments apply to an item's own background too; the item's
+  // readability overlay replaces the theme's.
+  const adjust = overlay ? { ...theme.backgroundAdjust, scrim: overlay } : theme.backgroundAdjust;
+  if (adjust) bg.adjust = adjust;
   return bg;
 }
 
@@ -75,14 +82,17 @@ const behindWords = (item: {
  * says which, so the tile can show a background of its own on its thumbnail.
  */
 function slideBackground(
-  item: { slideBackgrounds?: Record<string, BackgroundLayer['ref']> | undefined },
+  item: {
+    slideBackgrounds?: Record<string, BackgroundLayer['ref']> | undefined;
+    backgroundOverlay?: Scrim | undefined;
+  },
   theme: Theme,
   itemBackground: BackgroundLayer | null,
   key: string,
 ): { background: BackgroundLayer | null; own: boolean } {
   const ref = item.slideBackgrounds?.[key];
   return ref
-    ? { background: themeBackground(theme, ref), own: true }
+    ? { background: themeBackground(theme, ref, item.backgroundOverlay), own: true }
     : { background: itemBackground, own: false };
 }
 
@@ -152,7 +162,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
         item.textFormat,
       );
-      const background = themeBackground(theme, behindWords(item));
+      const background = themeBackground(theme, behindWords(item), item.backgroundOverlay);
       const lyricSlides = buildSongSlides(song, {
         arrangementId: item.arrangementId,
         translationLang: item.translationLang,
@@ -227,7 +237,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
         verse: (r: VerseRef) => ctx.chapters[chapterKey(v.id, r.book, r.chapter)]?.[r.verse - 1],
       }));
       const theme = withTextFormat(themeFor(ctx, 'scripture', item.themeId), item.textFormat);
-      const background = themeBackground(theme, behindWords(item));
+      const background = themeBackground(theme, behindWords(item), item.backgroundOverlay);
       const s = ctx.settings?.scripture;
       const built = buildScriptureSlides(refs, texts, {
         mode: s?.versesPerSlide ?? 'fit',
@@ -314,7 +324,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'presentation':
     case 'announcements': {
       const theme = withTextFormat(themeFor(ctx, 'text', item.themeId), item.textFormat);
-      const background = themeBackground(theme, behindWords(item));
+      const background = themeBackground(theme, behindWords(item), item.backgroundOverlay);
       return {
         missing: [],
         slides: item.slides.map((ts, i) => {
@@ -360,7 +370,11 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
       const slide: PresentableSlide = {
         key: content.key,
         label: item.title,
-        action: { kind: 'content', content, background: themeBackground(theme, item.background) },
+        action: {
+          kind: 'content',
+          content,
+          background: themeBackground(theme, item.background, item.backgroundOverlay),
+        },
       };
       if (durationSec) slide.countdownSec = durationSec;
       if (clock) slide.countdownClock = clock;

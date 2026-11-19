@@ -28,3 +28,4 @@ export * from './surfaces';
 export * from './streamPerformance';
 export * from './frameClock';
 export * from './stock';
+export * from './outputGeometry';

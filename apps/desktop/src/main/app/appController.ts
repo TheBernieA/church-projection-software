@@ -10,6 +10,7 @@ import {
   LiveStateStore,
   mixerFromSettings,
   registerLiveCommands,
+  resolveKindThemes,
   resolveLogo,
   resolveStandby,
   standbyKey,
@@ -108,14 +109,7 @@ export class AppController {
     const all = [...STARTER_THEMES, ...(await this.s.themes.list())];
     const find = (id: string | null | undefined): Theme | null =>
       (id ? all.find((t) => t.id === id) : null) ?? null;
-    const byKind = (ids: KindThemes): ResolvedKindThemes => {
-      const out: ResolvedKindThemes = {};
-      for (const kind of ['scripture', 'lyrics', 'text'] as const) {
-        const theme = find(ids[kind]);
-        if (theme) out[kind] = theme;
-      }
-      return out;
-    };
+    const byKind = (ids: KindThemes): ResolvedKindThemes => resolveKindThemes(ids, all);
     const words = find(settings.stream.picture.wordsTheme);
     const themes = {
       alternate: byKind(settings.outputThemes.alternate),
@@ -357,7 +351,10 @@ export class AppController {
     await this.refreshScreens();
     await this.refreshWordsTheme();
     // Only display assignments / window mode affect output windows; skip the reconcile otherwise.
-    let outputKey = JSON.stringify([settings.get().displays, settings.get().windowMode]);
+    // What decides which output windows exist (edge blending adds rehearsal windows).
+    const outputsOf = (x: ReturnType<typeof settings.get>): string =>
+      JSON.stringify([x.displays, x.windowMode, x.edgeBlend.enabled, x.edgeBlend.windows]);
+    let outputKey = outputsOf(settings.get());
     let maskKey = JSON.stringify([
       settings.get().screenMasks,
       settings.get().maskFor,
@@ -365,6 +362,8 @@ export class AppController {
       settings.get().stageLayouts,
       settings.get().stageLayoutId,
       settings.get().keyFeed,
+      settings.get().screenAdjust,
+      settings.get().edgeBlend,
     ]);
     settings.onChange((next) => {
       const masks = JSON.stringify([
@@ -374,6 +373,8 @@ export class AppController {
         next.stageLayouts,
         next.stageLayoutId,
         next.keyFeed,
+        next.screenAdjust,
+        next.edgeBlend,
       ]);
       if (masks !== maskKey) {
         maskKey = masks;
@@ -384,7 +385,7 @@ export class AppController {
       this.ndi.settingsChanged();
       this.osc.settingsChanged();
       void this.refreshWordsTheme();
-      const key = JSON.stringify([next.displays, next.windowMode]);
+      const key = outputsOf(next);
       if (key !== outputKey) {
         outputKey = key;
         this.windows.reconcile();
@@ -465,6 +466,16 @@ export class AppController {
             : null,
         );
         this.windows.sendToControl(Channels.evLiveConsole, open);
+        return { result: null };
+      },
+    });
+    // The operator multi-view: every screen, the stream and each camera, in its own window.
+    bus.register({
+      type: 'multiview.open',
+      schema: z.object({ open: z.boolean() }),
+      undoable: false,
+      handle: ({ open }) => {
+        this.windows.openMultiview(open);
         return { result: null };
       },
     });

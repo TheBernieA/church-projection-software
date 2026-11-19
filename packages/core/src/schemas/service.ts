@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
 import { PassageRefSchema } from './scripture';
 import { MediaTrimSchema, SlideObjectSchema, WebUrlSchema } from './scene';
-import { BackgroundRefSchema, TextFormatSchema, TransitionSpecSchema } from './theme';
+import { BackgroundRefSchema, ScrimSchema, TextFormatSchema, TransitionSpecSchema } from './theme';
 
 const TextSlideSchema = z.object({
   id: IdSchema,
@@ -47,6 +47,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    /** A readability overlay over its backgrounds (under the words); else the theme's. */
+    backgroundOverlay: ScrimSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
     /**
      * The background's layer (its tile's corner icon): behind the words (default), or a cue of
@@ -66,6 +68,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    /** A readability overlay over its backgrounds (under the words); else the theme's. */
+    backgroundOverlay: ScrimSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
     /**
      * The background's layer (its tile's corner icon): behind the words (default), or a cue of
@@ -98,6 +102,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    /** A readability overlay over its backgrounds (under the words); else the theme's. */
+    backgroundOverlay: ScrimSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
     /**
      * The background's layer (its tile's corner icon): behind the words (default), or a cue of
@@ -118,6 +124,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     /** Its own slide transition, instead of the default one (Show › the orange transition). */
     transition: TransitionSpecSchema.optional(),
     background: BackgroundRefSchema.optional(),
+    /** A readability overlay over its backgrounds (under the words); else the theme's. */
+    backgroundOverlay: ScrimSchema.optional(),
     slideBackgrounds: SlideBackgroundsSchema.optional(),
     /**
      * The background's layer (its tile's corner icon): behind the words (default), or a cue of
@@ -138,6 +146,8 @@ export const ServiceItemSchema = z.discriminatedUnion('kind', [
     transition: TransitionSpecSchema.optional(),
     /** Its own background (e.g. a stock countdown); otherwise the theme's. */
     background: BackgroundRefSchema.optional(),
+    /** A readability overlay over its background (under the numbers); else the theme's. */
+    backgroundOverlay: ScrimSchema.optional(),
     /** A countdown video, played so its last frame lands exactly on zero. */
     video: z.object({ mediaId: IdSchema }).optional(),
     /** Hide the numbers (a countdown video usually shows its own). */

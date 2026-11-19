@@ -81,6 +81,20 @@ export type ResolvedKindThemes = Partial<Record<ThemeKind, Theme>>;
 export const themeKindOf = (kind: string): ThemeKind =>
   kind === 'scripture' || kind === 'lyrics' ? kind : 'text';
 
+/** An output's chosen theme for each kind of slide, looked up by id (missing ones left out). */
+export function resolveKindThemes(
+  ids: Partial<Record<ThemeKind, string | undefined>>,
+  themes: readonly Theme[],
+): ResolvedKindThemes {
+  const out: ResolvedKindThemes = {};
+  for (const kind of ['scripture', 'lyrics', 'text'] as const) {
+    const id = ids[kind];
+    const theme = id ? themes.find((t) => t.id === id) : undefined;
+    if (theme) out[kind] = theme;
+  }
+  return out;
+}
+
 /** A scene with its words in this output's theme for that kind of slide, if it has one. */
 export function withKindThemes(scene: Scene, themes: ResolvedKindThemes | null | undefined): Scene {
   const theme = themes && scene.content ? themes[themeKindOf(scene.content.kind)] : undefined;

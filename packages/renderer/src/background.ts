@@ -7,7 +7,7 @@ import {
   type MediaLayer,
 } from '@lampstand/core';
 import { el, loop, safePlay } from './dom';
-import { backgroundFilter, gradientCss } from './style';
+import { backgroundFilter, gradientCss, scrimCss } from './style';
 import { buildGenerated } from './generated';
 import { FILL } from './constants';
 import { type MediaResolver, type RenderMode } from './types';
@@ -81,6 +81,9 @@ export function buildBackground(
     );
   if (bg.adjust?.dim)
     wrap.append(el(doc, 'div', '', { ...FILL, background: `rgba(0,0,0,${bg.adjust.dim})` }));
+  const scrim = bg.adjust?.scrim;
+  if (scrim && scrim.strength > 0)
+    wrap.append(el(doc, 'div', 'ls-bg-scrim', { ...FILL, background: scrimCss(scrim) }));
   return wrap;
 }
 

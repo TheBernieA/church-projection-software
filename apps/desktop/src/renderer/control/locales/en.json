@@ -191,7 +191,10 @@
   },
   "monitor": {
     "view": "What the monitor shows",
-    "viewName": { "room": "Room", "next": "Next" },
+    "viewName": {
+      "room": "Room",
+      "next": "Next"
+    },
     "viewHint": {
       "room": "Show what the room sees",
       "next": "Show the next slide, as the stage display has it (the screens don’t change)"
@@ -442,7 +445,10 @@
       "noAlternate": "No display is set to Alternate yet. Give your HDMI output the Alternate role above.",
       "themes": "Choose its themes"
     },
-    "roleOf": "What {{name}} shows"
+    "roleOf": "What {{name}} shows",
+    "openNdi": "Set up NDI",
+    "openMultiview": "Open multi-view",
+    "openScreens": "Set up in Screens"
   },
   "settings": {
     "title": "Settings",
@@ -520,7 +526,7 @@
       "about": "What Lampstand does with your data, and which version you are running.",
       "features": "Everything Lampstand does today, and what is coming.",
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
-      "screens": "Choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
+      "screens": "Fit each screen to where its projector lands, blend projectors into one wide picture, choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
       "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen.",
       "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input.",
       "streaming": "Livestream the service to YouTube, Facebook or any RTMP service, and record it — straight from Lampstand.",
@@ -2313,5 +2319,79 @@
     "on": "Moves on every {{s}} s",
     "help": "The slides move on by themselves every {{s}} s while live (click to change)",
     "offHelp": "The slides wait for a click (click to make them move on by themselves)"
+  },
+  "screenFit": {
+    "title": "Fit each screen",
+    "help": "Pin each projector's picture to where it really lands (keystone), size and move it, flip it for rear projection, and match its colour to the other screens. Only that screen changes.",
+    "screen": "Screen to fit",
+    "rehearsal": "Rehearsal window",
+    "rehearsalN": "Rehearsal window {{n}}",
+    "noScreens": "No screen to fit yet: give a display a role in Outputs, or switch on the rehearsal window.",
+    "reset": "Reset",
+    "corner": {
+      "tl": "Top-left corner",
+      "tr": "Top-right corner",
+      "br": "Bottom-right corner",
+      "bl": "Bottom-left corner"
+    },
+    "cornerHint": "Drag, or use the arrow keys (Shift for bigger steps)",
+    "cornerHelp": "Drag each corner to where the picture should reach on the wall. Switch on the test pattern to line it up.",
+    "size": "Size",
+    "moveX": "Across",
+    "moveY": "Up/down",
+    "brightness": "Brightness",
+    "contrast": "Contrast",
+    "saturate": "Saturation",
+    "hue": "Hue",
+    "flipH": "Mirror left–right",
+    "flipHHelp": "For rear projection: the projector shines from behind the screen.",
+    "flipV": "Upside down",
+    "flipVHelp": "For a projector mounted upside down on the ceiling."
+  },
+  "edgeBlend": {
+    "title": "Edge blending",
+    "help": "Several projectors side by side make one wide picture. They overlap a little and the overlaps fade, so no seam shows.",
+    "enable": "Blend the audience screens",
+    "enableHelp": "Every screen set to Audience shows its part of one wide picture.",
+    "needTwo": "Give two or more displays the Audience role in Outputs to blend them.",
+    "overlap": "Overlap",
+    "gamma": "Gamma",
+    "gammaHelp": "Raise the gamma if the overlaps look darker than the rest, lower it if they look brighter. 2.2 suits most projectors.",
+    "windows": "Rehearsal windows",
+    "windowsHelp": "How many windows stand in for the projectors while you rehearse.",
+    "order": "Left to right",
+    "orderHelp": "The order the projectors stand in, as seen by the room.",
+    "left": "Move {{name}} left",
+    "right": "Move {{name}} right"
+  },
+  "overlay": {
+    "title": "Readability overlay",
+    "help": "Darken the background so the words stand out",
+    "none": "None (the theme’s)",
+    "style": {
+      "even": "Darken evenly",
+      "edges": "Darker edges",
+      "bottom": "Shade the bottom",
+      "top": "Shade the top"
+    },
+    "strength": "How dark",
+    "strengths": {
+      "light": "Light",
+      "medium": "Medium",
+      "strong": "Strong"
+    }
+  },
+  "multiview": {
+    "title": "Multi-view",
+    "program": "Program",
+    "preview": "Preview",
+    "next": "Next slide",
+    "stage": "Stage display",
+    "alternate": "Alternate output",
+    "notConnected": "Not connected",
+    "stream": "Stream",
+    "streaming": "Live",
+    "recording": "Recording",
+    "streamOff": "Not streaming"
   }
 }

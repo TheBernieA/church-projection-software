@@ -1,5 +1,5 @@
 import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
-import type { LiveState, OutputRole, ScreenMask } from '@lampstand/core';
+import type { BlendPart, LiveState, OutputRole, ScreenAdjust, ScreenMask } from '@lampstand/core';
 import { lookLayersFor, maskForRole, resolveStageLayout } from '@lampstand/core';
 import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
@@ -56,7 +56,7 @@ export class WindowManager {
       e.preventDefault();
       this.quitting = true;
       for (const o of this.outputs.values()) if (!o.win.isDestroyed()) o.win.destroy();
-      if (this.liveConsole && !this.liveConsole.isDestroyed()) this.liveConsole.destroy();
+      for (const p of this.panels.values()) if (!p.isDestroyed()) p.destroy();
       win.destroy();
     });
     win.on('closed', () => {
@@ -122,6 +122,10 @@ export class WindowManager {
     if (s.windowMode) {
       desired.set('window-main', { role: 'main', display: null });
       desired.set('window-stage', { role: 'stage', display: null });
+      // Rehearsing edge blending: more windows stand in for the other projectors.
+      if (s.edgeBlend.enabled)
+        for (let i = 1; i < s.edgeBlend.windows; i++)
+          desired.set(`${BLEND_WINDOW}${i}`, { role: 'main', display: null });
     } else {
       const displays = screen.getAllDisplays();
       const roles = resolveRoles(displays, s.displays);
@@ -130,16 +134,23 @@ export class WindowManager {
         if (role && role !== 'none') desired.set(`display-${d.id}`, { role, display: d });
       }
     }
+    let changed = false;
     for (const [id, o] of this.outputs) {
       const want = desired.get(id);
       if (!want || want.role !== o.role) {
         this.outputs.delete(id);
         this.kinds.delete(o.win.webContents.id);
         if (!o.win.isDestroyed()) o.win.destroy();
+        changed = true;
       } else if (want.display) this.place(o.win, want.display);
     }
     for (const [id, want] of desired)
-      if (!this.outputs.has(id)) this.createOutput(id, want.role, want.display);
+      if (!this.outputs.has(id)) {
+        this.createOutput(id, want.role, want.display);
+        changed = true;
+      }
+    // Outputs that stay learn their new place in an edge blend (a screen joined or left it).
+    if (changed) this.refreshOutputInfo();
     this.updatePowerBlocker();
   }
 
@@ -177,14 +188,16 @@ export class WindowManager {
     win.setMenu(null);
     if (isWindow) {
       // Rehearsal/window mode: float above the (usually maximised) control window, tucked into
-      // the bottom-right corner so it never covers the operator's controls.
+      // the bottom-right corner so it never covers the operator's controls. Edge-blending
+      // stand-ins sit in a row to the left of the main one, as the projectors would.
       win.setAlwaysOnTop(true, 'floating');
       const wa = screen.getPrimaryDisplay().workArea;
       const w = 560;
       const h = 315;
+      const slot = blendSlot(outputId);
       const offset = role === 'stage' ? h + 24 : 0;
       win.setBounds({
-        x: wa.x + wa.width - w - 16,
+        x: wa.x + wa.width - w - 16 - slot * (w + 8),
         y: wa.y + wa.height - h - 16 - offset,
         width: w,
         height: h,
@@ -263,16 +276,56 @@ export class WindowManager {
     }
   }
 
+  /**
+   * Edge blending: the audience outputs taking part, each with its place in the wide picture
+   * (left to right as ordered in Settings › Screens, else as the displays are arranged).
+   */
+  private blendParts(): Map<string, BlendPart> {
+    const s = this.d.getSettings();
+    const parts = new Map<string, BlendPart>();
+    if (!s.edgeBlend.enabled) return parts;
+    const displays = screen.getAllDisplays();
+    const mains = [...this.outputs.values()].filter((o) => o.role === 'main');
+    const rank = (o: OutputWindow): number => {
+      if (o.displayId === null) return blendSlot(o.outputId);
+      const d = displays.find((x) => x.id === o.displayId);
+      const at = d ? s.edgeBlend.order.indexOf(fingerprint(d)) : -1;
+      // Ordered ones first, the rest by where they sit (left to right).
+      return at >= 0 ? at : 1000 + (d?.bounds.x ?? 0) / 100_000;
+    };
+    const ordered = mains.sort((a, b) => rank(a) - rank(b));
+    if (ordered.length < 2) return parts;
+    ordered.forEach((o, index) =>
+      parts.set(o.outputId, {
+        index,
+        count: ordered.length,
+        overlap: s.edgeBlend.overlap / 100,
+        gamma: s.edgeBlend.gamma,
+      }),
+    );
+    return parts;
+  }
+
+  /** A screen's fitting and colour (by its display, or the rehearsal window's id). */
+  private adjustFor(o: OutputWindow, d: Display | undefined): ScreenAdjust | null {
+    const key = d ? fingerprint(d) : o.outputId;
+    return this.d.getSettings().screenAdjust[key] ?? null;
+  }
+
   private outputInfo(o: OutputWindow): OutputInfo {
     const d =
       o.displayId !== null ? screen.getAllDisplays().find((x) => x.id === o.displayId) : undefined;
+    const blend = this.blendParts().get(o.outputId) ?? null;
     return {
       outputId: o.outputId,
       role: o.role,
       label: d?.label || (o.role === 'stage' ? 'Stage window' : 'Output window'),
       width: d ? Math.round(d.size.width * d.scaleFactor) : 1920,
       height: d ? Math.round(d.size.height * d.scaleFactor) : 1080,
-      audio: o.role === 'main',
+      // One window plays the room's sound (the left-most projector when blending).
+      audio: o.role === 'main' && (blend?.index ?? 0) === 0,
+      adjust: this.adjustFor(o, d),
+      blend,
       audioSink: this.d.getSettings().audio.roomOutput,
       logo: this.d.logo(),
       standby: this.d.standby(),
@@ -302,9 +355,7 @@ export class WindowManager {
   broadcastLive(state: LiveState): void {
     for (const o of this.outputs.values())
       if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, state);
-    this.control?.webContents.send(Channels.evLive, state);
-    if (this.liveConsole && !this.liveConsole.isDestroyed())
-      this.liveConsole.webContents.send(Channels.evLive, state);
+    this.sendToControl(Channels.evLive, state);
     for (const f of this.followers)
       if (!f.isDestroyed()) f.webContents.send(Channels.evLive, state);
     this.syncWeb(state);
@@ -328,28 +379,32 @@ export class WindowManager {
     return this.webViews.count();
   }
 
-  /** To the control window, and the Live console window when it's open. */
+  /** To the control window, and the panel windows (Live console, multi-view) that are open. */
   sendToControl(channel: string, payload?: unknown): void {
-    for (const w of [this.control, this.liveConsole])
+    for (const w of [this.control, ...this.panels.values()])
       if (w && !w.isDestroyed()) w.webContents.send(channel, payload);
   }
 
-  // ---------- The Live console, in its own window ----------
+  // ---------- Panels: parts of the control window in windows of their own ----------
 
-  private liveConsole: BrowserWindow | null = null;
+  /** The Live console and the operator multi-view, when open in their own windows. */
+  private panels = new Map<PanelKind, BrowserWindow>();
 
   /**
-   * Open (or bring forward) the Live console in its own window, where it was last (it can live
-   * on another display); `false` closes it, docking the console back in the main window.
+   * Open (or bring forward) a panel window, where it was last (it can live on another display).
+   * It loads the control page with `?view=<kind>`, and follows the live state like the control
+   * window does.
    */
-  openLiveConsole(open: boolean, bounds: Partial<Electron.Rectangle> | null): void {
-    if (!open) {
-      this.liveConsole?.close();
-      return;
-    }
-    if (this.liveConsole && !this.liveConsole.isDestroyed()) {
-      this.liveConsole.show();
-      this.liveConsole.focus();
+  private openPanel(
+    kind: PanelKind,
+    bounds: Partial<Electron.Rectangle> | null,
+    look: { title: string; width: number; height: number; minWidth: number; minHeight: number },
+    on: { moved?: (b: Electron.Rectangle) => void; closed?: () => void } = {},
+  ): void {
+    const open = this.panels.get(kind);
+    if (open && !open.isDestroyed()) {
+      open.show();
+      open.focus();
       return;
     }
     const { x, y } = bounds ?? {};
@@ -361,34 +416,74 @@ export class WindowManager {
         return x >= a.x - 20 && y >= a.y - 20 && x < a.x + a.width && y < a.y + a.height;
       });
     const win = new BrowserWindow({
-      width: bounds?.width ?? 520,
-      height: bounds?.height ?? 860,
+      width: bounds?.width ?? look.width,
+      height: bounds?.height ?? look.height,
       ...(onScreen ? { x, y } : {}),
-      minWidth: 380,
-      minHeight: 520,
+      minWidth: look.minWidth,
+      minHeight: look.minHeight,
       show: false,
-      title: 'Lampstand Live',
+      title: look.title,
       backgroundColor: '#171A24',
       webPreferences: secureWebPreferences('control'),
     });
-    this.liveConsole = win;
-    this.kinds.set(win.webContents.id, 'control');
+    this.panels.set(kind, win);
+    const id = win.webContents.id;
+    this.kinds.set(id, 'control');
     win.once('ready-to-show', () => win.show());
-    reloadOnFailedLoad(win, 'control', this.d.log);
+    reloadOnFailedLoad(win, kind, this.d.log);
     const save = (): void => {
-      if (!win.isDestroyed()) this.d.onLiveConsoleBounds(win.getBounds());
+      if (!win.isDestroyed()) on.moved?.(win.getBounds());
     };
     win.on('moved', save);
     win.on('resized', save);
     win.on('closed', () => {
-      if (this.liveConsole === win) this.liveConsole = null;
-      this.d.onLiveConsoleClosed();
+      this.kinds.delete(id);
+      if (this.panels.get(kind) === win) this.panels.delete(kind);
+      on.closed?.();
     });
-    void win.loadURL(rendererUrl('control', 'view=live'));
+    void win.loadURL(rendererUrl('control', `view=${kind}`));
+  }
+
+  private closePanel(kind: PanelKind): void {
+    this.panels.get(kind)?.close();
+  }
+
+  panelOpen(kind: PanelKind): boolean {
+    const w = this.panels.get(kind);
+    return !!w && !w.isDestroyed();
+  }
+
+  /**
+   * The operator multi-view: every screen, the stream and each camera at once, in a window that
+   * can go on its own monitor; `false` closes it.
+   */
+  openMultiview(open: boolean): void {
+    if (!open) return this.closePanel('multiview');
+    this.openPanel('multiview', null, {
+      title: 'Lampstand Multi-view',
+      width: 1280,
+      height: 760,
+      minWidth: 640,
+      minHeight: 400,
+    });
+  }
+
+  /**
+   * Open (or bring forward) the Live console in its own window, where it was last (it can live
+   * on another display); `false` closes it, docking the console back in the main window.
+   */
+  openLiveConsole(open: boolean, bounds: Partial<Electron.Rectangle> | null): void {
+    if (!open) return this.closePanel('live');
+    this.openPanel(
+      'live',
+      bounds,
+      { title: 'Lampstand Live', width: 520, height: 860, minWidth: 380, minHeight: 520 },
+      { moved: (b) => this.d.onLiveConsoleBounds(b), closed: () => this.d.onLiveConsoleClosed() },
+    );
   }
 
   get liveConsoleOpen(): boolean {
-    return !!this.liveConsole && !this.liveConsole.isDestroyed();
+    return this.panelOpen('live');
   }
 
   outputIds(): string[] {
@@ -411,6 +506,17 @@ export class WindowManager {
     for (const o of this.outputs.values()) if (!o.win.isDestroyed()) o.win.destroy();
     this.outputs.clear();
   }
+}
+
+/** Parts of the control window that can open in windows of their own. */
+type PanelKind = 'live' | 'multiview';
+
+/** Edge-blending rehearsal windows' ids: `window-blend-1`, `window-blend-2`… */
+const BLEND_WINDOW = 'window-blend-';
+
+/** A rehearsal window's place in the row (0: the main one; stand-ins count from 1). */
+function blendSlot(outputId: string): number {
+  return outputId.startsWith(BLEND_WINDOW) ? Number(outputId.slice(BLEND_WINDOW.length)) : 0;
 }
 
 /**
