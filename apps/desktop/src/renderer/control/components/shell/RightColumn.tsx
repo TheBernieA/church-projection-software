@@ -54,6 +54,14 @@ import {
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
+import {
+  LT_ALIGN_KEY,
+  LT_THEME_KEY,
+  remember,
+  remembered,
+  type Align,
+} from '../../lib/screenScenes';
+import { ScreenScenes } from './ScreenScenes';
 import { useHasMainOutput, useLiveEdited, useStandby } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
@@ -141,25 +149,6 @@ function MaskButton({
       {hint}
     </Button>
   );
-}
-
-const LT_THEME_KEY = 'lampstand.lowerThird.theme';
-const LT_ALIGN_KEY = 'lampstand.lowerThird.align';
-type Align = 'left' | 'center' | 'right';
-
-function remembered(key: string): string | null {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-function remember(key: string, value: string): void {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    /* this session only */
-  }
 }
 
 /**
@@ -609,6 +598,7 @@ export function RightColumn() {
             hint={displayCombo(keys.freeze)}
           />
         </div>
+        <ScreenScenes />
         <LowerThirdRow />
         {p.input && <CameraSwitcher />}
         <VideoControls

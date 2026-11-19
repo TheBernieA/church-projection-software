@@ -404,6 +404,12 @@ const PAINTERS: Record<GeneratedPreset, Painter> = {
 };
 
 /**
+ * How much faster than the painters' base timings everything runs. The base cycles (18 s to
+ * over two minutes) were so slow that on a projector the backgrounds looked like stills.
+ */
+const PACE = 3;
+
+/**
  * Lightweight in-engine animated backgrounds (§12): transform and opacity only, so they are
  * GPU composited and cheap on church hardware. The last colour is the base; the others light it.
  */
@@ -419,7 +425,7 @@ export function buildGenerated(
     background: colors[colors.length - 1] ?? '#000',
     overflow: 'hidden',
   });
-  const dur = (ms: number): number => ms / speed;
+  const dur = (ms: number): number => ms / (speed * PACE);
   PAINTERS[preset]({ doc, root, colors, animated, dur });
   return root;
 }

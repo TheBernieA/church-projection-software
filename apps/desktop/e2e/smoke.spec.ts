@@ -1608,6 +1608,38 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await cameraOnScreen.click();
   await control.getByRole('option', { name: 'Off', exact: true }).click();
   await expect(feed).toHaveCount(0);
+  // Scenes for the screens, under the monitor (the same strip as the stream's): a camera behind
+  // the slide's words with a lower third, in one click, then back to the slides.
+  const screenScenes = control.getByRole('group', { name: 'Scene: what the screens show' });
+  await screenScenes.getByRole('radio', { name: 'Cameras' }).click();
+  await screenScenes
+    .getByRole('button', { name: / \+ words$/ })
+    .first()
+    .click();
+  await expect
+    .poll(() => feed.evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      return r.ok ? !!r.value.lowerThird : null;
+    })
+    .toBe(true);
+  await expect(screenScenes.getByRole('button', { name: / \+ words$/ }).first()).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await control.waitForTimeout(400);
+  await control.screenshot({ path: 'test-results/33-screen-scenes.png' });
+  await screenScenes.getByRole('radio', { name: 'Slides' }).click();
+  await screenScenes.getByRole('button', { name: 'Slides', exact: true }).click();
+  await expect(feed).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const r = await control.evaluate(() => window.lampstand.query('live.get'));
+      return r.ok ? !!r.value.lowerThird : null;
+    })
+    .toBe(false);
 
   // Audio inputs, in the Audio tab: a level meter that moves, and where each one goes.
   await binTab('Audio');
@@ -2231,15 +2263,15 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     const r = await control.evaluate(() => window.lampstand.query('settings.get'));
     return r.ok ? r.value.stream.picture.mirror : '';
   };
-  await live.getByRole('radio', { name: 'Cameras' }).click();
+  await scenes.getByRole('radio', { name: 'Cameras' }).click();
   await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
   await expect.poll(picture).toBe('switcher none');
-  await live.getByRole('radio', { name: 'Screens' }).click();
+  await scenes.getByRole('radio', { name: 'Screens' }).click();
   await scenes.getByRole('button', { name: 'Stage display' }).click();
   await expect.poll(mirror).toBe('stage');
   await control.waitForTimeout(800);
   await control.screenshot({ path: 'test-results/41c-live-scenes.png' });
-  await live.getByRole('radio', { name: 'Slides' }).click();
+  await scenes.getByRole('radio', { name: 'Slides' }).click();
   await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
   await expect.poll(mirror).toBe('own');
   await expect.poll(picture).toBe('program lowerThird');

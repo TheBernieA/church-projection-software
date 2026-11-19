@@ -127,6 +127,10 @@ export function backgroundSwatch(ref: BackgroundRef | undefined): string {
   }
 }
 
+/** A background without its sound switch (the same video, heard or not, is the same choice). */
+const unsounded = (r: BackgroundRef | undefined) =>
+  r?.kind === 'video' ? { ...r, sound: undefined } : r;
+
 /** Same background? (to tick the current one in a menu). */
 export const sameBackground = (a: BackgroundRef | undefined, b: BackgroundRef | undefined) =>
-  JSON.stringify(a) === JSON.stringify(b);
+  JSON.stringify(unsounded(a)) === JSON.stringify(unsounded(b));

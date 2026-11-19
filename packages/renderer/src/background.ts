@@ -47,7 +47,9 @@ export function buildBackground(
     }
     case 'video': {
       const v = el(doc, 'video', '', { ...FILL, objectFit: 'cover' });
-      v.muted = true;
+      // Read with permission (CORS), so its sound can join a mixer when it's switched on.
+      v.crossOrigin = 'anonymous';
+      v.muted = true; // syncBackgroundSound unmutes it where the room's sound plays
       v.loop = ref.loop;
       v.playsInline = true;
       v.src = media.mediaUrl(ref.mediaId);
@@ -82,6 +84,39 @@ export function buildBackground(
   return wrap;
 }
 
+/** Send a video's sound to `sinkId` (the room output), where the engine can (not in jsdom). */
+function routeSound(v: HTMLMediaElement, sinkId: string): void {
+  const routed = v as HTMLMediaElement & { lsSink?: string };
+  if (routed.lsSink === sinkId) return;
+  routed.lsSink = sinkId;
+  const sinkable = v as HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> };
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  void sinkable.setSinkId?.(sinkId).catch(() => undefined);
+}
+
+/**
+ * A background video's sound: heard only when it's switched on for that background and this
+ * renderer plays the room's sound (the main output, or the Program monitor with no output),
+ * through the same mix and room output as a media video.
+ */
+export function syncBackgroundSound(
+  node: HTMLElement,
+  bg: BackgroundLayer | null,
+  mode: RenderMode,
+  audio: boolean,
+  sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
+): void {
+  const v = node.querySelector('video');
+  if (!v || mode === 'thumbnail') return;
+  const on = audio && bg?.ref.kind === 'video' && !!bg.ref.sound;
+  if (on) {
+    if (tap) tap(v);
+    routeSound(v, sinkId);
+  }
+  v.muted = !on;
+}
+
 /**
  * Identity of a media layer: *which* clip, not where it is. Playback changes (pause, seek,
  * volume…) keep the same element and are applied by {@link syncMedia} — rebuilding would restart it.
@@ -104,14 +139,7 @@ export function syncMedia(
   // This renderer plays the sound: it goes through the mix (once tapped, it never plays direct).
   if (audio && tap) tap(v);
   // The room hears a video's sound where Settings › Audio sends room audio.
-  const routed = v as HTMLVideoElement & { lsSink?: string };
-  if (audio && routed.lsSink !== sinkId) {
-    routed.lsSink = sinkId;
-    const sinkable = v as HTMLVideoElement & { setSinkId?: (id: string) => Promise<void> };
-    // Not in every engine (jsdom in tests): call it where it exists.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    void sinkable.setSinkId?.(sinkId).catch(() => undefined);
-  }
+  if (audio) routeSound(v, sinkId);
   const trimmed = m.start !== undefined || m.end !== undefined;
   // A trimmed clip loops between its in- and out-points (handled below), not the whole file.
   v.loop = m.loop && !trimmed;

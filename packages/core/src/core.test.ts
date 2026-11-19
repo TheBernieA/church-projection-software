@@ -803,3 +803,17 @@ describe('web pages', () => {
     }
   });
 });
+
+describe('announcementCoversWords', () => {
+  it('covers the slide words unless laid out as a band', async () => {
+    const { announcementCoversWords, STARTER_THEMES } = await import('./index');
+    const theme = STARTER_THEMES[0]!;
+    const at = (layout: typeof theme.layout) => ({
+      announcement: { key: 'a', kind: 'text' as const, theme: { ...theme, layout }, blocks: [] },
+    });
+    expect(announcementCoversWords({ announcement: null })).toBe(false);
+    expect(announcementCoversWords(at('center'))).toBe(true);
+    expect(announcementCoversWords(at('lower-third'))).toBe(false);
+    expect(announcementCoversWords(at('top'))).toBe(false);
+  });
+});

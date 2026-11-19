@@ -1,4 +1,5 @@
 import {
+  announcementCoversWords,
   sceneIsVisible,
   type ContentLayer,
   type Scene,
@@ -10,7 +11,13 @@ import {
   type PipLayer,
   type VideoInputLayer,
 } from '@lampstand/core';
-import { buildBackground, buildMedia, mediaKey, syncMedia } from './background';
+import {
+  buildBackground,
+  buildMedia,
+  mediaKey,
+  syncBackgroundSound,
+  syncMedia,
+} from './background';
 import { maskStyle } from './mask';
 import { buildVideoInput } from './inputs';
 import { buildContent } from './content';
@@ -22,6 +29,9 @@ import { VisualSlot } from './visualSlot';
 import { type SceneRendererOptions } from './types';
 import { BG_FADE_MS, DEFAULT_TRANSITION, FILL, STANDBY_FADE_MS } from './constants';
 import { type BuiltContent } from './types';
+
+/** The picture-in-picture box's frame: a white edge and a soft shadow. */
+const PIP_FRAME = '0 12px 40px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.85)';
 
 interface InputNode {
   key: string;
@@ -165,6 +175,20 @@ export class SceneRenderer {
     this.audioSink = sinkId;
     if (this.media && this.last?.media)
       syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, sinkId, this.tap);
+    this.syncBgSound();
+  }
+
+  /** A background video's sound, in line with this renderer's audio, room output and mix. */
+  private syncBgSound(): void {
+    if (this.bg)
+      syncBackgroundSound(
+        this.bg.node,
+        this.last?.background ?? null,
+        this.opts.mode,
+        this.audio,
+        this.audioSink,
+        this.tap,
+      );
   }
 
   /** Send video sound through a mixer from now on (videos already playing join it too). */
@@ -172,6 +196,7 @@ export class SceneRenderer {
     this.tap = tap;
     if (this.media && this.last?.media)
       syncMedia(this.media.node, this.last.media, this.opts.mode, this.audio, this.audioSink, tap);
+    this.syncBgSound();
   }
 
   /** Hand the sound to / take it from this renderer (e.g. a projector was plugged in). */
@@ -180,6 +205,7 @@ export class SceneRenderer {
     this.audio = on;
     if (this.media && this.last?.media)
       syncMedia(this.media.node, this.last.media, this.opts.mode, on, this.audioSink, this.tap);
+    this.syncBgSound();
   }
 
   /** What the Logo mask (L) shows. Rebuilt only when it changes (a looping video keeps going). */
@@ -225,8 +251,21 @@ export class SceneRenderer {
     this.renderContent(scene.content, scene.transition, instant);
     this.renderWeb(scene);
     this.renderContent(scene.announcement ?? null, undefined, instant, 'announce');
+    this.coverWords(announcementCoversWords(scene), instant);
     this.applyStandby(scene, instant);
     this.renderOverlays(scene);
+  }
+
+  /**
+   * Announcements up: the slide's words fade out under them, and back in when they go. The slide
+   * stays drawn underneath, so it's there again at once.
+   */
+  private coverWords(covered: boolean, instant: boolean): void {
+    const st = this.contentLayer.style;
+    const opacity = covered ? '0' : '';
+    if (st.opacity === opacity) return;
+    st.transition = instant ? '' : 'opacity 300ms ease';
+    st.opacity = opacity;
   }
 
   private buildInput(input: VideoInputLayer, key: string): InputNode {
@@ -269,6 +308,10 @@ export class SceneRenderer {
     }
     if (this.inputNext && mix) this.inputNext.node.style.opacity = String(mix.pos);
     this.renderPip(scene.pip ?? null);
+    // Side by side: the camera on screen takes the left half, the second camera the right.
+    const half = scene.pip?.side ? '50%' : '';
+    if (this.input) this.input.node.style.right = half;
+    if (this.inputNext) this.inputNext.node.style.right = half;
   }
 
   private swapInputs(
@@ -311,7 +354,7 @@ export class SceneRenderer {
 
   /** Picture-in-picture: a second camera in a corner box over the picture. */
   private renderPip(pip: PipLayer | null): void {
-    const key = pip ? `${inputKey(pip)}|${pip.corner}|${pip.size}` : '';
+    const key = pip ? `${inputKey(pip)}|${pip.corner}|${pip.size}|${pip.side ? 'side' : ''}` : '';
     if ((this.pip?.key ?? '') === key) return;
     const reuse = pip && this.pip && this.pip.key.startsWith(`${inputKey(pip)}|`);
     if (!reuse) {
@@ -325,7 +368,7 @@ export class SceneRenderer {
         aspectRatio: '16 / 9',
         overflow: 'hidden',
         borderRadius: '14px',
-        boxShadow: '0 12px 40px rgba(0,0,0,0.55), 0 0 0 3px rgba(255,255,255,0.85)',
+        boxShadow: PIP_FRAME,
         zIndex: '3',
         background: '#000',
       });
@@ -352,13 +395,32 @@ export class SceneRenderer {
       };
     }
     this.pip.key = key;
-    const m = '3.5%';
     const st = this.pip.node.style;
-    st.width = `${pip.size * 100}%`;
-    st.top = pip.corner[0] === 't' ? m : '';
-    st.bottom = pip.corner[0] === 'b' ? m : '';
-    st.left = pip.corner[1] === 'l' ? m : '';
-    st.right = pip.corner[1] === 'r' ? m : '';
+    if (pip.side) {
+      // The right half of the screen, edge to edge, no frame.
+      Object.assign(st, {
+        width: '50%',
+        top: '0',
+        bottom: '0',
+        right: '0',
+        left: '',
+        aspectRatio: 'auto',
+        borderRadius: '0',
+        boxShadow: 'none',
+      });
+      return;
+    }
+    const m = '3.5%';
+    Object.assign(st, {
+      width: `${pip.size * 100}%`,
+      top: pip.corner[0] === 't' ? m : '',
+      bottom: pip.corner[0] === 'b' ? m : '',
+      left: pip.corner[1] === 'l' ? m : '',
+      right: pip.corner[1] === 'r' ? m : '',
+      aspectRatio: '16 / 9',
+      borderRadius: '14px',
+      boxShadow: PIP_FRAME,
+    });
   }
 
   /**
@@ -459,7 +521,10 @@ export class SceneRenderer {
 
   private renderBackground(scene: Scene, instant: boolean): void {
     const key = backgroundKey(scene.background);
-    if (this.bg?.key === key || (!this.bg && key === 'none')) return; // continuity: never restart
+    if (this.bg?.key === key || (!this.bg && key === 'none')) {
+      this.syncBgSound(); // continuity: never restart (its sound may have been switched)
+      return;
+    }
     const old = this.bg;
     const fade = instant ? 0 : this.mediaFadeMs(scene, BG_FADE_MS);
     if (key === 'none' || !scene.background) {
@@ -469,6 +534,7 @@ export class SceneRenderer {
       node.style.opacity = fade ? '0' : '1';
       this.bgLayer.append(node);
       this.bg = { key, node };
+      this.syncBgSound();
       if (fade)
         void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing: 'ease' });
     }

@@ -67,6 +67,8 @@ export const BackgroundRefSchema = z.discriminatedUnion('kind', [
     mediaId: IdSchema,
     loop: z.boolean(),
     playbackRate: z.number().min(0.25).max(2).optional(),
+    /** Play the video's own sound (through the room mix and the stream); muted when unset. */
+    sound: z.boolean().optional(),
   }),
   z.object({
     kind: z.literal('generated'),

@@ -231,6 +231,8 @@ export const PipLayerSchema = VideoInputLayerSchema.extend({
   corner: z.enum(['tl', 'tr', 'bl', 'br']).default('br'),
   /** Width as a share of the screen (0.15–0.5). */
   size: z.number().min(0.15).max(0.5).default(0.3),
+  /** Side by side: the two cameras share the screen, half each (corner and size don't apply). */
+  side: z.boolean().optional(),
 });
 export type PipLayer = z.infer<typeof PipLayerSchema>;
 
@@ -261,3 +263,13 @@ export const SceneSchema = z.object({
   mediaTransition: MediaTransitionSchema.optional(),
 });
 export type Scene = z.infer<typeof SceneSchema>;
+
+/**
+ * The announcements layer is up and fills the middle of the screen, so it hides the slide's words
+ * under it (two sets of words on top of each other can't be read). An announcement laid out as a
+ * lower third or along the top leaves the slide's words showing.
+ */
+export const announcementCoversWords = (scene: Pick<Scene, 'announcement'>): boolean => {
+  const layout = scene.announcement?.theme.layout;
+  return !!layout && layout !== 'lower-third' && layout !== 'top';
+};

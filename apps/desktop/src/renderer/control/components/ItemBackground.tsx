@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Check, ChevronRight, Image as ImageIcon, Layers, MonitorPlay, Palette } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Image as ImageIcon,
+  Layers,
+  MonitorPlay,
+  Palette,
+  Volume2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { STOCK_BACKGROUNDS, type BackgroundRef } from '@lampstand/core';
 import { IconButton, Typography } from '@lampstand/ui';
@@ -124,6 +132,18 @@ export function BackgroundMenu({
               <Swatch bg={onScreen} size="sm" />
             </DropdownMenu.Item>
           )}
+          {current?.kind === 'video' && (
+            <DropdownMenu.CheckboxItem
+              className={ITEM_CLASS}
+              checked={!!current.sound}
+              onCheckedChange={(on) => onPick({ ...current, sound: on || undefined })}
+              title={t('itemBg.soundHint')}
+            >
+              <Volume2 size={14} />
+              <Typography className="flex-1">{t('itemBg.sound')}</Typography>
+              {current.sound && <Check size={14} />}
+            </DropdownMenu.CheckboxItem>
+          )}
           {children}
           {/* Hover a kind to see its backgrounds: motion, built in, yours, every picture and video. */}
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />
@@ -214,7 +234,7 @@ export function ItemBackground({
             active={!!current}
             className={HEADER_TOOL}
           >
-            {current ? <Swatch bg={current} /> : <ImageIcon size={19} strokeWidth={1.75} />}
+            {current ? <Swatch bg={current} /> : <ImageIcon size={19} strokeWidth={1.25} />}
           </IconButton>
         )
       }

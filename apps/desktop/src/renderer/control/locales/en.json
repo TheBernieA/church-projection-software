@@ -180,6 +180,15 @@
     "layerFixed": "Behind the words (a colour or gradient can only sit behind them)",
     "backgroundOver": "Over everything"
   },
+  "screenScenes": {
+    "label": "Scene: what the screens show",
+    "slides": "Slides",
+    "slidesLowerThird": "Slides + lower third",
+    "cameraWordsOf": "{{name}} + slide",
+    "cameraLowerThirdOf": "{{name}} + words",
+    "sideBySide": "Two cameras",
+    "pip": "Camera in a corner"
+  },
   "monitor": {
     "preview": "Preview",
     "program": "Program",
@@ -1635,7 +1644,9 @@
     "copyToAll_other": "Use this for all {{count}} items",
     "copyToAllHint": "Every song, reading, presentation, announcement and countdown in the service gets this background (or the theme’s, if this one uses the theme’s)",
     "change": "Change the background of these slides",
-    "library": "Your pictures and videos"
+    "library": "Your pictures and videos",
+    "sound": "Play the video’s sound",
+    "soundHint": "Heard in the room (Settings › Audio › room output) and on the stream, like any video"
   },
   "audioSettings": {
     "room": "Room audio",

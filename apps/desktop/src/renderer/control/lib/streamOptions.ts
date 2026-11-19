@@ -81,6 +81,40 @@ export const STREAM_SCENES: readonly SceneTemplate[] = [
   { id: 'stage', group: 'screens', background: 'program', words: 'full', mirror: 'stage' },
 ];
 
+/**
+ * The scenes the screens offer (under the output monitor): the same kinds as the stream's, made
+ * with the video switcher's cameras and the screens' lower third. Every one keeps the words (a
+ * screen with no words is a clear away).
+ */
+export const SCREEN_SCENES: readonly SceneTemplate[] = [
+  { id: 'slides', group: 'slides', background: 'program', words: 'full' },
+  { id: 'slidesLowerThird', group: 'slides', background: 'program', words: 'lowerThird' },
+  { id: 'cameraWords', group: 'cameras', background: 'camera', words: 'full', perCamera: true },
+  {
+    id: 'cameraLowerThird',
+    group: 'cameras',
+    background: 'camera',
+    words: 'lowerThird',
+    perCamera: true,
+  },
+  {
+    id: 'sideBySide',
+    group: 'cameras',
+    background: 'layout',
+    layout: 'sideBySide',
+    words: 'lowerThird',
+    twoCameras: true,
+  },
+  {
+    id: 'pip',
+    group: 'cameras',
+    background: 'layout',
+    layout: 'pip',
+    words: 'lowerThird',
+    twoCameras: true,
+  },
+];
+
 export const SCENE_GROUPS = ['slides', 'cameras', 'screens'] as const;
 
 /** The lower third's size when chosen by hand, as % of the words' full-screen size. */

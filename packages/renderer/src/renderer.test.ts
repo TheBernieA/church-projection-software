@@ -330,6 +330,42 @@ describe('off-air screen', () => {
     expect(host.querySelector('.ls-logo-logo')?.textContent).toBe('Grace Church');
   });
 
+  it('a full announcement hides the slide words under it; a lower third leaves them', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const words = host.querySelector<HTMLElement>('.ls-layer-content');
+    const notice = (layout: typeof theme.layout) => ({
+      key: 'n',
+      kind: 'text' as const,
+      theme: { ...theme, layout },
+      blocks: [{ spans: [{ text: 'Welcome' }] }],
+    });
+    r.render({ ...scene('one'), announcement: notice('center') }, { instant: true });
+    expect(words?.style.opacity).toBe('0');
+    r.render({ ...scene('one'), announcement: notice('lower-third') }, { instant: true });
+    expect(words?.style.opacity).toBe('');
+    r.render({ ...scene('one'), announcement: null }, { instant: true });
+    expect(words?.style.opacity).toBe('');
+  });
+
+  it("turns a background video's sound on and off without restarting it", () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id, audio: true });
+    const withVideo = (sound?: boolean): Scene => ({
+      ...scene('one'),
+      background: { ref: { kind: 'video', mediaId: 'v', loop: true, sound } },
+    });
+    r.render(withVideo());
+    const v = host.querySelector('.ls-bg video') as HTMLVideoElement;
+    expect(v.muted).toBe(true);
+    r.render(withVideo(true));
+    expect(host.querySelector('.ls-bg video')).toBe(v);
+    expect(v.muted).toBe(false);
+    // Only the renderer that plays the room's sound is heard.
+    r.setAudio(false);
+    expect(v.muted).toBe(true);
+  });
+
   it('is never drawn in thumbnails', () => {
     const host = document.createElement('div');
     const r = new SceneRenderer(host, { mode: 'thumbnail', mediaUrl: (id) => id });

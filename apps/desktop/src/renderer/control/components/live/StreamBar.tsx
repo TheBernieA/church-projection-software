@@ -1,26 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronRight, Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import {
-  EMPTY_SCENE,
-  formatDb,
-  MAX_DB,
-  MIN_DB,
-  type MixerChannel,
-  type Scene,
-  type StreamSettings,
-} from '@lampstand/core';
+import { formatDb, MAX_DB, MIN_DB, type MixerChannel, type StreamSettings } from '@lampstand/core';
 import type { StreamStatus } from '@lampstand/ipc-contract';
-import { Button, IconButton, Meter, Segmented, Slider, Typography } from '@lampstand/ui';
+import { Button, IconButton, Meter, Slider, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
-import { useCameraSettingsVersion, useDeviceStream, useInputDevices } from '../../lib/inputs';
+import { useInputDevices } from '../../lib/inputs';
 import { onMeters, readSides } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
-import { SCENE_GROUPS, STREAM_SCENES, type SceneTemplate } from '../../lib/streamOptions';
-import { SceneView } from '../SceneView';
+import { STREAM_SCENES } from '../../lib/streamOptions';
 import { Select } from '../Select';
-import { usePref } from './consoleParts';
+import {
+  cameraPair,
+  SceneStrip,
+  sceneChoices,
+  useCameras,
+  type SceneChoice,
+} from '../scenes/SceneStrip';
 
 /**
  * The stream's sound, left and right, over the corner of its picture: the operator sees at a
@@ -62,191 +59,20 @@ export function StreamMeterOverlay() {
   );
 }
 
-type Picture = StreamSettings['picture'];
-
-/** One look the stream can take, ready to click (camera scenes name their cameras). */
-interface SceneChoice {
-  key: string;
-  label: string;
-  group: SceneTemplate['group'];
-  patch: Pick<Picture, 'background' | 'words' | 'mirror'> &
-    Partial<Pick<Picture, 'layout' | 'camera' | 'secondCamera'>>;
-}
-
-/** A camera's live picture, small (the tile shows the very camera it would switch to). */
-function CameraThumb({ deviceId, className = '' }: { deviceId: string; className?: string }) {
-  const stream = useDeviceStream('videoinput', deviceId);
-  const video = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    if (video.current) video.current.srcObject = stream;
-  }, [stream]);
-  return (
-    <video
-      ref={video}
-      autoPlay
-      muted
-      playsInline
-      className={`h-full w-full object-cover ${className}`}
-    />
-  );
-}
-
-/** The lower-third band, sketched over a tile's picture. */
-const BandSketch = () => (
-  <span
-    aria-hidden
-    className="absolute inset-x-[8%] bottom-[9%] flex h-[24%] flex-col justify-center gap-[3px] rounded-[2px] bg-black/60 px-[8%]"
-  >
-    <span className="h-[3px] w-full rounded-full bg-white/85" />
-    <span className="h-[3px] w-2/3 self-center rounded-full bg-white/70" />
-  </span>
-);
-
-/** A word on a tile with no picture of its own (the stage display, the switcher with nothing up). */
-const TileWord = ({ children }: { children: string }) => (
-  <Typography
-    as="span"
-    size={10}
-    weight="semibold"
-    tone="white"
-    className="absolute inset-0 flex items-center justify-center opacity-70"
-  >
-    {children}
-  </Typography>
-);
-
-/** What a scene would put on the stream, small: real cameras, the real slide. */
-function ScenePicture({
-  c,
-  program,
-  behind,
-  wordsAlone,
-}: {
-  c: SceneChoice;
-  program: Scene | null;
-  behind: Scene | null;
-  wordsAlone: Scene | null;
-}) {
-  const { t } = useTranslation();
-  const p = c.patch;
-  if (p.mirror === 'stage') return <TileWord>{t('console.scenes.stageTile')}</TileWord>;
-  if (p.mirror === 'alternate')
-    return (
-      <>
-        {program && <SceneView mode="thumbnail" scene={program} />}
-        <Typography
-          as="span"
-          size={10}
-          weight="semibold"
-          tone="white"
-          className="absolute right-1 top-1 rounded-[3px] bg-black/60 px-1"
-        >
-          HDMI
-        </Typography>
-      </>
-    );
-  const switcherCam = program?.input?.deviceId;
-  const picture =
-    p.background === 'layout' && p.camera && p.secondCamera ? (
-      p.layout === 'pip' ? (
-        <>
-          <CameraThumb deviceId={p.camera} />
-          <span className="absolute right-[4%] top-[6%] h-[32%] w-[32%] overflow-hidden rounded-[3px] shadow-[0_0_0_1px_rgba(255,255,255,0.4)]">
-            <CameraThumb deviceId={p.secondCamera} />
-          </span>
-        </>
-      ) : (
-        <span className="absolute inset-0 flex">
-          <span className="h-full w-1/2 overflow-hidden">
-            <CameraThumb deviceId={p.camera} />
-          </span>
-          <span className="h-full w-1/2 overflow-hidden">
-            <CameraThumb deviceId={p.secondCamera} />
-          </span>
-        </span>
-      )
-    ) : p.background === 'camera' && p.camera ? (
-      <CameraThumb deviceId={p.camera} />
-    ) : p.background === 'switcher' ? (
-      switcherCam ? (
-        <CameraThumb deviceId={switcherCam} />
-      ) : (
-        <TileWord>{t('console.scenes.switcherTile')}</TileWord>
-      )
-    ) : p.background === 'program' && program && behind ? (
-      <SceneView mode="thumbnail" scene={p.words === 'full' ? program : behind} />
-    ) : p.words === 'full' && wordsAlone ? (
-      <SceneView mode="thumbnail" scene={wordsAlone} />
-    ) : null;
-  return (
-    <>
-      {picture}
-      {p.words === 'lowerThird' && <BandSketch />}
-    </>
-  );
-}
-
 /**
- * The scenes, as small live previews in three groups (slides, cameras, screens): what each would
- * put on the stream, with the real camera pictures. One click switches the stream to it.
+ * The stream's scenes (slides, cameras, screens), as small live previews: what each would put on
+ * the stream. One click switches the stream to it.
  */
 export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming: boolean }) {
   const { t } = useTranslation();
-  const [open, setOpen] = usePref('lampstand.liveScenes', true);
-  const program = useStore((s) => s.live?.program ?? null);
-  const all = useInputDevices('videoinput');
-  const saved = useCameraSettingsVersion();
+  const cameras = useCameras();
   const pic = st.picture;
-  const cameras = useMemo(
-    () =>
-      (all ?? [])
-        .filter((d) => !saved[d.deviceId]?.hidden)
-        .map((d) => ({ id: d.deviceId, name: saved[d.deviceId]?.name || d.label })),
-    [all, saved],
+  const pair = useMemo(
+    () => cameraPair(cameras, pic.camera, pic.secondCamera),
+    [cameras, pic.camera, pic.secondCamera],
   );
-  // A layout's two cameras: the ones chosen, else the first two there are.
-  const pair = useMemo(() => {
-    const a = pic.camera && cameras.some((c) => c.id === pic.camera) ? pic.camera : cameras[0]?.id;
-    const b =
-      pic.secondCamera && pic.secondCamera !== a && cameras.some((c) => c.id === pic.secondCamera)
-        ? pic.secondCamera
-        : cameras.find((c) => c.id !== a)?.id;
-    return a && b ? ([a, b] as const) : null;
-  }, [cameras, pic.camera, pic.secondCamera]);
-  const choices: SceneChoice[] = STREAM_SCENES.flatMap((s): SceneChoice[] => {
-    const base = {
-      group: s.group,
-      patch: { background: s.background, words: s.words, mirror: s.mirror ?? ('own' as const) },
-    };
-    if (s.perCamera)
-      return cameras.map((c) => ({
-        ...base,
-        key: `${s.id}:${c.id}`,
-        label: t(`console.scenes.${s.id}Of`, { name: c.name }),
-        patch: { ...base.patch, camera: c.id },
-      }));
-    if (s.twoCameras)
-      return pair
-        ? [
-            {
-              ...base,
-              key: s.id,
-              label: t(`console.scenes.${s.id}`),
-              patch: { ...base.patch, layout: s.layout, camera: pair[0], secondCamera: pair[1] },
-            },
-          ]
-        : [];
-    return [{ ...base, key: s.id, label: t(`console.scenes.${s.id}`) }];
-  });
-  // The projector's picture without its words, and its words alone (for the tiles to compose).
-  const behind = useMemo<Scene | null>(
-    () =>
-      program ? { ...EMPTY_SCENE, background: program.background, media: program.media } : null,
-    [program],
-  );
-  const wordsAlone = useMemo<Scene | null>(
-    () => (program ? { ...EMPTY_SCENE, content: program.content } : null),
-    [program],
+  const choices = sceneChoices(STREAM_SCENES, cameras, pair, (id, name) =>
+    t(`console.scenes.${id}`, { name }),
   );
   // On air: every field the scene sets matches (a mirror ignores what's behind).
   const isOn = (c: SceneChoice): boolean => {
@@ -261,115 +87,26 @@ export function ScenePreviews({ st, streaming }: { st: StreamSettings; streaming
       (p.secondCamera === undefined || p.secondCamera === pic.secondCamera)
     );
   };
-  const pick = (c: SceneChoice): void =>
-    void saveSettings({ stream: { ...st, picture: { ...pic, ...c.patch } } });
-  const current = choices.find(isOn);
-  // Slides, Cameras or Screens: opens on the one with the scene on air.
-  const [tab, setTab] = useState<SceneTemplate['group']>(() => current?.group ?? 'slides');
-  const shown = choices.filter((c) => c.group === tab);
+  const save = (picture: Partial<StreamSettings['picture']>): void =>
+    void saveSettings({ stream: { ...st, picture: { ...pic, ...picture } } });
   return (
-    <div className="flex flex-col gap-2">
-      <Button
-        variant="bare"
-        aria-expanded={open}
-        aria-label={open ? t('console.scenesHide') : t('console.scenesShow')}
-        onClick={() => setOpen(!open)}
-        className="flex w-full cursor-pointer items-center gap-2 text-left"
-      >
-        <ChevronRight
-          size={14}
-          className={`shrink-0 text-[var(--text-3)] transition-transform ${open ? 'rotate-90' : ''}`}
-        />
-        <Typography as="span" variant="overline">
-          {t('console.scenesTitle')}
-        </Typography>
-        <Typography size={12} tone="secondary" truncate className="min-w-0 flex-1 text-right">
-          {current?.label ?? t('console.scenesCustom')}
-        </Typography>
-      </Button>
-      {open && (
-        <>
-          <Segmented<SceneTemplate['group']>
-            label={t('console.sceneTabs')}
-            value={tab}
-            onChange={setTab}
-            options={SCENE_GROUPS.filter((g) => choices.some((c) => c.group === g)).map((g) => ({
-              value: g,
-              label: t(`console.sceneGroups.${g}`),
-            }))}
-          />
-          <div
-            role="group"
-            aria-label={t('console.scene')}
-            // One row of whole tiles, four across: more scroll sideways, so none is ever cut off.
-            className="grid auto-cols-[max(84px,calc((100%_-_24px)/4))] grid-flow-col gap-2 overflow-x-auto overflow-y-hidden p-0.5 pb-1"
-          >
-            {shown.map((c) => {
-              const on = isOn(c);
-              return (
-                <Button
-                  key={c.key}
-                  variant="bare"
-                  aria-pressed={on}
-                  aria-label={c.label}
-                  title={c.label}
-                  onClick={() => pick(c)}
-                  className="group/scene flex min-w-0 cursor-pointer flex-col gap-1 text-left"
-                >
-                  <span
-                    className={`relative block aspect-video w-full overflow-hidden rounded-[5px] bg-black transition-shadow ${
-                      on
-                        ? streaming
-                          ? 'shadow-[0_0_0_2px_var(--tally-program)]'
-                          : 'shadow-[0_0_0_2px_var(--accent)]'
-                        : 'shadow-[0_0_0_1px_var(--hairline-strong)] group-hover/scene:shadow-[0_0_0_1px_var(--text-3)]'
-                    }`}
-                  >
-                    <ScenePicture c={c} program={program} behind={behind} wordsAlone={wordsAlone} />
-                  </span>
-                  <Typography
-                    size={11}
-                    tone={on ? 'primary' : 'secondary'}
-                    weight={on ? 'semibold' : 'regular'}
-                    truncate
-                    className="block"
-                  >
-                    {c.label}
-                  </Typography>
-                </Button>
-              );
-            })}
-          </div>
-          {/* A two-camera scene on air: which camera goes where. */}
-          {tab === 'cameras' && pic.mirror === 'own' && pic.background === 'layout' && pair && (
-            <div className="grid grid-cols-2 gap-2">
-              {(
-                [
-                  { first: true, mine: pair[0], other: pair[1] },
-                  { first: false, mine: pair[1], other: pair[0] },
-                ] as const
-              ).map(({ first, mine, other }) => (
-                <Select<string>
-                  key={String(first)}
-                  size="sm"
-                  aria-label={first ? t('streaming.cameraA') : t('streaming.cameraB')}
-                  value={mine}
-                  onChange={(id) => {
-                    // Picking the other one's camera swaps them.
-                    const rest = id === other ? mine : other;
-                    const [camera, secondCamera] = first ? [id, rest] : [rest, id];
-                    void saveSettings({
-                      stream: { ...st, picture: { ...pic, camera, secondCamera } },
-                    });
-                  }}
-                  options={cameras.map((c) => ({ value: c.id, label: c.name }))}
-                />
-              ))}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <SceneStrip
+      prefKey="lampstand.liveScenes"
+      label={t('console.scene')}
+      choices={choices}
+      isOn={isOn}
+      onPick={(c) => save(c.patch)}
+      onAir={streaming}
+      pair={
+        pic.mirror === 'own' && pic.background === 'layout' && pair
+          ? {
+              cameras,
+              value: pair,
+              onChange: (camera, secondCamera) => save({ camera, secondCamera }),
+            }
+          : null
+      }
+    />
   );
 }
 
@@ -401,26 +138,26 @@ function InputStrip({
         {c.stream ? <Mic size={14} /> : <MicOff size={14} />}
       </IconButton>
       <Select<string>
-          size="sm"
-          aria-label={t('console.micOf', { name: c.name })}
-          value={c.deviceId}
-          onChange={(deviceId) => {
-            const d = choices.find((x) => x.deviceId === deviceId);
-            if (d && d.deviceId !== c.deviceId)
-              void mixerCmd({
-                action: 'channel',
-                id: c.id,
-                patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
-              });
-          }}
-          options={[
-            ...(choices.some((d) => d.deviceId === c.deviceId)
-              ? []
-              : [{ value: c.deviceId, label: c.name }]),
-            ...choices.map((d) => ({ value: d.deviceId, label: d.label })),
-          ]}
-          className={`w-32 min-w-0 shrink ${heard ? '' : 'opacity-70'}`}
-        />
+        size="sm"
+        aria-label={t('console.micOf', { name: c.name })}
+        value={c.deviceId}
+        onChange={(deviceId) => {
+          const d = choices.find((x) => x.deviceId === deviceId);
+          if (d && d.deviceId !== c.deviceId)
+            void mixerCmd({
+              action: 'channel',
+              id: c.id,
+              patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
+            });
+        }}
+        options={[
+          ...(choices.some((d) => d.deviceId === c.deviceId)
+            ? []
+            : [{ value: c.deviceId, label: c.name }]),
+          ...choices.map((d) => ({ value: d.deviceId, label: d.label })),
+        ]}
+        className={`w-32 min-w-0 shrink ${heard ? '' : 'opacity-70'}`}
+      />
       <Slider
         aria-label={t('mixer.levelOf', { name: c.name })}
         min={MIN_DB}
