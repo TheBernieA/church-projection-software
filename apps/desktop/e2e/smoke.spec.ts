@@ -2340,6 +2340,23 @@ test('livestream: set up a destination, go live from the Live console, end it', 
       return r.ok ? r.value.mixer.stream.mute : null;
     })
     .toBe(false);
+  // Turned right down, the levels are named as the reason, and one click puts them back.
+  const streamGain = async () => {
+    const r = await control.evaluate(() => window.lampstand.query('live.get'));
+    return r.ok ? r.value.mixer.stream.gainDb : null;
+  };
+  await control.evaluate(() =>
+    window.lampstand.command({
+      type: 'live.mixer',
+      payload: { action: 'bus', bus: 'stream', patch: { gainDb: -40 } },
+    }),
+  );
+  await expect.poll(streamGain).toBe(-40);
+  const low = live.getByRole('alert').filter({ hasText: 'turned right down' });
+  await expect(low).toBeVisible({ timeout: 20_000 });
+  await expect(low).toContainText('the stream −40.0 dB');
+  await low.getByRole('button', { name: 'Turn up to 0 dB' }).click();
+  await expect.poll(streamGain).toBe(0);
   // The stream's lower third (Slides + lower third is on air): move it left, choose a size.
   const shows = live.getByRole('region', { name: 'Lower third on the stream' });
   await shows.scrollIntoViewIfNeeded();

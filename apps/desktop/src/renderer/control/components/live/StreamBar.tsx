@@ -265,12 +265,28 @@ export function StreamSound() {
  * Live with no sound: why, and the one click that most likely fixes it (unmute the stream, or
  * open the channels it hears).
  */
+/**
+ * Turned down this far in total (stream level plus the loudest channel's), ordinary speech no
+ * longer reaches viewers: the levels, not the mic, are why the stream is silent.
+ */
+const TOO_LOW_DB = -20;
+
 export function SilentNotice({ s }: { s: StreamStatus }) {
   const { t } = useTranslation();
   const mixer = useStore((x) => x.live?.mixer ?? null);
   if (!s.silent || !mixer) return null;
   const heard = mixer.channels.filter((c) => c.stream && !c.mute);
-  const why = mixer.stream.mute ? 'muted' : heard.length === 0 ? 'nothing' : 'quiet';
+  const loudest = Math.max(...heard.map((c) => c.gainDb));
+  const low = heard.length > 0 && mixer.stream.gainDb + loudest <= TOO_LOW_DB;
+  const why = mixer.stream.mute ? 'muted' : heard.length === 0 ? 'nothing' : low ? 'low' : 'quiet';
+  const turnedDown = heard.filter((c) => c.gainDb < 0);
+  /** Stream level and the channels it hears back to 0 dB (unity). */
+  const turnUp = (): void => {
+    if (mixer.stream.gainDb < 0)
+      void mixerCmd({ action: 'bus', bus: 'stream', patch: { gainDb: 0 } });
+    for (const c of turnedDown)
+      void mixerCmd({ action: 'channel', id: c.id, patch: { gainDb: 0 } });
+  };
   return (
     <div
       role="alert"
@@ -278,7 +294,16 @@ export function SilentNotice({ s }: { s: StreamStatus }) {
     >
       <VolumeOff size={15} className="mt-px shrink-0 text-[var(--tally-program)]" />
       <Typography size={12} tone="primary" leading="snug" className="min-w-0 flex-1">
-        {t(`console.silent.${why}`, { names: heard.map((c) => c.name).join(', ') })}
+        {t(`console.silent.${why}`, {
+          names: heard.map((c) => c.name).join(', '),
+          // What's turned down: the stream level, then each channel below 0 dB.
+          levels: [
+            ...(mixer.stream.gainDb < 0
+              ? [t('console.streamLevelIs', { db: formatDb(mixer.stream.gainDb) })]
+              : []),
+            ...turnedDown.map((c) => `${c.name} ${formatDb(c.gainDb)}`),
+          ].join(', '),
+        })}
       </Typography>
       {why === 'muted' && (
         <Button
@@ -287,6 +312,11 @@ export function SilentNotice({ s }: { s: StreamStatus }) {
           onClick={() => void mixerCmd({ action: 'bus', bus: 'stream', patch: { mute: false } })}
         >
           {t('console.unmute')}
+        </Button>
+      )}
+      {why === 'low' && (
+        <Button size="xs" variant="primary" onClick={turnUp} className="shrink-0">
+          {t('console.turnUp')}
         </Button>
       )}
     </div>

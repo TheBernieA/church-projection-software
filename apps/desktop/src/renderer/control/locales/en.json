@@ -2275,7 +2275,8 @@
     "silent": {
       "muted": "The stream is muted: viewers hear nothing.",
       "nothing": "Viewers hear nothing: no channel goes to the stream. Switch on the mics or desk below (Sound).",
-      "quiet": "Viewers hear nothing: {{names}} go to the stream, but there's no sound on them. Check the mic or desk is on and its level is up."
+      "quiet": "Viewers hear nothing: {{names}} go to the stream, but there's no sound on them. Check the mic or desk is on and its level is up.",
+      "low": "Viewers hear nothing: the levels are turned right down ({{levels}}), so even speech is too quiet to reach them. Turn them up, or use the sliders below."
     },
     "soundHelp": "Switched on: the stream hears it.",
     "streamLevel": "Stream level",
@@ -2292,7 +2293,9 @@
     },
     "sceneTabs": "Kind of scene",
     "micOf": "Which input {{name}} uses",
-    "lowerThird": "Lower third on the stream"
+    "lowerThird": "Lower third on the stream",
+    "turnUp": "Turn up to 0 dB",
+    "streamLevelIs": "the stream {{db}}"
   },
   "benchmark": {
     "button": "Check this computer",
