@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundRef, Theme } from '@lampstand/core';
 import { Button, Segmented, Typography } from '@lampstand/ui';
@@ -9,7 +9,7 @@ import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
 import { ThemeEffects } from './ThemeEffects';
 import { Checkbox, ColorInput, Field, NumberInput } from './form';
-import { sampleScene } from './ThemesPanel';
+import { sampleScene, themeCopy } from './ThemesPanel';
 import { BUILT_IN_BACKGROUNDS, BUNDLED_FONTS } from '../constants';
 import { swatchCss } from '../lib/utils';
 
@@ -25,11 +25,19 @@ export function ThemeEditor() {
   const open = useStore((s) => s.dialog === 'theme');
   const id = useStore((s) => s.editingThemeId);
   const theme = useStore((s) => s.themes.find((x) => x.id === id));
-  // Theme may arrive a moment after "duplicate" — mount the editor once it exists.
-  return open && theme ? <ThemeEditorBody key={theme.id} initial={theme} /> : null;
+  const asCopy = useStore((s) => s.editingThemeCopy);
+  // A built-in theme is edited as a copy of your own; it's created when you save.
+  const initial = useMemo(() => (theme && asCopy ? themeCopy(theme) : theme), [theme, asCopy]);
+  return open && initial ? (
+    <ThemeEditorBody
+      key={`${theme?.id ?? ''}|${String(asCopy)}`}
+      initial={initial}
+      copyOf={asCopy ? (theme?.name ?? null) : null}
+    />
+  ) : null;
 }
 
-function ThemeEditorBody({ initial }: { initial: Theme }) {
+function ThemeEditorBody({ initial, copyOf }: { initial: Theme; copyOf: string | null }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Theme>(initial);
   const set = (p: Partial<Theme>): void => setDraft({ ...draft, ...p });
@@ -56,6 +64,18 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
         </>
       }
     >
+      {copyOf && (
+        <Typography
+          as="p"
+          role="note"
+          size={12}
+          tone="secondary"
+          leading="snug"
+          className="mb-4 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-3 py-2"
+        >
+          {t('theme.editingCopy', { name: copyOf })}
+        </Typography>
+      )}
       <div className="grid grid-cols-[300px_1fr] gap-5">
         <div className="space-y-3">
           <Field label={t('theme.name')} htmlFor="th-name">

@@ -161,6 +161,8 @@ export interface ControlState {
   /** The media cue whose playback options are open. */
   playbackItemId: string | null;
   editingThemeId: string | null;
+  /** The theme being edited is built in: the editor works on a copy, saved as a new theme. */
+  editingThemeCopy: boolean;
   history: { canUndo: boolean; canRedo: boolean };
   toasts: Toast[];
   /** A service edit is waiting to be saved (status bar shows "Saving…"). */

@@ -45,9 +45,10 @@ export const sampleScene = (
     },
   });
 
-export async function duplicateTheme(t: Theme): Promise<string | null> {
+/** A theme of your own, made from `t` (not saved yet). */
+export function themeCopy(t: Theme): Theme {
   const now = nowIso();
-  const copy: Theme = {
+  return {
     ...t,
     id: newId(),
     name: `${t.name} copy`,
@@ -55,8 +56,6 @@ export async function duplicateTheme(t: Theme): Promise<string | null> {
     createdAt: now,
     updatedAt: now,
   };
-  const saved = await attempt(() => cmd('theme.save', { entity: copy }), 'errors.duplicate');
-  return saved === undefined ? null : copy.id;
 }
 
 /** Save a theme as a file, to carry to another computer. */
@@ -199,16 +198,16 @@ function ThemeTile({
         {theme.builtIn && <Badge>{t('theme.builtIn')}</Badge>}
         <span className="ml-auto" />
         {theme.builtIn ? (
+          // A built-in theme can't change: editing it makes a copy of your own (on Save).
           <Button
             size="xs"
             variant="ghost"
+            title={t('theme.editBuiltInHint')}
             onClick={() =>
-              void duplicateTheme(theme).then(
-                (id) => id && openDialog('theme', { editingThemeId: id }),
-              )
+              openDialog('theme', { editingThemeId: theme.id, editingThemeCopy: true })
             }
           >
-            {t('theme.duplicate')}
+            {t('library.edit')}
           </Button>
         ) : (
           <>
@@ -222,7 +221,9 @@ function ThemeTile({
             <Button
               size="xs"
               variant="ghost"
-              onClick={() => openDialog('theme', { editingThemeId: theme.id })}
+              onClick={() =>
+                openDialog('theme', { editingThemeId: theme.id, editingThemeCopy: false })
+              }
             >
               {t('library.edit')}
             </Button>

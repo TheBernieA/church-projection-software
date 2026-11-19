@@ -320,7 +320,7 @@
     "builtInGroup": "Built-in",
     "library_one": "Your library ({{count}})",
     "library_other": "Your library ({{count}})",
-    "libraryEmpty": "No themes of your own with this layout yet. Duplicate a built-in theme to change it, or import one from a file.",
+    "libraryEmpty": "No themes of your own with this layout yet. Click Edit on a built-in theme to make your own version of it, or import one from a file.",
     "noneForLayout": "No built-in themes with this layout.",
     "import": "Import theme",
     "imported": "Theme “{{name}}” added to your library.",
@@ -340,7 +340,6 @@
     "box": "Background box",
     "refPosition": "Reference",
     "save": "Save theme",
-    "duplicate": "Duplicate",
     "useFor": "Use for",
     "builtIn": "Built-in",
     "verseNumbers": "Verse numbers",
@@ -394,7 +393,9 @@
       "sans": "Sans-serif · lyrics",
       "serif": "Serif · scripture",
       "display": "Display · titles"
-    }
+    },
+    "editBuiltInHint": "Built-in themes stay as they are: editing makes a copy of your own",
+    "editingCopy": "“{{name}}” is built in, so your changes are saved as a new theme of your own (the original stays as it is). Click it in Themes afterwards to use it."
   },
   "outputs": {
     "title": "Outputs",
@@ -731,7 +732,6 @@
     "save": "Could not save your changes.",
     "saveService": "Could not save the service. Your changes are still on screen — try again.",
     "import": "Could not import those files.",
-    "duplicate": "Could not duplicate that.",
     "setting": "Could not save that setting.",
     "install": "Could not install that package.",
     "audio": "Could not change the audio.",
@@ -950,7 +950,7 @@
         },
         "themes": {
           "q": "Change how the words look",
-          "a": "1. Click Theme in the toolbar.\n2. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third).\n3. Click a theme and choose where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream.\nThe strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Duplicate a built-in theme to change its fonts, colours, effects and background. Import theme and the export button move themes between computers."
+          "a": "1. Click Theme in the toolbar.\n2. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third).\n3. Click a theme and choose where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream.\nThe strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Click Edit on a theme to change its fonts, colours, effects (such as Dim, to darken the background behind the words) and background; a built-in theme is saved as a new theme of your own, and the original stays as it is. Import theme and the export button move themes between computers."
         },
         "text": {
           "q": "Change one song’s font or colour",

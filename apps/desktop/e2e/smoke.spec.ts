@@ -383,10 +383,12 @@ test('theme effects: a glow set in the theme editor reaches the output', async (
   await mode('Themes');
   await control
     .getByRole('region', { name: 'Themes' })
-    .getByRole('button', { name: 'Duplicate' })
+    .getByRole('button', { name: 'Edit', exact: true })
     .first()
     .click();
   const editor = control.getByRole('dialog');
+  // A built-in theme is edited as a copy of your own, and the editor says so.
+  await expect(editor.getByRole('note')).toContainText('saved as a new theme');
   await editor.getByLabel('Name', { exact: true }).fill('Glow test');
   await editor.getByRole('checkbox', { name: 'Glow' }).check();
   await editor.getByLabel('Brightness').fill('0.8');
@@ -623,7 +625,7 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
   await mode('Themes');
   await control
     .getByRole('region', { name: 'Themes' })
-    .getByRole('button', { name: 'Duplicate' })
+    .getByRole('button', { name: 'Edit', exact: true })
     .first()
     .click();
   const editor = control.getByRole('dialog');
