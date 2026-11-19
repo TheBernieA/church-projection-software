@@ -1156,15 +1156,24 @@ test('video cues: play in Preview, wait for Play, playback options trim the clip
   await control.screenshot({ path: 'test-results/26-preview-playback.png' });
   await previewFirst(false);
 
-  // "Wait for Play": a clip that goes live sits on its first frame until Play.
-  await setSetting({ mediaAutoplay: false });
-  await bin.getByRole('button', { name: 'Show now: Seed clip' }).click();
+  // "Wait for Play": a clip that goes live sits on its first frame until Play...
+  await setSetting({ mediaAutoplay: false, pickShowsNow: true });
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).click();
   await expect(outVideo).toHaveCount(1);
   await control.waitForTimeout(800);
   expect(await outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
   await transport.getByRole('button', { name: 'Play' }).click();
   await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
-  await setSetting({ mediaAutoplay: true });
+  // ...but the tile's play button ("Show now") always plays it at once.
+  await control.evaluate(() =>
+    window.lampstand.command({ type: 'live.clearLayer', payload: { layer: 'media' } }),
+  );
+  await expect(outVideo).toHaveCount(0);
+  await bin.getByRole('button', { name: 'Seed clip', exact: true }).hover();
+  await bin.getByRole('button', { name: 'Show now: Seed clip' }).click();
+  await expect(outVideo).toHaveCount(1);
+  await expect.poll(() => outVideo.evaluate((v: HTMLVideoElement) => v.paused)).toBe(false);
+  await setSetting({ mediaAutoplay: true, pickShowsNow: false });
 
   // Playback options on a cue in the playlist: start 2 s in.
   await bin.getByRole('button', { name: 'Seed clip', exact: true }).dblclick();

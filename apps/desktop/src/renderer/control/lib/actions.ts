@@ -156,6 +156,8 @@ export async function goLiveSlide(
   item: ServiceItem,
   index: number,
   source: 'ui' | 'shortcut' = 'ui',
+  /** `playNow`: a video plays at once even with "Wait for Play" on (a tile's play button). */
+  opts: { playNow?: boolean } = {},
 ): Promise<void> {
   const slides = slidesFor(item);
   const raw = slides[index];
@@ -191,7 +193,12 @@ export async function goLiveSlide(
     await safe(
       cmd(
         'live.goLive',
-        { media: a.media, content: null, next: null, autoplay: mediaAutoplay(item) },
+        {
+          media: a.media,
+          content: null,
+          next: null,
+          autoplay: opts.playNow || mediaAutoplay(item),
+        },
         source,
       ),
     );
@@ -384,13 +391,15 @@ export function triggerSlide(item: ServiceItem, index: number): Promise<void> {
 export async function openAdhoc(
   item: ServiceItem,
   requested: 'select' | 'preview' | 'live' = 'preview',
+  /** `playNow`: going live, a video plays at once (Settings' "Wait for Play" doesn't hold it). */
+  opts: { playNow?: boolean } = {},
 ): Promise<void> {
   useStore.setState({ adhoc: item, selectedItemId: item.id });
   if (requested === 'select') return;
   const mode = requested === 'preview' && clickGoesLive(item.kind) ? 'live' : requested;
   const slides = await ensureItemReady(item);
   if (!slides.length) return;
-  if (mode === 'live') await goLiveSlide(item, 0);
+  if (mode === 'live') await goLiveSlide(item, 0, 'ui', opts);
   else await previewSlide(item, 0);
 }
 

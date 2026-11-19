@@ -295,7 +295,8 @@ function PlayNow({ m }: { m: MediaItem }) {
           onClick={(e) => {
             e.stopPropagation();
             if (m.kind === 'audio') void playAudio(m.id);
-            else void openAdhoc(asItem(m), 'live');
+            // The play button plays it now, even with "Wait for Play" on (that's for cues).
+            else void openAdhoc(asItem(m), 'live', { playNow: true });
           }}
           onDoubleClick={(e) => e.stopPropagation()}
           className="pointer-events-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/65 text-white opacity-0 shadow-[0_4px_12px_rgba(0,0,0,0.45)] backdrop-blur-sm transition-[opacity,transform,background-color] hover:scale-105 hover:bg-[var(--accent)] hover:text-[var(--accent-ink)] focus-visible:opacity-100 group-hover:opacity-100"
