@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDb, MAX_DB, MIN_DB, type MixerChannel, type StreamSettings } from '@lampstand/core';
@@ -207,32 +207,40 @@ export function StreamSound() {
       adding.current = false;
     });
   }, [mixer, inputs.length, devices]);
+  // The mics the stream hears get a row each (one, usually). With none, the row last shown
+  // stays (switching a mic off doesn't make the row jump to another).
+  const onStream = inputs.filter((c) => c.stream);
+  const [lastRow, setLastRow] = useState<string | null>(null);
+  const leading = onStream[0]?.id;
+  if (leading && leading !== lastRow) setLastRow(leading);
   if (!mixer) return null;
   const bus = mixer.stream;
+  const rows = onStream.length
+    ? onStream
+    : [inputs.find((c) => c.id === lastRow) ?? inputs[0]].filter((c): c is MixerChannel => !!c);
   /**
-   * This row now hears `d`. If another channel already had it, the two swap inputs (each keeps
-   * its own levels and settings), so nothing is lost and no second row appears.
+   * Picking another mic in a row sends that mic to the stream instead: this row's mic comes off
+   * the stream and the picked one goes on, each with its own levels and settings (a built-in mic
+   * keeps its boost; a sound card stays at its own level). A mic not on the mixer yet is added,
+   * at 0 dB. Room routing is left as it is.
    */
   const switchInput = (c: MixerChannel, d: { deviceId: string; label: string }): void => {
-    const other = inputs.find((o) => o.id !== c.id && o.deviceId === d.deviceId);
-    void mixerCmd({
-      action: 'channel',
-      id: c.id,
-      patch: { deviceId: d.deviceId, name: d.label.slice(0, 40) || 'Input' },
-    });
-    if (other)
-      void mixerCmd({
-        action: 'channel',
-        id: other.id,
-        patch: { deviceId: c.deviceId, name: c.name },
-      });
+    if (d.deviceId === c.deviceId) return;
+    const target = inputs.find((o) => o.deviceId === d.deviceId);
+    if (c.stream) void mixerCmd({ action: 'channel', id: c.id, patch: { stream: false } });
+    void (target
+      ? mixerCmd({ action: 'channel', id: target.id, patch: { stream: true, mute: false } })
+      : mixerCmd({
+          action: 'add',
+          deviceId: d.deviceId,
+          name: d.label.slice(0, 40) || 'Input',
+          room: false,
+          stream: true,
+        }));
   };
-  // Every input can be picked from every row: one already on another channel swaps with it.
+  // Every input can be picked from a row.
   const choices = devices ?? [];
-  // The inputs the stream hears (else the first one): one row for one mic. A sound card added
-  // beside the built-in mic is switched to with the dropdown, not given a row of its own.
-  const onStream = inputs.filter((c) => c.stream);
-  const [first, ...more] = onStream.length ? onStream : inputs.slice(0, 1);
+  const [first, ...more] = rows;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">

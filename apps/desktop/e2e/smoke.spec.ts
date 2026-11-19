@@ -7,6 +7,7 @@ import {
 } from '@playwright/test';
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -2241,6 +2242,9 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     '-y',
     got,
   ]);
+  // What the stand-in server says, to explain a stream it never received.
+  let serverLog = '';
+  server.stderr.on('data', (d: Buffer) => (serverLog += d.toString()));
   await control.waitForTimeout(800);
   // Settings › Streaming: add a custom RTMP destination.
   await control.getByTitle('Settings', { exact: true }).click();
@@ -2374,7 +2378,8 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await low.getByRole('button', { name: 'Turn up to 0 dB' }).click();
   await expect.poll(streamGain).toBe(0);
   // A second input (a sound card) on the mixer but not sent to the stream: still one mic row in
-  // the console, and its dropdown switches the stream to it (the two channels swap inputs).
+  // the console. Picking it there sends it to the stream instead of the first mic, each mic
+  // keeping its own level (the first comes off the stream with its settings intact).
   const mics = await control.evaluate(async () =>
     (await navigator.mediaDevices.enumerateDevices())
       .filter((d) => d.kind === 'audioinput' && d.deviceId !== 'default')
@@ -2384,10 +2389,10 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     const r = await control.evaluate(() => window.lampstand.query('live.get'));
     return r.ok ? r.value.mixer.channels.filter((c) => c.kind === 'input') : [];
   };
-  const onStream = (await inputs()).find((c) => c.stream);
-  const spare = mics.find((m) => m.id !== onStream?.deviceId);
-  expect(onStream && spare).toBeTruthy(); // the test machine has two (fake) mics
-  if (onStream && spare) {
+  const firstMic = (await inputs()).find((c) => c.stream);
+  const spare = mics.find((m) => m.id !== firstMic?.deviceId);
+  expect(firstMic && spare).toBeTruthy(); // the test machine has two (fake) mics
+  if (firstMic && spare) {
     await control.evaluate(
       (d) =>
         window.lampstand.command({
@@ -2397,18 +2402,20 @@ test('livestream: set up a destination, go live from the Live console, end it', 
       spare,
     );
     await expect.poll(async () => (await inputs()).length).toBe(2);
+    const sound = async () =>
+      (await inputs()).map((c) => `${c.deviceId === spare.id ? 'spare' : 'first'}:${c.stream}`);
     const which = live.getByRole('combobox', { name: /^Which input / });
     await expect(which).toHaveCount(1);
     await which.click();
     await control.getByRole('option', { name: spare.label }).click();
-    await expect
-      .poll(async () => (await inputs()).find((c) => c.id === onStream.id)?.deviceId)
-      .toBe(spare.id);
-    // The other channel took the first input: nothing lost, still one row.
-    await expect
-      .poll(async () => (await inputs()).find((c) => c.id !== onStream.id)?.deviceId)
-      .toBe(onStream.deviceId);
+    await expect.poll(sound).toEqual(['first:false', 'spare:true']);
+    // The first mic kept its own input and settings; the console still has one row.
+    expect((await inputs()).find((c) => c.id === firstMic.id)?.deviceId).toBe(firstMic.deviceId);
     await expect(which).toHaveCount(1);
+    // And back again.
+    await which.click();
+    await control.getByRole('option', { name: firstMic.name }).click();
+    await expect.poll(sound).toEqual(['first:true', 'spare:false']);
   }
   // The stream's lower third (Slides + lower third is on air): move it to the top left, let
   // the words spread wider, choose a size.
@@ -2475,6 +2482,12 @@ test('livestream: set up a destination, go live from the Live console, end it', 
       resolve();
     }, 5_000);
   });
+  if (!existsSync(got)) {
+    const r = await control.evaluate(() => window.lampstand.query('stream.status'));
+    throw new Error(
+      `the server received nothing; it said: ${serverLog.slice(-800) || '(nothing)'}; destinations: ${JSON.stringify(r.ok ? r.value.destinations : null)}`,
+    );
+  }
   const probe = execFileSync(
     'ffprobe',
     ['-v', 'error', '-show_entries', 'stream=codec_name', '-of', 'csv=p=0', got],
