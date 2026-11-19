@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInputDevices } from '../../lib/inputs';
 import { applyScreenScene, screenSceneOn } from '../../lib/screenScenes';
@@ -10,7 +10,7 @@ import { cameraPair, SceneStrip, sceneChoices, useCameras } from '../scenes/Scen
  * Scenes for the screens, under the output monitor: the slides, a camera behind the words (full
  * screen or as a lower third), or two cameras together. The same strip as the stream's.
  */
-export function ScreenScenes() {
+export function ScreenScenes({ trailing }: { trailing?: ReactNode }) {
   const { t } = useTranslation();
   const cameras = useCameras();
   const devices = useInputDevices('videoinput');
@@ -19,8 +19,8 @@ export function ScreenScenes() {
   const pipCam = live?.program.pip?.deviceId;
   // A layout's two cameras: the ones on screen now, else the first two there are.
   const pair = useMemo(() => cameraPair(cameras, input, pipCam), [cameras, input, pipCam]);
-  // No cameras: only the slides, so nothing to choose between.
-  if (cameras.length === 0) return null;
+  // No cameras: only the slides, so nothing to choose between (just the row's other controls).
+  if (cameras.length === 0) return <div className="flex justify-end">{trailing}</div>;
   const choices = sceneChoices(SCREEN_SCENES, cameras, pair, (id, name) =>
     t(`screenScenes.${id}`, { name }),
   );
@@ -29,6 +29,7 @@ export function ScreenScenes() {
   return (
     <SceneStrip
       prefKey="lampstand.screenScenes"
+      trailing={trailing}
       label={t('screenScenes.label')}
       choices={choices}
       isOn={(c) => screenSceneOn(c, live)}

@@ -228,6 +228,7 @@ export function SceneStrip({
   onPick,
   onAir,
   pair,
+  trailing,
 }: {
   /** Remembers whether the strip is open. */
   prefKey: string;
@@ -238,6 +239,8 @@ export function SceneStrip({
   onPick: (c: SceneChoice) => void;
   /** The scene is going out now (red tally), not just chosen. */
   onAir: boolean;
+  /** Controls at the end of the header row (the screen masks). */
+  trailing?: ReactNode;
   /** A two-camera scene is on: camera A and B pickers. */
   pair?: {
     cameras: Camera[];
@@ -264,24 +267,27 @@ export function SceneStrip({
   const shown = choices.filter((c) => c.group === tab);
   return (
     <div role="group" aria-label={label} className="flex flex-col gap-2">
-      <Button
-        variant="bare"
-        aria-expanded={open}
-        aria-label={open ? t('console.scenesHide') : t('console.scenesShow')}
-        onClick={() => setOpen(!open)}
-        className="flex w-full cursor-pointer items-center gap-2 text-left"
-      >
-        <ChevronRight
-          size={14}
-          className={`shrink-0 text-[var(--text-3)] transition-transform ${open ? 'rotate-90' : ''}`}
-        />
-        <Typography as="span" variant="overline">
-          {t('console.scenesTitle')}
-        </Typography>
-        <Typography size={12} tone="secondary" truncate className="min-w-0 flex-1 text-right">
-          {current?.label ?? t('console.scenesCustom')}
-        </Typography>
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="bare"
+          aria-expanded={open}
+          aria-label={open ? t('console.scenesHide') : t('console.scenesShow')}
+          onClick={() => setOpen(!open)}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+        >
+          <ChevronRight
+            size={14}
+            className={`shrink-0 text-[var(--text-3)] transition-transform ${open ? 'rotate-90' : ''}`}
+          />
+          <Typography as="span" variant="overline">
+            {t('console.scenesTitle')}
+          </Typography>
+          <Typography size={12} tone="secondary" truncate className="min-w-0 flex-1 text-right">
+            {current?.label ?? t('console.scenesCustom')}
+          </Typography>
+        </Button>
+        {trailing}
+      </div>
       {open && (
         <>
           <Segmented<SceneTemplate['group']>

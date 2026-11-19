@@ -552,31 +552,34 @@ export function RightColumn() {
             />
           </div>
         </figure>
-        <div className="flex items-center gap-1.5">
-          <span className="flex-1" />
-          <MaskButton
-            on={p.masks.black}
-            onClick={() => void toggleMask('black')}
-            icon={<Square size={13} fill="currentColor" />}
-            label={t('monitor.black')}
-            hint={displayCombo(keys.black)}
-          />
-          <MaskButton
-            on={p.masks.logo}
-            onClick={() => void toggleMask('logo')}
-            icon={<Church size={13} />}
-            label={t('monitor.logo')}
-            hint={displayCombo(keys.logo)}
-          />
-          <MaskButton
-            on={p.masks.freeze}
-            onClick={() => void toggleMask('freeze')}
-            icon={<Snowflake size={13} />}
-            label={t('monitor.freeze')}
-            hint={displayCombo(keys.freeze)}
-          />
-        </div>
-        <ScreenScenes />
+        {/* The scenes, with the screen masks along their header row. */}
+        <ScreenScenes
+          trailing={
+            <div className="flex shrink-0 items-center gap-1.5">
+              <MaskButton
+                on={p.masks.black}
+                onClick={() => void toggleMask('black')}
+                icon={<Square size={13} fill="currentColor" />}
+                label={t('monitor.black')}
+                hint={displayCombo(keys.black)}
+              />
+              <MaskButton
+                on={p.masks.logo}
+                onClick={() => void toggleMask('logo')}
+                icon={<Church size={13} />}
+                label={t('monitor.logo')}
+                hint={displayCombo(keys.logo)}
+              />
+              <MaskButton
+                on={p.masks.freeze}
+                onClick={() => void toggleMask('freeze')}
+                icon={<Snowflake size={13} />}
+                label={t('monitor.freeze')}
+                hint={displayCombo(keys.freeze)}
+              />
+            </div>
+          }
+        />
         <LowerThirdRow />
         {p.input && <CameraSwitcher />}
         <VideoControls

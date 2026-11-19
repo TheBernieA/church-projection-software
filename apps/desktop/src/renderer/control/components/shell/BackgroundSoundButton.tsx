@@ -22,7 +22,9 @@ export function BackgroundSoundButton() {
       aria-pressed={on}
       title={label}
       onClick={() => setLiveBackgroundSound(!on)}
-      className={`!absolute bottom-1.5 right-1.5 !rounded-full backdrop-blur-sm ${
+      // A round chip over the picture: icon centred, a focus ring for the keyboard only (a click
+      // leaves no outline behind).
+      className={`!absolute bottom-1.5 right-1.5 inline-flex cursor-pointer items-center justify-center !rounded-full shadow-[0_1px_4px_rgba(0,0,0,0.4)] outline-none backdrop-blur-sm transition-colors focus-visible:shadow-[var(--focus-ring)] ${
         on ? '!bg-[var(--accent)] !text-white' : '!bg-black/60 !text-white/80 hover:!text-white'
       }`}
     >
