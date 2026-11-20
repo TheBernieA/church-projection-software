@@ -11,6 +11,7 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json",
     "dist:mac": "electron-vite build && electron-builder --mac",
+    "dist:mac:local": "electron-vite build && electron-builder --mac -c.mac.notarize=false -c.mac.identity=-",
     "dist:win": "electron-vite build && electron-builder --win",
     "e2e": "electron-vite build && playwright test"
   },

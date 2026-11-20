@@ -16,7 +16,7 @@ extraResources:
     filter: ['*.json']
   # The video encoder for livestreaming and recording (docs/streaming.md): put the platform's
   # ffmpeg binary here before packaging (signed with the app on macOS).
-  - from: ../../resources/ffmpeg/${platform}-${arch}
+  - from: ../../resources/ffmpeg/${os}-${arch}
     to: resources/ffmpeg
     filter: ['ffmpeg', 'ffmpeg.exe', 'LICENSE*']
 asar: true
