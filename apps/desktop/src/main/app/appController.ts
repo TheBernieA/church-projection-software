@@ -357,6 +357,7 @@ export class AppController {
         x.keyFeed,
         x.screenAdjust,
         x.edgeBlend,
+        x.wordsScale,
       ]);
     let maskKey = outputInfoOf(settings.get());
     settings.onChange((next) => {

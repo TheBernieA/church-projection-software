@@ -3,6 +3,7 @@ import {
   keyFeedScene,
   lookLayersFor,
   withKindThemes,
+  withWordsScale,
   withWordsTheme,
   type KeyFeedMode,
   type ResolvedKindThemes,
@@ -36,6 +37,8 @@ let pattern: HTMLElement | null = null;
 let latest: LiveDelivery | null = null;
 let themes: ResolvedKindThemes = {};
 let key: KeyFeedMode = 'off';
+/** Words size on this screen, over each theme's (Words size on the screens). */
+let wordsScale = 1;
 let ready = false;
 /** Room audio plays from the main output only. */
 let audio: RoomAudio | null = null;
@@ -63,7 +66,10 @@ function draw(state: LiveDelivery): void {
       ? withWordsTheme(state.program, state.lowerThird)
       : state.program;
   // The alternate output: its own themes, and (as a key feed) words only over a flat colour.
-  program = applyLook(withKindThemes(program, themes), silentVideo ? [...layers, 'media'] : layers);
+  program = applyLook(
+    withWordsScale(withKindThemes(program, themes), wordsScale),
+    silentVideo ? [...layers, 'media'] : layers,
+  );
   // After the Look, so the key colour is there whatever layers the Look shows.
   renderer.render(key === 'off' ? program : keyFeedScene(program, key));
   renderer.setMediaHidden(silentVideo);
@@ -83,6 +89,7 @@ api.onInfo((i: OutputInfo) => {
   role = i.role;
   themes = i.themes;
   key = i.key;
+  wordsScale = i.wordsScale;
   info = { label: i.label, width: i.width, height: i.height, audio: i.audio };
   // Fit the picture to the screen (keystone, scale, flips, colour) and lay out its slice when
   // blending; a new canvas size means a new renderer (the scene is drawn into it again below).

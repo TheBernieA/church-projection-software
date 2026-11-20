@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
+  ALargeSmall,
   AlignCenter,
   AlignLeft,
   AlignRight,
@@ -16,6 +17,7 @@ import {
   Square,
   Type,
   Power,
+  RotateCcw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -45,12 +47,14 @@ import {
   goLive,
   restoreAll,
   restoreLayer,
+  saveSettings,
   setLowerThird,
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
 import { LT_ALIGN_KEY, LT_THEME_KEY, type Align } from '../../lib/screenScenes';
 import { remember, remembered } from '../../lib/prefs';
+import { SettledSlider } from '../form';
 import { LiveStepper } from './LiveStepper';
 import { ScreenScenes } from './ScreenScenes';
 import {
@@ -259,6 +263,45 @@ function LowerThirdRow() {
  * Room / Next, beside the LIVE line: the monitor shows what the room sees, or the slide that
  * comes next (as the stage display shows it). Only the monitor changes, never the screens.
  */
+/**
+ * Words size on the screens: the slide's words bigger or smaller on the audience screens (and
+ * this monitor), over each theme's size. Saved once when the slider is let go.
+ */
+function WordsSizeRow() {
+  const { t } = useTranslation();
+  const scale = useStore((s) => s.settings?.wordsScale ?? 1);
+  const pct = Math.round(scale * 100);
+  return (
+    <div className="flex items-center gap-2 rounded-[var(--radius-control)] bg-[var(--surface-2)] px-2.5 py-2">
+      <ALargeSmall size={14} aria-hidden className="shrink-0 text-[var(--text-3)]" />
+      <Typography size={12} weight="semibold" tone="primary" className="shrink-0">
+        {t('monitor.wordsSize')}
+      </Typography>
+      <SettledSlider
+        aria-label={t('monitor.wordsSize')}
+        title={t('monitor.wordsSizeHelp')}
+        min={50}
+        max={200}
+        step={5}
+        value={pct}
+        format={(v) => `${v}%`}
+        onCommit={(v) => void saveSettings({ wordsScale: v / 100 })}
+        className="min-w-0 flex-1"
+      />
+      {pct !== 100 && (
+        <IconButton
+          size="2xs"
+          aria-label={t('monitor.wordsSizeReset')}
+          title={t('monitor.wordsSizeReset')}
+          onClick={() => void saveSettings({ wordsScale: 1 })}
+        >
+          <RotateCcw size={12} />
+        </IconButton>
+      )}
+    </div>
+  );
+}
+
 function MonitorViewSwitch({
   view,
   onChange,
@@ -619,6 +662,7 @@ export function RightColumn() {
           }
         />
         <LowerThirdRow />
+        <WordsSizeRow />
         {p.input && <CameraSwitcher />}
         <VideoControls
           program={p.media?.kind === 'video' ? p.media : null}

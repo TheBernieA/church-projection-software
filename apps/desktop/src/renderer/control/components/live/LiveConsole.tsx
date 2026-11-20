@@ -35,6 +35,7 @@ import {
   StreamSound,
 } from './StreamBar';
 import { ask } from '../../lib/confirm';
+import { prepareStreamSound } from '../../lib/streamSound';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
@@ -69,7 +70,10 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       confirm: t('confirm.goLive'),
       tone: 'live',
     });
-    if (ok) run('stream.start', { stream: true });
+    if (!ok) return;
+    // The audience must hear something: the stream mix and a mic set up first.
+    await prepareStreamSound();
+    run('stream.start', { stream: true });
   };
   const endStream = async (): Promise<void> => {
     const ok = await ask({

@@ -251,7 +251,10 @@
     "upNextItem": "Next item: {{label}}",
     "beforeItem": "Previous item: {{label}}",
     "showNextItem": "Go to the next item: {{label}}",
-    "showPrevItem": "Go to the previous item: {{label}}"
+    "showPrevItem": "Go to the previous item: {{label}}",
+    "wordsSize": "Words size",
+    "wordsSizeHelp": "How big the slides’ words are on the audience screens, over each theme’s size. Long slides still shrink to fit.",
+    "wordsSizeReset": "Back to the theme’s size (100%)"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -899,7 +902,7 @@
       },
       "output": {
         "title": "Output",
-        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third. While a video plays behind the words, the speaker on the monitor turns its sound on or off."
+        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third and Words size (the slides’ words bigger or smaller on the audience screens). While a video plays behind the words, the speaker on the monitor turns its sound on or off."
       },
       "controls": {
         "title": "Show controls",
@@ -920,7 +923,7 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away. Under the scenes, “Lower third on the stream” puts the words along the bottom of whatever is on (the main screen, a camera, the switcher), or takes them off. Scene changes sets whether a change of scene or camera cuts or fades, and how fast.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top. Going live first sets the sound up so the audience hears it: the stream mix unmuted and up, and a mic (or the desk) sent to it, adding the computer’s mic if there’s none. A note says what it changed.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away. Under the scenes, “Lower third on the stream” puts the words along the bottom of whatever is on (the main screen, a camera, the switcher), or takes them off. Scene changes sets whether a change of scene or camera cuts or fades, and how fast.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
@@ -2294,7 +2297,15 @@
     "cover": "Cover",
     "uncover": "Uncover",
     "coverHelp": "Hide what’s happening from the stream: viewers see the cover picture (Settings › Streaming) until you show the stream again. The sound carries on.",
-    "uncoverHelp": "The stream shows the cover picture. Click to show the service again."
+    "uncoverHelp": "The stream shows the cover picture. Click to show the service again.",
+    "soundReady": "Sound set for the stream: {{changes}}.",
+    "soundFix": {
+      "unmuteStream": "stream unmuted",
+      "streamUp": "stream level back to 0 dB",
+      "sendInput": "{{name}} sent to the stream",
+      "addMic": "{{name}} added and sent to the stream",
+      "inputUp": "{{name}} back to 0 dB"
+    }
   },
   "streaming": {
     "destinations": "Where it streams",

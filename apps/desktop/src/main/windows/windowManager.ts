@@ -370,6 +370,8 @@ export class WindowManager {
       // The alternate (secondary) output: its own themes, and the key feed for a video mixer.
       themes: o.role === 'secondary' ? this.d.alternateThemes() : {},
       key: o.role === 'secondary' ? this.d.getSettings().keyFeed.mode : 'off',
+      // Words size on the screens: the audience screens (the stage display keeps its own).
+      wordsScale: o.role === 'main' || o.role === 'secondary' ? this.d.getSettings().wordsScale : 1,
       stageLayout: resolveStageLayout(
         this.d.getSettings().stageLayouts,
         this.d.getSettings().stageLayoutId,

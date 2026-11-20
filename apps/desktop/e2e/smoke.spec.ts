@@ -306,6 +306,31 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
   await out.screenshot({ path: 'test-results/03-output.png' });
   await control.waitForTimeout(600);
   await control.screenshot({ path: 'test-results/04-live.png' });
+  // Words size on the screens: the projector's words get bigger (the slider sits under the
+  // lower third), then back to the theme's size.
+  await expect(control.getByRole('slider', { name: 'Words size' })).toBeVisible();
+  const size = () =>
+    out
+      .locator('.ls-text')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  const before = await size();
+  const setScale = (wordsScale: number) =>
+    control.evaluate(
+      (v) =>
+        window.lampstand.command({
+          type: 'settings.update',
+          payload: { patch: { wordsScale: v } },
+        }),
+      wordsScale,
+    );
+  await setScale(1.5);
+  await expect.poll(size).toBeGreaterThan(before * 1.2);
+  await expect(
+    control.getByRole('button', { name: 'Back to the theme’s size (100%)' }),
+  ).toBeVisible();
+  await setScale(1);
+  await expect.poll(size).toBeLessThan(before * 1.05);
   await previewFirst(false);
 });
 

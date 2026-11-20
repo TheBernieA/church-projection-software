@@ -59,6 +59,31 @@ export function withWordsTheme(scene: Scene, theme: Theme | null | undefined): S
   return { ...scene, content: { ...scene.content, theme } };
 }
 
+/** Font sizes stay within what a theme allows. */
+const sizeIn = (px: number): number => Math.max(8, Math.min(400, Math.round(px)));
+
+/**
+ * A scene with its words made bigger or smaller on screen (Words size on the screens): the
+ * theme's size, its shrink-to-fit limits and the reference line all scaled, so a long slide
+ * still fits. 1 leaves the scene as it is.
+ */
+export function withWordsScale(scene: Scene, scale: number): Scene {
+  if (scale === 1 || !scene.content) return scene;
+  const t = scene.content.theme;
+  const minSize = sizeIn(t.autoFit.minSize * scale);
+  const theme: Theme = {
+    ...t,
+    text: { ...t.text, fontSize: sizeIn(t.text.fontSize * scale) },
+    reference: { ...t.reference, fontSize: sizeIn(t.reference.fontSize * scale) },
+    autoFit: {
+      ...t.autoFit,
+      minSize,
+      maxSize: Math.max(minSize, sizeIn(t.autoFit.maxSize * scale)),
+    },
+  };
+  return { ...scene, content: { ...scene.content, theme } };
+}
+
 /** A theme with its words (and reference) put left, centre or right. */
 export function themeAligned(theme: Theme, align: 'left' | 'center' | 'right'): Theme {
   return {

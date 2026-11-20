@@ -152,6 +152,8 @@ export const SettingsSchema = z
     customColors: z.array(ColorSchema).max(20).default([]),
     /** Audio inputs left out of the lists (a desk shows many; the operator picks the few used). */
     hiddenAudioInputs: z.array(z.string().max(300)).max(256).default([]),
+    /** Words size on the audience screens, over each theme's own (1 = as the theme has it). */
+    wordsScale: z.number().min(0.5).max(2).default(1),
     language: z.string().max(35).default('en'),
     libraryPath: z.string().max(1000).optional(),
     displays: z.array(DisplayAssignmentSchema).max(16).default([]),

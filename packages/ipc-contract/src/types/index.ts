@@ -83,6 +83,8 @@ export interface OutputInfo {
   adjust: ScreenAdjust | null;
   /** Edge blending: this screen's part of one wide picture (null: a picture of its own). */
   blend: BlendPart | null;
+  /** The words' size on this screen, over each theme's (audience screens; 1 elsewhere). */
+  wordsScale: number;
 }
 
 export interface ServiceSummary {
