@@ -254,7 +254,14 @@
     "showPrevItem": "Go to the previous item: {{label}}",
     "wordsSize": "Words size",
     "wordsSizeHelp": "How big the slides’ words are on the audience screens, over each theme’s size. Long slides still shrink to fit.",
-    "wordsSizeReset": "Back to the theme’s size (100%)"
+    "screenWords": "Words on the screens",
+    "screenWordsReset": "As the theme has them (100%, its alignment)",
+    "wordsAlign": "Words across the screen",
+    "wordsAlignTheme": "As the theme has them",
+    "wordsAlignThemeShort": "Theme",
+    "wordsAlign_left": "Words on the left",
+    "wordsAlign_center": "Words in the centre",
+    "wordsAlign_right": "Words on the right"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -902,7 +909,7 @@
       },
       "output": {
         "title": "Output",
-        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third and Words size (the slides’ words bigger or smaller on the audience screens). While a video plays behind the words, the speaker on the monitor turns its sound on or off."
+        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third and Words on the screens: the slides’ words bigger or smaller, and left, centre or right, on the audience screens whatever the theme (Theme puts them back). While a video plays behind the words, the speaker on the monitor turns its sound on or off."
       },
       "controls": {
         "title": "Show controls",
@@ -910,7 +917,7 @@
       },
       "media": {
         "title": "Media bin",
-        "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides."
+        "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides. Sources sit along the bottom of the media sidebar, always in sight: Cameras (video inputs), Audio in (mics and the desk) and Stock media."
       }
     },
     "live": {
@@ -1172,6 +1179,11 @@
       "media-playlists": "Playlists",
       "stock-media": "Stock media",
       "audio-input": "Audio input"
+    },
+    "sourceShort": {
+      "video-input": "Cameras",
+      "audio-input": "Audio in",
+      "stock-media": "Stock"
     }
   },
   "props": {

@@ -7,7 +7,7 @@ import {
   maskForRole,
   resolveKindThemes,
   withKindThemes,
-  withWordsScale,
+  withScreenWords,
   withWordsTheme,
   type Scene,
   type ScreenMask,
@@ -22,17 +22,18 @@ import { useStore } from './store';
 /** The audience screens: Program, in the lower third's theme when it's on, under the Look. */
 export function useAudienceScene(): Scene | null {
   const live = useStore((s) => s.live);
-  // The words at the size the audience screens draw them (Words size on the screens).
+  // The words as the audience screens draw them (Words on the screens: size, alignment).
   const scale = useStore((s) => s.settings?.wordsScale ?? 1);
+  const align = useStore((s) => s.settings?.wordsAlign ?? 'theme');
   return useMemo(
     () =>
       live
         ? applyLook(
-            withWordsScale(withWordsTheme(live.program, live.lowerThird), scale),
+            withScreenWords(withWordsTheme(live.program, live.lowerThird), { scale, align }),
             lookLayersFor(live.look, 'main'),
           )
         : null,
-    [live, scale],
+    [live, scale, align],
   );
 }
 

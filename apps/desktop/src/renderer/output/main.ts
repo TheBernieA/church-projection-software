@@ -3,10 +3,11 @@ import {
   keyFeedScene,
   lookLayersFor,
   withKindThemes,
-  withWordsScale,
+  withScreenWords,
   withWordsTheme,
   type KeyFeedMode,
   type ResolvedKindThemes,
+  type ScreenWords,
 } from '@lampstand/core';
 import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
 import type { LiveDelivery, OutputInfo } from '@lampstand/ipc-contract';
@@ -37,8 +38,8 @@ let pattern: HTMLElement | null = null;
 let latest: LiveDelivery | null = null;
 let themes: ResolvedKindThemes = {};
 let key: KeyFeedMode = 'off';
-/** Words size on this screen, over each theme's (Words size on the screens). */
-let wordsScale = 1;
+/** How this screen draws the words, over each theme (Words on the screens). */
+let words: ScreenWords = { scale: 1, align: 'theme' };
 let ready = false;
 /** Room audio plays from the main output only. */
 let audio: RoomAudio | null = null;
@@ -67,7 +68,7 @@ function draw(state: LiveDelivery): void {
       : state.program;
   // The alternate output: its own themes, and (as a key feed) words only over a flat colour.
   program = applyLook(
-    withWordsScale(withKindThemes(program, themes), wordsScale),
+    withScreenWords(withKindThemes(program, themes), words),
     silentVideo ? [...layers, 'media'] : layers,
   );
   // After the Look, so the key colour is there whatever layers the Look shows.
@@ -89,7 +90,7 @@ api.onInfo((i: OutputInfo) => {
   role = i.role;
   themes = i.themes;
   key = i.key;
-  wordsScale = i.wordsScale;
+  words = i.words;
   info = { label: i.label, width: i.width, height: i.height, audio: i.audio };
   // Fit the picture to the screen (keystone, scale, flips, colour) and lay out its slice when
   // blending; a new canvas size means a new renderer (the scene is drawn into it again below).

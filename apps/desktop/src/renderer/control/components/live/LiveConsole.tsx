@@ -172,7 +172,10 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                   size="md"
                   variant="subtle"
                   icon={<Circle size={13} fill="var(--tally-program)" strokeWidth={0} />}
-                  onClick={() => run('stream.start', { record: true })}
+                  onClick={() =>
+                    // A recording takes the stream's mix: set it up so it isn't silent.
+                    void prepareStreamSound().then(() => run('stream.start', { record: true }))
+                  }
                 >
                   {t('live.record')}
                 </Button>

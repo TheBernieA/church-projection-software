@@ -327,10 +327,21 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
   await setScale(1.5);
   await expect.poll(size).toBeGreaterThan(before * 1.2);
   await expect(
-    control.getByRole('button', { name: 'Back to the theme’s size (100%)' }),
+    control.getByRole('button', { name: 'As the theme has them (100%, its alignment)' }),
   ).toBeVisible();
   await setScale(1);
   await expect.poll(size).toBeLessThan(before * 1.05);
+  // Words across the screen, whatever the theme: on the right, then as the theme has them.
+  const textAlign = () =>
+    out
+      .locator('.ls-text')
+      .first()
+      .evaluate((el) => getComputedStyle(el).textAlign);
+  const themes = await textAlign();
+  await control.getByRole('button', { name: 'Words on the right' }).click();
+  await expect.poll(textAlign).toBe('right');
+  await control.getByRole('button', { name: 'As the theme has them', exact: true }).click();
+  await expect.poll(textAlign).toBe(themes);
   await previewFirst(false);
 });
 

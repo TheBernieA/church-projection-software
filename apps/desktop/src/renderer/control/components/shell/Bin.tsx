@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { MediaPlaylist } from '@lampstand/core';
-import { IconButton, NavItem, SoonBadge, Typography } from '@lampstand/ui';
+import { Button, IconButton, NavItem, SoonBadge, Typography } from '@lampstand/ui';
 import { feature, soonTitle } from '../../lib/features';
 import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
 import {
@@ -203,64 +203,83 @@ export function BinNav() {
     audio: library.filter((m) => m.kind === 'audio').length,
   };
   return (
-    <nav
-      aria-label={t('mediaBin.library')}
-      className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-2"
-    >
-      <SectionHeading title={t('mediaBin.media')} />
-      {LIBRARY.map(({ tab: x, icon: Icon }) => (
-        <NavItem
-          key={x}
-          aria-pressed={tab === x}
-          selected={tab === x}
-          onClick={() => useStore.setState({ binTab: x })}
-          icon={<Icon size={14} className="text-[var(--text-3)]" />}
-          label={t(`mediaBin.views.${x}`)}
-          trailing={<Count n={counts[x] ?? 0} />}
-          className="w-[calc(100%-12px)]"
-        />
-      ))}
-
-      <SoonNavItem id="media-recent" icon={<History size={14} />} />
-
-      <SectionHeading
-        title={t('mediaBin.playlists')}
-        action={
-          <IconButton
-            size="3xs"
-            variant="quiet"
-            aria-label={t('mediaBin.newPlaylist')}
-            onClick={() => void createMediaPlaylist()}
-          >
-            <Plus size={14} />
-          </IconButton>
-        }
-      />
-      {playlists.length === 0 && (
-        <Typography as="p" size={11} tone="muted" leading="snug" className="px-3 py-1">
-          {t('mediaBin.noPlaylists')}
-        </Typography>
-      )}
-      {[...playlists]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((p) => (
-          <PlaylistRow key={p.id} p={p} count={p.mediaIds.filter((id) => ids.has(id)).length} />
+    <nav aria-label={t('mediaBin.library')} className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto pb-2">
+        <SectionHeading title={t('mediaBin.media')} />
+        {LIBRARY.map(({ tab: x, icon: Icon }) => (
+          <NavItem
+            key={x}
+            aria-pressed={tab === x}
+            selected={tab === x}
+            onClick={() => useStore.setState({ binTab: x })}
+            icon={<Icon size={14} className="text-[var(--text-3)]" />}
+            label={t(`mediaBin.views.${x}`)}
+            trailing={<Count n={counts[x] ?? 0} />}
+            className="w-[calc(100%-12px)]"
+          />
         ))}
 
-      <SoonNavItem id="playlist-folders" icon={<FolderPlus size={14} />} />
+        <SoonNavItem id="media-recent" icon={<History size={14} />} />
 
-      <SectionHeading title={t('mediaBin.sources')} />
-      {SOURCES.map(({ tab: x, icon: Icon }) => (
-        <NavItem
-          key={x}
-          aria-pressed={tab === x}
-          selected={tab === x}
-          onClick={() => useStore.setState({ binTab: x })}
-          icon={<Icon size={14} className="text-[var(--text-3)]" />}
-          label={t(`bin.tabs.${x}`)}
-          className="w-[calc(100%-12px)]"
+        <SectionHeading
+          title={t('mediaBin.playlists')}
+          action={
+            <IconButton
+              size="3xs"
+              variant="quiet"
+              aria-label={t('mediaBin.newPlaylist')}
+              onClick={() => void createMediaPlaylist()}
+            >
+              <Plus size={14} />
+            </IconButton>
+          }
         />
-      ))}
+        {playlists.length === 0 && (
+          <Typography as="p" size={11} tone="muted" leading="snug" className="px-3 py-1">
+            {t('mediaBin.noPlaylists')}
+          </Typography>
+        )}
+        {[...playlists]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((p) => (
+            <PlaylistRow key={p.id} p={p} count={p.mediaIds.filter((id) => ids.has(id)).length} />
+          ))}
+
+        <SoonNavItem id="playlist-folders" icon={<FolderPlus size={14} />} />
+      </div>
+
+      {/* Sources, pinned along the bottom: always in sight, however short the sidebar is. */}
+      <div
+        role="group"
+        aria-label={t('mediaBin.sources')}
+        className="shrink-0 border-t border-[var(--hairline)] px-2 pb-2 pt-1.5"
+      >
+        <Typography as="p" variant="overline" className="px-1 pb-1">
+          {t('mediaBin.sources')}
+        </Typography>
+        <div className="grid grid-cols-3 gap-1">
+          {SOURCES.map(({ tab: x, icon: Icon }) => (
+            <Button
+              key={x}
+              variant="bare"
+              aria-pressed={tab === x}
+              aria-label={t(`bin.tabs.${x}`)}
+              title={t(`bin.tabs.${x}`)}
+              onClick={() => useStore.setState({ binTab: x })}
+              className={`flex min-w-0 cursor-pointer flex-col items-center gap-1 rounded-[6px] px-1 py-1.5 transition-colors ${
+                tab === x
+                  ? 'bg-[var(--select)] text-white'
+                  : 'text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
+              }`}
+            >
+              <Icon size={15} />
+              <Typography size={10} weight="medium" tone="inherit" truncate className="max-w-full">
+                {t(`bin.sourceShort.${x}`)}
+              </Typography>
+            </Button>
+          ))}
+        </div>
+      </div>
     </nav>
   );
 }

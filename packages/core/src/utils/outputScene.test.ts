@@ -5,6 +5,7 @@ import {
   KEY_COLORS,
   makeScene,
   withKindThemes,
+  withScreenWords,
   withWordsScale,
   withWordsTheme,
 } from './scene';
@@ -77,5 +78,23 @@ describe('withWordsScale (Words size on the screens)', () => {
     expect(t.text.fontSize).toBeLessThanOrEqual(400);
     expect(withWordsScale(scene, 0.01).content!.theme.autoFit.minSize).toBeGreaterThanOrEqual(8);
     expect(withWordsScale(makeScene(), 2)).toEqual(makeScene());
+  });
+});
+
+describe('withScreenWords (alignment, and the announcements layer)', () => {
+  const withBoth = makeScene({
+    content: { key: 'k', kind: 'scripture', theme: first, blocks: [] },
+    announcement: { key: 'a', kind: 'text', theme: first, blocks: [] },
+  });
+  it('puts the words left, centre or right whatever the theme; theme: unchanged', () => {
+    const right = withScreenWords(withBoth, { scale: 1, align: 'right' });
+    expect(right.content?.theme.text.align).toBe('right');
+    expect(right.content?.theme.reference.align).toBe('right');
+    expect(withScreenWords(withBoth, { scale: 1, align: 'theme' })).toBe(withBoth);
+  });
+  it('sizes the announcements layer too', () => {
+    const big = withScreenWords(withBoth, { scale: 1.5, align: 'center' });
+    expect(big.announcement?.theme.text.fontSize).toBe(Math.round(first.text.fontSize * 1.5));
+    expect(big.announcement?.theme.text.align).toBe('center');
   });
 });
