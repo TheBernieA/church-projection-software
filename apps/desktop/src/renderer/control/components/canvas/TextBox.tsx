@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Theme } from '@lampstand/core';
 import { applyTextStyle, fitFontSize, safeAreaPx } from '@lampstand/renderer';
@@ -33,16 +40,73 @@ export interface TextBoxActions {
   onNewSlide?: (values: Record<string, string>) => void;
 }
 
-const HANDLES: CSSProperties[] = [
-  { left: 0, top: 0 },
-  { left: '50%', top: 0 },
-  { left: '100%', top: 0 },
-  { left: 0, top: '50%' },
-  { left: '100%', top: '50%' },
-  { left: 0, top: '100%' },
-  { left: '50%', top: '100%' },
-  { left: '100%', top: '100%' },
+/** The text box's grips: corners and edge midpoints (each moves the sides it touches). */
+type Grip = 'nw' | 'n' | 'ne' | 'w' | 'e' | 'sw' | 's' | 'se';
+const GRIPS: { grip: Grip; at: CSSProperties; cursor: string }[] = [
+  { grip: 'nw', at: { left: 0, top: 0 }, cursor: 'nwse-resize' },
+  { grip: 'n', at: { left: '50%', top: 0 }, cursor: 'ns-resize' },
+  { grip: 'ne', at: { left: '100%', top: 0 }, cursor: 'nesw-resize' },
+  { grip: 'w', at: { left: 0, top: '50%' }, cursor: 'ew-resize' },
+  { grip: 'e', at: { left: '100%', top: '50%' }, cursor: 'ew-resize' },
+  { grip: 'sw', at: { left: 0, top: '100%' }, cursor: 'nesw-resize' },
+  { grip: 's', at: { left: '50%', top: '100%' }, cursor: 'ns-resize' },
+  { grip: 'se', at: { left: '100%', top: '100%' }, cursor: 'nwse-resize' },
 ];
+
+const EDGES = ['top', 'right', 'bottom', 'left'] as const;
+
+/** A strip along one edge of the box, `size` thick, centred on the frame's line. */
+function edgeStyle(edge: (typeof EDGES)[number], size: number): CSSProperties {
+  const across = { left: 0, right: 0, height: size };
+  const down = { top: 0, bottom: 0, width: size };
+  switch (edge) {
+    case 'top':
+      return { ...across, top: -size / 2 };
+    case 'bottom':
+      return { ...across, bottom: -size / 2 };
+    case 'left':
+      return { ...down, left: -size / 2 };
+    case 'right':
+      return { ...down, right: -size / 2 };
+  }
+}
+
+/** The text box's margins from the slide's edges, in canvas pixels. */
+type Pad = { top: number; right: number; bottom: number; left: number };
+
+/** The theme's safe area allows up to this much of the slide on each side. */
+const MAX_SIDE = 0.45;
+
+/**
+ * Where a drag leaves the text box: a grip moves the sides it touches, the frame moves the whole
+ * box. It never leaves the slide, nor gets smaller than a tenth of it.
+ */
+function dragPad(
+  from: Pad,
+  grip: Grip | 'move',
+  dx: number,
+  dy: number,
+  w: number,
+  h: number,
+): Pad {
+  const side = (v: number, size: number): number => Math.max(0, Math.min(v, size * MAX_SIDE));
+  if (grip === 'move') {
+    const x = Math.max(-from.left, Math.min(dx, from.right));
+    const y = Math.max(-from.top, Math.min(dy, from.bottom));
+    return {
+      left: side(from.left + x, w),
+      right: side(from.right - x, w),
+      top: side(from.top + y, h),
+      bottom: side(from.bottom - y, h),
+    };
+  }
+  return {
+    left: grip.includes('w') ? side(from.left + dx, w) : from.left,
+    right: grip.includes('e') ? side(from.right - dx, w) : from.right,
+    top: grip.includes('n') ? side(from.top + dy, h) : from.top,
+    bottom: grip.includes('s') ? side(from.bottom - dy, h) : from.bottom,
+  };
+}
 
 /** The renderer's gap between a slide's blocks (heading, text). */
 const BLOCK_GAP = '0.6em';
@@ -200,9 +264,10 @@ function Placeholder({ theme, text }: { theme: Theme; text: string }) {
 }
 
 /**
- * A slide's text box, over the slide at the output's own scale: framed with handles like a
- * selected object while typing (and on hover); double-click it to type. `visit` changes when the
- * editor moves to another slide, so the fields start afresh there.
+ * A slide's text box, over the slide at the output's own scale, framed with grips (on hover, and
+ * while typing). Double-click it to type; drag a grip to resize it or the frame to move it
+ * (`onResize` keeps where it ends up, as percent of the slide). `visit` changes when the editor
+ * moves to another slide, so the fields start afresh there.
  */
 export function TextBox({
   theme,
@@ -211,6 +276,7 @@ export function TextBox({
   visit,
   fields,
   onStart,
+  onResize,
   ...actions
 }: {
   theme: Theme;
@@ -219,21 +285,62 @@ export function TextBox({
   visit: number | string;
   fields: TextField[];
   onStart: () => void;
+  onResize?: (box: Pad) => void;
 } & TextBoxActions) {
   const { t } = useTranslation();
   const box = boxOf(theme);
+  const [drag, setDrag] = useState<{
+    grip: Grip | 'move';
+    x: number;
+    y: number;
+    from: Pad;
+    pad: Pad;
+  } | null>(null);
+  const pad = drag?.pad ?? box.pad;
+  const { width: W, height: H } = theme.canvas;
   const line = 2 / scale;
-  const handle = 9 / scale;
+  const handle = 10 / scale;
+
+  const start = (e: PointerEvent, grip: Grip | 'move'): void => {
+    if (!onResize || e.button !== 0) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ grip, x: e.clientX, y: e.clientY, from: box.pad, pad: box.pad });
+  };
+  const move = (e: PointerEvent): void => {
+    if (!drag) return;
+    const dx = (e.clientX - drag.x) / scale;
+    const dy = (e.clientY - drag.y) / scale;
+    setDrag({ ...drag, pad: dragPad(drag.from, drag.grip, dx, dy, W, H) });
+  };
+  const end = (): void => {
+    if (!drag) return;
+    const p = drag.pad;
+    const pct = (v: number, size: number): number => Math.round((v / size) * 1000) / 10;
+    const same = (Object.keys(p) as (keyof Pad)[]).every((k) => p[k] === drag.from[k]);
+    if (!same && onResize)
+      onResize({
+        top: pct(p.top, H),
+        right: pct(p.right, W),
+        bottom: pct(p.bottom, H),
+        left: pct(p.left, W),
+      });
+    setDrag(null);
+  };
+
   return (
     <div
       className="pointer-events-none absolute left-0 top-0 flex origin-top-left flex-col"
       style={{
-        width: theme.canvas.width,
-        height: theme.canvas.height,
+        width: W,
+        height: H,
         transform: `scale(${scale})`,
-        padding: `${box.pad.top}px ${box.pad.right}px ${box.pad.bottom}px ${box.pad.left}px`,
+        padding: `${pad.top}px ${pad.right}px ${pad.bottom}px ${pad.left}px`,
         justifyContent: box.justify,
       }}
+      onPointerMove={move}
+      onPointerUp={end}
+      onPointerCancel={end}
     >
       <div
         role="button"
@@ -246,28 +353,46 @@ export function TextBox({
           onStart();
         }}
         className={`group/box pointer-events-auto absolute ${editing ? '' : 'cursor-text'}`}
-        style={{ left: box.pad.left, top: box.pad.top, width: box.width, height: box.height }}
+        style={{
+          left: pad.left,
+          top: pad.top,
+          width: W - pad.left - pad.right,
+          height: H - pad.top - pad.bottom,
+        }}
       >
         <span
           aria-hidden
-          className={`absolute inset-0 transition-opacity ${editing ? 'opacity-100' : 'opacity-0 group-hover/box:opacity-60'}`}
+          className={`pointer-events-none absolute inset-0 transition-opacity ${editing || drag ? 'opacity-100' : 'opacity-0 group-hover/box:opacity-70'}`}
           style={{ outline: `${line}px solid var(--accent)` }}
         />
-        {editing &&
-          HANDLES.map((h, i) => (
+        {/* Its edges: drag one to move the box (inside, clicks reach the words). */}
+        {onResize &&
+          EDGES.map((edge) => (
             <span
-              key={i}
+              key={edge}
               aria-hidden
-              className="absolute rounded-full border-[var(--accent)] bg-white"
-              style={{
-                ...h,
-                width: handle,
-                height: handle,
-                borderWidth: line,
-                transform: 'translate(-50%, -50%)',
-              }}
+              onPointerDown={(e) => start(e, 'move')}
+              className="absolute cursor-move"
+              style={edgeStyle(edge, handle)}
             />
           ))}
+        {GRIPS.map(({ grip, at, cursor }) => (
+          <span
+            key={grip}
+            aria-hidden
+            data-grip={grip}
+            onPointerDown={(e) => start(e, grip)}
+            className={`absolute rounded-full border-[var(--accent)] bg-white transition-opacity ${editing || drag ? 'opacity-100' : 'opacity-0 group-hover/box:opacity-100'}`}
+            style={{
+              ...at,
+              width: handle,
+              height: handle,
+              borderWidth: line,
+              transform: 'translate(-50%, -50%)',
+              cursor: onResize ? cursor : undefined,
+            }}
+          />
+        ))}
       </div>
       {!editing && fields.every((f) => !f.value.trim()) && fields.length > 0 && (
         <Placeholder theme={theme} text={fields[fields.length - 1]?.placeholder ?? ''} />

@@ -7,13 +7,18 @@ import {
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   Bold,
+  ClipboardPaste,
+  Copy,
   Italic,
   RotateCcw,
+  Strikethrough,
+  Underline,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { TextFormat, Theme } from '@lampstand/core';
+import { omit, type TextFormat, type Theme } from '@lampstand/core';
 import { Button, IconButton, Typography } from '@lampstand/ui';
 import { BUNDLED_FONTS } from '../constants';
+import { useStore } from '../lib/store';
 import { Checkbox, ColorInput, Field, NumberInput } from './form';
 import { Select, type SelectOption } from './Select';
 
@@ -156,27 +161,86 @@ function SettledColor({
 
 const STROKE = { width: 3, color: '#000000' };
 const SHADOW = { x: 0, y: 4, blur: 12, color: '#000000' };
+const BAR = { color: '#000000', padding: 12 };
+const SCROLL = { speed: 160 };
+
+/** An option that's on or off, with its settings under it while on (stroke, shadow…). */
+function Option({
+  label,
+  on,
+  onToggle,
+  children,
+}: {
+  label: string;
+  on: boolean;
+  onToggle: (on: boolean) => void;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="space-y-2 border-t border-[var(--hairline)] pt-3">
+      <Checkbox
+        label={<Typography variant="label">{label}</Typography>}
+        checked={on}
+        onChange={onToggle}
+      />
+      {on && children && <div className="grid grid-cols-2 gap-2 pl-6">{children}</div>}
+    </section>
+  );
+}
+
+/** A labelled dropdown in a row: name on the left, choice on the right. */
+function Choice<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: SelectOption<T>[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <Typography size={12} tone="secondary">
+        {label}
+      </Typography>
+      <Select
+        size="sm"
+        aria-label={label}
+        value={value}
+        onChange={onChange}
+        options={options}
+        className="!w-40"
+      />
+    </div>
+  );
+}
 
 /**
  * The Text tab: the words' font, size, style, capitals, colour, alignment (across and up and
- * down), stroke and shadow, shown as they are now (`theme`, with the formatting applied) and
- * saved as formatting over the theme. Reset goes back to the theme.
+ * down), scaling, line transform, list, stroke, shadow, lines only, scrolling and linked text,
+ * shown as they are now (`theme`, with the formatting applied) and kept as formatting over the
+ * theme. Copy style takes this formatting to paste onto another song or item; Use theme clears it.
  */
 export function TextFormatPanel({
   theme,
   format,
   onChange,
-  onReset,
+  onSet,
   note,
 }: {
   theme: Theme;
   format: TextFormat;
+  /** Change some of the formatting. */
   onChange: (patch: Partial<TextFormat>) => void;
-  onReset: () => void;
+  /** Replace all of it ({}: back to the theme). */
+  onSet: (format: TextFormat) => void;
   /** A line under the controls (e.g. where the formatting is kept). */
   note?: string;
 }) {
   const { t } = useTranslation();
+  const copied = useStore((s) => s.copiedTextFormat);
   const text = theme.text;
   const fonts = useFontOptions(text.fontFamily);
   const bold = text.fontWeight >= 600;
@@ -185,8 +249,49 @@ export function TextFormatPanel({
   const canPlace = ['center', 'top', 'lower-third'].includes(theme.layout);
   const stroke = text.outline && text.outline.width > 0 ? text.outline : null;
   const shadow = text.shadow ?? null;
+  const bar = text.lineBackground ?? null;
+  const scroll = text.scroll ?? null;
+  const toggles = [
+    { key: 'bold', icon: Bold, on: bold, set: () => onChange({ bold: !bold }) },
+    {
+      key: 'italic',
+      icon: Italic,
+      on: !!text.italic,
+      set: () => onChange({ italic: !text.italic }),
+    },
+    {
+      key: 'underline',
+      icon: Underline,
+      on: !!text.underline,
+      set: () => onChange({ underline: !text.underline }),
+    },
+    {
+      key: 'strike',
+      icon: Strikethrough,
+      on: !!text.strike,
+      set: () => onChange({ strike: !text.strike }),
+    },
+  ] as const;
   return (
     <div className="space-y-4 px-4 py-4">
+      {/* Copy this formatting (not the text box's place) to paste onto another song or item. */}
+      <div className="grid grid-cols-2 gap-2">
+        <Button
+          size="xs"
+          icon={<Copy size={13} />}
+          onClick={() => useStore.setState({ copiedTextFormat: omit(format, 'box') })}
+        >
+          {t('textFormat.copy')}
+        </Button>
+        <Button
+          size="xs"
+          icon={<ClipboardPaste size={13} />}
+          disabled={!copied}
+          onClick={() => copied && onSet(format.box ? { ...copied, box: format.box } : copied)}
+        >
+          {t('textFormat.paste')}
+        </Button>
+      </div>
       <div className="flex items-end gap-2">
         <Field label={t('textBar.font')} htmlFor="tf-font" className="min-w-0 flex-1">
           <Select
@@ -208,36 +313,26 @@ export function TextFormatPanel({
         </Field>
       </div>
       <div className="flex items-center gap-1">
-        <FormatToggle label={t('textBar.bold')} on={bold} onClick={() => onChange({ bold: !bold })}>
-          <Bold size={15} />
-        </FormatToggle>
-        <FormatToggle
-          label={t('textBar.italic')}
-          on={!!text.italic}
-          onClick={() => onChange({ italic: !text.italic })}
-        >
-          <Italic size={15} />
-        </FormatToggle>
+        {toggles.map(({ key, icon: Icon, on, set }) => (
+          <FormatToggle key={key} label={t(`textFormat.${key}`)} on={on} onClick={set}>
+            <Icon size={15} />
+          </FormatToggle>
+        ))}
         <span className="flex-1" />
-        <Select
-          size="sm"
-          aria-label={t('textFormat.capitals')}
-          value={text.textTransform === 'uppercase' ? 'upper' : 'none'}
-          onChange={(v) => onChange({ uppercase: v === 'upper' })}
-          options={[
-            { value: 'none', label: t('textFormat.capsNone') },
-            { value: 'upper', label: t('textFormat.capsAll') },
-          ]}
-          className="!w-36"
-        />
+        <Typography
+          as="label"
+          size={12}
+          tone="secondary"
+          className="flex items-center gap-2 whitespace-nowrap"
+        >
+          {t('textBar.color')}
+          <SettledColor
+            label={t('textBar.color')}
+            value={text.color}
+            onSave={(color) => onChange({ color })}
+          />
+        </Typography>
       </div>
-      <Field label={t('textBar.color')} group>
-        <SettledColor
-          label={t('textBar.color')}
-          value={text.color}
-          onSave={(color) => onChange({ color })}
-        />
-      </Field>
       <div className="flex items-center gap-3">
         <div role="group" aria-label={t('textBar.align')} className="flex items-center gap-0.5">
           {(
@@ -282,14 +377,62 @@ export function TextFormatPanel({
           </div>
         )}
       </div>
-      <section className="space-y-2 border-t border-[var(--hairline)] pt-3">
-        <Checkbox
-          label={<Typography variant="label">{t('textFormat.stroke')}</Typography>}
-          checked={!!stroke}
-          onChange={(on) => onChange({ stroke: on ? (text.outline ?? STROKE) : null })}
+      <div className="space-y-2">
+        <Choice
+          label={t('textFormat.capitals')}
+          value={text.textTransform === 'uppercase' ? 'upper' : 'none'}
+          onChange={(v) => onChange({ uppercase: v === 'upper' })}
+          options={[
+            { value: 'none', label: t('textFormat.capsNone') },
+            { value: 'upper', label: t('textFormat.capsAll') },
+          ]}
         />
+        <Choice
+          label={t('textFormat.scaling')}
+          value={theme.autoFit.enabled ? 'fit' : 'none'}
+          onChange={(v) => onChange({ autoFit: v === 'fit' })}
+          options={[
+            { value: 'fit', label: t('textFormat.scaleFit') },
+            { value: 'none', label: t('textFormat.scaleNone') },
+          ]}
+        />
+        <Choice
+          label={t('textFormat.lineTransform')}
+          value={text.joinLines ? 'join' : 'keep'}
+          onChange={(v) => onChange({ joinLines: v === 'join' })}
+          options={[
+            { value: 'keep', label: t('textFormat.keepLines') },
+            { value: 'join', label: t('textFormat.joinLines') },
+          ]}
+        />
+        <Choice
+          label={t('textFormat.list')}
+          value={text.list ?? 'none'}
+          onChange={(v) => onChange({ list: v === 'none' ? null : v })}
+          options={[
+            { value: 'none', label: t('textFormat.listNone') },
+            { value: 'bullet', label: t('textFormat.listBullet') },
+            { value: 'number', label: t('textFormat.listNumber') },
+          ]}
+        />
+        <Choice
+          label={t('textFormat.linked')}
+          value={text.linked ?? 'none'}
+          onChange={(v) => onChange({ linked: v === 'none' ? null : v })}
+          options={[
+            { value: 'none', label: t('textFormat.linkedNone') },
+            { value: 'time', label: t('textFormat.linkedTime') },
+            { value: 'date', label: t('textFormat.linkedDate') },
+          ]}
+        />
+      </div>
+      <Option
+        label={t('textFormat.stroke')}
+        on={!!stroke}
+        onToggle={(on) => onChange({ stroke: on ? (text.outline ?? STROKE) : null })}
+      >
         {stroke && (
-          <div className="grid grid-cols-2 gap-2 pl-6">
+          <>
             <NumberInput
               aria-label={t('textFormat.strokeWidth')}
               min={1}
@@ -302,17 +445,16 @@ export function TextFormatPanel({
               value={stroke.color}
               onSave={(color) => onChange({ stroke: { ...stroke, color } })}
             />
-          </div>
+          </>
         )}
-      </section>
-      <section className="space-y-2 border-t border-[var(--hairline)] pt-3">
-        <Checkbox
-          label={<Typography variant="label">{t('textFormat.shadow')}</Typography>}
-          checked={!!shadow}
-          onChange={(on) => onChange({ shadow: on ? (text.shadow ?? SHADOW) : null })}
-        />
+      </Option>
+      <Option
+        label={t('textFormat.shadow')}
+        on={!!shadow}
+        onToggle={(on) => onChange({ shadow: on ? (text.shadow ?? SHADOW) : null })}
+      >
         {shadow && (
-          <div className="grid grid-cols-2 gap-2 pl-6">
+          <>
             <NumberInput
               aria-label={t('textFormat.shadowBlur')}
               min={0}
@@ -325,17 +467,56 @@ export function TextFormatPanel({
               value={shadow.color}
               onSave={(color) => onChange({ shadow: { ...shadow, color } })}
             />
-          </div>
+          </>
         )}
-      </section>
-      <div className="flex items-center gap-2 border-t border-[var(--hairline)] pt-3">
+      </Option>
+      <Option
+        label={t('textFormat.linesOnly')}
+        on={!!bar}
+        onToggle={(on) => onChange({ lineBackground: on ? BAR : null })}
+      >
+        {bar && (
+          <>
+            <NumberInput
+              aria-label={t('textFormat.barPadding')}
+              min={0}
+              max={80}
+              value={bar.padding}
+              onChange={(padding) => onChange({ lineBackground: { ...bar, padding } })}
+            />
+            <SettledColor
+              label={t('textFormat.barColor')}
+              value={bar.color}
+              onSave={(color) => onChange({ lineBackground: { ...bar, color } })}
+            />
+          </>
+        )}
+      </Option>
+      <Option
+        label={t('textFormat.scrolling')}
+        on={!!scroll}
+        onToggle={(on) => onChange({ scroll: on ? SCROLL : null })}
+      >
+        {scroll && (
+          <Field label={t('textFormat.speed')} group className="col-span-2">
+            <NumberInput
+              aria-label={t('textFormat.speed')}
+              min={10}
+              max={1000}
+              value={scroll.speed}
+              onChange={(speed) => onChange({ scroll: { speed } })}
+            />
+          </Field>
+        )}
+      </Option>
+      <div className="border-t border-[var(--hairline)] pt-3">
         <Button
           size="xs"
           variant="ghost"
           icon={<RotateCcw size={13} />}
           disabled={Object.keys(format).length === 0}
           title={t('textBar.resetHelp')}
-          onClick={onReset}
+          onClick={() => onSet({})}
         >
           {t('textBar.reset')}
         </Button>

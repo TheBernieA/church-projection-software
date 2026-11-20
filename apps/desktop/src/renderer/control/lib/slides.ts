@@ -118,16 +118,16 @@ export function songLook(
 /** The credit line on a song's first slide, or '' when the song's credits are hidden. */
 export function songCredit(song: Song, ctx: Pick<SlideContext, 'settings'>): string {
   if (song.showCredits === false) return '';
-  return [
-    song.title,
+  const credits = [
     song.authors.join(', '),
     song.copyright,
     song.ccliNumber && ctx.settings?.ccliLicenseNumber
       ? `CCLI #${ctx.settings.ccliLicenseNumber}`
       : '',
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter(Boolean);
+  // A title alone credits no one: nothing shows until the song has authors, a copyright or
+  // a CCLI number.
+  return credits.length ? [song.title, ...credits].join(' · ') : '';
 }
 
 /** The slide, marked when its background is its own. */

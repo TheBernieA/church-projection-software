@@ -54,6 +54,36 @@ describe('withTextFormat', () => {
     );
   });
 
+  it('adds underline, scaling, lists, lines only, scrolling, linked text and the text box', () => {
+    const t = withTextFormat(theme, {
+      underline: true,
+      strike: true,
+      autoFit: false,
+      joinLines: true,
+      lineBackground: { color: '#000000', padding: 8 },
+      list: 'number',
+      scroll: { speed: 120 },
+      linked: 'time',
+      box: { top: 10, right: 5, bottom: 10, left: 5 },
+    });
+    expect(t.text).toMatchObject({
+      underline: true,
+      strike: true,
+      joinLines: true,
+      lineBackground: { color: '#000000', padding: 8 },
+      list: 'number',
+      scroll: { speed: 120 },
+      linked: 'time',
+    });
+    expect(t.autoFit.enabled).toBe(false);
+    expect(t.safeArea).toEqual({ top: 10, right: 5, bottom: 10, left: 5 });
+    const off = withTextFormat(
+      { ...theme, text: { ...theme.text, list: 'bullet' } },
+      { list: null },
+    );
+    expect(off.text.list).toBeUndefined();
+  });
+
   it('makes the size the auto-fit ceiling so long slides still shrink', () => {
     const t = withTextFormat(theme, { fontSize: 40 });
     expect(t.text.fontSize).toBe(40);

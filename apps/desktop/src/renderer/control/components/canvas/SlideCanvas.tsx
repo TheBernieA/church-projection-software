@@ -11,7 +11,7 @@ import { makeScene, type SlideObject, type Theme } from '@lampstand/core';
 import { EMPHASIS_COLOR, objectBoxStyle } from '@lampstand/renderer';
 import { useCanvasScale, useItemSlides } from '../../lib/hooks';
 import { editObjects, patchObject, snap } from '../../lib/objects';
-import { useStore } from '../../lib/store';
+import { patchItem, useStore } from '../../lib/store';
 import { patchSlide } from '../../lib/textSlides';
 import { mediaUrl } from '../../../shared/mediaUrl';
 import { SceneView } from '../SceneView';
@@ -299,6 +299,9 @@ export function SlideCanvas({
           visit={visit}
           fields={fields}
           onStart={typeWords}
+          onResize={(box) =>
+            patchItem<TextItem>(item, (cur) => ({ textFormat: { ...cur.textFormat, box } }))
+          }
           onDone={stopTyping}
           onBreak={onBreak}
           onNewSlide={onNewSlide}

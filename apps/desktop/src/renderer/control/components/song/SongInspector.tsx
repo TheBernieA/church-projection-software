@@ -510,7 +510,11 @@ export function SongInspector({ ed }: { ed: SongEditorState }) {
           theme={ed.theme}
           format={ed.song.textFormat ?? {}}
           onChange={(p) => ed.patch((s) => ({ ...s, textFormat: { ...s.textFormat, ...p } }))}
-          onReset={() => ed.patch((s) => omit(s, 'textFormat'))}
+          onSet={(f) =>
+            ed.patch((s) =>
+              Object.keys(f).length ? { ...s, textFormat: f } : omit(s, 'textFormat'),
+            )
+          }
           note={t(ed.item.textFormat ? 'textFormat.itemOwn' : 'textFormat.songNote')}
         />
       )}

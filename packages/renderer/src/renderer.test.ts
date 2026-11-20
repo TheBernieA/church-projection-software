@@ -13,7 +13,7 @@ import { buildLogoCard } from './logoCard';
 import { FitCache, fitFontSize } from './fit';
 import { SceneRenderer } from './sceneRenderer';
 import { backgroundFilter, backgroundKey } from './style';
-import { formatCountdown } from './content';
+import { buildContent, formatCountdown, linkedText } from './content';
 
 const theme = {
   ...STARTER_THEMES[0]!,
@@ -468,5 +468,62 @@ describe('mixer gain staging', () => {
     // The limiter (20:1 near the top) adds under a dB; none at all when it's off.
     expect(autoMakeupDb(-1.5, 20)).toBeCloseTo(0.855, 2);
     expect(autoMakeupDb(0, 1)).toBeCloseTo(0, 6);
+  });
+});
+
+describe('slide text options', () => {
+  const words = (text: string, extra: Partial<(typeof theme)['text']>) =>
+    buildContent(
+      document,
+      {
+        key: 'k',
+        kind: 'text',
+        theme: { ...theme, text: { ...theme.text, ...extra } },
+        blocks: [{ spans: [{ text }] }],
+      },
+      { live: false },
+    ).root;
+
+  it('makes each line a numbered or bulleted list item', () => {
+    const root = words('One\nTwo\n\nThree', { list: 'number' });
+    const list = root.querySelector('ol')!;
+    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ]);
+    expect(words('A\nB', { list: 'bullet' }).querySelector('ul li')).not.toBeNull();
+    // A heading block stays as it is.
+    const titled = buildContent(
+      document,
+      {
+        key: 't',
+        kind: 'text',
+        theme: { ...theme, text: { ...theme.text, list: 'number' } },
+        blocks: [{ spans: [{ text: 'Title', style: 'emphasis' }] }, { spans: [{ text: 'A\nB' }] }],
+      },
+      { live: false },
+    ).root;
+    expect([...titled.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['A', 'B']);
+  });
+
+  it('joins lines into one paragraph, and puts a bar behind each line (lines only)', () => {
+    expect(words('One\nTwo', { joinLines: true }).querySelector('.ls-block')!.textContent).toBe(
+      'One Two',
+    );
+    const bar = words('One', { lineBackground: { color: '#000000', padding: 8 } }).querySelector(
+      '.ls-line-bar',
+    ) as HTMLElement;
+    expect(bar.textContent).toBe('One');
+    expect(bar.style.background).toContain('rgb(0, 0, 0)');
+  });
+
+  it('underlines and strikes through, and shows linked text instead of the words', () => {
+    const text = words('Hi', { underline: true, strike: true }).querySelector(
+      '.ls-text',
+    ) as HTMLElement;
+    expect(text.style.textDecoration).toBe('underline line-through');
+    const linked = words('Ignored', { linked: 'date' }).querySelector('.ls-block')!.textContent;
+    expect(linked).toBe(linkedText('date', Date.now()));
   });
 });

@@ -102,6 +102,11 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
           editing={ed.typing}
           visit={ed.visit}
           onStart={ed.startTyping}
+          onResize={
+            ed.readOnly
+              ? undefined
+              : (box) => ed.patch((s) => ({ ...s, textFormat: { ...s.textFormat, box } }))
+          }
           fields={[
             {
               key: 'words',

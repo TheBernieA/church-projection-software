@@ -12,6 +12,7 @@ import type {
   Settings,
   SlideObject,
   Song,
+  TextFormat,
   Theme,
   WebLayer,
   MediaPlaylist,
@@ -134,6 +135,8 @@ export interface ControlState {
   /** What the left sidebar lists below its outline: a library's songs, or the open playlist. */
   sidebarView: 'library' | 'playlist';
   mode: Mode;
+  /** Text formatting copied in a Text tab (Copy style), to paste onto another song or item. */
+  copiedTextFormat: TextFormat | null;
   /** The editor takes the whole window (else it sits beside the playlist and output). */
   editExpanded: boolean;
   binTab: BinTab;

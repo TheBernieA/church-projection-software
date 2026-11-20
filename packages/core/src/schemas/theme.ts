@@ -20,6 +20,18 @@ export const TextStyleSchema = z.object({
     .object({ color: ColorSchema, padding: z.number().min(0), radius: z.number().min(0) })
     .optional(),
   textTransform: z.enum(['none', 'uppercase']).optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  /** Line returns become spaces: one flowing paragraph (a lower third, a ticker). */
+  joinLines: z.boolean().optional(),
+  /** "Lines only": a bar behind each line of words instead of a box behind them all. */
+  lineBackground: z.object({ color: ColorSchema, padding: z.number().min(0).max(80) }).optional(),
+  /** Each line a list item, with a bullet or a number. */
+  list: z.enum(['bullet', 'number']).optional(),
+  /** The words scroll across the screen (a ticker), this many canvas pixels a second. */
+  scroll: z.object({ speed: z.number().min(10).max(1000) }).optional(),
+  /** The words come from a live source (the time, the date) instead of the slide. */
+  linked: z.enum(['time', 'date']).optional(),
 });
 export type TextStyle = z.infer<typeof TextStyleSchema>;
 
@@ -48,6 +60,34 @@ export const TextFormatSchema = z.object({
   shadow: z
     .object({ x: z.number(), y: z.number(), blur: z.number().min(0).max(80), color: ColorSchema })
     .nullable()
+    .optional(),
+  underline: z.boolean().optional(),
+  strike: z.boolean().optional(),
+  /** Scaling: shrink long slides to fit (true) or keep the size (false). */
+  autoFit: z.boolean().optional(),
+  joinLines: z.boolean().optional(),
+  /** Lines only; null: off (even if the theme has it). */
+  lineBackground: z
+    .object({ color: ColorSchema, padding: z.number().min(0).max(80) })
+    .nullable()
+    .optional(),
+  /** null: no list (even if the theme has one). */
+  list: z.enum(['bullet', 'number']).nullable().optional(),
+  /** null: still (even if the theme scrolls). */
+  scroll: z
+    .object({ speed: z.number().min(10).max(1000) })
+    .nullable()
+    .optional(),
+  /** null: the slide's own words. */
+  linked: z.enum(['time', 'date']).nullable().optional(),
+  /** The text box: where the words go, as the theme's safe area (percent of each side). */
+  box: z
+    .object({
+      top: z.number().min(0).max(45),
+      right: z.number().min(0).max(45),
+      bottom: z.number().min(0).max(45),
+      left: z.number().min(0).max(45),
+    })
     .optional(),
 });
 export type TextFormat = z.infer<typeof TextFormatSchema>;

@@ -57,7 +57,9 @@ function ItemTextFormat({ item }: { item: TextItem }) {
       onChange={(p) =>
         patchItem<TextItem>(item, (cur) => ({ textFormat: { ...cur.textFormat, ...p } }))
       }
-      onReset={() => patchItem<TextItem>(item, { textFormat: undefined })}
+      onSet={(f) =>
+        patchItem<TextItem>(item, { textFormat: Object.keys(f).length ? f : undefined })
+      }
     />
   );
 }

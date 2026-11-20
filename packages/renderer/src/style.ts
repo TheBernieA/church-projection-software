@@ -19,6 +19,9 @@ export function applyTextStyle(el: HTMLElement, s: TextStyle, fontSize = s.fontS
   st.textAlign = s.align;
   st.fontStyle = s.italic ? 'italic' : 'normal';
   st.textTransform = s.textTransform ?? 'none';
+  st.textDecoration =
+    [s.underline ? 'underline' : '', s.strike ? 'line-through' : ''].filter(Boolean).join(' ') ||
+    'none';
   const shadows = [
     s.shadow ? `${s.shadow.x}px ${s.shadow.y}px ${s.shadow.blur}px ${s.shadow.color}` : '',
     // Glow: two stacked blurs read as a soft halo rather than a smudge.

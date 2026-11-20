@@ -1,4 +1,10 @@
-import { formatClock, type ContentLayer, type Span, type Theme } from '@lampstand/core';
+import {
+  formatClock,
+  type ContentLayer,
+  type Span,
+  type TextBlock,
+  type Theme,
+} from '@lampstand/core';
 import { buildObjectsLayer } from './objects';
 import { el } from './dom';
 import { FitCache, fitFontSize } from './fit';
@@ -38,6 +44,47 @@ function appendSpans(doc: Document, parent: HTMLElement, spans: Span[], theme: T
     if (span.style === 'emphasis') s.style.color = EMPHASIS_COLOR;
     parent.append(s);
   }
+}
+
+/** Linked text: what the words say now (the time, the date), in the computer's own format. */
+export function linkedText(source: 'time' | 'date', now: number): string {
+  const d = new Date(now);
+  return source === 'time'
+    ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : d.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/** A block's lines as a list: one item per line, with a bullet or a number. */
+function appendList(doc: Document, parent: HTMLElement, spans: Span[], kind: 'bullet' | 'number') {
+  const list = el(doc, kind === 'number' ? 'ol' : 'ul', 'ls-list', {
+    margin: '0',
+    padding: '0',
+    listStylePosition: 'inside',
+    listStyleType: kind === 'number' ? 'decimal' : 'disc',
+  });
+  const lines = spans
+    .map((s) => s.text)
+    .join('')
+    .split('\n')
+    .filter((l) => l.trim());
+  for (const line of lines) {
+    const item = el(doc, 'li');
+    item.textContent = line.trim();
+    list.append(item);
+  }
+  parent.append(list);
+}
+
+/** "Lines only": a bar behind each line of the element's words (not one box behind them all). */
+function barLines(doc: Document, parent: HTMLElement, bar: { color: string; padding: number }) {
+  const span = el(doc, 'span', 'ls-line-bar', {
+    background: bar.color,
+    padding: `${bar.padding / 2}px ${bar.padding}px`,
+    boxDecorationBreak: 'clone',
+  });
+  span.style.setProperty('-webkit-box-decoration-break', 'clone');
+  span.append(...parent.childNodes);
+  parent.append(span);
 }
 
 export function formatCountdown(targetIso: string, now: number): string {
@@ -106,7 +153,20 @@ export function buildContent(
     }
     textEl.append(line);
   } else {
-    content.blocks.forEach((b, i) => {
+    const style = theme.text;
+    // Linked text: one block saying what the source says now (kept current while live).
+    const blocks = style.linked
+      ? [{ spans: [{ text: linkedText(style.linked, Date.now()) }] }]
+      : content.blocks;
+    if (style.linked && opts.live) {
+      const source = style.linked;
+      timer = setInterval(() => {
+        const block = textEl.querySelector('.ls-block');
+        const next = linkedText(source, Date.now());
+        if (block && block.textContent !== next) block.textContent = next;
+      }, 1000);
+    }
+    blocks.forEach((b: TextBlock, i) => {
       const block = el(doc, 'div', 'ls-block', { whiteSpace: 'pre-line' });
       if (b.dir) block.dir = b.dir;
       if (b.lang) block.lang = b.lang;
@@ -127,10 +187,31 @@ export function buildContent(
         lab.textContent = b.label;
         block.append(lab);
       }
-      appendSpans(doc, block, b.spans, theme);
+      // Line returns become spaces when the lines are joined into one paragraph.
+      const spans = style.joinLines
+        ? b.spans.map((s) => ({ ...s, text: s.text.replace(/\s*\n\s*/g, ' ') }))
+        : b.spans;
+      // A heading (a text slide's title) stays a heading: the list is the words under it.
+      const heading = spans.every((sp) => sp.style === 'emphasis');
+      if (style.list && !heading) appendList(doc, block, spans, style.list);
+      else appendSpans(doc, block, spans, theme);
+      if (style.lineBackground) {
+        const bar = style.lineBackground;
+        const lines = style.list ? [...block.querySelectorAll('li')] : [block];
+        lines.forEach((line) => barLines(doc, line, bar));
+      }
+      if (style.scroll) block.style.whiteSpace = 'nowrap';
       textEl.append(block);
     });
   }
+  // A ticker scrolls from the right edge of the text box to off its left.
+  const scroll = content.kind === 'countdown' ? undefined : theme.text.scroll;
+  if (scroll) {
+    Object.assign(textEl.style, { maxWidth: 'none', whiteSpace: 'nowrap' });
+    root.style.alignItems = 'flex-start';
+    root.style.overflow = 'hidden';
+  }
+  let ticker: Animation | null = null;
 
   let refEl: HTMLElement | null = null;
   const refText = [content.reference, content.copyright].filter(Boolean).join('  ·  ');
@@ -151,22 +232,46 @@ export function buildContent(
   else if (refEl) root.append(textEl, refEl);
   else root.append(textEl);
 
+  const availW = theme.canvas.width - pad.left - pad.right;
+  const startTicker = (): void => {
+    if (!scroll || !opts.live || ticker) return;
+    const width = textEl.scrollWidth;
+    ticker = textEl.animate(
+      [{ transform: `translateX(${availW}px)` }, { transform: `translateX(${-width}px)` }],
+      { duration: ((availW + width) / scroll.speed) * 1000, iterations: Infinity },
+    );
+  };
   const fit = (): void => {
-    if (!theme.autoFit.enabled) return;
-    const availW = theme.canvas.width - pad.left - pad.right;
-    const refH = refEl ? refEl.offsetHeight + 24 : 0;
-    const availH = theme.canvas.height - pad.top - pad.bottom - refH;
-    if (availH <= 0 || availW <= 0) return;
-    const key = `${theme.id}|${theme.updatedAt}|${availW}x${availH}|${JSON.stringify(content.blocks)}`;
-    const cached = fitCache.get(key);
-    const size =
-      cached ??
-      fitFontSize(theme.autoFit.minSize, theme.autoFit.maxSize, (s) => {
-        textEl.style.fontSize = `${s}px`;
-        return textEl.scrollHeight <= availH + 1 && textEl.scrollWidth <= availW + 1;
-      });
-    textEl.style.fontSize = `${size}px`;
-    if (cached === undefined && textEl.scrollHeight > 0) fitCache.set(key, size);
+    if (theme.autoFit.enabled) {
+      const refH = refEl ? refEl.offsetHeight + 24 : 0;
+      const availH = theme.canvas.height - pad.top - pad.bottom - refH;
+      if (availH > 0 && availW > 0) {
+        // Everything that changes how big the words come out is in the key (the item's own
+        // formatting too, not just which theme it is).
+        const key = JSON.stringify([
+          theme.id,
+          theme.updatedAt,
+          theme.text,
+          theme.autoFit,
+          availW,
+          availH,
+          content.blocks,
+        ]);
+        const cached = fitCache.get(key);
+        const size =
+          cached ??
+          fitFontSize(theme.autoFit.minSize, theme.autoFit.maxSize, (s) => {
+            textEl.style.fontSize = `${s}px`;
+            // A ticker is one long line: only its height has to fit.
+            return (
+              textEl.scrollHeight <= availH + 1 && (!!scroll || textEl.scrollWidth <= availW + 1)
+            );
+          });
+        textEl.style.fontSize = `${size}px`;
+        if (cached === undefined && textEl.scrollHeight > 0) fitCache.set(key, size);
+      }
+    }
+    startTicker();
   };
 
   return {
@@ -174,6 +279,7 @@ export function buildContent(
     fit,
     dispose: () => {
       if (timer) clearInterval(timer);
+      ticker?.cancel();
     },
   };
 }

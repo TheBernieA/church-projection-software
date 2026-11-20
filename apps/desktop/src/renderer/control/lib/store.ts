@@ -32,6 +32,7 @@ export const useStore = create<ControlState>((set) => ({
   libraryTab: 'songs',
   mode: 'show',
   editExpanded: false,
+  copiedTextFormat: null,
   binTab: 'media',
   binPlaylistId: null,
   announceItemId: null,

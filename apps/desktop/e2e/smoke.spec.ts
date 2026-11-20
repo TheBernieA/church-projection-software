@@ -332,7 +332,9 @@ test('new song: name it, type on its slides, group them, add to service → outp
   await expect(list.getByRole('button', { name: /^Slide \d of 2$/ })).toHaveCount(2);
   // Right-click the second slide: group it as the chorus.
   await list.getByRole('button', { name: 'Slide 2 of 2' }).click({ button: 'right' });
-  await control.getByRole('menuitem', { name: 'Group' }).hover(); // opens its submenu
+  // Its submenu opens with → once Group is highlighted (as from the keyboard).
+  await control.getByRole('menuitem', { name: 'Group' }).hover();
+  await control.keyboard.press('ArrowRight');
   const chorus = control.getByRole('menuitem', { name: 'Chorus', exact: true });
   await expect(chorus).toBeVisible();
   await chorus.click();
@@ -352,7 +354,7 @@ test('new song: name it, type on its slides, group them, add to service → outp
   // Into the service from the library (double-click), then show it.
   await mode('Show');
   await library.getByRole('button', { name: /Test Song/ }).dblclick();
-  await expect(control.locator('ol').getByText('Test Song').first()).toBeVisible();
+  await expect(control.getByRole('region', { name: 'Test Song' })).toBeVisible();
   await control
     .getByRole('button', { name: /Verse 1/ })
     .first()
@@ -716,6 +718,25 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await expect(control.getByRole('button', { name: /Welcome/ }).first()).toBeVisible();
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/11-inspector.png' });
+  // The Text tab: the words as a numbered list, then back to the theme.
+  const canvas = control.getByTestId('slide-canvas');
+  await control.getByRole('radio', { name: 'Text', exact: true }).click();
+  await control.getByRole('combobox', { name: 'List' }).click();
+  await control.getByRole('option', { name: 'Numbers' }).click();
+  await expect(canvas.locator('.ls-text ol li')).toHaveText(['Coffee is served after the service']);
+  await control.screenshot({ path: 'test-results/11c-text-tab.png' });
+  await control.getByRole('button', { name: 'Use theme' }).click();
+  await expect(canvas.locator('.ls-text ol')).toHaveCount(0);
+  // The text box: drag its right grip in to make it narrower (kept with the item).
+  const box = canvas.getByTestId('text-box');
+  const wide = (await box.boundingBox())!.width;
+  const grip = (await box.locator('[data-grip="e"]').boundingBox())!;
+  await control.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await control.mouse.down();
+  await control.mouse.move(grip.x - 80, grip.y + grip.height / 2, { steps: 5 });
+  await control.mouse.up();
+  await expect.poll(async () => (await box.boundingBox())!.width).toBeLessThan(wide - 40);
+  await control.getByRole('radio', { name: 'Slide', exact: true }).click();
   // The inspector can be hidden for a bigger canvas, and brought back.
   await control.getByRole('button', { name: 'Hide inspector' }).click();
   await expect(control.getByLabel('Heading', { exact: true })).toBeHidden();
