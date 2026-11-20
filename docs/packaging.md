@@ -67,8 +67,10 @@ You get `Lampstand Setup <version>.exe`. Unsigned installers make Windows SmartS
 ## All three on GitHub
 
 `.github/workflows/release.yml` builds Mac (Apple silicon and Intel) and Windows installers on
-GitHub's machines, fetching ffmpeg for each. Run it from Actions › Release builds › Run
-workflow; the installers are attached to the run. For signed builds add these repository
+GitHub's machines, fetching ffmpeg for each. Start it by pushing a version tag
+(`git tag v0.1.0 && git push origin v0.1.0`), or from Actions › Release builds › Run workflow
+once the workflow is on the default branch; the installers are under Artifacts on the run's
+page. For signed builds add these repository
 secrets: `CSC_LINK` (the .p12, base64-encoded), `CSC_KEY_PASSWORD`, `APPLE_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, and for Windows `WIN_CSC_LINK`,
 `WIN_CSC_KEY_PASSWORD`. Without them the Mac builds are ad-hoc signed and the Windows one
