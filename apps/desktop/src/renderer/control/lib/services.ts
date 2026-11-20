@@ -1,6 +1,6 @@
 import { newId, nowIso, SERVICE_SCHEMA_VERSION, type ServicePlan } from '@lampstand/core';
 import { cmd, q } from './api';
-import { attempt, flushServiceSave, openService, toast, useStore } from './store';
+import { attempt, editService, flushServiceSave, openService, toast, useStore } from './store';
 import i18n from '../i18n';
 import { ask } from './confirm';
 
@@ -65,6 +65,26 @@ export async function deleteService(id: string, name: string): Promise<void> {
 async function planOf(id: string): Promise<ServicePlan | null> {
   await flushServiceSave();
   return (await attempt(() => q('services.get', { id }))) ?? null;
+}
+
+/**
+ * Rename a playlist. The open one is renamed like any other edit (saved, and Undo brings the
+ * old name back); another is renamed where it's saved. The list shows the new name at once.
+ */
+export async function renameService(id: string, name: string): Promise<void> {
+  const clean = name.trim().slice(0, 200);
+  const state = useStore.getState();
+  const was = state.services.find((s) => s.id === id);
+  if (!clean || !was || clean === was.name) return;
+  useStore.setState({
+    services: state.services.map((s) => (s.id === id ? { ...s, name: clean } : s)),
+  });
+  if (state.service?.id === id) {
+    editService((s) => ({ ...s, name: clean }));
+    return;
+  }
+  const plan = await planOf(id);
+  if (plan) await attempt(() => cmd('service.save', { entity: { ...plan, name: clean } }));
 }
 
 /** A copy of a playlist, opened. */
