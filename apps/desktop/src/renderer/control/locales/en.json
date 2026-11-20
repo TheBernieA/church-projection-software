@@ -178,8 +178,7 @@
     "label": "Scene: what the screens show",
     "slides": "Slides",
     "slidesLowerThird": "Slides + lower third",
-    "cameraWordsOf": "{{name}} + slide",
-    "cameraLowerThirdOf": "{{name}} + words",
+    "cameraWordsOf": "{{name}}",
     "sideBySide": "Two cameras",
     "pip": "Camera in a corner"
   },
@@ -2783,7 +2782,9 @@
       "alternate": "Alternate (HDMI)",
       "stage": "Stage display",
       "stageTile": "STAGE",
-      "switcherTile": "SWITCHER"
+      "switcherTile": "SWITCHER",
+      "cameraLowerThirdKind": "+ words",
+      "cameraKind": "Camera only"
     },
     "muteStream": "Mute the stream",
     "streamMuted": "The stream is muted: viewers hear nothing",

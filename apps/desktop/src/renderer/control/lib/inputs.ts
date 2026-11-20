@@ -45,8 +45,9 @@ export function useInputDevices(
           .filter((d) => d.kind === kind && d.deviceId && d.deviceId !== 'default')
           .map((d, i) => ({
             deviceId: d.deviceId,
+            // Without the USB ids the system adds ("FEELWORLD USB3.0 Capture (1e4e:710f)").
             label:
-              d.label ||
+              d.label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)\s*$/i, '') ||
               `${kind === 'videoinput' ? 'Camera' : kind === 'audiooutput' ? 'Output' : 'Input'} ${i + 1}`,
           })),
       );

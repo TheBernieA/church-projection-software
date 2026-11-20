@@ -37,6 +37,11 @@ export interface SceneTemplate {
   perCamera?: boolean;
   /** Needs two cameras (a layout). */
   twoCameras?: boolean;
+  /**
+   * Leaves the words as they are (the screens' lower-third switch decides), so a camera is
+   * offered once, not once with the slide and again with a lower third.
+   */
+  keepsWords?: boolean;
 }
 
 /** The scenes the Live console offers (camera ones once per camera; layouts with two). */
@@ -78,18 +83,19 @@ export const STREAM_SCENES: readonly SceneTemplate[] = [
 /**
  * The scenes the screens offer (under the output monitor): the same kinds as the stream's, made
  * with the video switcher's cameras and the screens' lower third. Every one keeps the words (a
- * screen with no words is a clear away).
+ * screen with no words is a clear away); a camera's own scene leaves the lower third as it is.
  */
 export const SCREEN_SCENES: readonly SceneTemplate[] = [
   { id: 'slides', group: 'slides', background: 'program', words: 'full' },
   { id: 'slidesLowerThird', group: 'slides', background: 'program', words: 'lowerThird' },
-  { id: 'cameraWords', group: 'cameras', background: 'camera', words: 'full', perCamera: true },
+  // Each camera once, behind the words as they are: the lower third is its own switch below.
   {
-    id: 'cameraLowerThird',
+    id: 'cameraWords',
     group: 'cameras',
     background: 'camera',
-    words: 'lowerThird',
+    words: 'full',
     perCamera: true,
+    keepsWords: true,
   },
   {
     id: 'sideBySide',

@@ -21,6 +21,10 @@ type Picture = StreamSettings['picture'];
 export interface SceneChoice {
   key: string;
   label: string;
+  /** A camera's scene, captioned by the camera (and on a second line, what it adds, if it varies). */
+  caption?: { camera: string; kind?: string };
+  /** Leaves the words as they are (see SceneTemplate.keepsWords). */
+  keepsWords?: boolean;
   group: SceneTemplate['group'];
   patch: Pick<Picture, 'background' | 'words' | 'mirror'> &
     Partial<Pick<Picture, 'layout' | 'camera' | 'secondCamera'>>;
@@ -68,7 +72,7 @@ export function sceneChoices(
   pair: readonly [string, string] | null,
   label: (id: string, name?: string) => string,
 ): SceneChoice[] {
-  return templates.flatMap((s): SceneChoice[] => {
+  const all = templates.flatMap((s): SceneChoice[] => {
     const base = {
       group: s.group,
       patch: { background: s.background, words: s.words, mirror: s.mirror ?? ('own' as const) },
@@ -78,6 +82,8 @@ export function sceneChoices(
         ...base,
         key: `${s.id}:${c.id}`,
         label: label(`${s.id}Of`, c.name),
+        caption: { camera: c.name, ...(s.keepsWords ? {} : { kind: label(`${s.id}Kind`) }) },
+        ...(s.keepsWords ? { keepsWords: true } : {}),
         patch: { ...base.patch, camera: c.id },
       }));
     if (s.twoCameras)
@@ -93,6 +99,17 @@ export function sceneChoices(
         : [];
     return [{ ...base, key: s.id, label: label(s.id) }];
   });
+  // Each camera's scenes side by side (A + slide, A + words, then B…), not A, B, A, B.
+  const camOrder = (c: SceneChoice): number =>
+    c.caption ? cameras.findIndex((x) => x.id === c.patch.camera) : -1;
+  return all
+    .map((c, i) => ({ c, i }))
+    .sort((x, y) => {
+      const a = camOrder(x.c);
+      const b = camOrder(y.c);
+      return a >= 0 && b >= 0 && x.c.group === y.c.group ? a - b || x.i - y.i : x.i - y.i;
+    })
+    .map((x) => x.c);
 }
 
 /** A camera's live picture, small (the tile shows the very camera it would switch to). */
@@ -315,6 +332,7 @@ export function SceneStrip({
                 <Button
                   key={c.key}
                   variant="bare"
+                  data-scene={c.key}
                   aria-pressed={on}
                   aria-label={c.label}
                   title={c.label}
@@ -339,8 +357,14 @@ export function SceneStrip({
                     truncate
                     className="block"
                   >
-                    {c.label}
+                    {c.caption?.camera ?? c.label}
                   </Typography>
+                  {c.caption?.kind && (
+                    // What sets this camera's scenes apart, never cut off by a long camera name.
+                    <Typography size={10} tone="muted" truncate className="-mt-1 block">
+                      {c.caption.kind}
+                    </Typography>
+                  )}
                 </Button>
               );
             })}
