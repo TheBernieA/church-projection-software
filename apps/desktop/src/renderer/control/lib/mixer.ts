@@ -1,10 +1,16 @@
 import { applyMixerAction, type MixerAction } from '@lampstand/core';
 import { cmd } from './api';
 import { attempt, useStore } from './store';
+import { channelName } from './utils';
 
 /** A mixer command (add an input, mute, route…), sent at once. */
 export const mixerCmd = (a: MixerAction): Promise<unknown> =>
-  attempt(() => cmd('live.mixer', a), 'errors.mixer');
+  attempt(
+    // Windows names some inputs at length ("Microphone Array (Intel® Smart Sound Technology for
+    // Digital Microphones)"): shortened, so adding one never fails.
+    () => cmd('live.mixer', a.action === 'add' ? { ...a, name: channelName(a.name) } : a),
+    'errors.mixer',
+  );
 
 type Live = Extract<MixerAction, { action: 'channel' | 'bus' }>;
 const pending = new Map<string, Live>();

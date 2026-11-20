@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import {
+  ALargeSmall,
   AlignCenter,
   AlignLeft,
   AlignRight,
@@ -16,6 +17,7 @@ import {
   Square,
   Type,
   Power,
+  RotateCcw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -45,12 +47,14 @@ import {
   goLive,
   restoreAll,
   restoreLayer,
+  saveSettings,
   setLowerThird,
   toggleMask,
 } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
 import { LT_ALIGN_KEY, LT_THEME_KEY, type Align } from '../../lib/screenScenes';
 import { remember, remembered } from '../../lib/prefs';
+import { SettledSlider } from '../form';
 import { LiveStepper } from './LiveStepper';
 import { ScreenScenes } from './ScreenScenes';
 import {
@@ -259,6 +263,101 @@ function LowerThirdRow() {
  * Room / Next, beside the LIVE line: the monitor shows what the room sees, or the slide that
  * comes next (as the stage display shows it). Only the monitor changes, never the screens.
  */
+/** Words across the audience screens: as the theme has them, or put left, centre or right. */
+const WORD_ALIGNS = [
+  { value: 'left', icon: AlignLeft },
+  { value: 'center', icon: AlignCenter },
+  { value: 'right', icon: AlignRight },
+] as const;
+
+/**
+ * Words on the screens: the slides' words bigger or smaller, and left, centre or right, on the
+ * audience screens (and this monitor), whatever the theme. The size saves when let go.
+ */
+function ScreenWordsPanel() {
+  const { t } = useTranslation();
+  const scale = useStore((s) => s.settings?.wordsScale ?? 1);
+  const align = useStore((s) => s.settings?.wordsAlign ?? 'theme');
+  const pct = Math.round(scale * 100);
+  const changed = pct !== 100 || align !== 'theme';
+  return (
+    <section
+      aria-label={t('monitor.screenWords')}
+      className={`flex flex-col gap-1.5 rounded-[var(--radius-control)] px-2.5 py-2 ${
+        changed ? 'bg-[var(--accent-soft)]' : 'bg-[var(--surface-2)]'
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <ALargeSmall
+          size={14}
+          aria-hidden
+          className={`shrink-0 ${changed ? 'text-[var(--accent)]' : 'text-[var(--text-3)]'}`}
+        />
+        <Typography size={12} weight="semibold" tone="primary" className="min-w-0 flex-1">
+          {t('monitor.screenWords')}
+        </Typography>
+        {changed && (
+          <IconButton
+            size="2xs"
+            aria-label={t('monitor.screenWordsReset')}
+            title={t('monitor.screenWordsReset')}
+            onClick={() => void saveSettings({ wordsScale: 1, wordsAlign: 'theme' })}
+          >
+            <RotateCcw size={12} />
+          </IconButton>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <SettledSlider
+          aria-label={t('monitor.wordsSize')}
+          title={t('monitor.wordsSizeHelp')}
+          min={50}
+          max={200}
+          step={5}
+          value={pct}
+          format={(v) => `${v}%`}
+          onCommit={(v) => void saveSettings({ wordsScale: v / 100 })}
+          className="min-w-0 flex-1"
+        />
+        <div
+          role="group"
+          aria-label={t('monitor.wordsAlign')}
+          className="flex shrink-0 items-center gap-0.5 rounded-[6px] bg-[var(--surface-0)] p-0.5"
+        >
+          <Button
+            variant="bare"
+            aria-pressed={align === 'theme'}
+            aria-label={t('monitor.wordsAlignTheme')}
+            title={t('monitor.wordsAlignTheme')}
+            onClick={() => void saveSettings({ wordsAlign: 'theme' })}
+            className={`h-6 cursor-pointer rounded-[4px] px-1.5 ${
+              align === 'theme' ? 'bg-[var(--surface-4)]' : 'hover:bg-[var(--surface-3)]'
+            }`}
+          >
+            <Typography size={10} weight="semibold" tone={align === 'theme' ? 'primary' : 'muted'}>
+              {t('monitor.wordsAlignThemeShort')}
+            </Typography>
+          </Button>
+          {WORD_ALIGNS.map(({ value, icon: Icon }) => (
+            <IconButton
+              key={value}
+              size="2xs"
+              aria-label={t(`monitor.wordsAlign_${value}`)}
+              title={t(`monitor.wordsAlign_${value}`)}
+              aria-pressed={align === value}
+              active={align === value}
+              activeTone="select"
+              onClick={() => void saveSettings({ wordsAlign: value })}
+            >
+              <Icon size={13} />
+            </IconButton>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function MonitorViewSwitch({
   view,
   onChange,
@@ -619,6 +718,7 @@ export function RightColumn() {
           }
         />
         <LowerThirdRow />
+        <ScreenWordsPanel />
         {p.input && <CameraSwitcher />}
         <VideoControls
           program={p.media?.kind === 'video' ? p.media : null}

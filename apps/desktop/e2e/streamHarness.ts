@@ -120,9 +120,14 @@ const readStatus = (control: Page) =>
   });
 
 /** Start Lampstand on a temp library, in window mode, ready for commands. */
-export async function launch(lib: TempLibrary, args: string[] = []): Promise<Launched> {
+export async function launch(
+  lib: TempLibrary,
+  args: string[] = [],
+  extraEnv: Record<string, string> = {},
+): Promise<Launched> {
   const env = {
     ...process.env,
+    ...extraEnv,
     LAMPSTAND_USER_DATA: join(lib.dir, 'user'),
     LAMPSTAND_LIBRARY: join(lib.dir, 'library'),
     LAMPSTAND_RECORDINGS: join(lib.dir, 'recordings'),

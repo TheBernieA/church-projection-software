@@ -95,6 +95,8 @@ export const StreamSettingsSchema = z.object({
        * slide's own theme, made smaller.
        */
       wordsTheme: z.string().max(64).nullable().default(null),
+      /** How long a change of scene or camera takes to fade (ms); 0 cuts. */
+      fadeMs: z.number().int().min(0).max(3000).default(500).catch(500),
     })
     .default({
       camera: null,
@@ -109,6 +111,7 @@ export const StreamSettingsSchema = z.object({
       wordsEdge: 'bottom',
       wordsWidth: 80,
       wordsTheme: null,
+      fadeMs: 500,
     }),
   /**
    * What the stream shows while it's covered (the console's Cover button: something that

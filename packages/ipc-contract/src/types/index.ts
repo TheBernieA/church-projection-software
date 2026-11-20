@@ -23,6 +23,7 @@ import type {
   StreamProfile,
   Theme,
   VideoInputLayer,
+  ScreenWords,
 } from '@lampstand/core';
 import type { QueryName } from '../channels';
 import type { CommandEnvelope, MeterReport, QueryArgs } from '../schemas';
@@ -83,6 +84,8 @@ export interface OutputInfo {
   adjust: ScreenAdjust | null;
   /** Edge blending: this screen's part of one wide picture (null: a picture of its own). */
   blend: BlendPart | null;
+  /** How this screen draws the words, over each theme (audience screens; as is elsewhere). */
+  words: ScreenWords;
 }
 
 export interface ServiceSummary {

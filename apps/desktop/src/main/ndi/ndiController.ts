@@ -41,6 +41,7 @@ const FULL = {
   wordsEdge: 'bottom',
   wordsWidth: 100,
   wordsTheme: null,
+  fadeMs: 0, // an NDI feed is mixed elsewhere: it cuts, and the mixer fades
 } as const;
 
 function pictureOf(feed: NdiFeed, s: Settings): Pick<StreamConfig, 'picture' | 'transparent'> {

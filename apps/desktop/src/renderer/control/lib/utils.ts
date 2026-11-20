@@ -58,3 +58,9 @@ export function installNumberWheelGuard(): () => void {
   document.addEventListener('wheel', onWheel, { capture: true, passive: true });
   return () => document.removeEventListener('wheel', onWheel, { capture: true });
 }
+
+/** A mixer channel name (at most 40 characters; device names can be much longer). */
+export function channelName(name: string): string {
+  const clean = name.trim() || 'Input';
+  return clean.length <= 40 ? clean : `${clean.slice(0, 39).trimEnd()}…`;
+}

@@ -59,6 +59,56 @@ export function withWordsTheme(scene: Scene, theme: Theme | null | undefined): S
   return { ...scene, content: { ...scene.content, theme } };
 }
 
+/** Font sizes stay within what a theme allows. */
+const sizeIn = (px: number): number => Math.max(8, Math.min(400, Math.round(px)));
+
+/** How the audience screens draw the words, over each theme (Words on the screens). */
+export interface ScreenWords {
+  /** Size, over the theme's (1 = as it is). */
+  scale: number;
+  /** Across the screen; 'theme': as the theme has it. */
+  align: 'theme' | 'left' | 'center' | 'right';
+}
+
+/** A theme's words scaled: the size, its shrink-to-fit limits and the reference line. */
+function scaledTheme(t: Theme, scale: number): Theme {
+  const minSize = sizeIn(t.autoFit.minSize * scale);
+  return {
+    ...t,
+    text: { ...t.text, fontSize: sizeIn(t.text.fontSize * scale) },
+    reference: { ...t.reference, fontSize: sizeIn(t.reference.fontSize * scale) },
+    autoFit: {
+      ...t.autoFit,
+      minSize,
+      maxSize: Math.max(minSize, sizeIn(t.autoFit.maxSize * scale)),
+    },
+  };
+}
+
+/**
+ * A scene with its words as the audience screens draw them (Words on the screens): bigger or
+ * smaller, and/or put left, centre or right, whatever the theme says. Both the slide and the
+ * announcements layer; a long slide still shrinks to fit. As the theme has it: unchanged.
+ */
+export function withScreenWords(scene: Scene, w: ScreenWords): Scene {
+  if (w.scale === 1 && w.align === 'theme') return scene;
+  const theme = (t: Theme): Theme => {
+    const scaled = w.scale === 1 ? t : scaledTheme(t, w.scale);
+    return w.align === 'theme' ? scaled : themeAligned(scaled, w.align);
+  };
+  const layer = <L extends { theme: Theme }>(l: L | null | undefined): L | null | undefined =>
+    l ? { ...l, theme: theme(l.theme) } : l;
+  return {
+    ...scene,
+    content: layer(scene.content) ?? null,
+    ...(scene.announcement !== undefined ? { announcement: layer(scene.announcement) } : {}),
+  };
+}
+
+/** The words bigger or smaller only (see withScreenWords). */
+export const withWordsScale = (scene: Scene, scale: number): Scene =>
+  withScreenWords(scene, { scale, align: 'theme' });
+
 /** A theme with its words (and reference) put left, centre or right. */
 export function themeAligned(theme: Theme, align: 'left' | 'center' | 'right'): Theme {
   return {

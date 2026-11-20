@@ -1,7 +1,10 @@
 /** Quieter than this (about −50 dBFS) counts as no sound: room tone on a live mic is louder. */
 const HEARD = 0.003;
-/** No sound for this long while live: the stream is silent, and the console says so. */
-export const SILENT_MS = 8000;
+/**
+ * No sound for this long while live: the stream is silent, and the console says so. Long enough
+ * that a pause in the service (a prayer, a desk gating its mics between songs) doesn't set it off.
+ */
+export const SILENT_MS = 15_000;
 
 /**
  * Whether the stream has any sound, from the stream mix's meter (about 15 reports a second).

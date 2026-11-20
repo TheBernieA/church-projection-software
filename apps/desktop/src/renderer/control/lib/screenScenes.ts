@@ -41,7 +41,7 @@ export function screenSceneOn(c: SceneChoice, live: LiveState | null): boolean {
   const p = c.patch;
   const input = live.program.input?.deviceId ?? null;
   const pip = live.program.pip ?? null;
-  if ((p.words === 'lowerThird') !== !!live.lowerThird) return false;
+  if (!c.keepsWords && (p.words === 'lowerThird') !== !!live.lowerThird) return false;
   switch (p.background) {
     case 'camera':
       return input === p.camera && !pip;
@@ -92,6 +92,7 @@ export async function applyScreenScene(
     : null;
   if (pip || live?.program.pip) await switcher({ action: 'pip', pip });
   const wantLowerThird = p.words === 'lowerThird';
-  if (wantLowerThird !== !!live?.lowerThird)
+  // A camera's own scene leaves the lower third as it is (its switch is below the scenes).
+  if (!c.keepsWords && wantLowerThird !== !!live?.lowerThird)
     await setLowerThird(wantLowerThird ? rememberedLowerThird(s.themes) : null);
 }

@@ -62,14 +62,19 @@
         bottom: auto;
         background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.72) 55%);
       }
+      /* A set of cameras (a new one fades in over the old when the scene changes). */
+      #camera > .cam-set {
+        position: absolute;
+        inset: 0;
+      }
       /* Two cameras: side by side (each half, cropped to fill), or the second in a corner. */
-      #camera.layout-sideBySide > .ls-input:nth-child(1) {
+      #camera .layout-sideBySide > .ls-input:nth-child(1) {
         right: 50% !important;
       }
-      #camera.layout-sideBySide > .ls-input:nth-child(2) {
+      #camera .layout-sideBySide > .ls-input:nth-child(2) {
         left: 50% !important;
       }
-      #camera.layout-pip > .ls-input:nth-child(2) {
+      #camera .layout-pip > .ls-input:nth-child(2) {
         left: auto !important;
         bottom: auto !important;
         top: 4% !important;

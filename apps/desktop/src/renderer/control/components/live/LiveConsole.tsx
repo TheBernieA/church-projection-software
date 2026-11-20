@@ -26,8 +26,16 @@ import { LowerThirdPanel } from './LowerThirdPanel';
 import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
-import { ScenePreviews, SilentNotice, StreamMeterOverlay, StreamSound } from './StreamBar';
+import {
+  ScenePreviews,
+  SilentNotice,
+  StreamFadeSelect,
+  StreamLowerThirdSwitch,
+  StreamMeterOverlay,
+  StreamSound,
+} from './StreamBar';
 import { ask } from '../../lib/confirm';
+import { prepareStreamSound } from '../../lib/streamSound';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
@@ -62,7 +70,10 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
       confirm: t('confirm.goLive'),
       tone: 'live',
     });
-    if (ok) run('stream.start', { stream: true });
+    if (!ok) return;
+    // The audience must hear something: the stream mix and a mic set up first.
+    await prepareStreamSound();
+    run('stream.start', { stream: true });
   };
   const endStream = async (): Promise<void> => {
     const ok = await ask({
@@ -161,7 +172,10 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                   size="md"
                   variant="subtle"
                   icon={<Circle size={13} fill="var(--tally-program)" strokeWidth={0} />}
-                  onClick={() => run('stream.start', { record: true })}
+                  onClick={() =>
+                    // A recording takes the stream's mix: set it up so it isn't silent.
+                    void prepareStreamSound().then(() => run('stream.start', { record: true }))
+                  }
                 >
                   {t('live.record')}
                 </Button>
@@ -225,6 +239,8 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           {s && <SilentNotice s={s} />}
           {/* Pinned with the picture (the options scroll beneath): scenes, then the sound. */}
           <ScenePreviews st={st} streaming={!!s?.streaming} />
+          <StreamLowerThirdSwitch st={st} />
+          <StreamFadeSelect st={st} />
           <StreamSound />
         </div>
       </div>

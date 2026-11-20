@@ -54,19 +54,45 @@ let latest: LiveState | null = null;
  * The stream's own cameras, with their saved settings (fit, mirror, capture size): one, or two
  * for a layout (side by side, or the second in a corner). Reopened only when they change.
  */
-let cameras: { key: string; dispose: () => void } | null = null;
-function syncCameras(layers: VideoInputLayer[], layout: string): void {
+let cameras: { key: string; set: HTMLElement; dispose: () => void } | null = null;
+/**
+ * The stream's own cameras. A change of camera (or to or from the slides) crossfades over
+ * `fadeMs` (0 cuts): the new set fades in over the old, which then goes.
+ */
+function syncCameras(layers: VideoInputLayer[], layout: string, fadeMs: number): void {
   const el = $('camera');
-  el.className = layers.length > 1 ? `layout-${layout}` : '';
   const key = layers.map((l) => `${l.deviceId}|${l.fit}|${l.mirror}|${l.resolution}`).join(',');
-  if ((cameras?.key ?? '') === key) return;
-  cameras?.dispose();
-  el.replaceChildren();
+  const layoutClass = layers.length > 1 ? ` layout-${layout}` : '';
+  if ((cameras?.key ?? '') === key) {
+    // The same cameras, laid out another way: no need to open them again.
+    if (cameras) cameras.set.className = `cam-set${layoutClass}`;
+    return;
+  }
+  const old = cameras;
   cameras = null;
-  if (!layers.length) return;
-  const built = layers.map((l) => buildVideoInput(document, l, true));
-  el.append(...built.map((b) => b.node));
-  cameras = { key, dispose: () => built.forEach((b) => b.dispose()) };
+  if (layers.length) {
+    const set = document.createElement('div');
+    set.className = `cam-set${layoutClass}`;
+    const built = layers.map((l) => buildVideoInput(document, l, true));
+    set.append(...built.map((b) => b.node));
+    el.append(set);
+    cameras = { key, set, dispose: () => built.forEach((b) => b.dispose()) };
+    if (fadeMs > 0)
+      set.animate([{ opacity: 0 }, { opacity: 1 }], { duration: fadeMs, easing: 'ease' });
+  }
+  if (!old) return;
+  const gone = (): void => {
+    old.set.remove();
+    old.dispose();
+  };
+  if (fadeMs <= 0) return gone();
+  old.set
+    .animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: fadeMs,
+      easing: 'ease',
+      fill: 'forwards',
+    })
+    .finished.then(gone, gone);
 }
 
 /** The stage display, drawn here when the stream mirrors it (made the first time it's needed). */
@@ -121,7 +147,11 @@ function draw(): void {
   const switcher = pic.background === 'switcher';
   // 'none': only the words, over transparency (the NDI key feed).
   const bare = pic.background === 'none';
-  syncCameras(onCamera ? own.slice(0, pic.background === 'layout' ? 2 : 1) : [], pic.layout);
+  syncCameras(
+    onCamera ? own.slice(0, pic.background === 'layout' ? 2 : 1) : [],
+    pic.layout,
+    pic.fadeMs,
+  );
   back.render(
     {
       ...program,

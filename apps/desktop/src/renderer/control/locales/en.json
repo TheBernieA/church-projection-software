@@ -177,9 +177,7 @@
   "screenScenes": {
     "label": "Scene: what the screens show",
     "slides": "Slides",
-    "slidesLowerThird": "Slides + lower third",
-    "cameraWordsOf": "{{name}} + slide",
-    "cameraLowerThirdOf": "{{name}} + words",
+    "cameraWordsOf": "{{name}}",
     "sideBySide": "Two cameras",
     "pip": "Camera in a corner"
   },
@@ -253,7 +251,17 @@
     "upNextItem": "Next item: {{label}}",
     "beforeItem": "Previous item: {{label}}",
     "showNextItem": "Go to the next item: {{label}}",
-    "showPrevItem": "Go to the previous item: {{label}}"
+    "showPrevItem": "Go to the previous item: {{label}}",
+    "wordsSize": "Words size",
+    "wordsSizeHelp": "How big the slides’ words are on the audience screens, over each theme’s size. Long slides still shrink to fit.",
+    "screenWords": "Words on the screens",
+    "screenWordsReset": "As the theme has them (100%, its alignment)",
+    "wordsAlign": "Words across the screen",
+    "wordsAlignTheme": "As the theme has them",
+    "wordsAlignThemeShort": "Theme",
+    "wordsAlign_left": "Words on the left",
+    "wordsAlign_center": "Words in the centre",
+    "wordsAlign_right": "Words on the right"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -740,11 +748,13 @@
     "streamLive": "You’re live.",
     "streamEnded": "The livestream has ended.",
     "recordingSaved": "Recording saved: {{file}} (Live › Recordings opens the folder).",
-    "streamReconnecting": "The stream dropped: reconnecting…",
+    "streamReconnecting": "The stream dropped. Reconnecting on its own…",
     "streamDestinationFailed": "One stream destination stopped. The others carry on.",
     "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again.",
     "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder.",
-    "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming."
+    "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming.",
+    "streamReconnected": "The stream is back on.",
+    "streamGaveUp": "A stream destination couldn’t reconnect for 10 minutes and has stopped. Anything else (a recording, other destinations) carries on."
   },
   "perf": {
     "fps": "Control FPS",
@@ -899,7 +909,7 @@
       },
       "output": {
         "title": "Output",
-        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third. While a video plays behind the words, the speaker on the monitor turns its sound on or off."
+        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third and Words on the screens: the slides’ words bigger or smaller, and left, centre or right, on the audience screens whatever the theme (Theme puts them back). While a video plays behind the words, the speaker on the monitor turns its sound on or off."
       },
       "controls": {
         "title": "Show controls",
@@ -907,7 +917,7 @@
       },
       "media": {
         "title": "Media bin",
-        "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides."
+        "body": "Open it with Media in the toolbar: pictures and videos you import, and the built-in still and motion backgrounds. Click to show, double-click to add to the playlist, or drag onto the slides. Sources sit along the bottom of the media sidebar, always in sight: Cameras (video inputs), Audio in (mics and the desk) and Stock media."
       }
     },
     "live": {
@@ -916,11 +926,11 @@
       "items": {
         "youtube": {
           "q": "Stream to YouTube or Facebook",
-          "a": "1. Click Live in the toolbar to open the Live console.\n2. Under Destinations click Add and pick YouTube or Facebook.\n3. Copy the stream key. In YouTube Studio: Go live › Stream, then the copy button beside “Stream key” (not the Stream URL). On Facebook: Live video › Streaming software.\n4. Paste it into the destination and click Save key. Keys are stored encrypted and never shown again.\n5. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key."
+          "a": "1. Click Live in the toolbar to open the Live console.\n2. Under Destinations click Add and pick YouTube or Facebook.\n3. Copy the stream key. In YouTube Studio: Go live › Stream, then the copy button beside “Stream key” (not the Stream URL). On Facebook: Live video › Streaming software.\n4. Paste it into the destination and click Save key. Keys are stored encrypted and never shown again.\n5. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key.\nIf the internet drops while you’re live, Lampstand keeps the stream on and reconnects by itself for up to 10 minutes (the console says Reconnecting; a recording carries on). In YouTube Studio, turn off “Enable Auto-stop” in the stream’s settings, so YouTube keeps the broadcast open while it reconnects."
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera with the words and on its own, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top. Going live first sets the sound up so the audience hears it: the stream mix unmuted and up, and a mic (or the desk) sent to it, adding the computer’s mic if there’s none. A note says what it changed.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away. Under the scenes, “Lower third on the stream” puts the words along the bottom of whatever is on (the main screen, a camera, the switcher), or takes them off. Scene changes sets whether a change of scene or camera cuts or fades, and how fast.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
@@ -1103,7 +1113,7 @@
         },
         "deskSound": {
           "q": "Bring the sound desk into Lampstand",
-          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. In the Live console, pick it in the mic box under the scenes (or open Media › Sources › Audio input and click Stream on it).\n4. Check the L/R meter on the stream picture moves when someone speaks.\nLeave Room off for mics and the desk: the desk already puts them on the room’s speakers, and playing them twice echoes."
+          "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. In the Live console, pick it in the mic box under the scenes (or open Media › Sources › Audio input and click Stream on it).\n4. Check the L/R meter on the stream picture moves when someone speaks. The input meters read in decibels like the desk’s own: speech usually sits around the middle; if it stays near the left, raise the desk’s USB send (or the input’s level in Windows’ sound settings).\n5. A desk can show many inputs (IN 1-2, IN 3-4…). In Audio inputs, click Choose and tick only the ones you use; the others leave the lists.\nLeave Room off for mics and the desk: the desk already puts them on the room’s speakers, and playing them twice echoes."
         },
         "midi": {
           "q": "Run Lampstand from a desk or MIDI controller",
@@ -1169,6 +1179,11 @@
       "media-playlists": "Playlists",
       "stock-media": "Stock media",
       "audio-input": "Audio input"
+    },
+    "sourceShort": {
+      "video-input": "Cameras",
+      "audio-input": "Audio in",
+      "stock-media": "Stock"
     }
   },
   "props": {
@@ -2118,7 +2133,10 @@
     "toRoom": "Play {{name}} through the room",
     "toStream": "Send {{name}} to the stream",
     "toRoomHelp": "Out of this computer's room speakers. Usually off: the desk already puts mics in the room, and playing them twice echoes.",
-    "toStreamHelp": "Heard on the livestream and in the recording."
+    "toStreamHelp": "Heard on the livestream and in the recording.",
+    "choose": "Choose",
+    "chooseHelp": "Show these inputs",
+    "noneChosen": "No inputs chosen: pick the ones you use with Choose."
   },
   "stock": {
     "category": "Stock category",
@@ -2285,12 +2303,21 @@
       "noDestinations": "No destination could start: check each one has its stream key.",
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
       "encoderStopped": "The encoder stopped and couldn’t restart.",
-      "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming."
+      "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming.",
+      "reconnectFailed": "The stream couldn’t reconnect for 10 minutes and stopped. Check the internet connection, then Go live again."
     },
     "cover": "Cover",
     "uncover": "Uncover",
     "coverHelp": "Hide what’s happening from the stream: viewers see the cover picture (Settings › Streaming) until you show the stream again. The sound carries on.",
-    "uncoverHelp": "The stream shows the cover picture. Click to show the service again."
+    "uncoverHelp": "The stream shows the cover picture. Click to show the service again.",
+    "soundReady": "Sound set for the stream: {{changes}}.",
+    "soundFix": {
+      "unmuteStream": "stream unmuted",
+      "streamUp": "stream level back to 0 dB",
+      "sendInput": "{{name}} sent to the stream",
+      "addMic": "{{name}} added and sent to the stream",
+      "inputUp": "{{name}} back to 0 dB"
+    }
   },
   "streaming": {
     "destinations": "Where it streams",
@@ -2769,14 +2796,10 @@
     "scene": "Scene: what the stream shows",
     "scenes": {
       "slides": "Main screen",
-      "slidesLowerThird": "Slides + lower third",
-      "cameraLowerThird": "Camera with a lower third",
-      "camera": "Camera only",
+      "camera": "Camera",
       "wordsOnBlack": "Words on black",
       "black": "Black",
-      "cameraLowerThirdOf": "{{name}} + words",
       "cameraOf": "{{name}}",
-      "switcherLowerThird": "Switcher + words",
       "switcher": "Switcher",
       "sideBySide": "Two cameras",
       "pip": "Camera in a corner",
@@ -2811,7 +2834,14 @@
     "micOf": "Which input {{name}} uses",
     "lowerThird": "Lower third on the stream",
     "turnUp": "Turn up to 0 dB",
-    "streamLevelIs": "the stream {{db}}"
+    "streamLevelIs": "the stream {{db}}",
+    "lowerThirdOn": "The words run along the bottom of the stream picture.",
+    "lowerThirdHelp": "Show the words along the bottom, over a camera or the slides.",
+    "lowerThirdMirror": "The stream shows a screen now, as it is.",
+    "fade": "Scene changes",
+    "fadeHelp": "When the stream changes scene or camera: a cut, or a fade this long.",
+    "fadeCut": "Cut",
+    "fadeFor": "Fade {{s}} s"
   },
   "benchmark": {
     "button": "Check this computer",

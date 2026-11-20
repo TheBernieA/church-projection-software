@@ -1,15 +1,19 @@
-import { Mic, SlidersVertical } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { Check, ListChecks, Mic, SlidersVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDb, MAX_DB, MIN_DB } from '@lampstand/core';
 import { Button, Slider, Typography } from '@lampstand/ui';
 import {
+  setAudioInputShown,
   useDeviceStream,
+  useHiddenAudioInputs,
   useInputDevices,
   useLevelMeter,
   type InputDevice,
 } from '../../lib/inputs';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
 
 /** A live level meter for an audio input (green, then amber, then red near the top). */
 export function LevelMeter({ device }: { device: InputDevice }) {
@@ -114,9 +118,56 @@ function InputRow({ device }: { device: InputDevice }) {
  * Audio inputs (Audio tab): microphones and desk feeds, each with a level meter. Send one to
  * the stream, the room, or both; each is a channel on the Mixer (EQ, compressor, routing).
  */
+/** Which inputs the list shows: a tick for each one this computer has. */
+function ChooseInputs({ devices }: { devices: InputDevice[] }) {
+  const { t } = useTranslation();
+  const hidden = useHiddenAudioInputs();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <Button size="2xs" variant="ghost" icon={<ListChecks size={12} />}>
+          {t('inputs.choose')}
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="end"
+          sideOffset={4}
+          className={`${MENU_CLASS} max-h-[60vh] w-[300px] overflow-y-auto`}
+        >
+          <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+            {t('inputs.chooseHelp')}
+          </DropdownMenu.Label>
+          {devices.map((d) => (
+            <DropdownMenu.CheckboxItem
+              key={d.deviceId}
+              className={ITEM_CLASS}
+              checked={!hidden.has(d.deviceId)}
+              // Ticking stays in the menu, to pick several at once.
+              onSelect={(e) => e.preventDefault()}
+              onCheckedChange={(on) => setAudioInputShown(d.deviceId, on)}
+            >
+              <span className="flex size-4 shrink-0 items-center justify-center rounded-[4px] shadow-[inset_0_0_0_1px_var(--hairline-strong)]">
+                <DropdownMenu.ItemIndicator>
+                  <Check size={12} strokeWidth={3} />
+                </DropdownMenu.ItemIndicator>
+              </span>
+              <Typography truncate className="min-w-0">
+                {d.label}
+              </Typography>
+            </DropdownMenu.CheckboxItem>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
 export function AudioInputs({ wide = false }: { wide?: boolean }) {
   const { t } = useTranslation();
-  const devices = useInputDevices('audioinput');
+  const all = useInputDevices('audioinput');
+  const hidden = useHiddenAudioInputs();
+  const devices = all?.filter((d) => !hidden.has(d.deviceId)) ?? null;
   return (
     <section
       aria-label={t('inputs.audioTitle')}
@@ -126,18 +177,25 @@ export function AudioInputs({ wide = false }: { wide?: boolean }) {
         <Typography as="h3" variant="overline">
           {t('inputs.audioTitle')}
         </Typography>
-        <Button
-          size="2xs"
-          variant="ghost"
-          icon={<SlidersVertical size={12} />}
-          onClick={() => useStore.setState({ mixerOpen: true })}
-        >
-          {t('toolbar.mixer')}
-        </Button>
+        <div className="flex items-center gap-1">
+          {all && all.length > 0 && <ChooseInputs devices={all} />}
+          <Button
+            size="2xs"
+            variant="ghost"
+            icon={<SlidersVertical size={12} />}
+            onClick={() => useStore.setState({ mixerOpen: true })}
+          >
+            {t('toolbar.mixer')}
+          </Button>
+        </div>
       </div>
-      {devices && devices.length === 0 ? (
+      {all && all.length === 0 ? (
         <Typography as="p" variant="caption" leading="snug" className="px-0.5">
           {t('inputs.noMics')}
+        </Typography>
+      ) : devices && devices.length === 0 ? (
+        <Typography as="p" variant="caption" leading="snug" className="px-0.5">
+          {t('inputs.noneChosen')}
         </Typography>
       ) : (
         <ul
