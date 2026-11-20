@@ -738,11 +738,13 @@
     "streamLive": "You’re live.",
     "streamEnded": "The livestream has ended.",
     "recordingSaved": "Recording saved: {{file}} (Live › Recordings opens the folder).",
-    "streamReconnecting": "The stream dropped: reconnecting…",
+    "streamReconnecting": "The stream dropped. Reconnecting on its own…",
     "streamDestinationFailed": "One stream destination stopped. The others carry on.",
     "streamFailed": "The livestream stopped and couldn’t restart. Check the connection and try again.",
     "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder.",
-    "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming."
+    "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming.",
+    "streamReconnected": "The stream is back on.",
+    "streamGaveUp": "The stream couldn’t reconnect for 10 minutes and has stopped. The recording carries on. Check the internet, then Go live again."
   },
   "perf": {
     "fps": "Control FPS",
@@ -914,7 +916,7 @@
       "items": {
         "youtube": {
           "q": "Stream to YouTube or Facebook",
-          "a": "1. Click Live in the toolbar to open the Live console.\n2. Under Destinations click Add and pick YouTube or Facebook.\n3. Copy the stream key. In YouTube Studio: Go live › Stream, then the copy button beside “Stream key” (not the Stream URL). On Facebook: Live video › Streaming software.\n4. Paste it into the destination and click Save key. Keys are stored encrypted and never shown again.\n5. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key."
+          "a": "1. Click Live in the toolbar to open the Live console.\n2. Under Destinations click Add and pick YouTube or Facebook.\n3. Copy the stream key. In YouTube Studio: Go live › Stream, then the copy button beside “Stream key” (not the Stream URL). On Facebook: Live video › Streaming software.\n4. Paste it into the destination and click Save key. Keys are stored encrypted and never shown again.\n5. Click Go live. The dot beside the destination turns green once the service is receiving.\nAny other service that gives you an RTMP address works as Custom RTMP: paste its server address, then its key.\nIf the internet drops while you’re live, Lampstand keeps the stream on and reconnects by itself for up to 10 minutes (the console says Reconnecting; a recording carries on). In YouTube Studio, turn off “Enable Auto-stop” in the stream’s settings, so YouTube keeps the broadcast open while it reconnects."
         },
         "console": {
           "q": "Use the Live console",
@@ -2286,7 +2288,8 @@
       "noDestinations": "No destination could start: check each one has its stream key.",
       "destinationFailed": "A destination stopped (check its key and the internet connection).",
       "encoderStopped": "The encoder stopped and couldn’t restart.",
-      "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming."
+      "recordingFolderFailed": "Couldn’t record: the recording folder can’t be used. Choose another in Settings › Streaming.",
+      "reconnectFailed": "The stream couldn’t reconnect for 10 minutes and stopped. Check the internet connection, then Go live again."
     },
     "cover": "Cover",
     "uncover": "Uncover",

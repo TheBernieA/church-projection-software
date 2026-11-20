@@ -101,6 +101,13 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   encoder that fails at start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries; the count starts again after a steady minute live); a recording carries on as "part 2".
+- **Network drops.** Once a destination has been live, a lost connection doesn't end the stream:
+  it shows Reconnecting and retries quietly (after 1, 2, 3, then every 5 s) for up to 10 minutes.
+  Each attempt first checks that a destination's server answers (a TCP connect to its host and
+  port, never the key), so nothing restarts while the internet is down, and a recording is
+  split only once when the stream comes back. While recording, the recording carries on through
+  the drop. A wrong address or key at the first start still fails at once, with the reason.
+  (`reachability.ts`; tested end to end in `e2e/reconnect.spec.ts`.)
   A stream page that crashes is reopened and the encoder restarted with it. A recording folder
   that can't be made falls back to the usual one, else the stream carries on without recording. Quitting the app finishes the recording first.
 
