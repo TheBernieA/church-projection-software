@@ -150,6 +150,12 @@ export const SettingsSchema = z
     textScale: z.number().min(0.85).max(1.4).default(1),
     /** Colours the operator saved in the colour picker (newest first). */
     customColors: z.array(ColorSchema).max(20).default([]),
+    /** Audio inputs left out of the lists (a desk shows many; the operator picks the few used). */
+    hiddenAudioInputs: z.array(z.string().max(300)).max(256).default([]),
+    /** Words size on the audience screens, over each theme's own (1 = as the theme has it). */
+    wordsScale: z.number().min(0.5).max(2).default(1),
+    /** Words across the audience screens, whatever the theme says ('theme': as it has them). */
+    wordsAlign: z.enum(['theme', 'left', 'center', 'right']).default('theme'),
     language: z.string().max(35).default('en'),
     libraryPath: z.string().max(1000).optional(),
     displays: z.array(DisplayAssignmentSchema).max(16).default([]),

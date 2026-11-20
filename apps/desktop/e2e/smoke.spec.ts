@@ -5,7 +5,7 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -175,7 +175,11 @@ test.beforeAll(async () => {
   }
 });
 
+/** Helper processes a test starts (the stand-in RTMP server), stopped even if the test fails. */
+const helpers: ChildProcess[] = [];
+
 test.afterAll(async () => {
+  for (const h of helpers) if (h.exitCode === null) h.kill();
   await app.close().catch(() => undefined);
   // LAMPSTAND_KEEP=1 keeps the library and logs to look at after a run.
   if (!process.env.LAMPSTAND_KEEP) rmSync(dir, { recursive: true, force: true });
@@ -302,6 +306,42 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
   await out.screenshot({ path: 'test-results/03-output.png' });
   await control.waitForTimeout(600);
   await control.screenshot({ path: 'test-results/04-live.png' });
+  // Words size on the screens: the projector's words get bigger (the slider sits under the
+  // lower third), then back to the theme's size.
+  await expect(control.getByRole('slider', { name: 'Words size' })).toBeVisible();
+  const size = () =>
+    out
+      .locator('.ls-text')
+      .first()
+      .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  const before = await size();
+  const setScale = (wordsScale: number) =>
+    control.evaluate(
+      (v) =>
+        window.lampstand.command({
+          type: 'settings.update',
+          payload: { patch: { wordsScale: v } },
+        }),
+      wordsScale,
+    );
+  await setScale(1.5);
+  await expect.poll(size).toBeGreaterThan(before * 1.2);
+  await expect(
+    control.getByRole('button', { name: 'As the theme has them (100%, its alignment)' }),
+  ).toBeVisible();
+  await setScale(1);
+  await expect.poll(size).toBeLessThan(before * 1.05);
+  // Words across the screen, whatever the theme: on the right, then as the theme has them.
+  const textAlign = () =>
+    out
+      .locator('.ls-text')
+      .first()
+      .evaluate((el) => getComputedStyle(el).textAlign);
+  const themes = await textAlign();
+  await control.getByRole('button', { name: 'Words on the right' }).click();
+  await expect.poll(textAlign).toBe('right');
+  await control.getByRole('button', { name: 'As the theme has them', exact: true }).click();
+  await expect.poll(textAlign).toBe(themes);
   await previewFirst(false);
 });
 
@@ -1756,32 +1796,38 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await cameraOnScreen.click();
   await control.getByRole('option', { name: 'Off', exact: true }).click();
   await expect(feed).toHaveCount(0);
-  // Scenes for the screens, under the monitor (the same strip as the stream's): a camera behind
-  // the slide's words with a lower third, in one click, then back to the slides.
+  // Scenes for the screens, under the monitor (the same strip as the stream's): each camera once
+  // (no "+ slide" / "+ words" doubles), behind the words as they are; the lower third is its own
+  // switch, and the camera stays on when it's turned on.
   const screenScenes = control.getByRole('group', { name: 'Scene: what the screens show' });
   await screenScenes.getByRole('radio', { name: 'Cameras' }).click();
-  await screenScenes
-    .getByRole('button', { name: / \+ words$/ })
-    .first()
-    .click();
+  const cameraTiles = screenScenes.locator('[data-scene^="cameraWords:"]');
+  await expect(cameraTiles.first()).toBeVisible();
+  const names = await cameraTiles.evaluateAll((els) =>
+    els.map((e) => e.getAttribute('aria-label')),
+  );
+  expect(new Set(names).size).toBe(names.length);
+  expect(names.some((n) => / \+ (words|slide)$/.test(n ?? ''))).toBe(false);
+  await cameraTiles.first().click();
   await expect
     .poll(() => feed.evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 })
     .toBeGreaterThan(0);
+  await expect(cameraTiles.first()).toHaveAttribute('aria-pressed', 'true');
+  await control.getByRole('switch', { name: 'Lower third on the screens' }).click();
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));
       return r.ok ? !!r.value.lowerThird : null;
     })
     .toBe(true);
-  await expect(screenScenes.getByRole('button', { name: / \+ words$/ }).first()).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  await expect(cameraTiles.first()).toHaveAttribute('aria-pressed', 'true');
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/33-screen-scenes.png' });
   await screenScenes.getByRole('radio', { name: 'Slides' }).click();
   await screenScenes.getByRole('button', { name: 'Slides', exact: true }).click();
   await expect(feed).toHaveCount(0);
+  // The slides keep the lower third too, until it's switched off.
+  await control.getByRole('switch', { name: 'Lower third on the screens' }).click();
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));
@@ -1796,6 +1842,20 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await expect
     .poll(async () => Number(await meter.getAttribute('aria-valuenow')), { timeout: 10_000 })
     .toBeGreaterThan(0);
+  // Choose which inputs show: leave one out (it goes from the list), then bring it back.
+  const rows = panel.getByRole('listitem');
+  const before = await rows.count();
+  await panel.getByRole('button', { name: 'Choose' }).click();
+  const ticks = control.getByRole('menuitemcheckbox');
+  await expect(ticks.first()).toBeChecked();
+  await ticks.last().click();
+  await expect(ticks.last()).not.toBeChecked();
+  await control.keyboard.press('Escape');
+  await expect(rows).toHaveCount(before - 1);
+  await panel.getByRole('button', { name: 'Choose' }).click();
+  await ticks.last().click();
+  await control.keyboard.press('Escape');
+  await expect(rows).toHaveCount(before);
   // To the stream: it becomes a channel on the mixer that the stream hears, and the room doesn't
   // (the desk already puts it in the room).
   await panel
@@ -2371,6 +2431,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     '-y',
     got,
   ]);
+  helpers.push(server);
   // What the stand-in server says, to explain a stream it never received.
   let serverLog = '';
   server.stderr.on('data', (d: Buffer) => (serverLog += d.toString()));
@@ -2437,7 +2498,10 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     'aria-pressed',
     'true',
   );
-  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
+  // One "Main screen" scene; the lower third is its own switch (and stays on across scenes).
+  await scenes.getByRole('button', { name: 'Main screen' }).click();
+  await expect.poll(picture).toBe('program full');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('program lowerThird');
   // The switcher's program, and mirroring a screen (the stage display), are scenes too.
   const mirror = async () => {
@@ -2446,6 +2510,8 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   };
   await scenes.getByRole('radio', { name: 'Cameras' }).click();
   await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
+  await expect.poll(picture).toBe('switcher lowerThird');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('switcher none');
   // Send to stream (on the live monitor): the screens go on the stream; again, it goes back.
   const sendToStream = control.getByRole('button', { name: 'Send to stream' });
@@ -2467,15 +2533,16 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await control.waitForTimeout(800);
   await control.screenshot({ path: 'test-results/41c-live-scenes.png' });
   await scenes.getByRole('radio', { name: 'Slides' }).click();
-  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
+  await scenes.getByRole('button', { name: 'Main screen' }).click();
   await expect.poll(mirror).toBe('own');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('program lowerThird');
   // The scenes fold away (and come back) with the arrow beside them.
   // Folded, the strip keeps only its header (the tiles go).
   await live.getByRole('button', { name: 'Hide the scenes' }).click();
-  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeHidden();
+  await expect(scenes.getByRole('button', { name: 'Main screen' })).toBeHidden();
   await live.getByRole('button', { name: 'Show the scenes' }).click();
-  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeVisible();
+  await expect(scenes.getByRole('button', { name: 'Main screen' })).toBeVisible();
   // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
   await live.getByRole('button', { name: 'Mute Stream' }).click();
   const silent = live.getByRole('alert').filter({ hasText: 'The stream is muted' });

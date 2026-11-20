@@ -26,8 +26,8 @@ CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
   never makes a frame late. A keyframe goes out every two seconds of stream time even when the
   frame on that tick was skipped.
 - **Staying live when the upload can't keep up.** ffmpeg's input queues are about half a second
-  (they were 512 packets, 8 s at 60 fps), and main measures the video waiting for ffmpeg *in
-  seconds* (`backlog.ts`; bytes can't say, a still slide is tiny). Past 1.2 s it skips ahead to
+  (they were 512 packets, 8 s at 60 fps), and main measures the video waiting for ffmpeg _in
+  seconds_ (`backlog.ts`; bytes can't say, a still slide is tiny). Past 1.2 s it skips ahead to
   the next keyframe: the picture jumps, but the stream doesn't fall behind live for good. What
   was already queued still counts while it drains: the stream resumes (asking for one keyframe)
   only once under 0.3 s is waiting, so the delay it skipped doesn't come straight back.
@@ -50,10 +50,10 @@ a frame clock; ffmpeg converts and encodes. The preview is small JPEGs.
 
 Measured at 1080p60 on an M-series Mac (30 s, a playing video plus a camera PiP):
 
-| | ffmpeg CPU | fps | dropped | A/V drift |
-| --- | --- | --- | --- | --- |
-| GPU | 0.4 % | 59.7 | 0 | −32 ms |
-| CPU | 35.6 % | 60.3 | 0 | −66 ms |
+|     | ffmpeg CPU | fps  | dropped | A/V drift |
+| --- | ---------- | ---- | ------- | --------- |
+| GPU | 0.4 %      | 59.7 | 0       | −32 ms    |
+| CPU | 35.6 %     | 60.3 | 0       | −66 ms    |
 
 At 720p30: GPU 0.3 % (0 dropped, −90 ms); CPU 10 %.
 
@@ -78,7 +78,7 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   (`framePump.ts`) writes frames on wall-clock time: after a late tick it writes the frames that
   were due (the same buffer, no copies), and aims the next tick at the next frame's time, so the
   picture never falls behind the sound. If ffmpeg's input is backed up (more than 3 frames in
-  the pipe; ffmpeg queues 8 more) the frame is *owed*: written later as a repeat of the picture,
+  the pipe; ffmpeg queues 8 more) the frame is _owed_: written later as a repeat of the picture,
   a few a tick. ffmpeg times raw video by counting frames, so skipping one would put the picture
   a frame ahead of the sound for the rest of the stream. ffmpeg runs at above-normal priority.
 - **Colour.** BGRA becomes BT.709, limited range, converted accurately (`accurate_rnd`) and
@@ -101,12 +101,23 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   encoder that fails at start is dropped for the rest of the session.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries; the count starts again after a steady minute live); a recording carries on as "part 2".
+- **Network drops.** Once a destination has been live, a lost connection doesn't end the stream:
+  it shows Reconnecting and checks quietly (after 1, 2, 3, then every 5 s) whether the dropped
+  destinations' servers answer (a TCP connect to host and port, never the key); only then is
+  the encoder restarted. If a restart reaches the server but the stream still doesn't get
+  through, the next tries wait longer (5, 10, 20, then 30 s). Destinations that are still on air
+  are never checked or counted as down, so they aren't interrupted while another is offline. A
+  recording carries on through the drop and is split once, when the stream comes back. After
+  10 minutes the destinations that couldn't come back are marked failed and left; a recording or
+  another destination carries on (with nothing left, the stream ends with the reason). A wrong
+  address or key at the first start still fails at once.
+  (`reachability.ts`; tested end to end in `e2e/reconnect.spec.ts`.)
   A stream page that crashes is reopened and the encoder restarted with it. A recording folder
   that can't be made falls back to the usual one, else the stream carries on without recording. Quitting the app finishes the recording first.
 
 ## Sound that reaches the mixers
 
-A WebAudio mixer only gets the sound of media it may *read*. Library media is served on its own
+A WebAudio mixer only gets the sound of media it may _read_. Library media is served on its own
 scheme (`lampstand-media:`), so that scheme is CORS-enabled, its responses allow our own origin
 (`allowedOrigin`), and media elements that feed a mixer set `crossOrigin = 'anonymous'`
 (`AudioPlayer`, `buildMedia`). Without this the room and the stream got silence. The stream's
@@ -181,13 +192,13 @@ runtime is looked for at `LAMPSTAND_NDI_LIB`, then the usual install places (`nd
 Packaging: koffi is unpacked from the asar; macOS needs `disable-library-validation` to load it.
 NDI® is a registered trademark of Vizrt NDI AB.
 
-Later: NDI *input* (sources from the network in the switcher), tested against real sources.
+Later: NDI _input_ (sources from the network in the switcher), tested against real sources.
 
 ## Stream keys
 
 Keys are stored with the OS keychain/DPAPI (`SecretStore`, `userData/secrets.json`, encrypted),
 never in `settings.json`, never logged, and never sent back to a window: the renderer can only
-*set* or *forget* a key (`stream.setKey`) and ask whether one is saved (`stream.keys`). Only
+_set_ or _forget_ a key (`stream.setKey`) and ask whether one is saved (`stream.keys`). Only
 `rtmp://` and `rtmps://` addresses are accepted.
 
 ## ffmpeg
@@ -275,14 +286,14 @@ blue or black, applied after the Look so the colour is always there. Untested on
 
 Main process (`apps/desktop/src/main/stream/`):
 
-| File | What it holds |
-|---|---|
-| `streamController.ts` | The session: start/stop, the stream window, ffmpeg's life, status |
-| `ffmpegArgs.ts` | ffmpeg's command line, addresses, stream keys, progress lines (pure) |
-| `destinations.ts` | Each destination's address, or why it can't start (pure) |
-| `audioClock.ts` | The sound kept to the clock: silence for gaps, late batches dropped |
-| `textureRelay.ts` | GPU pipeline: each picture to the encoder and the watching consoles |
-| `framePump.ts` | CPU pipeline: frames to ffmpeg on wall-clock time |
+| File                                                | What it holds                                                           |
+| --------------------------------------------------- | ----------------------------------------------------------------------- |
+| `streamController.ts`                               | The session: start/stop, the stream window, ffmpeg's life, status       |
+| `ffmpegArgs.ts`                                     | ffmpeg's command line, addresses, stream keys, progress lines (pure)    |
+| `destinations.ts`                                   | Each destination's address, or why it can't start (pure)                |
+| `audioClock.ts`                                     | The sound kept to the clock: silence for gaps, late batches dropped     |
+| `textureRelay.ts`                                   | GPU pipeline: each picture to the encoder and the watching consoles     |
+| `framePump.ts`                                      | CPU pipeline: frames to ffmpeg on wall-clock time                       |
 | `backlog.ts`, `flv.ts`, `health.ts`, `benchmark.ts` | Video waiting for ffmpeg; FLV tags; CPU sampling; "Check this computer" |
 
 Stream page (`renderer/stream/`): `main.ts` (the picture and the mix), `wordsLayout.ts` (lower

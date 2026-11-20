@@ -37,39 +37,48 @@ export interface SceneTemplate {
   perCamera?: boolean;
   /** Needs two cameras (a layout). */
   twoCameras?: boolean;
+  /**
+   * Leaves the words as they are (the screens' lower-third switch decides), so a camera is
+   * offered once, not once with the slide and again with a lower third.
+   */
+  keepsWords?: boolean;
 }
 
-/** The scenes the Live console offers (camera ones once per camera; layouts with two). */
+/**
+ * The scenes the Live console offers (camera ones once per camera; layouts with two). Those that
+ * keep the words follow the "Lower third on the stream" switch: on, the words run along the
+ * bottom; off, `words` here (the full slide on the main screen, no words over a camera).
+ */
 export const STREAM_SCENES: readonly SceneTemplate[] = [
-  { id: 'slides', group: 'slides', background: 'program', words: 'full' },
-  { id: 'slidesLowerThird', group: 'slides', background: 'program', words: 'lowerThird' },
+  { id: 'slides', group: 'slides', background: 'program', words: 'full', keepsWords: true },
   { id: 'wordsOnBlack', group: 'slides', background: 'black', words: 'full' },
   { id: 'black', group: 'slides', background: 'black', words: 'none' },
-  { id: 'switcherLowerThird', group: 'cameras', background: 'switcher', words: 'lowerThird' },
-  { id: 'switcher', group: 'cameras', background: 'switcher', words: 'none' },
+  { id: 'switcher', group: 'cameras', background: 'switcher', words: 'none', keepsWords: true },
   {
-    id: 'cameraLowerThird',
+    id: 'camera',
     group: 'cameras',
     background: 'camera',
-    words: 'lowerThird',
+    words: 'none',
     perCamera: true,
+    keepsWords: true,
   },
-  { id: 'camera', group: 'cameras', background: 'camera', words: 'none', perCamera: true },
   {
     id: 'sideBySide',
     group: 'cameras',
     background: 'layout',
     layout: 'sideBySide',
-    words: 'lowerThird',
+    words: 'none',
     twoCameras: true,
+    keepsWords: true,
   },
   {
     id: 'pip',
     group: 'cameras',
     background: 'layout',
     layout: 'pip',
-    words: 'lowerThird',
+    words: 'none',
     twoCameras: true,
+    keepsWords: true,
   },
   { id: 'alternate', group: 'screens', background: 'program', words: 'full', mirror: 'alternate' },
   { id: 'stage', group: 'screens', background: 'program', words: 'full', mirror: 'stage' },
@@ -78,18 +87,18 @@ export const STREAM_SCENES: readonly SceneTemplate[] = [
 /**
  * The scenes the screens offer (under the output monitor): the same kinds as the stream's, made
  * with the video switcher's cameras and the screens' lower third. Every one keeps the words (a
- * screen with no words is a clear away).
+ * screen with no words is a clear away); a camera's own scene leaves the lower third as it is.
  */
 export const SCREEN_SCENES: readonly SceneTemplate[] = [
-  { id: 'slides', group: 'slides', background: 'program', words: 'full' },
-  { id: 'slidesLowerThird', group: 'slides', background: 'program', words: 'lowerThird' },
-  { id: 'cameraWords', group: 'cameras', background: 'camera', words: 'full', perCamera: true },
+  // Slides, and each camera once, follow the screens' lower-third switch (just below the scenes).
+  { id: 'slides', group: 'slides', background: 'program', words: 'full', keepsWords: true },
   {
-    id: 'cameraLowerThird',
+    id: 'cameraWords',
     group: 'cameras',
     background: 'camera',
-    words: 'lowerThird',
+    words: 'full',
     perCamera: true,
+    keepsWords: true,
   },
   {
     id: 'sideBySide',

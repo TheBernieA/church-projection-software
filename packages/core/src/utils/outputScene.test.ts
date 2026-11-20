@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { STARTER_THEMES } from '../themes';
-import { keyFeedScene, KEY_COLORS, makeScene, withKindThemes, withWordsTheme } from './scene';
+import {
+  keyFeedScene,
+  KEY_COLORS,
+  makeScene,
+  withKindThemes,
+  withScreenWords,
+  withWordsScale,
+  withWordsTheme,
+} from './scene';
 
 const [first, second] = STARTER_THEMES;
 if (!first || !second) throw new Error('needs two starter themes');
@@ -53,5 +61,40 @@ describe('a key feed for a video mixer', () => {
       kind: 'color',
       color: '#000000',
     });
+  });
+});
+
+describe('withWordsScale (Words size on the screens)', () => {
+  const theme = first;
+  it('scales the size, its fit limits and the reference; 1 changes nothing', () => {
+    expect(withWordsScale(scene, 1)).toBe(scene);
+    const big = withWordsScale(scene, 1.5).content!.theme;
+    expect(big.text.fontSize).toBe(Math.round(theme.text.fontSize * 1.5));
+    expect(big.autoFit.maxSize).toBe(Math.min(400, Math.round(theme.autoFit.maxSize * 1.5)));
+    expect(big.reference.fontSize).toBe(Math.round(theme.reference.fontSize * 1.5));
+  });
+  it('stays within what a theme allows', () => {
+    const t = withWordsScale(scene, 2).content!.theme;
+    expect(t.text.fontSize).toBeLessThanOrEqual(400);
+    expect(withWordsScale(scene, 0.01).content!.theme.autoFit.minSize).toBeGreaterThanOrEqual(8);
+    expect(withWordsScale(makeScene(), 2)).toEqual(makeScene());
+  });
+});
+
+describe('withScreenWords (alignment, and the announcements layer)', () => {
+  const withBoth = makeScene({
+    content: { key: 'k', kind: 'scripture', theme: first, blocks: [] },
+    announcement: { key: 'a', kind: 'text', theme: first, blocks: [] },
+  });
+  it('puts the words left, centre or right whatever the theme; theme: unchanged', () => {
+    const right = withScreenWords(withBoth, { scale: 1, align: 'right' });
+    expect(right.content?.theme.text.align).toBe('right');
+    expect(right.content?.theme.reference.align).toBe('right');
+    expect(withScreenWords(withBoth, { scale: 1, align: 'theme' })).toBe(withBoth);
+  });
+  it('sizes the announcements layer too', () => {
+    const big = withScreenWords(withBoth, { scale: 1.5, align: 'center' });
+    expect(big.announcement?.theme.text.fontSize).toBe(Math.round(first.text.fontSize * 1.5));
+    expect(big.announcement?.theme.text.align).toBe('center');
   });
 });
