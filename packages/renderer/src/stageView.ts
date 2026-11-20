@@ -98,7 +98,7 @@ export class StageView {
   private built: Built[] = [];
   private state: LiveState | null = null;
   private layoutKey = '';
-  private lastMessageAt = '';
+  private flashedAt = new WeakMap<Built, string>();
   private readonly timer: ReturnType<typeof setInterval>;
 
   constructor(
@@ -247,12 +247,14 @@ export class StageView {
   private drawMessage(b: Built, state: LiveState): void {
     const m = state.stageMessage;
     this.say(b, m?.text ?? '');
-    if (m?.flash && m.sentAt !== this.lastMessageAt) {
+    // Each message element flashes once per new message (a layout can have several).
+    const seen = this.flashedAt.get(b) ?? '';
+    if (m?.flash && m.sentAt !== seen) {
       b.node.classList.remove('flash');
       b.node.getBoundingClientRect(); // restart the CSS animation
       b.node.classList.add('flash');
     }
-    this.lastMessageAt = m?.sentAt ?? '';
+    this.flashedAt.set(b, m?.sentAt ?? '');
   }
 
   /**

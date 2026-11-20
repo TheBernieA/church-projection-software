@@ -1,6 +1,6 @@
 import { audioFadeAt, audioPositionAt, type AudioCue, type Mixer } from '@lampstand/core';
 import { MixerEngine } from './mixer';
-import { safePlay } from './dom';
+import { safePlay, trySetSink } from './dom';
 
 /**
  * Plays the live audio cue (walk-in music, sound cues) in one window: the main output, or the
@@ -29,10 +29,7 @@ export class AudioPlayer {
 
   /** Where it plays ('' = this window's default output); a device that's gone keeps the default. */
   setSink(sinkId: string): void {
-    const sinkable = this.el as HTMLAudioElement & { setSinkId?: (id: string) => Promise<void> };
-    // Not in every engine (jsdom in tests): call it where it exists.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    void sinkable.setSinkId?.(sinkId).catch(() => undefined);
+    trySetSink(this.el, sinkId);
   }
 
   sync(cue: AudioCue | null): void {

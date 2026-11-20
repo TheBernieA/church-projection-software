@@ -8,9 +8,14 @@ import type {
 } from '@lampstand/core';
 
 /** Apply a TextStyle to an element. Values come from Zod-validated themes. */
+/** A font family with the app's fallbacks behind it. */
+export function cssFontStack(family: string): string {
+  return `"${family.replace(/"/g, '')}", "Inter", system-ui, sans-serif`;
+}
+
 export function applyTextStyle(el: HTMLElement, s: TextStyle, fontSize = s.fontSize): void {
   const st = el.style;
-  st.fontFamily = `"${s.fontFamily.replace(/"/g, '')}", "Inter", system-ui, sans-serif`;
+  st.fontFamily = cssFontStack(s.fontFamily);
   st.fontWeight = String(s.fontWeight);
   st.fontSize = `${fontSize}px`;
   st.lineHeight = String(s.lineHeight);

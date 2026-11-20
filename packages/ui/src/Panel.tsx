@@ -1,36 +1,5 @@
 import type { ReactNode } from 'react';
-import { Typography, typographyClass } from './Typography';
-import { Button } from './Button';
-
-/** Panel header: sentence-case title (13px semibold), optional icon, actions on the right. */
-export function PanelHeader({
-  title,
-  icon,
-  actions,
-  subtitle,
-}: {
-  title: ReactNode;
-  icon?: ReactNode;
-  actions?: ReactNode;
-  subtitle?: ReactNode;
-}) {
-  return (
-    <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-[var(--hairline)] px-4">
-      <div className="flex min-w-0 items-center gap-2">
-        {icon && <Typography tone="muted">{icon}</Typography>}
-        <Typography as="h2" size={13} tone="primary" weight="semibold" truncate>
-          {title}
-        </Typography>
-        {subtitle && (
-          <Typography variant="caption" truncate>
-            {subtitle}
-          </Typography>
-        )}
-      </div>
-      {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
-    </div>
-  );
-}
+import { Typography } from './Typography';
 
 /** Tally label for monitors: a coloured dot + label. Colour is meaning, never decoration. */
 export function TallyLabel({
@@ -61,46 +30,6 @@ export function TallyLabel({
       />
       {children}
     </Typography>
-  );
-}
-
-/** Toggle chip used for masks (black / logo / freeze). Red when engaged — it changes the live output. */
-export function ToggleChip({
-  on,
-  onClick,
-  icon,
-  label,
-  hint,
-  className = '',
-}: {
-  on: boolean;
-  onClick: () => void;
-  icon: ReactNode;
-  label: string;
-  hint?: string;
-  className?: string;
-}) {
-  return (
-    <Button
-      variant="bare"
-
-      aria-pressed={on}
-      onClick={onClick}
-      title={hint ? `${label} (${hint})` : label}
-      className={`group inline-flex h-8 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] px-3 transition-[background-color,box-shadow,color] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
-        on
-          ? 'bg-[var(--tally-program)] text-white shadow-[0_4px_16px_rgba(239,74,80,0.35)]'
-          : 'bg-[var(--surface-2)] text-[var(--text-1)] shadow-[var(--shadow-1)] hover:bg-[var(--surface-3)]'
-      } ${className}`}
-    >
-      {icon}
-      <Typography truncate>{label}</Typography>
-      {hint && (
-        <Typography size={11} tone={on ? 'inherit' : 'muted'} className={on ? 'text-white/75' : ''}>
-          {hint}
-        </Typography>
-      )}
-    </Button>
   );
 }
 

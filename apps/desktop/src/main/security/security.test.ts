@@ -81,6 +81,14 @@ describe('display mapping (§7.3 hot-plug)', () => {
     const saved = upsertAssignment([], d(5, 'Epson', 1920), 'stage');
     expect(resolveRoles([d(7, 'Epson', -1920)], saved).get(7)).toBe('stage');
   });
+  it('an exact match wins over another display\'s loose match, whatever the order', () => {
+    // Two identical projectors: the stage one moved, the main one did not.
+    let saved = upsertAssignment([], d(1, 'Epson', 1920), 'main');
+    saved = upsertAssignment(saved, d(2, 'Epson', 3840), 'stage');
+    const roles = resolveRoles([d(3, 'Epson', 5760), d(4, 'Epson', 1920)], saved);
+    expect(roles.get(4)).toBe('main');
+    expect(roles.get(3)).toBe('stage');
+  });
   it('only one main output', () => {
     let saved = upsertAssignment([], d(1, 'A', 0), 'main');
     saved = upsertAssignment(saved, d(2, 'B', 1920), 'main');

@@ -3,7 +3,8 @@ import { hasChords, stripChords } from './chords';
 import { type LyricSlide } from './types';
 
 /** Split a section into slide-sized chunks. Explicit blank lines always break. */
-export function splitSection(lines: string[], maxLines: number): string[][] {
+export function splitSection(lines: string[], maxLinesWanted: number): string[][] {
+  const maxLines = Math.max(1, maxLinesWanted);
   const groups: string[][] = [[]];
   for (const line of lines) {
     if (!line.trim()) {

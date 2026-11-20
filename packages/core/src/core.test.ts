@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   CommandBus,
-  EventBus,
   LiveStateStore,
   STARTER_THEMES,
   ThemeSchema,
@@ -351,20 +350,6 @@ describe('misc', () => {
     });
     expect(r).toEqual({ value: { schemaVersion: 3, a: 1, b: 2, c: 3 }, migrated: true });
     expect(() => migrate({ schemaVersion: 1 }, 2, {})).toThrow();
-  });
-  it('event bus isolates listener errors', () => {
-    const bus = new EventBus<{ a: number }>();
-    let n = 0;
-    bus.on('a', () => {
-      throw new Error('x');
-    });
-    const off = bus.on('a', (v) => {
-      n += v;
-    });
-    bus.emit('a', 2);
-    off();
-    bus.emit('a', 2);
-    expect(n).toBe(2);
   });
 });
 

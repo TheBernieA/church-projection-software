@@ -1,4 +1,5 @@
 import { dbToGain, sendGain, type Mixer, type MixerBus, type MixerChannel } from '@lampstand/core';
+import { trySetSink } from './dom';
 import { RAW_AUDIO } from './inputs';
 
 /** Which mix an engine makes: the room's, the stream's, or the operator's headphones (solo). */
@@ -23,12 +24,6 @@ const HPF_HZ = 80;
  */
 const LIMIT_DB = -1.5;
 const LIMIT_RATIO = 20;
-
-/** Point a context at an output device (Chromium's AudioContext.setSinkId). */
-function routeContext(ctx: AudioContext, sinkId: string): void {
-  const c = ctx as AudioContext & { setSinkId?: (id: string) => Promise<void> };
-  void c.setSinkId?.(sinkId).catch(() => undefined);
-}
 
 function readLevel(a: AnalyserNode, buf: Float32Array<ArrayBuffer>): [number, number] {
   a.getFloatTimeDomainData(buf);
@@ -210,7 +205,7 @@ export class MixerEngine {
   /** The finished mix's meters, left and right. */
   private readonly sideMeters: [AnalyserNode, AnalyserNode];
   private readonly strips = new Map<string, Strip>();
-  private readonly sources: Record<SourceKind, Set<AudioNode>> = {
+  private readonly sources: Record<SourceKind, Set<MediaElementAudioSourceNode>> = {
     tracks: new Set(),
     video: new Set(),
   };
@@ -249,13 +244,20 @@ export class MixerEngine {
 
   /** The output device for the speakers ('' = the default). */
   setSink(sinkId: string): void {
-    routeContext(this.ctx, sinkId);
+    trySetSink(this.ctx, sinkId);
   }
 
   /** Feed a media element's sound into the tracks or video channel (once per element). */
   attach(kind: SourceKind, el: HTMLMediaElement): void {
     if (this.tapped.has(el) || this.disposed) return;
     this.tapped.add(el);
+    // Let go of videos that have left the screen and their file (each would stay in memory).
+    for (const set of Object.values(this.sources))
+      for (const s of set)
+        if (!s.mediaElement.isConnected && !s.mediaElement.currentSrc) {
+          s.disconnect();
+          set.delete(s);
+        }
     const src = this.ctx.createMediaElementSource(el);
     this.sources[kind].add(src);
     const strip = this.stripFor(kind);

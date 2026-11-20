@@ -39,7 +39,11 @@ export function stripChords(line: string): string {
 
 export const hasChords = (line: string): boolean => parseChordLine(line).chords.length > 0;
 
-function transposeNote(note: string, semitones: number, flats: boolean): string {
+/** Spellings outside both scales, as the note they sound. */
+const ENHARMONIC: Record<string, string> = { Cb: 'B', Fb: 'E', 'E#': 'F', 'B#': 'C' };
+
+function transposeNote(written: string, semitones: number, flats: boolean): string {
+  const note = ENHARMONIC[written] ?? written;
   const i = SHARPS.indexOf(note) >= 0 ? SHARPS.indexOf(note) : FLATS.indexOf(note);
   if (i < 0) return note;
   const scale = flats ? FLATS : SHARPS;

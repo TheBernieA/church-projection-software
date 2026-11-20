@@ -1,4 +1,5 @@
 import { newId, type TextSlide } from '@lampstand/core';
+import { splitSection } from '@lampstand/lyrics';
 
 /**
  * Reflow text for text presentations: one block per slide, blocks separated by a blank line,
@@ -90,12 +91,10 @@ export function splitLongBlocks(text: string, maxLines: number): string {
       const header = /^\s*\[.*\]\s*$/.test(lines[0] ?? '') ? lines[0] : null;
       const body = header ? lines.slice(1) : lines;
       if (body.length <= maxLines) return [block];
-      const out: string[] = [];
-      for (let i = 0; i < body.length; i += maxLines) {
-        const chunk = body.slice(i, i + maxLines).join('\n');
-        out.push(header ? `${header}\n${chunk}` : chunk);
-      }
-      return out;
+      // Balanced like the song's own slides (5 lines at 4 a slide: 3 + 2).
+      return splitSection(body, maxLines).map((chunk) =>
+        header ? `${header}\n${chunk.join('\n')}` : chunk.join('\n'),
+      );
     })
     .join('\n\n');
 }

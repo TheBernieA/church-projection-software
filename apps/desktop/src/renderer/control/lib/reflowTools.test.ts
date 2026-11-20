@@ -18,6 +18,8 @@ describe('reflow tools', () => {
   it('splits long slides, keeping their title', () => {
     expect(splitLongBlocks('[T]\n1\n2\n3', 2)).toBe('[T]\n1\n2\n\n[T]\n3');
     expect(splitLongBlocks('1\n2', 4)).toBe('1\n2');
+    // Balanced like the song editor: 5 lines at 4 a slide is 3 + 2, not 4 + 1.
+    expect(splitLongBlocks('1\n2\n3\n4\n5', 4)).toBe('1\n2\n3\n\n4\n5');
   });
 
   it('inserts a new titled slide at the caret', () => {

@@ -1,5 +1,6 @@
 import type { SlideObject } from '@lampstand/core';
 import { el } from './dom';
+import { cssFontStack } from './style';
 import type { StyleInit } from './types';
 
 /**
@@ -40,7 +41,7 @@ export function objectBoxStyle(o: SlideObject): StyleInit {
           o.align === 'left' ? 'flex-start' : o.align === 'right' ? 'flex-end' : 'center',
         textAlign: o.align,
         color: o.color,
-        fontFamily: `"${(o.fontFamily ?? 'Inter').replace(/"/g, '')}", "Inter", system-ui, sans-serif`,
+        fontFamily: cssFontStack(o.fontFamily ?? 'Inter'),
         fontSize: `${o.fontSize}px`,
         fontWeight: o.bold ? '700' : '500',
         fontStyle: o.italic ? 'italic' : 'normal',

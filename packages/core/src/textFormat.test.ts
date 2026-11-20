@@ -84,6 +84,12 @@ describe('withTextFormat', () => {
     expect(off.text.list).toBeUndefined();
   });
 
+  it('keeps shrink-to-fit off when a size is set too', () => {
+    const t = withTextFormat(theme, { autoFit: false, fontSize: 80 });
+    expect(t.autoFit.enabled).toBe(false);
+    expect(t.autoFit.maxSize).toBe(80);
+  });
+
   it('makes the size the auto-fit ceiling so long slides still shrink', () => {
     const t = withTextFormat(theme, { fontSize: 40 });
     expect(t.text.fontSize).toBe(40);

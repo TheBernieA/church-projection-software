@@ -6,7 +6,7 @@ import {
   type BackgroundLayer,
   type MediaLayer,
 } from '@lampstand/core';
-import { el, loop, safePlay } from './dom';
+import { el, loop, safePlay, trySetSink } from './dom';
 import { backgroundFilter, gradientCss, scrimCss } from './style';
 import { buildGenerated } from './generated';
 import { FILL } from './constants';
@@ -108,9 +108,7 @@ function routeSound(v: HTMLMediaElement, sinkId: string): void {
   const routed = v as HTMLMediaElement & { lsSink?: string };
   if (routed.lsSink === sinkId) return;
   routed.lsSink = sinkId;
-  const sinkable = v as HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> };
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  void sinkable.setSinkId?.(sinkId).catch(() => undefined);
+  trySetSink(v, sinkId);
 }
 
 /**
@@ -168,6 +166,9 @@ export function syncMedia(
   const held = v as HTMLVideoElement & { lsHold?: ReturnType<typeof setTimeout> };
   if (held.lsHold) clearTimeout(held.lsHold);
   const apply = (): void => {
+    // Off the screen already, or a newer state has taken over: never play it.
+    const latest = (v as HTMLVideoElement & { lsPlayback?: MediaLayer }).lsPlayback;
+    if (!v.isConnected || (latest && latest !== m)) return;
     // Synced to start later (a countdown video ending on the start time): hold its first frame
     // until then, so every output starts it together.
     const wait = m.playing && m.syncedAt ? Date.parse(m.syncedAt) - Date.now() : 0;
@@ -186,9 +187,10 @@ export function syncMedia(
     if (m.playing && !finished) safePlay(v);
     else v.pause();
   };
+  // The newest state first, so an older one still waiting for metadata knows to stand aside.
+  watchPlayback(v, m);
   if (v.readyState >= 1) apply();
   else v.addEventListener('loadedmetadata', apply, { once: true });
-  watchPlayback(v, m);
 }
 
 /**

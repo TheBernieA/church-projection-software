@@ -21,7 +21,7 @@ import {
 } from './background';
 import { maskStyle } from './mask';
 import { buildVideoInput } from './inputs';
-import { buildContent } from './content';
+import { buildContent, clearFitCache } from './content';
 import { animate, el, safePlay } from './dom';
 import { buildOverlay } from './overlays';
 import { backgroundKey } from './style';
@@ -250,6 +250,8 @@ export class SceneRenderer {
   }
 
   render(scene: Scene, opts: { instant?: boolean } = {}): void {
+    // Gone: never draw again (a late font-load refresh could start timers or a camera).
+    if (this.destroyed) return;
     this.last = scene;
     const instant = opts.instant || this.opts.mode === 'thumbnail';
     this.applyMasks(scene, instant);
@@ -485,7 +487,10 @@ export class SceneRenderer {
     this.standby.show(on, instant ? 0 : STANDBY_FADE_MS);
   }
 
+  private destroyed = false;
+
   destroy(): void {
+    this.destroyed = true;
     this.resizeObserver?.disconnect();
     this.content?.extra?.dispose();
     this.announce?.extra?.dispose();
@@ -532,8 +537,7 @@ export class SceneRenderer {
   private renderBackground(scene: Scene, instant: boolean): void {
     const key = backgroundKey(scene.background);
     if (this.bg?.key === key || (!this.bg && key === 'none')) {
-      // Continuity: never restart (its sound or overlay may have changed).
-      this.syncBgSound();
+      // Continuity: never restart (its overlay may have changed; render() syncs its sound).
       this.syncBgScrim();
       return;
     }
@@ -546,7 +550,6 @@ export class SceneRenderer {
       node.style.opacity = fade ? '0' : '1';
       this.bgLayer.append(node);
       this.bg = { key, node };
-      this.syncBgSound();
       this.syncBgScrim();
       if (fade)
         void animate(node, [{ opacity: 0 }, { opacity: 1 }], { duration: fade, easing: 'ease' });
@@ -679,18 +682,28 @@ export class SceneRenderer {
   }
 
   private retire(node: HTMLElement, ms: number): void {
-    if (!ms) {
+    // Gone for good: stop its videos and let go of their files (memory, and no sound later).
+    const remove = (): void => {
       node.remove();
-      return;
-    }
+      for (const v of node.querySelectorAll('video')) {
+        const held = v as HTMLVideoElement & { lsHold?: ReturnType<typeof setTimeout> };
+        if (held.lsHold) clearTimeout(held.lsHold);
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+      }
+    };
+    if (!ms) return remove();
     void animate(node, [{ opacity: 1 }, { opacity: 0 }], { duration: ms, easing: 'ease' }).then(
-      () => node.remove(),
+      remove,
     );
   }
 
   /** Re-apply the last scene (e.g. after fonts finish loading). */
   refresh(): void {
-    if (!this.last) return;
+    if (!this.last || this.destroyed) return;
+    // Fonts may have arrived since the words were sized: size them again.
+    clearFitCache();
     const s = this.last;
     this.content?.extra?.dispose();
     this.contentLayer.replaceChildren();

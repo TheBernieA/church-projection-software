@@ -532,8 +532,9 @@ export function withTextFormat(theme: Theme, f?: TextFormat): Theme {
     next.layout = VALIGN_LAYOUT[f.valign];
   if (f.fontSize) {
     // Auto-fit treats the size as a ceiling, so long slides still shrink to fit.
+    // (On top of the scaling choice above, so turning shrink-to-fit off stays off.)
     next.autoFit = {
-      ...theme.autoFit,
+      ...next.autoFit,
       maxSize: f.fontSize,
       minSize: Math.min(theme.autoFit.minSize, f.fontSize),
     };

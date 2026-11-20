@@ -129,8 +129,8 @@ export const IconButton = forwardRef<
       variant={variant}
       size={size}
       className={`${ICON_DIM[size]} !px-0 ${active ? ACTIVE[activeTone] : ''} ${className}`}
-      title={rest.title ?? rest['aria-label']}
       {...rest}
+      title={rest.title ?? rest['aria-label']}
     >
       {children}
     </Button>

@@ -7,7 +7,8 @@ export function formatClock(
   totalSeconds: number,
   opts: { hours?: 'auto' | 'always' } = {},
 ): string {
-  const s = Math.max(0, Math.floor(totalSeconds));
+  // A target that isn't a date shows 00:00, never "NaN:NaN".
+  const s = Number.isFinite(totalSeconds) ? Math.max(0, Math.floor(totalSeconds)) : 0;
   const pad = (n: number): string => String(n).padStart(2, '0');
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);

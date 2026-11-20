@@ -181,6 +181,8 @@ export class LiveStateStore {
 
   update(mutate: (s: LiveState) => Omit<LiveState, 'revision'>): LiveState {
     const next = mutate(this.state);
+    // Nothing changed: no new revision, nobody told.
+    if (next === this.state) return this.state;
     this.state = { ...next, revision: this.state.revision + 1 };
     for (const l of [...this.listeners]) {
       try {
@@ -437,7 +439,11 @@ export function registerLiveCommands(
             : { ...startMedia(picked, now()), playing: p.autoplay !== false }
           : null;
         const bgFromPayload: BackgroundLayer | null | undefined =
-          p.background !== undefined ? p.background : s.preview.background;
+          p.background !== undefined
+            ? p.background
+            : explicit
+              ? undefined // a slide, video or page given here keeps Program's background
+              : s.preview.background;
         const next = p.next !== undefined ? p.next : (s.preview.next ?? null);
         // Background continuity: only replace the background if a new one was provided.
         const background = bgFromPayload ?? s.program.background;
@@ -829,8 +835,19 @@ export function registerLiveCommands(
       store.update((s) => {
         const at = now();
         const existing = s.timers.find((t) => t.id === p.timer.id);
+        // Starting a running timer again keeps the time it has run so far.
+        const ran =
+          existing?.running && existing.startedAt
+            ? Math.max(0, (Date.parse(at) - Date.parse(existing.startedAt)) / 1000) || 0
+            : 0;
         const started: LiveTimer = existing
-          ? { ...existing, ...p.timer, running: true, startedAt: at }
+          ? {
+              ...existing,
+              ...p.timer,
+              running: true,
+              startedAt: at,
+              accumulatedSec: existing.accumulatedSec + ran,
+            }
           : { ...p.timer, running: true, startedAt: at, accumulatedSec: 0 };
         return {
           ...s,

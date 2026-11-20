@@ -14,6 +14,13 @@ import { RED_LETTER } from './constants';
 
 const fitCache = new FitCache();
 
+/** Forget every fitted size (a font has loaded, so the words measure differently). */
+export function clearFitCache(): void {
+  fitCache.clear();
+}
+if (typeof document !== 'undefined' && 'fonts' in document)
+  document.fonts.addEventListener('loadingdone', clearFitCache);
+
 /** A slide's heading (text slides) and other emphasised words: warm gold over the theme's colour. */
 export const EMPHASIS_COLOR = '#E8B04B';
 
@@ -161,7 +168,9 @@ export function buildContent(
     if (style.linked && opts.live) {
       const source = style.linked;
       timer = setInterval(() => {
-        const block = textEl.querySelector('.ls-block');
+        // The innermost element holds the words (a bar behind the line wraps them).
+        let block = textEl.querySelector('.ls-block');
+        while (block?.firstElementChild) block = block.firstElementChild;
         const next = linkedText(source, Date.now());
         if (block && block.textContent !== next) block.textContent = next;
       }, 1000);
@@ -255,7 +264,8 @@ export function buildContent(
           theme.autoFit,
           availW,
           availH,
-          content.blocks,
+          content.kind,
+          theme.text.linked ? linkedText(theme.text.linked, Date.now()) : content.blocks,
         ]);
         const cached = fitCache.get(key);
         const size =

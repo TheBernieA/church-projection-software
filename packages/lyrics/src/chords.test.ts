@@ -27,6 +27,9 @@ describe('chords', () => {
     expect(transposeChord('G', 2)).toBe('A');
     expect(transposeChord('F#m7', 1)).toBe('Gm7');
     expect(transposeChord('D/F#', 2)).toBe('E/G#');
+    // Spellings outside both scales still move.
+    expect(transposeChord('Cb', 1)).toBe('C');
+    expect(transposeChord('E#m', 2)).toBe('Gm');
     expect(transposeChord('Bb', 2)).toBe('C');
     expect(transposeChord('Bb', 3)).toBe('Db'); // flats stay flat
     expect(transposeChord('C', -1)).toBe('B');
