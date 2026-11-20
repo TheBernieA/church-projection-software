@@ -117,7 +117,12 @@ export function PlaybackDialog() {
                 id="pb-start"
                 unit={seconds}
                 value={pb.start ?? 0}
-                onCommit={(v) => set({ start: Math.max(0, v) })}
+                // Always before the out-point (a tenth of a second at least).
+                onCommit={(v) =>
+                  set({
+                    start: Math.max(0, pb.end !== undefined ? Math.min(v, pb.end - 0.1) : v),
+                  })
+                }
               />
             </Field>
             <Field label={t('playback.end')} htmlFor="pb-end">
@@ -126,7 +131,10 @@ export function PlaybackDialog() {
                 unit={seconds}
                 value={pb.end ?? (duration ? Math.round(duration * 10) / 10 : null)}
                 placeholder={t('playback.endOfClip')}
-                onCommit={(v) => set({ end: v > 0 ? v : undefined })}
+                // Always after the in-point.
+                onCommit={(v) =>
+                  set({ end: v > 0 ? Math.max(v, (pb.start ?? 0) + 0.1) : undefined })
+                }
               />
             </Field>
           </div>

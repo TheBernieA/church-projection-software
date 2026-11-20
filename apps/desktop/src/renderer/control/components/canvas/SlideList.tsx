@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { MoreHorizontal, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { displayCombo } from '../../lib/shortcuts';
 import { type Scene } from '@lampstand/core';
 import { Button, IconButton, TallyTag, Typography } from '@lampstand/ui';
 import { AddCard, REVEAL } from '../cards';
@@ -75,6 +76,19 @@ export function MenuItem({
         </Typography>
       )}
     </DropdownMenu.Item>
+  );
+}
+
+/** "New slide ⇧⌘N", in every slide menu and "+" menu. */
+export function NewSlideMenuItem({ onSelect }: { onSelect: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <MenuItem
+      icon={<Plus size={13} />}
+      label={t('canvas.newSlide')}
+      shortcut={displayCombo('Mod+Shift+N')}
+      onSelect={onSelect}
+    />
   );
 }
 

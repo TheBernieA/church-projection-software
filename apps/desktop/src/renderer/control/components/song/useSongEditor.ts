@@ -195,12 +195,15 @@ export function useSongEditor(song: Song, item: SongItem) {
     },
     remove: (i: number) => {
       change((s) => removeSlide(s, i));
-      setCursor({ at: i < at ? at - 1 : at, pending: false });
+      go({ at: i < at ? at - 1 : at, pending: false });
       setTyping(false);
     },
     move: (from: number, to: number) => {
       change((s) => moveSlide(s, from, to));
-      setCursor({ at: to, pending: false });
+      // A move is a new slide under the cursor: the text box starts afresh (never typing the
+      // last slide's words over this one).
+      go({ at: to, pending: false });
+      setTyping(false);
     },
     splitLong: (i: number) => change((s) => splitSlide(s, i, maxLines)),
     startsGroup: (i: number) => startsGroup(song, i),
@@ -208,12 +211,14 @@ export function useSongEditor(song: Song, item: SongItem) {
     /** Group from slide `i` on with this name (at a group's start, renames it). */
     group: (i: number, label: string) => {
       change((s) => groupFrom(s, i, label));
-      setCursor({ at: i, pending: false });
+      go({ at: i, pending: false });
+      setTyping(false);
     },
     /** Group from slide `i` on with a name to type. */
     groupCustom: (i: number) => {
       const next = startsGroup(song, i) ? song : change((s) => groupFrom(s, i, nextGroupLabel(s)));
-      setCursor({ at: i, pending: false });
+      go({ at: i, pending: false });
+      setTyping(false);
       setRenaming(editorSlides(next)[i]?.sectionId ?? null);
     },
     rename: (sectionId: string, label: string) => {
@@ -223,7 +228,7 @@ export function useSongEditor(song: Song, item: SongItem) {
     ungroup: (sectionId: string) => change((s) => ungroup(s, sectionId)),
     removeGroup: (sectionId: string) => {
       change((s) => removeGroup(s, sectionId));
-      setCursor({ at: Math.min(at, slides.length - 1), pending: false });
+      go({ at: Math.min(at, slides.length - 1), pending: false });
       setTyping(false);
     },
     /** A new, empty group after the current one, ready to type. */

@@ -1,7 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { StreamSettings } from '@lampstand/core';
-import { Button, Slider, Typography } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
+import { SettledSlider } from '../form';
 import { saveSettings } from '../../lib/actions';
 import { lowerThirdThemes } from '../../lib/slides';
 import { useStore } from '../../lib/store';
@@ -55,13 +56,13 @@ export function LowerThirdPanel({ st }: { st: StreamSettings }) {
         <WordsPlacement edge={pic.wordsEdge} align={pic.wordsAlign} onChange={set} />
       </PictureRow>
       <PictureRow label={t('streaming.wordsWidth')}>
-        <Slider
+        <SettledSlider
           aria-label={t('streaming.wordsWidth')}
           title={t('streaming.wordsWidthHelp')}
           {...WORDS_WIDTH}
           value={pic.wordsWidth}
           format={(v) => `${v}%`}
-          onChange={(e) => set({ wordsWidth: Number(e.target.value) })}
+          onCommit={(wordsWidth) => set({ wordsWidth })}
           className="min-w-0 flex-1"
         />
       </PictureRow>
@@ -81,12 +82,12 @@ export function LowerThirdPanel({ st }: { st: StreamSettings }) {
               {pic.wordsTheme ? t('streaming.wordsAutoTheme') : t('streaming.wordsAutoOn')}
             </Typography>
           ) : (
-            <Slider
+            <SettledSlider
               aria-label={t('streaming.wordsSize')}
               {...WORDS_SIZE}
               value={pic.wordsSize}
               format={(v) => `${v}%`}
-              onChange={(e) => set({ wordsSize: Number(e.target.value) })}
+              onCommit={(wordsSize) => set({ wordsSize })}
               className="min-w-0 flex-1"
             />
           )}

@@ -1,5 +1,6 @@
 import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
-import { Slider, Typography } from '@lampstand/ui';
+import { Slider, Typography, type SliderProps } from '@lampstand/ui';
+import { useDraft } from '../lib/slider';
 
 /**
  * Shared form controls for editors and inspectors, so every label, colour well, number box,
@@ -163,6 +164,21 @@ export function RangeField({
       />
     </Typography>
   );
+}
+
+/**
+ * A slider that saves once, when it's let go (or per arrow key): one settings change and one
+ * undo step, not one per pixel of the drag. It shows where it's being dragged meanwhile.
+ */
+export function SettledSlider({
+  value,
+  onCommit,
+  ...rest
+}: Omit<SliderProps, 'onChange' | 'ref'> & { onCommit: (v: number) => void }) {
+  const draft = useDraft(value, (v) => {
+    if (v !== value) onCommit(v);
+  });
+  return <Slider {...rest} {...draft.props} value={draft.draft ?? value} />;
 }
 
 /** A checkbox with its label, and an optional line of help under the label. */

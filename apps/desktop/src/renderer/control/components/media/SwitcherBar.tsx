@@ -5,6 +5,7 @@ import { Button, Kbd, Segmented, Typography } from '@lampstand/ui';
 import { type InputDevice } from '../../lib/inputs';
 import { saveSettings } from '../../lib/actions';
 import { useStore } from '../../lib/store';
+import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { auto, cut, setPip, tbar, tbarRelease } from '../../lib/switcher';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
@@ -130,8 +131,9 @@ function TBar({ disabled }: { disabled: boolean }) {
       onPointerMove={(e) => {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) move(e);
       }}
-      onPointerUp={() => {
-        if (disabled) return;
+      // However the drag ends (let go, cancelled, or taking became impossible mid-drag), a
+      // started mix is always finished, so Program is never left half-way.
+      onLostPointerCapture={() => {
         tbarRelease();
         setPos(0);
       }}
@@ -170,7 +172,10 @@ export function SwitcherBar({
   const input = useStore((s) => s.live?.program.input ?? null);
   const inputNext = useStore((s) => s.live?.program.inputNext ?? null);
   const pip = useStore((s) => s.live?.program.pip ?? null);
+  // Subscribed, so the key hints follow a shortcut remapped in Settings.
+  useStore((s) => s.settings?.shortcuts);
   if (!settings) return null;
+  const keys = effectiveShortcuts();
   const transition = settings.transition;
   const setTransition = (patch: Partial<InputTransition>): void =>
     void saveSettings({ switcher: { ...settings, transition: { ...transition, ...patch } } });
@@ -227,10 +232,10 @@ export function SwitcherBar({
               className="!h-auto flex-1"
               disabled={!canTake}
               onClick={() => void cut()}
-              title={t('shortcuts.actions.switcherCut')}
+              title={t('shortcuts.action.switcherCut')}
             >
               {t('switcher.cut')}
-              <Kbd>⇧C</Kbd>
+              <Kbd>{displayCombo(keys.switcherCut)}</Kbd>
             </Button>
             <Button
               size="sm"
@@ -238,10 +243,10 @@ export function SwitcherBar({
               className="!h-auto flex-1"
               disabled={!canTake}
               onClick={() => void auto()}
-              title={t('shortcuts.actions.switcherAuto')}
+              title={t('shortcuts.action.switcherAuto')}
             >
               {t('switcher.auto')}
-              <Kbd tone="onColor">⇧T</Kbd>
+              <Kbd tone="onColor">{displayCombo(keys.switcherAuto)}</Kbd>
             </Button>
           </div>
           <TBar disabled={!canTake} />

@@ -1,6 +1,7 @@
 import { FileQuestion, Type } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type Song } from '@lampstand/core';
+import { type Scene, type Song } from '@lampstand/core';
 import { Button, Typography } from '@lampstand/ui';
 import { useSize } from '../../lib/hooks';
 import { useStore } from '../../lib/store';
@@ -94,7 +95,12 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
 }
 
 /** A song's slides for the list: each group's heading first, a new slide's place held. */
-function listSlides(ed: SongEditorState, prompt: string, long: string): ListSlide[] {
+function listSlides(
+  ed: SongEditorState,
+  scenes: Scene[],
+  prompt: string,
+  long: string,
+): ListSlide[] {
   const pending: ListSlide = {
     key: 'pending',
     scene: ed.scene([], ed.at),
@@ -114,7 +120,7 @@ function listSlides(ed: SongEditorState, prompt: string, long: string): ListSlid
     if (ed.pending && i === ed.at) out.push(pending);
     out.push({
       key: `${s.sectionId}:${i}`,
-      scene: ed.scene(s.lines, i),
+      scene: scenes[i] ?? ed.scene(s.lines, i),
       index: i,
       header:
         ed.slides[i - 1]?.sectionId !== s.sectionId ? (
@@ -152,12 +158,16 @@ export function SongEditor({ item }: { item: SongItem }) {
 function SongEditorBody({ song, item }: { song: Song; item: SongItem }) {
   const { t } = useTranslation();
   const ed = useSongEditor(song, item);
+  // Each slide's picture, built again only when the song or its look changes (not per render,
+  // so the thumbnails don't redraw on every keystroke elsewhere).
+  const { slides, scene } = ed;
+  const scenes = useMemo(() => slides.map((s, i) => scene(s.lines, i)), [slides, scene]);
   return (
     <SlideEditor
       icon={<KindTile kind="song" size={24} />}
       title={song.title}
       list={{
-        slides: listSlides(ed, t('songEditor.typeNew'), t('songEditor.long')),
+        slides: listSlides(ed, scenes, t('songEditor.typeNew'), t('songEditor.long')),
         selected: ed.at,
         onSelect: ed.step,
         onMove: ed.move,

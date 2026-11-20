@@ -63,6 +63,12 @@ export function Splitter({
         onCommit(valueAt(e));
         start.current = null;
       }}
+      // The drag was taken away (a system gesture, the window lost the pointer): it ends.
+      onLostPointerCapture={(e) => {
+        if (!start.current) return;
+        onCommit(valueAt(e));
+        start.current = null;
+      }}
       onKeyDown={(e) => {
         const step = e.shiftKey ? 40 : 12;
         const grow = axis === 'x' ? ['ArrowRight', 'ArrowLeft'] : ['ArrowDown', 'ArrowUp'];

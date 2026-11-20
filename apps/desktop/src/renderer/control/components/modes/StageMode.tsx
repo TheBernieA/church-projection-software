@@ -81,13 +81,16 @@ function EditBoxes({
       onChange(el.id, patch, commit);
     };
     const move = (ev: PointerEvent): void => at(ev, false);
+    // Let go, or the drag taken away: commit where it is and stop following the pointer.
     const up = (ev: PointerEvent): void => {
       at(ev, true);
       target.removeEventListener('pointermove', move);
       target.removeEventListener('pointerup', up);
+      target.removeEventListener('lostpointercapture', up);
     };
     target.addEventListener('pointermove', move);
     target.addEventListener('pointerup', up);
+    target.addEventListener('lostpointercapture', up);
   };
   return (
     <div

@@ -1,4 +1,6 @@
 import type { ReactNode, Ref } from 'react';
+import { Circle, Image as ImageIcon, Minus, Square, Type, type LucideIcon } from 'lucide-react';
+import { type SlideObject } from '@lampstand/core';
 import { Button, Typography } from '@lampstand/ui';
 
 /** One tool on an editor's tool bar: an icon over its short name. */
@@ -66,3 +68,12 @@ export function ToolBar({ label, children }: { label: string; children: ReactNod
     </div>
   );
 }
+
+/** Each kind of thing on a slide, by its icon (the tool bar, the Objects list). */
+export const OBJECT_ICON: Record<SlideObject['kind'], LucideIcon> = {
+  text: Type,
+  rect: Square,
+  ellipse: Circle,
+  line: Minus,
+  image: ImageIcon,
+};

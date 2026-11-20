@@ -2,13 +2,10 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   ArrowDownToLine,
   ArrowUpToLine,
-  Circle,
   FolderPlus,
   Image as ImageIcon,
-  Minus,
   Plus,
   Scissors,
-  Square,
   Trash2,
   Type,
 } from 'lucide-react';
@@ -21,15 +18,11 @@ import { displayCombo } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
 import { mediaUrl } from '../../../shared/mediaUrl';
-import { Tool, ToolBar, ToolDivider } from './tools';
+import { OBJECT_ICON, Tool, ToolBar, ToolDivider } from './tools';
 import { type ObjectKind, type TextItem } from '../../types';
 
-const ADD: { kind: Exclude<ObjectKind, 'image'>; icon: typeof Type }[] = [
-  { kind: 'text', icon: Type },
-  { kind: 'rect', icon: Square },
-  { kind: 'ellipse', icon: Circle },
-  { kind: 'line', icon: Minus },
-];
+/** What the tool bar adds straight away (a picture is picked from a menu). */
+const ADD: Exclude<ObjectKind, 'image'>[] = ['text', 'rect', 'ellipse', 'line'];
 
 /** Pictures from the media library, to place on the slide (or import one). */
 function PictureTool({ onPick }: { onPick: (mediaId: string) => void }) {
@@ -99,14 +92,17 @@ function ObjectTools({ item, index }: { item: TextItem; index: number }) {
   return (
     <>
       <ToolDivider />
-      {ADD.map(({ kind, icon: Icon }) => (
-        <Tool
-          key={kind}
-          icon={<Icon size={17} />}
-          label={t(`canvas.kinds.${kind}`)}
-          onClick={() => add(kind)}
-        />
-      ))}
+      {ADD.map((kind) => {
+        const Icon = OBJECT_ICON[kind];
+        return (
+          <Tool
+            key={kind}
+            icon={<Icon size={17} />}
+            label={t(`canvas.kinds.${kind}`)}
+            onClick={() => add(kind)}
+          />
+        );
+      })}
       <PictureTool onPick={(id) => add('image', id)} />
       <ToolDivider />
       <Tool

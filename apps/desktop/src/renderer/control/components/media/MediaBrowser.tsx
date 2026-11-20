@@ -309,7 +309,7 @@ function PlayNow({ m }: { m: MediaItem }) {
 }
 
 /** Inside a playlist, dropping media on an entry places it there (reorder, or add). */
-function useDropTarget(playlistId: string | null, index: number) {
+function useDropTarget(playlistId: string | null, targetId: string) {
   const [over, setOver] = useState(false);
   return {
     over,
@@ -326,8 +326,12 @@ function useDropTarget(playlistId: string | null, index: number) {
         if (!playlistId || !isLibraryDrag(e)) return;
         e.preventDefault();
         const dropped = readLibraryDrop(e);
-        if (dropped?.kind === 'media')
-          void placeInMediaPlaylist(playlistId, dropped.mediaId, index);
+        if (dropped?.kind !== 'media') return;
+        // Its place in the playlist itself (the list shown can be searched, or skip missing
+        // media), so it lands where it was dropped.
+        const ids = useStore.getState().mediaPlaylists.find((p) => p.id === playlistId)?.mediaIds;
+        const at = ids?.indexOf(targetId) ?? -1;
+        if (at >= 0) void placeInMediaPlaylist(playlistId, dropped.mediaId, at);
       },
     },
   };
@@ -494,7 +498,11 @@ function TileMenu({
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <DropdownMenu.Item
             className={ITEM_CLASS}
-            onSelect={() => void attempt(() => cmd('media.delete', { id: m.id }), 'errors.save')}
+            onSelect={() => {
+              // The file goes too, and this can't be undone: ask first.
+              if (window.confirm(t('mediaBin.deleteConfirm', { name: m.name })))
+                void attempt(() => cmd('media.delete', { id: m.id }), 'errors.save');
+            }}
           >
             <Trash2 size={14} />
             {t('mediaBin.deleteFromLibrary')}
@@ -527,17 +535,9 @@ const useIsLive = (id: string): boolean => useStore((s) => s.live?.program.media
  * One piece of media in the grid: the picture with its kind and length on it, the name below.
  * Hover draws an outline (nothing moves); live media has a red ring.
  */
-function MediaTile({
-  m,
-  playlistId,
-  index,
-}: {
-  m: MediaItem;
-  playlistId: string | null;
-  index: number;
-}) {
+function MediaTile({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const live = useIsLive(m.id);
-  const drop = useDropTarget(playlistId, index);
+  const drop = useDropTarget(playlistId, m.id);
   const KindIcon = KIND_ICON[m.kind];
   const length = useLength(m);
   return (
@@ -599,17 +599,9 @@ function MediaTile({
 const LIST_COLUMNS = 'grid grid-cols-[64px_minmax(0,1fr)_88px_60px_68px_96px] items-center gap-3';
 
 /** One piece of media in the list: thumbnail, name, kind, length, size and when it was added. */
-function MediaRow({
-  m,
-  playlistId,
-  index,
-}: {
-  m: MediaItem;
-  playlistId: string | null;
-  index: number;
-}) {
+function MediaRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const live = useIsLive(m.id);
-  const drop = useDropTarget(playlistId, index);
+  const drop = useDropTarget(playlistId, m.id);
   const KindIcon = KIND_ICON[m.kind];
   const length = useLength(m);
   return (
@@ -997,8 +989,8 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
                 onSort={inPlaylist ? null : (f) => setSort(f, f === field ? !desc : DESC_FIRST[f])}
               />
               <ul aria-label={crumb} className="flex flex-col gap-px pt-1">
-                {items.map((m, i) => (
-                  <MediaRow key={m.id} m={m} playlistId={playlistId} index={i} />
+                {items.map((m) => (
+                  <MediaRow key={m.id} m={m} playlistId={playlistId} />
                 ))}
               </ul>
             </>
@@ -1015,8 +1007,8 @@ export function MediaBrowser({ view, playlistId }: { view: MediaView; playlistId
                   className="grid gap-x-3 gap-y-4"
                   style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${size.size}px, 1fr))` }}
                 >
-                  {g.items.map((m, i) => (
-                    <MediaTile key={m.id} m={m} playlistId={playlistId} index={i} />
+                  {g.items.map((m) => (
+                    <MediaTile key={m.id} m={m} playlistId={playlistId} />
                   ))}
                 </ul>
               </section>

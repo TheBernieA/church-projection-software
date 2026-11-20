@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { makeScene, WebUrlSchema } from '@lampstand/core';
@@ -6,7 +5,7 @@ import { updateItem } from '../../lib/store';
 import { SceneView } from '../SceneView';
 import { type WebItem } from '../../types';
 import { Typography } from '@lampstand/ui';
-import { ExpandToggle } from '../canvas/editorParts';
+import { ExpandToggle, useFocusDraft } from '../canvas/editorParts';
 
 /**
  * Edit a web page item: its name and https address. The address is only saved once it's valid,
@@ -14,8 +13,10 @@ import { ExpandToggle } from '../canvas/editorParts';
  */
 export function WebEditor({ item }: { item: WebItem }) {
   const { t } = useTranslation();
-  const [url, setUrl] = useState(item.url);
-  const valid = WebUrlSchema.safeParse(url.trim()).success;
+  // What's typed while typing (it may not be a valid address yet); the item's own otherwise,
+  // so undo shows.
+  const url = useFocusDraft(item.url);
+  const valid = WebUrlSchema.safeParse(url.value.trim()).success;
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
       <div className="flex items-center gap-2">
@@ -55,12 +56,14 @@ export function WebEditor({ item }: { item: WebItem }) {
           {t('web.address')}
           <input
             className="field"
-            value={url}
+            value={url.value}
+            onFocus={url.onFocus}
+            onBlur={url.onBlur}
             maxLength={2000}
             placeholder="https://"
             aria-invalid={!valid}
             onChange={(e) => {
-              setUrl(e.target.value);
+              url.set(e.target.value);
               const next = e.target.value.trim();
               if (WebUrlSchema.safeParse(next).success)
                 updateItem<WebItem>(item.id, (x) => ({ ...x, url: next }), { typing: true });

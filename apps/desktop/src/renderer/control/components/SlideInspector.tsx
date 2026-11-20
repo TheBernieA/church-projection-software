@@ -5,7 +5,7 @@ import { Button, IconButton, Segmented, Switch, Typography, typographyClass } fr
 import { useState } from 'react';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { TextFormatPanel } from './textFormat';
-import { deleteSlide, duplicateSlide, moveSlide } from '../lib/textSlides';
+import { deleteSlide, duplicateSlide, moveSlide, patchSlide } from '../lib/textSlides';
 import { patchItem, updateItem, useStore } from '../lib/store';
 import { InspectorShell } from './canvas/editorParts';
 import { ObjectInspector } from './canvas/ObjectInspector';
@@ -18,8 +18,9 @@ import { Select } from './Select';
 const NO_VIDEO = 'none';
 
 /** Replace an item. `typing` groups keystrokes into one undo step; actions are one step each. */
-function replaceItem(next: ServiceItem, typing = false): void {
-  updateItem(next.id, () => next, { typing });
+/** Change some of an item's fields, on the item as it is now (not the copy rendered). */
+function patchIn<T extends ServiceItem>(item: T, p: Partial<T>, typing = false): void {
+  updateItem<T>(item.id, (x) => ({ ...x, ...p }), { typing });
 }
 
 /**
@@ -102,15 +103,7 @@ function TextInspector({ item }: { item: TextItem }) {
   const count = item.slides.length;
   const index = editCursor?.itemId === item.id ? Math.min(editCursor.index, count - 1) : 0;
   const slide = item.slides[index];
-  const setSlides = (slides: TextSlide[], typing = false): void =>
-    replaceItem({ ...item, slides }, typing);
-  const patchSlide = (p: Partial<TextSlide>): void => {
-    if (slide)
-      setSlides(
-        item.slides.map((s) => (s.id === slide.id ? { ...s, ...p } : s)),
-        true,
-      );
-  };
+  const patch = (p: Partial<TextSlide>): void => patchSlide(item, index, p);
   const move = (to: number): void => moveSlide(item, index, to);
   const isLive = liveCursor?.itemId === item.id && liveCursor.index === index;
 
@@ -125,7 +118,7 @@ function TextInspector({ item }: { item: TextItem }) {
             id="insp-name"
             className="field"
             value={item.title}
-            onChange={(e) => replaceItem({ ...item, title: e.target.value }, true)}
+            onChange={(e) => patchIn(item, { title: e.target.value }, true)}
           />
         </Field>
         {item.kind === 'announcements' && (
@@ -141,7 +134,7 @@ function TextInspector({ item }: { item: TextItem }) {
                 max={600}
                 className="w-24"
                 value={item.loopIntervalSec}
-                onChange={(v) => replaceItem({ ...item, loopIntervalSec: clamp(v, 2, 600) }, true)}
+                onChange={(v) => patchIn(item, { loopIntervalSec: clamp(v, 2, 600) }, true)}
               />
               <Typography size={13} tone="secondary">
                 {t('inspector.seconds')}
@@ -163,7 +156,7 @@ function TextInspector({ item }: { item: TextItem }) {
               className="field"
               placeholder={t('inspector.titlePlaceholder')}
               value={slide.title ?? ''}
-              onChange={(e) => patchSlide({ title: e.target.value })}
+              onChange={(e) => patch({ title: e.target.value })}
             />
           </Field>
           <Field label={t('inspector.text')} htmlFor="insp-body">
@@ -173,7 +166,7 @@ function TextInspector({ item }: { item: TextItem }) {
               rows={7}
               value={slide.body}
               placeholder={t('inspector.textPlaceholder')}
-              onChange={(e) => patchSlide({ body: e.target.value })}
+              onChange={(e) => patch({ body: e.target.value })}
             />
           </Field>
           <Field label={t('inspector.notes')} htmlFor="insp-notes" hint={t('inspector.notesHelp')}>
@@ -182,7 +175,7 @@ function TextInspector({ item }: { item: TextItem }) {
               className="field !font-sans"
               rows={3}
               value={slide.notes ?? ''}
-              onChange={(e) => patchSlide({ notes: e.target.value })}
+              onChange={(e) => patch({ notes: e.target.value })}
             />
           </Field>
           {isLive && (
@@ -249,8 +242,8 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
   const videos = useStore((s) => s.media).filter((m) => m.kind === 'video');
   const byTime = typeof item.target === 'string';
   const minutes = byTime
-    ? ''
-    : String(Math.round((item.target as { durationSec: number }).durationSec / 60));
+    ? 5
+    : Math.round((item.target as { durationSec: number }).durationSec / 60);
   const clock = typeof item.target === 'string' && isClockTime(item.target) ? item.target : '10:30';
   const video = item.video ? videos.find((m) => m.id === item.video?.mediaId) : undefined;
   return (
@@ -263,16 +256,14 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
           id="insp-cd-title"
           className="field"
           value={item.title}
-          onChange={(e) => replaceItem({ ...item, title: e.target.value }, true)}
+          onChange={(e) => patchIn(item, { title: e.target.value }, true)}
         />
       </Field>
       <Field label={t('inspector.countTo')} group>
         <Segmented<'length' | 'time'>
           label={t('inspector.countTo')}
           value={byTime ? 'time' : 'length'}
-          onChange={(v) =>
-            replaceItem({ ...item, target: v === 'time' ? clock : { durationSec: 300 } })
-          }
+          onChange={(v) => patchIn(item, { target: v === 'time' ? clock : { durationSec: 300 } })}
           options={[
             { value: 'length', label: t('inspector.forLength') },
             { value: 'time', label: t('inspector.untilTime') },
@@ -290,9 +281,7 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
             type="time"
             className="field w-32"
             value={clock}
-            onChange={(e) =>
-              e.target.value && replaceItem({ ...item, target: e.target.value }, true)
-            }
+            onChange={(e) => e.target.value && patchIn(item, { target: e.target.value }, true)}
           />
         </Field>
       ) : (
@@ -301,22 +290,15 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
           htmlFor="insp-cd-min"
           hint={t('inspector.minutesHelp')}
         >
-          <input
+          <NumberInput
             id="insp-cd-min"
-            type="number"
             min={1}
             max={600}
-            className="field w-28"
+            className="w-28"
             value={minutes}
             placeholder="5"
-            onChange={(e) =>
-              replaceItem(
-                {
-                  ...item,
-                  target: { durationSec: Math.max(1, Number(e.target.value) || 5) * 60 },
-                },
-                true,
-              )
+            onChange={(v) =>
+              patchIn(item, { target: { durationSec: Math.max(1, v || 5) * 60 } }, true)
             }
           />
         </Field>
@@ -327,10 +309,8 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
           aria-label={t('inspector.countdownVideo')}
           value={item.video?.mediaId ?? NO_VIDEO}
           onChange={(id) =>
-            replaceItem(
-              id === NO_VIDEO
-                ? omit(item, 'video', 'hideTimer')
-                : { ...item, video: { mediaId: id } },
+            updateItem<CountdownItem>(item.id, (x) =>
+              id === NO_VIDEO ? omit(x, 'video', 'hideTimer') : { ...x, video: { mediaId: id } },
             )
           }
           options={[
@@ -352,7 +332,7 @@ function CountdownInspector({ item }: { item: CountdownItem }) {
           <Switch
             label={t('inspector.showTimerOverVideo')}
             checked={!item.hideTimer}
-            onChange={(on) => replaceItem({ ...item, hideTimer: !on })}
+            onChange={(on) => patchIn(item, { hideTimer: !on })}
           />
         </label>
       )}

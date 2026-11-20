@@ -451,12 +451,15 @@ function CueRow({
 function Activity() {
   const { t } = useTranslation();
   const { last } = useSurfacePorts();
-  const [now, setNow] = useState(() => performance.now());
+  // Lit when a control moves; one timer puts it out again (no polling while nothing moves).
+  const [outAt, setOutAt] = useState<number | null>(null);
   useEffect(() => {
-    const id = setInterval(() => setNow(performance.now()), 250);
-    return () => clearInterval(id);
-  }, []);
-  const fresh = !!last && now - last.at < 600;
+    if (!last) return;
+    const wait = last.at + 600 - performance.now();
+    const id = setTimeout(() => setOutAt(last.at), Math.max(0, wait));
+    return () => clearTimeout(id);
+  }, [last]);
+  const fresh = !!last && outAt !== last.at;
   return (
     <span className="flex min-w-0 items-center gap-2" aria-live="off">
       <span

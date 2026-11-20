@@ -196,6 +196,8 @@ function QuickBarBody() {
             onChange={(e) => {
               setText(e.target.value);
               setActive(0);
+              // The last search's results never stand in for this one's (Enter can't pick them).
+              setHits([]);
             }}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {

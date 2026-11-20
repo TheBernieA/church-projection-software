@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -30,8 +30,10 @@ export function useInspector(width: number): { open: boolean; toggle?: () => voi
   const expanded = useStore((s) => s.editExpanded);
   const pane = usePaneSize('editInspector', 1, 0, 1);
   const [floatOpen, setFloatOpen] = useState(false);
-  if (expanded) return { open: true };
   const floating = width > 0 && width < FLOAT_BELOW;
+  // Expanded with room for it beside the slide: always there. Too narrow, it floats over the
+  // slide and can be closed, as in the compact view.
+  if (expanded && !floating) return { open: true };
   const open = floating ? floatOpen : pane.size === 1;
   return {
     open,
@@ -85,11 +87,11 @@ export function InspectorShell({ children, label }: { children: ReactNode; label
  * The slide at the largest 16:9 size that fits the stage, so the whole slide is always in view
  * (no scrolling to reach its bottom edge).
  */
-export function useFit(pad: number): [RefObject<HTMLDivElement | null>, number] {
-  const ref = useRef<HTMLDivElement>(null);
+export function useFit(pad: number): [(el: HTMLDivElement | null) => void, number] {
+  // The stage comes and goes (an empty song has none): watch whichever element is there now.
+  const [el, setEl] = useState<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
   useEffect(() => {
-    const el = ref.current;
     if (!el) return;
     const fit = (): void =>
       setWidth(
@@ -99,8 +101,8 @@ export function useFit(pad: number): [RefObject<HTMLDivElement | null>, number] 
     const ro = new ResizeObserver(fit);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [pad]);
-  return [ref, width];
+  }, [el, pad]);
+  return [setEl, width];
 }
 
 /** The stage the slide sits on: a quiet dotted ground, the slide centred with a soft shadow. */
@@ -111,7 +113,7 @@ export function SlideStage({
   hint,
   children,
 }: {
-  stageRef: RefObject<HTMLDivElement | null>;
+  stageRef: Ref<HTMLDivElement>;
   width: number;
   onBackgroundPointerDown?: () => void;
   hint?: string;

@@ -20,7 +20,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { DeferredInput } from '../DeferredControls';
-import { Button, IconButton, Slider, Typography, typographyClass } from '@lampstand/ui';
+import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
+import { SettledSlider } from '../form';
 
 /** What the page frame knows about the page it shows (set by the Settings window). */
 export interface PageFrame {
@@ -584,27 +585,19 @@ export function CommitSlider({
   onCommit: (v: number) => void;
   labelWidth?: string;
 }) {
-  const [draft, setDraft] = useState<number | null>(null);
-  const commit = (): void => {
-    if (draft !== null && draft !== value) onCommit(draft);
-    setDraft(null);
-  };
   return (
     <label className="flex items-center gap-3">
       <Typography size={12} tone="secondary" className={`${labelWidth} shrink-0`}>
         {label}
       </Typography>
-      <Slider
+      <SettledSlider
         aria-label={label}
         min={min}
         max={max}
         step={step}
-        value={draft ?? value}
+        value={value}
         format={format}
-        onChange={(e) => setDraft(Number(e.target.value))}
-        onPointerUp={commit}
-        onKeyUp={commit}
-        onBlur={commit}
+        onCommit={onCommit}
         className="flex-1"
       />
     </label>

@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Circle, Copy, Image as ImageIcon, Minus, Plus, Square, Trash2, Type } from 'lucide-react';
+import { Copy, Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { makeScene, type SlideObject } from '@lampstand/core';
+import { makeScene } from '@lampstand/core';
 import { TallyTag } from '@lampstand/ui';
 import { useItemSlides } from '../../lib/hooks';
-import { displayCombo } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import {
   addSlide,
@@ -20,16 +19,15 @@ import { SlideInspector } from '../SlideInspector';
 import { EditorToolbar } from './EditorToolbar';
 import { SlideCanvas, type TypingTarget } from './SlideCanvas';
 import { SlideEditor } from './SlideEditor';
-import { MenuItem, MenuSeparator, ObjectsPanel, type ListSlide } from './SlideList';
+import {
+  MenuItem,
+  MenuSeparator,
+  NewSlideMenuItem,
+  ObjectsPanel,
+  type ListSlide,
+} from './SlideList';
+import { OBJECT_ICON } from './tools';
 import { type TextItem } from '../../types';
-
-const OBJECT_ICON: Record<SlideObject['kind'], typeof Type> = {
-  text: Type,
-  rect: Square,
-  ellipse: Circle,
-  line: Minus,
-  image: ImageIcon,
-};
 
 /**
  * Text slides and announcements in the Edit workspace: the slide on its stage with the canvas
@@ -47,7 +45,9 @@ export function TextSlideEditor({ item }: { item: TextItem }) {
   /** What is being typed, on which slide (by id, so it follows the slide when slides move). */
   const [typing, setTyping] = useState<{ slideId: string; target: TypingTarget } | null>(null);
   const here = typing && typing.slideId === slide?.id ? typing.target : null;
-  const visit = here ? `${typing?.slideId}:${here.kind === 'object' ? here.id : 'words'}` : '';
+  const visit = here
+    ? `${typing?.slideId}:${here.kind === 'object' ? here.id : here.heading ? 'heading' : 'words'}`
+    : '';
 
   const type = (target: TypingTarget | null): void => {
     setTyping(target && slide ? { slideId: slide.id, target } : null);
@@ -81,12 +81,7 @@ export function TextSlideEditor({ item }: { item: TextItem }) {
   const one = item.slides.length <= 1;
   const menu = (i: number) => (
     <>
-      <MenuItem
-        icon={<Plus size={13} />}
-        label={t('canvas.newSlide')}
-        shortcut={displayCombo('Mod+Shift+N')}
-        onSelect={() => newSlide(i)}
-      />
+      <NewSlideMenuItem onSelect={() => newSlide(i)} />
       <MenuItem
         icon={<Copy size={13} />}
         label={t('canvas.duplicate')}
@@ -115,14 +110,7 @@ export function TextSlideEditor({ item }: { item: TextItem }) {
         onMove: (from, to) => moveSlide(item, from, to),
         onDelete: (i) => !one && deleteSlide(item, i),
         menu,
-        addMenu: (
-          <MenuItem
-            icon={<Plus size={13} />}
-            label={t('canvas.newSlide')}
-            shortcut={displayCombo('Mod+Shift+N')}
-            onSelect={() => newSlide()}
-          />
-        ),
+        addMenu: <NewSlideMenuItem onSelect={() => newSlide()} />,
         onAdd: () => newSlide(item.slides.length - 1),
         footer: (
           <ObjectsPanel

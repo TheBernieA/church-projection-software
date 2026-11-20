@@ -1461,7 +1461,8 @@
     "makeCountdown": "Make a countdown with it",
     "playRoom": "Play in the room",
     "showNow": "Show now",
-    "behindWords": "Use behind the words"
+    "behindWords": "Use behind the words",
+    "deleteConfirm": "Delete “{{name}}” from the library? Its file is removed too, and this can’t be undone."
   },
   "playback": {
     "title": "Playback options: {{name}}",

@@ -34,19 +34,23 @@ export function SongList({ hymns }: { hymns: boolean }) {
   const parent = useRef<HTMLDivElement>(null);
   const addToService = addItemToService;
 
-  const rows = useMemo(() => {
-    const f = filter.trim().toLowerCase().replace(/^#/, '');
+  // Sorted, with each song's searchable text, once per library change (not per keystroke).
+  const sorted = useMemo(() => {
     const base = songs.filter((s) => (s.origin === 'hymnal') === hymns);
-    const sorted = hymns
+    const list = hymns
       ? base.sort(
           (a, b) => Number(a.hymnNumber?.[0]?.number ?? 0) - Number(b.hymnNumber?.[0]?.number ?? 0),
         )
       : base.sort((a, b) => a.title.localeCompare(b.title));
-    if (!f) return sorted;
-    return sorted.filter(
-      (s) => haystack(s).includes(f) || s.hymnNumber?.some((h) => h.number === f),
-    );
-  }, [songs, filter, hymns]);
+    return list.map((song) => ({ song, text: haystack(song) }));
+  }, [songs, hymns]);
+  const rows = useMemo(() => {
+    const f = filter.trim().toLowerCase().replace(/^#/, '');
+    const hits = f
+      ? sorted.filter((r) => r.text.includes(f) || r.song.hymnNumber?.some((h) => h.number === f))
+      : sorted;
+    return hits.map((r) => r.song);
+  }, [sorted, filter]);
 
   // TanStack Virtual returns non-memoizable functions; fine since we don't use the React Compiler.
   // eslint-disable-next-line react-hooks/incompatible-library

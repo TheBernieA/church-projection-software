@@ -128,14 +128,14 @@ export function useSettledColor(save: (hex: string) => void): {
   change: (hex: string) => void;
 } {
   const [shown, setShown] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latest = useRef(save);
-  useEffect(() => {
-    latest.current = save;
-  });
+  /** The colour waiting to be saved, and where it was picked for (the item selected then). */
+  const pending = useRef<{ timer: ReturnType<typeof setTimeout>; run: () => void } | null>(null);
+  // Leaving (another item selected, the panel closed): a colour still settling is saved.
   useEffect(
     () => () => {
-      if (timer.current) clearTimeout(timer.current);
+      if (!pending.current) return;
+      clearTimeout(pending.current.timer);
+      pending.current.run();
     },
     [],
   );
@@ -143,11 +143,18 @@ export function useSettledColor(save: (hex: string) => void): {
     shown,
     change: (hex) => {
       setShown(hex);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        latest.current(hex);
-        setShown(null);
-      }, 250);
+      if (pending.current) clearTimeout(pending.current.timer);
+      const run = (): void => {
+        pending.current = null;
+        save(hex);
+      };
+      pending.current = {
+        run,
+        timer: setTimeout(() => {
+          run();
+          setShown(null);
+        }, 250),
+      };
     },
   };
 }

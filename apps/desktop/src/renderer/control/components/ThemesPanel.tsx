@@ -67,7 +67,8 @@ function exportTheme(theme: Theme): void {
   a.href = url;
   a.download = `${theme.name.replace(/[^\w .-]+/g, '').trim() || 'theme'}.lstheme`;
   a.click();
-  URL.revokeObjectURL(url);
+  // After the download has picked it up.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /** Add a theme from a file made by Export (it joins the library as a new theme). */
@@ -130,6 +131,9 @@ function ThemeTile({
   onUse: (where: Output | 'all') => void;
 }) {
   const { t } = useTranslation();
+  // Built once per theme and sample (a new scene each render would redraw every thumbnail).
+  const [first, second] = sample;
+  const scene = useMemo(() => sampleScene(theme, first, second), [theme, first, second]);
   const used = usedBy.length > 0;
   return (
     <div
@@ -148,7 +152,7 @@ function ThemeTile({
             aria-label={t('theme.useTheme', { name: theme.name })}
             className="relative block w-full"
           >
-            <SceneView scene={sampleScene(theme, sample[0], sample[1])} mode="thumbnail" />
+            <SceneView scene={scene} mode="thumbnail" />
             {used && (
               <span className="absolute left-2 top-2 flex flex-wrap gap-1">
                 {usedBy.map((o) => (

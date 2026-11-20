@@ -16,12 +16,20 @@ export function ShortcutsDialog() {
   const map = effectiveShortcuts();
 
   const record = (action: ShortcutAction, e: React.KeyboardEvent): void => {
+    if (e.key === 'Tab') return setRecording(null); // moving on, not a shortcut
     e.preventDefault();
     e.stopPropagation();
+    if (e.key === 'Escape') return setRecording(null); // cancel: the shortcut stays as it was
     if (['Shift', 'Meta', 'Control', 'Alt'].includes(e.key)) return;
     const combo = comboFromEvent(e.nativeEvent);
     const current = useStore.getState().settings?.shortcuts ?? {};
-    void saveSettings({ shortcuts: { ...current, [action]: combo } });
+    // Keys another action had: the two swap, so no two actions ever share one.
+    const other = (Object.keys(map) as ShortcutAction[]).find(
+      (a) => a !== action && map[a] === combo,
+    );
+    void saveSettings({
+      shortcuts: { ...current, [action]: combo, ...(other ? { [other]: map[action] } : {}) },
+    });
     setRecording(null);
   };
 

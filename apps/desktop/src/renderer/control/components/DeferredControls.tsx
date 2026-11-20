@@ -42,7 +42,9 @@ export function DeferredInput({
         timer.current = setTimeout(() => flush(v), delay);
       }}
       onBlur={() => {
-        if (draft !== null) flush(draft);
+        // Only what's still waiting: an already saved draft must not overwrite a change made
+        // elsewhere since (the popped-out console, say).
+        if (draft !== null && timer.current) flush(draft);
         setDraft(null);
       }}
     />

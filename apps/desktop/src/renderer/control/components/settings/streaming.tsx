@@ -9,6 +9,7 @@ import {
   STREAM_ENCODERS,
 } from '@lampstand/core';
 import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
+import { SettledSlider } from '../form';
 import { q } from '../../lib/api';
 import { useInputDevices } from '../../lib/inputs';
 import { closeDialog, openDialog, useStore } from '../../lib/store';
@@ -279,15 +280,13 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         )}
         {st.picture.words === 'lowerThird' && (
           <Row label={t('streaming.wordsWidth')} description={t('streaming.wordsWidthHelp')}>
-            <Slider
+            <SettledSlider
               aria-label={t('streaming.wordsWidth')}
               {...WORDS_WIDTH}
               value={st.picture.wordsWidth}
               format={(v) => `${v}%`}
               className="w-56"
-              onChange={(e) =>
-                set({ picture: { ...st.picture, wordsWidth: Number(e.currentTarget.value) } })
-              }
+              onCommit={(wordsWidth) => set({ picture: { ...st.picture, wordsWidth } })}
             />
           </Row>
         )}
@@ -302,15 +301,13 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
             </Row>
             {!st.picture.wordsAuto && (
               <Row label={t('streaming.wordsSize')} description={t('streaming.wordsSizeHelp')}>
-                <Slider
+                <SettledSlider
                   aria-label={t('streaming.wordsSize')}
                   {...WORDS_SIZE}
                   value={st.picture.wordsSize}
                   format={(v) => `${v}%`}
                   className="w-56"
-                  onChange={(e) =>
-                    set({ picture: { ...st.picture, wordsSize: Number(e.currentTarget.value) } })
-                  }
+                  onCommit={(wordsSize) => set({ picture: { ...st.picture, wordsSize } })}
                 />
               </Row>
             )}

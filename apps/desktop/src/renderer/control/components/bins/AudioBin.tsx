@@ -312,7 +312,7 @@ function PreviewBar({ playlistId }: { playlistId: string | null }) {
 function TrackRow({ m, playlistId }: { m: MediaItem; playlistId: string | null }) {
   const { t } = useTranslation();
   const playing = useStore((s) => s.live?.audio?.mediaId === m.id);
-  const listening = useAudioPreview().mediaId === m.id;
+  const listening = useAudioPreview((p) => p.mediaId === m.id);
   const clickToRoom = useStore((s) => s.settings?.audio.click === 'room');
   const playlists = usePlaylists('audio');
   const length = useKnownDuration(m.id, m.durationSec);

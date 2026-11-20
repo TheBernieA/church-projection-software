@@ -113,6 +113,9 @@ const subscribe = (l: () => void): (() => void) => {
   return () => listeners.delete(l);
 };
 
-export function useAudioPreview(): PreviewState {
-  return useSyncExternalStore(subscribe, () => state);
+export function useAudioPreview(): PreviewState;
+/** Just one thing about it (a row asking "is it me?" doesn't re-render as it plays). */
+export function useAudioPreview<T>(select: (s: PreviewState) => T): T;
+export function useAudioPreview<T>(select?: (s: PreviewState) => T): T | PreviewState {
+  return useSyncExternalStore(subscribe, () => (select ? select(state) : state));
 }

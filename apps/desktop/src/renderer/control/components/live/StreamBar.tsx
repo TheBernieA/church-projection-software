@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Mic, MicOff, Volume2, VolumeX, VolumeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatDb, MAX_DB, MIN_DB, type MixerChannel, type StreamSettings } from '@lampstand/core';
@@ -186,6 +186,9 @@ function InputStrip({
 const defaultMic = <T extends { deviceId: string }>(devices: T[]): T | undefined =>
   devices.find((d) => d.deviceId === 'default') ?? devices[0];
 
+/** The default mic has been offered to the mixer this session (see StreamSound). */
+let defaultMicTried = false;
+
 /**
  * The stream's sound at hand, on one line under its picture: its level and mute, and the mic
  * (switch it to another input, its level, its meter, mute). There's always a mic: with none on
@@ -197,15 +200,14 @@ export function StreamSound() {
   const mixer = useStore((s) => s.live?.mixer ?? null);
   const devices = useInputDevices('audioinput');
   const inputs = useMemo(() => mixer?.channels.filter((c) => c.kind === 'input') ?? [], [mixer]);
-  const adding = useRef(false);
   useEffect(() => {
-    if (!mixer || inputs.length || adding.current || !devices?.length) return;
+    // Once a session, when the mixer first loads with no mic: removing the last mic later
+    // (on purpose) never brings it back, and a failure never retries on every update.
+    if (!mixer || defaultMicTried || !devices?.length) return;
+    defaultMicTried = true;
+    if (inputs.length) return;
     const d = defaultMic(devices);
-    if (!d) return;
-    adding.current = true;
-    void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label }).finally(() => {
-      adding.current = false;
-    });
+    if (d) void mixerCmd({ action: 'add', deviceId: d.deviceId, name: d.label });
   }, [mixer, inputs.length, devices]);
   // The mics the stream hears get a row each (one, usually). With none, the row last shown
   // stays (switching a mic off doesn't make the row jump to another).

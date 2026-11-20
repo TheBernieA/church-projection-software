@@ -1,11 +1,10 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Copy, FolderPlus, MoreHorizontal, Plus, Scissors, Tag, Trash2 } from 'lucide-react';
+import { Copy, FolderPlus, MoreHorizontal, Scissors, Tag, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { GROUP_LABELS, type EditorSlide } from '@lampstand/lyrics';
 import { IconButton, Typography } from '@lampstand/ui';
 import { groupColor } from '../../lib/slides';
-import { displayCombo } from '../../lib/shortcuts';
-import { MenuItem, MenuSeparator } from '../canvas/SlideList';
+import { MenuItem, MenuSeparator, NewSlideMenuItem } from '../canvas/SlideList';
 import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import { type SongEditorState } from './useSongEditor';
 
@@ -58,12 +57,7 @@ export function SongSlideMenu({ ed, index }: { ed: SongEditorState; index: numbe
   const long = (ed.slides[index]?.lines.length ?? 0) > ed.maxLines;
   return (
     <>
-      <MenuItem
-        icon={<Plus size={13} />}
-        label={t('canvas.newSlide')}
-        shortcut={displayCombo('Mod+Shift+N')}
-        onSelect={() => ed.newSlide(index)}
-      />
+      <NewSlideMenuItem onSelect={() => ed.newSlide(index)} />
       <MenuItem
         icon={<Copy size={13} />}
         label={t('canvas.duplicate')}
@@ -103,12 +97,7 @@ export function SongAddMenu({ ed }: { ed: SongEditorState }) {
   const { t } = useTranslation();
   return (
     <>
-      <MenuItem
-        icon={<Plus size={13} />}
-        label={t('canvas.newSlide')}
-        shortcut={displayCombo('Mod+Shift+N')}
-        onSelect={() => ed.newSlide()}
-      />
+      <NewSlideMenuItem onSelect={() => ed.newSlide()} />
       <MenuItem
         icon={<FolderPlus size={13} />}
         label={t('songEditor.newGroup')}
