@@ -1,5 +1,5 @@
 import { dbToGain, sendGain, type Mixer, type MixerBus, type MixerChannel } from '@lampstand/core';
-import { trySetSink } from './dom';
+import { isReleased, trySetSink } from './dom';
 import { RAW_AUDIO } from './inputs';
 
 /** Which mix an engine makes: the room's, the stream's, or the operator's headphones (solo). */
@@ -251,10 +251,11 @@ export class MixerEngine {
   attach(kind: SourceKind, el: HTMLMediaElement): void {
     if (this.tapped.has(el) || this.disposed) return;
     this.tapped.add(el);
-    // Let go of videos that have left the screen and their file (each would stay in memory).
+    // Let go of videos the renderer has retired (each would stay in memory). Only those: the
+    // track player's element is never on the page at all.
     for (const set of Object.values(this.sources))
       for (const s of set)
-        if (!s.mediaElement.isConnected && !s.mediaElement.currentSrc) {
+        if (isReleased(s.mediaElement)) {
           s.disconnect();
           set.delete(s);
         }

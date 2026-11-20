@@ -171,7 +171,6 @@ export interface ControlState {
   toasts: Toast[];
   /** A service edit is waiting to be saved (status bar shows "Saving…"). */
   saving: boolean;
-  set: (p: Partial<ControlState>) => void;
 }
 
 export interface EditOptions {

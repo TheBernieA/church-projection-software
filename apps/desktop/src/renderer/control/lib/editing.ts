@@ -1,6 +1,6 @@
 import type { ServiceItem } from '@lampstand/core';
 import { editable } from './slideThumbs';
-import { useStore } from './store';
+import { itemIn, useStore } from './store';
 import { type ControlState } from '../types';
 
 /**
@@ -26,8 +26,7 @@ export function openEditor(expanded: boolean, extra: Partial<ControlState> = {})
 export function useEditorExpanded(): boolean {
   return useStore((s) => {
     if (s.mode !== 'edit' || !s.editExpanded) return false;
-    const fromPlan = s.service?.items.find((i) => i.id === s.selectedItemId);
-    const item = s.adhoc?.id === s.selectedItemId ? s.adhoc : fromPlan;
-    return hasEditor(item, !!fromPlan);
+    const item = itemIn(s, s.selectedItemId);
+    return hasEditor(item, !!item && item !== s.adhoc);
   });
 }

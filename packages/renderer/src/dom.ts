@@ -71,6 +71,19 @@ export function loop(
   target.animate(keyframes, { iterations: Infinity, ...opts });
 }
 
+/** Retired media: off the page and its file let go, never to play again. */
+const released = new WeakSet<HTMLMediaElement>();
+
+/** Stop a media element for good and free its file (the renderer is done with it). */
+export function releaseMedia(v: HTMLMediaElement): void {
+  released.add(v);
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
+}
+
+export const isReleased = (v: HTMLMediaElement): boolean => released.has(v);
+
 /**
  * Send a media element's or an audio context's sound to an output device ('' = the default).
  * Not in every engine (jsdom in tests), and a device that's gone keeps the current one.

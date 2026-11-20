@@ -2,12 +2,9 @@
   "top": {
     "outputs": "Outputs",
     "settings": "Settings",
-    "undo": "Undo",
-    "redo": "Redo",
     "search": "Search verses, songs, hymns…",
     "live": "Live",
     "services": "Services",
-    "shortcuts": "Keyboard shortcuts",
     "offAirShort": "Off AIR",
     "previewFirst": "Preview first",
     "previewFirstHelp": "Off: clicking a slide puts it on screen straight away. On: clicks load Preview, and Go live (Space) sends it."
@@ -62,11 +59,7 @@
     "confirmRemoveSection_other": "Delete the section “{{name}}” and the {{count}} items in it? Undo brings them back."
   },
   "library": {
-    "title": "Library",
-    "tabs": {
-      "songs": "Songs",
-      "hymns": "Hymns"
-    },
+    "tabs": {},
     "addToService": "Add to service",
     "filter": "Filter…",
     "newSong": "New song",
@@ -218,11 +211,8 @@
     "show": "Show",
     "hide": "Hide",
     "clear": "Clear",
-    "masks": "Screens",
     "empty": "Nothing in preview",
-    "offAir": "Off AIR",
     "live": "Live",
-    "output": "Output",
     "clearLayer": "Clear {{name}}",
     "restoreLayer": "Bring back {{name}}",
     "restoreAll": "Bring back what was live",
@@ -239,8 +229,6 @@
       "videoInput": "Video input",
       "custom": "Custom group"
     },
-    "masksSoon": "Masks",
-    "clearAllLayers": "Clear all",
     "moreLayers": "More layers",
     "moreLayersHint": "More layers and clear groups (drop a layer here to move it into this menu)",
     "dragToMove": "Drag to move it, or onto … to tuck it away",
@@ -414,7 +402,6 @@
     "box": "Background box",
     "refPosition": "Reference",
     "save": "Save theme",
-    "useFor": "Use for",
     "builtIn": "Built-in",
     "verseNumbers": "Verse numbers",
     "redLetters": "Red letters",
@@ -559,17 +546,14 @@
     "textSmaller": "Smaller text",
     "textLarger": "Larger text",
     "textReset": "Reset",
-    "scripture": "Scripture",
     "versesPerSlide": "Verses per slide",
     "one": "One verse",
     "fit": "Fit as many as possible",
     "maxChars": "Max characters per slide",
-    "lyrics": "Lyrics",
     "maxLines": "Max lines per slide",
     "liveEditing": "Live editing",
     "liveEditingHelp": "When on, clicking a slide of that kind sends it straight to the screen instead of to Preview. Many churches turn this on for lyrics.",
     "ccli": "Church CCLI licence number",
-    "library": "Library",
     "export": "Export library",
     "import": "Import library",
     "backup": "Back up now",
@@ -603,7 +587,6 @@
       "presenting": "What the screen shows when nothing is live, and how clicks behave while you run a service.",
       "library": "Your songs, services, themes and media live in one library folder. Keep it safe and move it between computers.",
       "about": "What Lampstand does with your data, and which version you are running.",
-      "features": "Everything Lampstand does today, and what is coming.",
       "connections": "Run Lampstand from other devices and software, and connect it to the services your church uses. All of this is on the way.",
       "screens": "Fit each screen to where its projector lands, blend projectors into one wide picture, choose what each kind of screen shows (Looks), and shape or hide parts of them (masks).",
       "video": "Everything about video: how clips behave when they go live, and how each camera or capture card goes on screen.",
@@ -642,7 +625,6 @@
     "importAction": "Import…",
     "privacyTitle": "Offline and private by default",
     "version": "Version",
-    "help": "Help",
     "offAir": {
       "title": "Off-air screen",
       "footnote": "Shown on the projector whenever nothing is live: before the service, between items, and after Turn off live. \"Logo\" uses the logo above. Black screen (⇧B) still goes fully black.",
@@ -775,8 +757,6 @@
     "seconds": "seconds",
     "advanceHelp": "While live, announcements move to the next slide automatically and loop.",
     "slideOf": "Slide {{n}} of {{total}}",
-    "prev": "Previous slide",
-    "next": "Next slide",
     "title": "Heading",
     "titlePlaceholder": "Optional heading",
     "text": "Text",
@@ -815,7 +795,8 @@
     "audio": "Could not change the audio.",
     "input": "Could not use that input.",
     "stream": "Couldn’t start or stop the stream.",
-    "benchmark": "The computer check couldn't run."
+    "benchmark": "The computer check couldn't run.",
+    "noService": "Open a playlist first, then add to it."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -1139,8 +1120,6 @@
   },
   "bin": {
     "label": "Bin",
-    "collapse": "Collapse bin",
-    "expand": "Expand bin",
     "tabs": {
       "media": "Media",
       "backgrounds": "Backgrounds",
@@ -1330,17 +1309,6 @@
     "help": "Shown full screen in a separate, locked-down window on the projector. It can't see or change anything in Lampstand.",
     "invalid": "Use a full secure address, starting with https://"
   },
-  "status": {
-    "label": "Status",
-    "outputs": "Outputs",
-    "noOutputs": "No outputs",
-    "window": "Window",
-    "saved": "All changes saved",
-    "saving": "Saving…",
-    "clock": "Time",
-    "onAir": "On air",
-    "offAir": "Off air"
-  },
   "toolbar": {
     "search": "Search",
     "text": "Text",
@@ -1359,12 +1327,10 @@
     "saved": "All changes saved",
     "saving": "Saving…",
     "outputs": "Outputs",
-    "clock": "Time",
     "onAir": "On air",
     "offAir": "Off air",
     "window": "Window mode",
     "shortcuts": "Keyboard shortcuts",
-    "services": "Services",
     "mixer": "Mixer"
   },
   "sidebar": {
@@ -1449,7 +1415,6 @@
     "deleteFromLibrary": "Delete from library",
     "live": "Live",
     "library": "Media library",
-    "audioSoon": "Audio playback is coming soon. Your audio is kept in the library and in your media playlists.",
     "favourite": "Star {{name}}",
     "unfavourite": "Unstar {{name}}",
     "select": "Select",
@@ -1602,9 +1567,7 @@
     "run": "Loop on the announcements layer",
     "stop": "Stop the announcements layer",
     "loopOn": "Loops every {{s}} s",
-    "loopOff": "Stays on each slide",
-    "loopOnHelp": "While live, these slides move on every {{s}} seconds by themselves. Click to stay on each slide until you click the next.",
-    "loopOffHelp": "Click to move on to the next slide by itself while live."
+    "loopOff": "Stays on each slide"
   },
   "audio": {
     "nowPlaying": "Room audio",
@@ -1634,7 +1597,6 @@
     "remove": "Remove from this playlist",
     "empty": "No audio yet. Import music or sound effects with the upload button.",
     "emptyPlaylist": "This playlist is empty. Add tracks from All audio with their … menu, or import into it.",
-    "inputs": "Audio inputs",
     "listenTo": "Listen to {{name}}",
     "rowHint": "Click to listen on this computer first; double-click to play it in the room",
     "playInRoom": "Play {{name}} in the room",

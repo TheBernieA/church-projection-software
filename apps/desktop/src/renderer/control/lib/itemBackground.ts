@@ -1,7 +1,7 @@
 import type { BackgroundRef, MediaItem, Scrim, ServiceItem } from '@lampstand/core';
 import { slidesFor } from './actions';
 import { cmd } from './api';
-import { attempt, editItems, patchItem, useStore } from './store';
+import { attempt, editItems, itemIn, patchItem, useStore } from './store';
 import { thumbUrl } from '../../shared/mediaUrl';
 
 /** Items whose slides sit on a background of their own (otherwise their theme's). */
@@ -21,7 +21,7 @@ export const takesBackground = (item: ServiceItem | null | undefined): item is B
 /** The item the operator is working on (selected in the plan, or picked from the library). */
 export function useTargetItem(): BackgroundItem | null {
   return useStore((s) => {
-    const item = s.adhoc ?? s.service?.items.find((i) => i.id === s.selectedItemId) ?? null;
+    const item = itemIn(s, s.selectedItemId);
     return takesBackground(item) ? item : null;
   });
 }
@@ -112,11 +112,7 @@ export function setServiceBackground(ref: BackgroundRef | undefined): void {
   const s = useStore.getState();
   const adhoc = s.adhoc;
   if (takesBackground(adhoc)) useStore.setState({ adhoc: { ...adhoc, background: ref } });
-  const live = s.liveCursor
-    ? ((s.adhoc?.id === s.liveCursor.itemId
-        ? s.adhoc
-        : s.service?.items.find((i) => i.id === s.liveCursor?.itemId)) ?? null)
-    : null;
+  const live = itemIn(s, s.liveCursor?.itemId);
   if (takesBackground(live)) followLive({ ...live, background: ref });
 }
 
@@ -162,11 +158,7 @@ export function setLiveBackgroundSound(on: boolean): void {
   if (bg?.ref.kind !== 'video') return;
   const ref: BackgroundRef = { ...bg.ref, sound: on || undefined };
   const cur = s.liveCursor;
-  const item = cur
-    ? s.adhoc?.id === cur.itemId
-      ? s.adhoc
-      : s.service?.items.find((i) => i.id === cur.itemId)
-    : undefined;
+  const item = itemIn(s, cur?.itemId);
   if (takesBackground(item) && sameBackground(item.background, ref)) {
     setItemBackground(item, ref);
     return;

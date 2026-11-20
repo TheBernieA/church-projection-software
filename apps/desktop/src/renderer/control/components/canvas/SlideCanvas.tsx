@@ -211,7 +211,10 @@ export function SlideCanvas({
     }
     const o = objects.find((x) => x.id === selected);
     if (!o) return;
-    if (e.key === 'Escape') return select(null);
+    if (e.key === 'Escape') {
+      e.preventDefault(); // deselects here; it never clears the screens
+      return select(null);
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       editObjects(item, index, (os) => os.filter((x) => x.id !== o.id));

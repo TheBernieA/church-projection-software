@@ -358,7 +358,7 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
             kind: 'text',
             theme,
             blocks,
-            label: ts.title ?? `${item.title} ${i + 1}`,
+            label: ts.title || `${item.title} ${i + 1}`,
           };
           if (ts.notes) content.notes = ts.notes;
           if (ts.objects?.length) content.objects = ts.objects;

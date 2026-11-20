@@ -1,4 +1,4 @@
-import { newId, type TextSlide } from '@lampstand/core';
+import { newId, omit, type TextSlide } from '@lampstand/core';
 import { splitSection } from '@lampstand/lyrics';
 
 /**
@@ -10,9 +10,9 @@ export function slidesToReflow(slides: TextSlide[]): string {
   return slides
     .map((s) => {
       const body = s.body.replace(/\n{2,}/g, '\n'); // a blank line would split the slide
-      return s.title?.trim() ? `[${s.title.trim()}]${body ? `\n${body}` : ''}` : body;
+      // A slide with no words (a picture, say) is "[]", so every slide keeps its place.
+      return s.title?.trim() ? `[${s.title.trim()}]${body ? `\n${body}` : ''}` : body || '[]';
     })
-    .filter((b) => b.trim())
     .join('\n\n');
 }
 
@@ -31,10 +31,10 @@ export function reflowToSlides(text: string, existing: TextSlide[] = []): TextSl
     const header = /^\s*\[(.*)\]\s*$/.exec(lines[0] ?? '');
     const title = header?.[1]?.trim() ?? '';
     const body = (header ? lines.slice(1) : lines).join('\n').trim();
+    // Everything else the slide had (notes, pictures and shapes) stays with it.
     const prev = existing[i];
-    const slide: TextSlide = { id: prev?.id ?? newId(), body };
+    const slide: TextSlide = { ...(prev ? omit(prev, 'title') : { id: newId() }), body };
     if (title) slide.title = title;
-    if (prev?.notes) slide.notes = prev.notes;
     return slide;
   });
 }

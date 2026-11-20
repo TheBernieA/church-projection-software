@@ -1,7 +1,7 @@
 import { clearLayer, goLive, slidesFor, step, toggleMask, triggerSlide } from './actions';
 import { slideForHotkey } from './groupKeys';
 import { api, cmd } from './api';
-import { openDialog, redo, undo, useStore } from './store';
+import { itemIn, openDialog, redo, undo, useStore } from './store';
 import { auto, cut, previewSource, switcherSource, take } from './switcher';
 import { DEFAULT_SHORTCUTS } from '../constants';
 import { type ShortcutAction } from '../types';
@@ -89,7 +89,7 @@ const RUN: Record<ShortcutAction, () => void> = {
 function goToGroup(letter: string): boolean {
   const s = useStore.getState();
   if (s.mode !== 'show' || (s.dialog && s.dialog !== 'perf')) return false;
-  const item = s.adhoc ?? s.service?.items.find((i) => i.id === s.selectedItemId) ?? null;
+  const item = itemIn(s, s.selectedItemId);
   if (!item) return false;
   const from = s.liveCursor?.itemId === item.id ? s.liveCursor.index : -1;
   const i = slideForHotkey(slidesFor(item), letter, from);
@@ -106,6 +106,21 @@ function isTyping(target: EventTarget | null): boolean {
   if (!el) return false;
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
+
+/** A control that Space and Enter press (a button, tab, menu item…), not the show. */
+function pressesKeys(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el?.closest) return false;
+  return !!el.closest(
+    'button, a[href], summary, [role="button"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [role="menuitem"], [role="option"], [role="slider"]',
+  );
+}
+
+/**
+ * Show keys that the Edit and Reflow pages use for themselves (moving between slides, typing):
+ * there, unmodified, they never change what's on screen.
+ */
+const EDITOR_OWNED: ShortcutAction[] = ['goLive', 'next', 'previous'];
 
 /** Global keyboard handler. Single keys never fire while typing in a field. */
 export function installShortcuts(): () => void {
@@ -136,6 +151,13 @@ export function installShortcuts(): () => void {
     }
     const hasModifier = combo.includes('Mod');
     if (isTyping(e.target) && !hasModifier && !/^F\d+$/.test(combo)) return;
+    const mode = useStore.getState().mode;
+    // Off the Show page, Space and Enter on a focused button press the button. (On it, Space
+    // always shows the slide, whatever was clicked last: an operator's muscle memory.)
+    if (mode !== 'show' && (combo === 'Space' || combo === 'Enter') && pressesKeys(e.target))
+      return;
+    if (!hasModifier && EDITOR_OWNED.includes(action) && (mode === 'edit' || mode === 'reflow'))
+      return;
     // In a text field, ⌘Z / ⌘⇧Z undo the typing (native), not the service plan.
     if (isTyping(e.target) && (action === 'undo' || action === 'redo')) return;
     const dialogOpen = useStore.getState().dialog && useStore.getState().dialog !== 'perf';

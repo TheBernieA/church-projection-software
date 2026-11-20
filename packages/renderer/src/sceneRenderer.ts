@@ -22,7 +22,7 @@ import {
 import { maskStyle } from './mask';
 import { buildVideoInput } from './inputs';
 import { buildContent, clearFitCache } from './content';
-import { animate, el, safePlay } from './dom';
+import { animate, el, releaseMedia, safePlay } from './dom';
 import { buildOverlay } from './overlays';
 import { backgroundKey } from './style';
 import { transitionFrames } from './transitions';
@@ -688,9 +688,7 @@ export class SceneRenderer {
       for (const v of node.querySelectorAll('video')) {
         const held = v as HTMLVideoElement & { lsHold?: ReturnType<typeof setTimeout> };
         if (held.lsHold) clearTimeout(held.lsHold);
-        v.pause();
-        v.removeAttribute('src');
-        v.load();
+        releaseMedia(v);
       }
     };
     if (!ms) return remove();

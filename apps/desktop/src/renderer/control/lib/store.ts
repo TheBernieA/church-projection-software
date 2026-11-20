@@ -7,7 +7,7 @@ import i18n from '../i18n';
 import { type ControlState, type DialogName, type Toast } from '../types';
 import { type EditOptions } from '../types';
 
-export const useStore = create<ControlState>((set) => ({
+export const useStore = create<ControlState>(() => ({
   live: null,
   settings: null,
   songs: [],
@@ -52,13 +52,25 @@ export const useStore = create<ControlState>((set) => ({
   toasts: [],
   saving: false,
   sidebarView: 'playlist',
-  set: (p) => set(p),
 }));
 
 const get = useStore.getState;
 const patch = (p: Partial<ControlState>): void => useStore.setState(p);
 
 let toastSeq = 0;
+/**
+ * An item by id: the library pick when it's that one, else the playlist's. The one rule every
+ * lookup uses, so a leftover library pick never stands in for a playlist item.
+ */
+export function itemIn(
+  s: Pick<ControlState, 'adhoc' | 'service'>,
+  id: string | null | undefined,
+): ServiceItem | null {
+  if (!id) return null;
+  if (s.adhoc?.id === id) return s.adhoc;
+  return s.service?.items.find((i) => i.id === id) ?? null;
+}
+
 export function toast(text: string, level: Toast['level'] = 'info'): void {
   const id = ++toastSeq;
   patch({ toasts: [...get().toasts, { id, level, text }] });
@@ -232,10 +244,18 @@ export function patchItem<T extends ServiceItem>(
   else updateItem<T>(item.id, apply);
 }
 
-/** Append an item (usually from the library or quick bar) to the service and select it. */
-export function addItemToService(item: ServiceItem): void {
+/**
+ * Append an item (usually from the library or quick bar) to the service and select it. False
+ * (and a message) when no playlist is open to add it to.
+ */
+export function addItemToService(item: ServiceItem): boolean {
+  if (!get().service) {
+    toast(i18n.t('errors.noService'), 'warning');
+    return false;
+  }
   editItems((items) => [...items, item]);
   patch({ adhoc: null, selectedItemId: item.id });
+  return true;
 }
 
 /** Save the service now if an edit is waiting (nothing waiting: no save, no empty undo step). */
@@ -269,9 +289,9 @@ function songSave(id: string): DebouncedSave {
  * than the edits, and showing it would undo them under the operator's hands.
  */
 function withUnsavedSongs(songs: Song[]): Song[] {
-  const local = get().songs;
+  const local = new Map(get().songs.map((l) => [l.id, l]));
   return songs.map((s) => {
-    const mine = local.find((l) => l.id === s.id);
+    const mine = local.get(s.id);
     if (!mine) return s;
     const busy = songSaves.get(s.id)?.isBusy() ?? false;
     const stale = s.updatedAt < (songSavedAt.get(s.id) ?? '');
@@ -365,5 +385,6 @@ export function connect(opts: { only?: readonly RepoKind[] } = {}): void {
   void q('stream.status').then((stream) => patch({ stream }));
   void q('ndi.status').then((ndi) => patch({ ndi }));
   void q('live.get').then((live) => patch({ live }));
-  window.addEventListener('beforeunload', () => void flushServiceSave());
+  // Closing or reloading the window: song typing still waiting is sent too.
+  window.addEventListener('beforeunload', () => void flushAll());
 }

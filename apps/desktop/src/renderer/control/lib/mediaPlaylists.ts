@@ -76,7 +76,8 @@ export async function renameMediaPlaylist(id: string, name: string): Promise<voi
 export async function deleteMediaPlaylist(id: string): Promise<void> {
   const p = find(id);
   if (!p) return;
-  await attempt(() => cmd('mediaPlaylist.delete', { id }), 'errors.save');
+  if ((await attempt(() => cmd('mediaPlaylist.delete', { id }), 'errors.save')) === undefined)
+    return;
   const s = useStore.getState();
   if (s.binPlaylistId === id) useStore.setState({ binTab: 'media', binPlaylistId: null });
   if (s.audioPlaylistId === id) useStore.setState({ audioPlaylistId: null });

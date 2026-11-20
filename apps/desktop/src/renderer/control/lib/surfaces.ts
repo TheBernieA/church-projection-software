@@ -230,6 +230,8 @@ function sendToControl(src: SurfaceSource, value: number, onOff: boolean): void 
     midiOut(src.device, encodeMidi(src.type, src.channel, src.number, value));
 }
 
+let feedbackLater: ReturnType<typeof setTimeout> | null = null;
+
 /** Motor faders and button lights follow Lampstand's mixer (moved on screen or by a cue). */
 function feedback(mixer: Mixer): void {
   const s = surfaces();
@@ -242,9 +244,17 @@ function feedback(mixer: Mixer): void {
     if (!s) continue;
     const value = t.kind === 'fader' ? dbToTravel(s.gainDb) : muteToValue(t.mode, s.mute);
     if (sentFeedback.get(b.id) === value) continue;
+    // The operator's hand is on this one right now: moving it under them would fight. Try
+    // again once they let go (the value is only "sent" once it really is).
+    if (now - (touched.get(b.id) ?? -Infinity) < TOUCH_HOLD_MS) {
+      feedbackLater ??= setTimeout(() => {
+        feedbackLater = null;
+        const latest = useStore.getState().live?.mixer;
+        if (latest) feedback(latest);
+      }, TOUCH_HOLD_MS);
+      continue;
+    }
     sentFeedback.set(b.id, value);
-    // The operator's hand is on this one right now: moving it under them would fight.
-    if (now - (touched.get(b.id) ?? -Infinity) < TOUCH_HOLD_MS) continue;
     sendToControl(b.source, value, t.kind === 'mute');
   }
 }

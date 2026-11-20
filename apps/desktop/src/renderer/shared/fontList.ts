@@ -28,5 +28,3 @@ export const BUNDLED_FONTS: BundledFont[] = [
   { family: 'Bebas Neue', category: 'display', weights: [400] },
   { family: 'Anton', category: 'display', weights: [400] },
 ];
-
-export const FONT_FAMILIES = BUNDLED_FONTS.map((f) => f.family);

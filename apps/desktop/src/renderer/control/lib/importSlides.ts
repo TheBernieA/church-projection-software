@@ -2,7 +2,7 @@ import { newId, type TextSlide } from '@lampstand/core';
 import i18n from '../i18n';
 import { q } from './api';
 import { renderPdfPages } from './pdf';
-import { addItemToService, attempt, toast } from './store';
+import { addItemToService, attempt, toast, useStore } from './store';
 import { type PresentationItem } from '../types';
 import { CANVAS } from '../constants';
 
@@ -12,6 +12,8 @@ import { CANVAS } from '../constants';
  * PDF or PowerPoint first.
  */
 export async function importSlides(): Promise<void> {
+  // Nowhere to put the slides: say so before importing anything (no orphaned pictures).
+  if (!useStore.getState().service) return toast(i18n.t('errors.noService'), 'warning');
   const r = await attempt(() => q('slides.import'), 'errors.import');
   if (!r || r.kind === 'none') return;
 
@@ -23,12 +25,13 @@ export async function importSlides(): Promise<void> {
       return slide;
     });
     if (!slides.length) return toast(i18n.t('import.empty'), 'warning');
-    addItemToService({
+    const added = addItemToService({
       id: newId(),
       kind: 'presentation',
       title: r.title,
       slides,
     } satisfies PresentationItem);
+    if (!added) return;
     toast(i18n.t('import.done', { count: slides.length }));
     if (r.slidesWithPictures)
       toast(i18n.t('import.picturesSkipped', { count: r.slidesWithPictures }), 'warning');
@@ -64,11 +67,11 @@ export async function importSlides(): Promise<void> {
     });
   }
   if (!slides.length) return toast(i18n.t('import.empty'), 'warning');
-  addItemToService({
+  const added = addItemToService({
     id: newId(),
     kind: 'presentation',
     title: r.title,
     slides,
   } satisfies PresentationItem);
-  toast(i18n.t('import.done', { count: slides.length }));
+  if (added) toast(i18n.t('import.done', { count: slides.length }));
 }

@@ -12,6 +12,22 @@ describe('reflow (text presentations)', () => {
     expect(text).toBe('[Welcome]\nGrace Church\nSunday 10am\n\nCoffee after the service');
     expect(reflowToSlides(text, slides)).toEqual(slides);
   });
+  it('keeps a picture-only slide in its place, with its pictures', () => {
+    const image = {
+      id: 'o',
+      kind: 'image' as const,
+      x: 0,
+      y: 0,
+      w: 10,
+      h: 10,
+      mediaId: 'm',
+      fit: 'contain' as const,
+    };
+    const withPicture = [{ id: 'p', body: '', objects: [image] }, ...slides];
+    const out = reflowToSlides(slidesToReflow(withPicture), withPicture);
+    expect(out.map((s) => s.id)).toEqual(['p', 'a', 'b']);
+    expect(out[0]?.objects).toEqual([image]);
+  });
   it('a blank line splits a slide; new slides get new ids', () => {
     const out = reflowToSlides('[Welcome]\nGrace Church\n\nSunday 10am\n\n\n[Next]\n', slides);
     expect(out.map((s) => [s.title, s.body])).toEqual([

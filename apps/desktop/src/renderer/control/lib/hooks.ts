@@ -12,7 +12,7 @@ import {
 } from '@lampstand/core';
 import { findItem, loadMissingChapters, refreshLiveSlide, saveSettings } from './actions';
 import { buildItemSlides } from './slides';
-import { useStore } from './store';
+import { itemIn, useStore } from './store';
 import { type ItemSlides, type SlideContext } from '../types';
 import { CANVAS } from '../constants';
 
@@ -207,9 +207,7 @@ const shown = (c: ContentLayer | null | undefined): string =>
 export function useLiveEdited(): { edited: boolean; update: () => void } {
   const cursor = useStore((s) => s.liveCursor);
   const program = useStore((s) => s.live?.program.content ?? null);
-  const item = useStore((s) =>
-    cursor ? (s.service?.items.find((i) => i.id === cursor.itemId) ?? null) : null,
-  );
+  const item = useStore((s) => itemIn(s, cursor?.itemId));
   const { slides } = useItemSlides(item);
   const slide = cursor ? slides[cursor.index] : undefined;
   const now = slide?.action.kind === 'content' ? slide.action.content : null;

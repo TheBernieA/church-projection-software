@@ -6,6 +6,7 @@ import { addItemToService, attempt, flushSongSaves, openService, toast, useStore
 import i18n from '../i18n';
 import { type SongItem } from '../types';
 import { openEditor } from './editing';
+import { displayCombo, effectiveShortcuts } from './shortcuts';
 
 /** A song as picked from the library (shown on its own, not part of the playlist). */
 export const libraryItem = (song: Song): SongItem => ({
@@ -65,7 +66,7 @@ export async function deleteSong(song: Song): Promise<void> {
   toast(
     i18n.t('song.deleted', {
       title: song.title,
-      key: window.lampstand.platform === 'darwin' ? '⌘Z' : 'Ctrl+Z',
+      key: displayCombo(effectiveShortcuts().undo),
     }),
   );
 }

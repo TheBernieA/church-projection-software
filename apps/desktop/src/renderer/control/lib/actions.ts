@@ -20,7 +20,7 @@ import { advanceOf, takesAdvance } from './advance';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
-import { addItemToService, attempt, loadChapter, toast, useStore } from './store';
+import { addItemToService, attempt, itemIn, loadChapter, toast, useStore } from './store';
 import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
 import { openEditor } from './editing';
 
@@ -52,10 +52,7 @@ export function slideContext(): SlideContext {
 }
 
 export function findItem(itemId: string | null): ServiceItem | null {
-  if (!itemId) return null;
-  const s = get();
-  if (s.adhoc?.id === itemId) return s.adhoc;
-  return s.service?.items.find((i) => i.id === itemId) ?? null;
+  return itemIn(get(), itemId);
 }
 
 /** Load any Bible chapters an item still needs (cached + de-duplicated by the store). */
@@ -249,7 +246,8 @@ export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<vo
 export async function step(delta: 1 | -1): Promise<void> {
   const s = get();
   const cursor: Cursor | null = s.liveCursor ?? s.previewCursor;
-  const item = findItem(cursor?.itemId ?? s.selectedItemId);
+  // The live item, or (gone from the playlist, or replaced by another pick) the selected one.
+  const item = findItem(cursor?.itemId ?? null) ?? findItem(s.selectedItemId);
   if (!item) return;
   const slides = slidesFor(item);
   const idx = cursor && cursor.itemId === item.id ? cursor.index + delta : 0;
@@ -347,7 +345,10 @@ function scheduleAnnouncements(item: ServiceItem, index: number): void {
   loopTimer = setTimeout(() => {
     const cur = get().liveCursor;
     if (cur?.itemId !== item.id || cur.index !== index) return;
-    void goLiveSlide(item, next, 'ui');
+    // The item as it is now: edited slides show, and auto-advance turned off stops here.
+    const now = findItem(item.id);
+    if (!now || !advanceOf(now)) return;
+    void goLiveSlide(now, next, 'ui');
   }, adv.seconds * 1000);
 }
 
@@ -399,7 +400,8 @@ export async function openAdhoc(
   if (requested === 'select') return;
   const mode = requested === 'preview' && clickGoesLive(item.kind) ? 'live' : requested;
   const slides = await ensureItemReady(item);
-  if (!slides.length) return;
+  // Another pick came while this one loaded: that one wins.
+  if (!slides.length || get().adhoc?.id !== item.id) return;
   if (mode === 'live') await goLiveSlide(item, 0, 'ui', opts);
   else await previewSlide(item, 0);
 }

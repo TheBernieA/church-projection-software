@@ -7,8 +7,13 @@ import { type TextItem } from '../types';
  * Slide operations for text items (text slides, announcements), shared by the filmstrip and the
  * inspector: each is one undo step and keeps the edited slide selected.
  */
-const edit = (item: TextItem, slides: TextSlide[], select: number): void => {
-  updateItem<TextItem>(item.id, (x) => ({ ...x, slides }));
+const edit = (
+  item: TextItem,
+  change: (slides: TextSlide[]) => TextSlide[],
+  select: number,
+): void => {
+  // From the slides as they are now (not the copy the caller rendered with).
+  updateItem<TextItem>(item.id, (x) => ({ ...x, slides: change(x.slides) }));
   useStore.setState({ editCursor: { itemId: item.id, index: select }, editObjectId: null });
 };
 
@@ -21,9 +26,7 @@ export const selectSlide = (item: TextItem, index: number): void =>
 /** A new, empty slide after slide `after` (the last, by default), selected. Returns its id. */
 export function addSlide(item: TextItem, after = item.slides.length - 1): string {
   const id = newId();
-  const slides = [...item.slides];
-  slides.splice(after + 1, 0, { id, title: '', body: '' });
-  edit(item, slides, after + 1);
+  edit(item, (slides) => slides.toSpliced(after + 1, 0, { id, title: '', body: '' }), after + 1);
   return id;
 }
 
@@ -44,11 +47,15 @@ export function breakSlide(item: TextItem, index: number, before: string, after:
 }
 
 export function duplicateSlide(item: TextItem, index: number): void {
-  const slide = item.slides[index];
-  if (!slide) return;
-  const slides = [...item.slides];
-  slides.splice(index + 1, 0, { ...slide, id: newId() });
-  edit(item, slides, index + 1);
+  const id = newId();
+  edit(
+    item,
+    (slides) => {
+      const slide = slides[index];
+      return slide ? slides.toSpliced(index + 1, 0, { ...slide, id }) : slides;
+    },
+    index + 1,
+  );
 }
 
 /** The last slide stays (an item always has one). */
@@ -56,14 +63,14 @@ export function deleteSlide(item: TextItem, index: number): void {
   if (item.slides.length <= 1) return;
   edit(
     item,
-    item.slides.filter((_, i) => i !== index),
+    (slides) => (slides.length > 1 ? slides.filter((_, i) => i !== index) : slides),
     Math.max(0, index - 1),
   );
 }
 
 export function moveSlide(item: TextItem, from: number, to: number): void {
   if (to < 0 || to >= item.slides.length || from === to) return;
-  edit(item, moveItem(item.slides, from, to), to);
+  edit(item, (slides) => moveItem(slides, from, to), to);
 }
 
 /** Change one slide's own words (title, body); typing groups keystrokes into one undo step. */
