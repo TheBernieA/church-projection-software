@@ -214,3 +214,17 @@ export function useLiveEdited(): { edited: boolean; update: () => void } {
   const edited = !!now && !!program && now.key === program.key && shown(now) !== shown(program);
   return { edited, update: () => void (cursor && refreshLiveSlide(cursor.itemId)) };
 }
+
+/**
+ * The window follows the operator's look: light or dark, and the text size (every UI text
+ * size reads --text-scale). Every control-side window uses it (main, Live console, multi-view).
+ */
+export function useUiTheme(title?: string): void {
+  const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
+  const textScale = useStore((s) => s.settings?.textScale ?? 1);
+  useEffect(() => {
+    document.documentElement.dataset.theme = uiTheme;
+    document.documentElement.style.setProperty('--text-scale', String(textScale));
+    if (title) document.title = title;
+  }, [uiTheme, textScale, title]);
+}

@@ -24,6 +24,8 @@ import { type Logger, type OutputWindow, type WindowKind, type WindowManagerDeps
 /** Creates/positions windows on displays, handles hot-plug and output crash recovery (§7.3). */
 export class WindowManager {
   control: BrowserWindow | null = null;
+  /** When each output was last respawned after a crash (the last minute's). */
+  private readonly respawns = new Map<string, number[]>();
   private outputs = new Map<string, OutputWindow>();
   private kinds = new Map<number, WindowKind>();
   /** Other windows that follow the live state (the offscreen stream window). */
@@ -246,7 +248,13 @@ export class WindowManager {
       this.kinds.delete(win.webContents.id);
       if (!win.isDestroyed()) win.destroy();
       // Respawn quickly; the new window restores state on its ready handshake (§3.2, budget <1s).
-      setTimeout(() => this.reconcile(), 100);
+      // One that keeps failing (a GPU or driver fault) waits longer each time, up to 10 s,
+      // instead of spinning up and crashing in a tight loop.
+      const now = Date.now();
+      const recent = (this.respawns.get(outputId) ?? []).filter((t) => now - t < 60_000);
+      recent.push(now);
+      this.respawns.set(outputId, recent);
+      setTimeout(() => this.reconcile(), Math.min(100 * 2 ** (recent.length - 1), 10_000));
     };
     win.webContents.on('render-process-gone', (_e, d) => respawn(d.reason));
     reloadOnFailedLoad(win, outputId, this.d.log);

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { lazyNamed, preloadLazyViews } from './lib/lazy';
 import { installShortcuts } from './lib/shortcuts';
 import { installNumberWheelGuard } from './lib/utils';
+import { useUiTheme } from './lib/hooks';
 import { useStore } from './lib/store';
 import { CenterPane } from './components/modes/CenterPane';
 import { QuickBar } from './components/QuickBar';
@@ -43,8 +44,6 @@ const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEd
  */
 export function App() {
   const { t } = useTranslation();
-  const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
-  const textScale = useStore((s) => s.settings?.textScale ?? 1);
   const binOpen = useStore((s) => s.binOpen);
   const textBarOpen = useStore((s) => s.textBarOpen);
   const dialog = useStore((s) => s.dialog);
@@ -75,11 +74,7 @@ export function App() {
   }, [settingsLoaded]);
   useEffect(() => preloadLazyViews(), []);
   useEffect(() => installNumberWheelGuard(), []);
-  useEffect(() => {
-    document.documentElement.dataset.theme = uiTheme;
-    // Scales the words only (every UI text size reads --text-scale); icons and panes stay put.
-    document.documentElement.style.setProperty('--text-scale', String(textScale));
-  }, [uiTheme, textScale]);
+  useUiTheme();
 
   return (
     <div className="flex h-full flex-col bg-[var(--surface-0)]">

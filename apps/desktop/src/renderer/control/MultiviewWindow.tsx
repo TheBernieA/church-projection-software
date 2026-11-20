@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { resolveStageLayout } from '@lampstand/core';
 import { TallyLabel, Typography } from '@lampstand/ui';
@@ -14,7 +14,7 @@ import {
   useScreenMask,
 } from './lib/screenViews';
 import { useStreamPreview } from './lib/streamPreview';
-import { useStandby } from './lib/hooks';
+import { useStandby, useUiTheme } from './lib/hooks';
 import { useStore } from './lib/store';
 
 type Tally = 'program' | 'preview' | 'none';
@@ -100,11 +100,7 @@ function StreamTile() {
  */
 export function MultiviewWindow() {
   const { t } = useTranslation();
-  const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
-  useEffect(() => {
-    document.documentElement.dataset.theme = uiTheme;
-    document.title = 'Lampstand Multi-view';
-  }, [uiTheme]);
+  useUiTheme('Lampstand Multi-view');
   const audience = useAudienceScene();
   const preview = usePreviewScene();
   const next = useNextScene();
