@@ -5,7 +5,7 @@ import {
   type ElectronApplication,
   type Page,
 } from '@playwright/test';
-import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -175,7 +175,11 @@ test.beforeAll(async () => {
   }
 });
 
+/** Helper processes a test starts (the stand-in RTMP server), stopped even if the test fails. */
+const helpers: ChildProcess[] = [];
+
 test.afterAll(async () => {
+  for (const h of helpers) if (h.exitCode === null) h.kill();
   await app.close().catch(() => undefined);
   // LAMPSTAND_KEEP=1 keeps the library and logs to look at after a run.
   if (!process.env.LAMPSTAND_KEEP) rmSync(dir, { recursive: true, force: true });
@@ -1786,6 +1790,8 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await screenScenes.getByRole('radio', { name: 'Slides' }).click();
   await screenScenes.getByRole('button', { name: 'Slides', exact: true }).click();
   await expect(feed).toHaveCount(0);
+  // The slides keep the lower third too, until it's switched off.
+  await control.getByRole('switch', { name: 'Lower third on the screens' }).click();
   await expect
     .poll(async () => {
       const r = await control.evaluate(() => window.lampstand.query('live.get'));
@@ -2375,6 +2381,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     '-y',
     got,
   ]);
+  helpers.push(server);
   // What the stand-in server says, to explain a stream it never received.
   let serverLog = '';
   server.stderr.on('data', (d: Buffer) => (serverLog += d.toString()));
@@ -2441,7 +2448,10 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     'aria-pressed',
     'true',
   );
-  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
+  // One "Main screen" scene; the lower third is its own switch (and stays on across scenes).
+  await scenes.getByRole('button', { name: 'Main screen' }).click();
+  await expect.poll(picture).toBe('program full');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('program lowerThird');
   // The switcher's program, and mirroring a screen (the stage display), are scenes too.
   const mirror = async () => {
@@ -2450,6 +2460,8 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   };
   await scenes.getByRole('radio', { name: 'Cameras' }).click();
   await scenes.getByRole('button', { name: 'Switcher', exact: true }).click();
+  await expect.poll(picture).toBe('switcher lowerThird');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('switcher none');
   // Send to stream (on the live monitor): the screens go on the stream; again, it goes back.
   const sendToStream = control.getByRole('button', { name: 'Send to stream' });
@@ -2471,15 +2483,16 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await control.waitForTimeout(800);
   await control.screenshot({ path: 'test-results/41c-live-scenes.png' });
   await scenes.getByRole('radio', { name: 'Slides' }).click();
-  await scenes.getByRole('button', { name: 'Slides + lower third' }).click();
+  await scenes.getByRole('button', { name: 'Main screen' }).click();
   await expect.poll(mirror).toBe('own');
+  await live.getByRole('switch', { name: 'Lower third on the stream' }).click();
   await expect.poll(picture).toBe('program lowerThird');
   // The scenes fold away (and come back) with the arrow beside them.
   // Folded, the strip keeps only its header (the tiles go).
   await live.getByRole('button', { name: 'Hide the scenes' }).click();
-  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeHidden();
+  await expect(scenes.getByRole('button', { name: 'Main screen' })).toBeHidden();
   await live.getByRole('button', { name: 'Show the scenes' }).click();
-  await expect(scenes.getByRole('button', { name: 'Slides + lower third' })).toBeVisible();
+  await expect(scenes.getByRole('button', { name: 'Main screen' })).toBeVisible();
   // A muted stream is called out (viewers would hear nothing), and Unmute fixes it.
   await live.getByRole('button', { name: 'Mute Stream' }).click();
   const silent = live.getByRole('alert').filter({ hasText: 'The stream is muted' });

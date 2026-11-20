@@ -93,11 +93,14 @@ export function sceneChoices(
               ...base,
               key: s.id,
               label: label(s.id),
+              ...(s.keepsWords ? { keepsWords: true } : {}),
               patch: { ...base.patch, layout: s.layout, camera: pair[0], secondCamera: pair[1] },
             },
           ]
         : [];
-    return [{ ...base, key: s.id, label: label(s.id) }];
+    return [
+      { ...base, key: s.id, label: label(s.id), ...(s.keepsWords ? { keepsWords: true } : {}) },
+    ];
   });
   // Each camera's scenes side by side (A + slide, A + words, then B…), not A, B, A, B.
   const camOrder = (c: SceneChoice): number =>

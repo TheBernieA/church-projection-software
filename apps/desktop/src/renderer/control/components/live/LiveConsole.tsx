@@ -26,7 +26,13 @@ import { LowerThirdPanel } from './LowerThirdPanel';
 import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
-import { ScenePreviews, SilentNotice, StreamMeterOverlay, StreamSound } from './StreamBar';
+import {
+  ScenePreviews,
+  SilentNotice,
+  StreamLowerThirdSwitch,
+  StreamMeterOverlay,
+  StreamSound,
+} from './StreamBar';
 import { ask } from '../../lib/confirm';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
@@ -225,6 +231,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           {s && <SilentNotice s={s} />}
           {/* Pinned with the picture (the options scroll beneath): scenes, then the sound. */}
           <ScenePreviews st={st} streaming={!!s?.streaming} />
+          <StreamLowerThirdSwitch st={st} />
           <StreamSound />
         </div>
       </div>

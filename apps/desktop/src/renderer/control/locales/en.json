@@ -177,7 +177,6 @@
   "screenScenes": {
     "label": "Scene: what the screens show",
     "slides": "Slides",
-    "slidesLowerThird": "Slides + lower third",
     "cameraWordsOf": "{{name}}",
     "sideBySide": "Two cameras",
     "pip": "Camera in a corner"
@@ -919,7 +918,7 @@
         },
         "console": {
           "q": "Use the Live console",
-          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Slides + lower third, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera with the words and on its own, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
+          "a": "1. Click Live in the toolbar to dock the console beside the output, or click the pop-out button to give it its own window (on another display, say).\n2. Go live or Record with the two buttons at the top.\n3. Watch the picture: it is exactly what goes out. The L/R meter on its left is the stream’s sound. It works before you go live too, so speak and check it moves.\n4. Under the picture, click a scene to change what the stream shows. Scenes are in three tabs, each a row of small live previews (slide it sideways if there are more). Slides: Main screen, Words on black, Black. Cameras: the Switcher (it follows Cut, Auto and the T-bar), every camera, and with two cameras, Two cameras or Camera in a corner. Screens: the Alternate (HDMI) output or the Stage display. The one on air has a ring (red while streaming). The arrow beside Scenes folds them away. Under the scenes, “Lower third on the stream” puts the words along the bottom of whatever is on (the main screen, a camera, the switcher), or takes them off.\n5. Under the scenes, on one line: the speaker mutes the stream and the slider sets its level; then the mic. There is always one, the computer’s own to begin with. The mic button puts it on the stream (red) or takes it off, the box picks which mic it is (speak and watch the L/R meter on the picture), then its level and mute.\n6. More mics or the desk, added in the Mixer, get a line each below.\n7. Further down: the lower third’s look (while a scene with one is on air), music and video sound, destinations, quick settings and how the computer is coping.\nIf the stream goes out with no sound for a few seconds, a red notice under the picture says why (muted, no mic sent, or the mics are silent), with the fix. Hover any reading in the top and bottom bars to see what it means."
         },
         "picture": {
           "q": "Choose what the stream shows and hears",
@@ -2768,23 +2767,17 @@
     "scene": "Scene: what the stream shows",
     "scenes": {
       "slides": "Main screen",
-      "slidesLowerThird": "Slides + lower third",
-      "cameraLowerThird": "Camera with a lower third",
-      "camera": "Camera only",
+      "camera": "Camera",
       "wordsOnBlack": "Words on black",
       "black": "Black",
-      "cameraLowerThirdOf": "{{name}} + words",
       "cameraOf": "{{name}}",
-      "switcherLowerThird": "Switcher + words",
       "switcher": "Switcher",
       "sideBySide": "Two cameras",
       "pip": "Camera in a corner",
       "alternate": "Alternate (HDMI)",
       "stage": "Stage display",
       "stageTile": "STAGE",
-      "switcherTile": "SWITCHER",
-      "cameraLowerThirdKind": "+ words",
-      "cameraKind": "Camera only"
+      "switcherTile": "SWITCHER"
     },
     "muteStream": "Mute the stream",
     "streamMuted": "The stream is muted: viewers hear nothing",
@@ -2812,7 +2805,10 @@
     "micOf": "Which input {{name}} uses",
     "lowerThird": "Lower third on the stream",
     "turnUp": "Turn up to 0 dB",
-    "streamLevelIs": "the stream {{db}}"
+    "streamLevelIs": "the stream {{db}}",
+    "lowerThirdOn": "The words run along the bottom of the stream picture.",
+    "lowerThirdHelp": "Show the words along the bottom, over a camera or the slides.",
+    "lowerThirdMirror": "The stream shows a screen now, as it is."
   },
   "benchmark": {
     "button": "Check this computer",
