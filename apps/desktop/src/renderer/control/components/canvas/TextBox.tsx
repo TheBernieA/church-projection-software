@@ -182,6 +182,23 @@ function Fields({
   );
 }
 
+/** An empty slide's prompt, in the theme's own look (faded), where its words will go. */
+function Placeholder({ theme, text }: { theme: Theme; text: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const size = theme.autoFit.enabled
+      ? Math.min(theme.text.fontSize, theme.autoFit.maxSize)
+      : theme.text.fontSize;
+    applyTextStyle(ref.current, theme.text, size);
+  }, [theme]);
+  return (
+    <div ref={ref} aria-hidden className="pointer-events-none opacity-40">
+      {text}
+    </div>
+  );
+}
+
 /**
  * A slide's text box, over the slide at the output's own scale: framed with handles like a
  * selected object while typing (and on hover); double-click it to type. `visit` changes when the
@@ -252,6 +269,9 @@ export function TextBox({
             />
           ))}
       </div>
+      {!editing && fields.every((f) => !f.value.trim()) && fields.length > 0 && (
+        <Placeholder theme={theme} text={fields[fields.length - 1]?.placeholder ?? ''} />
+      )}
       {editing && (
         <div className="pointer-events-auto relative flex flex-col">
           <Fields key={visit} theme={theme} fields={fields} actions={actions} />

@@ -86,8 +86,9 @@ export function useSongEditor(song: Song, item: SongItem) {
   const sceneOf = useMemo(
     () =>
       (lines: string[], i: number, words = true): Scene =>
-        // Without words: just the background (the text box draws them while typing).
-        !words
+        // Without words (being typed, or none yet): just the background. The text box shows
+        // them, or its prompt; the credits wait for words too.
+        !words || !lines.length
           ? makeScene({ background: look.background })
           : makeScene({
               background: look.background,
