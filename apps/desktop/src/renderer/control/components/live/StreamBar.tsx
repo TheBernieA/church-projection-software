@@ -5,7 +5,7 @@ import { formatDb, MAX_DB, MIN_DB, type MixerChannel, type StreamSettings } from
 import type { StreamStatus } from '@lampstand/ipc-contract';
 import { Button, IconButton, Meter, Slider, Switch, Typography } from '@lampstand/ui';
 import { saveSettings } from '../../lib/actions';
-import { useInputDevices } from '../../lib/inputs';
+import { useHiddenAudioInputs, useInputDevices } from '../../lib/inputs';
 import { onMeters, readSides } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
@@ -170,6 +170,43 @@ export function StreamLowerThirdSwitch({ st }: { st: StreamSettings }) {
   );
 }
 
+/** How long a change of scene or camera takes on the stream: a cut, or a fade of this long. */
+const FADES = [0, 300, 500, 1000, 2000] as const;
+
+/** "Scene changes": cut, or fade (and how fast), when the stream changes scene or camera. */
+export function StreamFadeSelect({ st }: { st: StreamSettings }) {
+  const { t } = useTranslation();
+  const pic = st.picture;
+  return (
+    <div className="flex items-center gap-2 px-0.5">
+      <Typography
+        size={12}
+        tone="secondary"
+        className="min-w-0 flex-1"
+        title={t('console.fadeHelp')}
+      >
+        {t('console.fade')}
+      </Typography>
+      <Select<string>
+        size="sm"
+        aria-label={t('console.fade')}
+        value={String(pic.fadeMs)}
+        onChange={(v) =>
+          void saveSettings({ stream: { ...st, picture: { ...pic, fadeMs: Number(v) } } })
+        }
+        options={[
+          ...(FADES.includes(pic.fadeMs as (typeof FADES)[number]) ? [] : [pic.fadeMs]),
+          ...FADES,
+        ].map((ms) => ({
+          value: String(ms),
+          label: ms === 0 ? t('console.fadeCut') : t('console.fadeFor', { s: ms / 1000 }),
+        }))}
+        className="!w-36"
+      />
+    </div>
+  );
+}
+
 /**
  * One mic or desk feed, compact: on the stream or not, which input it is, its level and mute.
  * (Its sound shows on the L/R meter on the stream picture.)
@@ -258,8 +295,17 @@ let defaultMicTried = false;
 export function StreamSound() {
   const { t } = useTranslation();
   const mixer = useStore((s) => s.live?.mixer ?? null);
-  const devices = useInputDevices('audioinput');
+  const all = useInputDevices('audioinput');
   const inputs = useMemo(() => mixer?.channels.filter((c) => c.kind === 'input') ?? [], [mixer]);
+  // The inputs chosen to show (Audio inputs › Choose), and always those already on a channel.
+  const hidden = useHiddenAudioInputs();
+  const devices = useMemo(
+    () =>
+      all?.filter(
+        (d) => !hidden.has(d.deviceId) || inputs.some((c) => c.deviceId === d.deviceId),
+      ) ?? null,
+    [all, hidden, inputs],
+  );
   useEffect(() => {
     // Once a session, when the mixer first loads with no mic: removing the last mic later
     // (on purpose) never brings it back, and a failure never retries on every update.

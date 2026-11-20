@@ -150,6 +150,8 @@ export const SettingsSchema = z
     textScale: z.number().min(0.85).max(1.4).default(1),
     /** Colours the operator saved in the colour picker (newest first). */
     customColors: z.array(ColorSchema).max(20).default([]),
+    /** Audio inputs left out of the lists (a desk shows many; the operator picks the few used). */
+    hiddenAudioInputs: z.array(z.string().max(300)).max(256).default([]),
     language: z.string().max(35).default('en'),
     libraryPath: z.string().max(1000).optional(),
     displays: z.array(DisplayAssignmentSchema).max(16).default([]),

@@ -24,7 +24,7 @@ import {
   Typography,
   typographyClass,
 } from '@lampstand/ui';
-import { useInputDevices } from '../../lib/inputs';
+import { useHiddenAudioInputs, useInputDevices } from '../../lib/inputs';
 import { onMeters, readMeter } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { openDialog, useStore } from '../../lib/store';
@@ -304,7 +304,11 @@ const signedDb = (v: number): string => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Ma
 /** The selected channel, in full: name, device, pan, high-pass, EQ, compressor. */
 function ChannelEditor({ c, onClose }: { c: MixerChannel; onClose: () => void }) {
   const { t } = useTranslation();
-  const devices = useInputDevices('audioinput');
+  const hidden = useHiddenAudioInputs();
+  // The inputs chosen to show, and always the one this channel uses.
+  const devices = useInputDevices('audioinput')?.filter(
+    (d) => !hidden.has(d.deviceId) || d.deviceId === c.deviceId,
+  );
   const set = (patch: Parameters<typeof mixerLive>[0]['patch']): void =>
     mixerLive({ action: 'channel', id: c.id, patch });
   return (
@@ -482,7 +486,8 @@ function StreamDelay({ bus }: { bus: MixerBus }) {
 export function MixerPanel({ height }: { height: number }) {
   const { t } = useTranslation();
   const mixer = useStore((s) => s.live?.mixer ?? null);
-  const devices = useInputDevices('audioinput');
+  const hidden = useHiddenAudioInputs();
+  const devices = useInputDevices('audioinput')?.filter((d) => !hidden.has(d.deviceId)) ?? null;
   const [selected, setSelected] = useState<string | null>(null);
   if (!mixer) return null;
   const soloed = mixer.channels.some((c) => c.solo);

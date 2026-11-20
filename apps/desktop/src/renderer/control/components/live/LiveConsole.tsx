@@ -29,6 +29,7 @@ import { SoundPanel } from './SoundPanel';
 import {
   ScenePreviews,
   SilentNotice,
+  StreamFadeSelect,
   StreamLowerThirdSwitch,
   StreamMeterOverlay,
   StreamSound,
@@ -232,6 +233,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
           {/* Pinned with the picture (the options scroll beneath): scenes, then the sound. */}
           <ScenePreviews st={st} streaming={!!s?.streaming} />
           <StreamLowerThirdSwitch st={st} />
+          <StreamFadeSelect st={st} />
           <StreamSound />
         </div>
       </div>

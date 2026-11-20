@@ -1,6 +1,6 @@
 import type { CameraSettings, VideoInputLayer } from '@lampstand/core';
 import { saveSettings } from './actions';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { DeviceAccess } from '@lampstand/ipc-contract';
 import { RAW_AUDIO } from '@lampstand/renderer';
 import { cmd, q } from './api';
@@ -133,14 +133,14 @@ export function useLevelMeter(stream: MediaStream | null): {
       let peak = 0;
       for (const v of buf) peak = Math.max(peak, Math.abs(v));
       level = Math.max(peak, level * 0.85);
-      const pctNow = Math.min(100, Math.round(level * 140));
+      // In decibels, as a desk's meters are: -60 dB at the left, 0 dB (full scale) at the right.
+      // (A plain linear bar shows a healthy -20 dB voice at a tenth of the way: "too quiet".)
+      const db = level > 0 ? 20 * Math.log10(level) : -Infinity;
+      const pctNow = Math.max(0, Math.min(100, Math.round(((db + 60) / 60) * 100)));
       if (pctNow !== shown) {
         shown = pctNow;
         if (bar.current) bar.current.style.width = `${pctNow}%`;
-        track.current?.setAttribute(
-          'aria-valuenow',
-          String(Math.min(100, Math.round(level * 100))),
-        );
+        track.current?.setAttribute('aria-valuenow', String(pctNow));
       }
       raf = requestAnimationFrame(tick);
     };
@@ -297,4 +297,22 @@ export function useDeviceAccess(kind: 'camera' | 'microphone') {
       rescanDevices();
     },
   };
+}
+
+const NO_HIDDEN: readonly string[] = Object.freeze([]);
+
+/**
+ * The audio inputs the operator chose to leave out of the lists (Audio inputs › Choose). A desk
+ * can show sixteen or more; only the ones used need to be there.
+ */
+export function useHiddenAudioInputs(): ReadonlySet<string> {
+  const hidden = useStore((s) => s.settings?.hiddenAudioInputs ?? NO_HIDDEN);
+  return useMemo(() => new Set(hidden), [hidden]);
+}
+
+/** Show or leave out one audio input. */
+export function setAudioInputShown(deviceId: string, shown: boolean): void {
+  const hidden = useStore.getState().settings?.hiddenAudioInputs ?? [];
+  const next = shown ? hidden.filter((id) => id !== deviceId) : [...new Set([...hidden, deviceId])];
+  void saveSettings({ hiddenAudioInputs: next });
 }

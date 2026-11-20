@@ -1806,6 +1806,20 @@ test('inputs: a camera goes live under the words; an audio input plays with a le
   await expect
     .poll(async () => Number(await meter.getAttribute('aria-valuenow')), { timeout: 10_000 })
     .toBeGreaterThan(0);
+  // Choose which inputs show: leave one out (it goes from the list), then bring it back.
+  const rows = panel.getByRole('listitem');
+  const before = await rows.count();
+  await panel.getByRole('button', { name: 'Choose' }).click();
+  const ticks = control.getByRole('menuitemcheckbox');
+  await expect(ticks.first()).toBeChecked();
+  await ticks.last().click();
+  await expect(ticks.last()).not.toBeChecked();
+  await control.keyboard.press('Escape');
+  await expect(rows).toHaveCount(before - 1);
+  await panel.getByRole('button', { name: 'Choose' }).click();
+  await ticks.last().click();
+  await control.keyboard.press('Escape');
+  await expect(rows).toHaveCount(before);
   // To the stream: it becomes a channel on the mixer that the stream hears, and the room doesn't
   // (the desk already puts it in the room).
   await panel
