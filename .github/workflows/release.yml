@@ -18,13 +18,13 @@ jobs:
         include:
           - os: macos-latest # Apple silicon
             target: mac
-            ffmpeg: mac-arm64
+            name: mac-arm64
           - os: macos-15-intel # Intel
             target: mac
-            ffmpeg: mac-x64
+            name: mac-x64
           - os: windows-latest
             target: win
-            ffmpeg: win-x64
+            name: win-x64
     runs-on: ${{ matrix.os }}
     env:
       # Signing is used when the secrets are set (docs/packaging.md); without them the Mac
@@ -38,20 +38,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
 
-      # The livestream and recording encoder (resources/ffmpeg/README.md), for this platform.
-      - name: Fetch ffmpeg
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/ff" && cd "$RUNNER_TEMP/ff"
-          npm init -y > /dev/null
-          npm install ffmpeg-static@5.2.0 --no-audit --no-fund
-          dest="$GITHUB_WORKSPACE/resources/ffmpeg/${{ matrix.ffmpeg }}"
-          mkdir -p "$dest"
-          cp node_modules/ffmpeg-static/ffmpeg* "$dest/"
-          mv "$dest/ffmpeg.LICENSE" "$dest/LICENSE.txt" 2>/dev/null || true
-          rm -f "$dest/ffmpeg.README"
-          ls -l "$dest"
-
+      # ffmpeg (livestream and recording) comes with `pnpm install` (ffmpeg-static) and the dist
+      # scripts copy it into the app: each runner gets its own platform's.
       - name: Build (Mac, signed and notarized)
         if: matrix.target == 'mac' && env.HAS_MAC_SIGNING == 'true'
         run: pnpm dist:mac
@@ -76,7 +64,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: lampstand-${{ matrix.ffmpeg }}
+          name: lampstand-${{ matrix.name }}
           path: |
             apps/desktop/release/*/*.dmg
             apps/desktop/release/*/*.zip

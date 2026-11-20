@@ -7,3 +7,5 @@ coverage
 *.log
 scripts/.cache
 test-results
+# ffmpeg binaries copied in for packaging (scripts/prepareFfmpeg.mjs); only the README is kept
+resources/ffmpeg/*/

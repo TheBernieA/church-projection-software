@@ -50,21 +50,13 @@ pnpm install
 
 Run this again whenever you pull new changes.
 
-#### 3. Add ffmpeg (needed for streaming and recording)
+#### 3. ffmpeg (streaming and recording) comes along
 
-Without it the app still works, but can't livestream or record. For Apple-silicon Macs, from
-the project folder:
-
-```sh
-mkdir -p /tmp/ff && cd /tmp/ff && npm init -y >/dev/null && npm install ffmpeg-static@5.2.0
-cd -
-mkdir -p resources/ffmpeg/mac-arm64
-cp /tmp/ff/node_modules/ffmpeg-static/ffmpeg resources/ffmpeg/mac-arm64/
-cp /tmp/ff/node_modules/ffmpeg-static/ffmpeg.LICENSE resources/ffmpeg/mac-arm64/LICENSE.txt
-```
-
-That download is the ffmpeg for the Mac you're on. For an Intel Mac build, put an Intel ffmpeg
-in `resources/ffmpeg/mac-x64/` (the easiest way: run the same download on an Intel Mac).
+Nothing to do: `pnpm install` downloads ffmpeg for this Mac, and the build commands below put
+it inside the app (you'll see `ffmpeg: packaged from ffmpeg-static` as they start). The one
+exception: building the **Intel** installer on an Apple-silicon Mac. Its ffmpeg has to be an
+Intel one, so put it (and its `LICENSE.txt`) in `resources/ffmpeg/mac-x64/` first, or build
+that one on an Intel Mac. Without it, the build warns and the app can't stream or record.
 
 #### 4. Optional: app icon and version
 
@@ -124,19 +116,10 @@ Each takes about 1–3 minutes. The installers appear in `apps/desktop/release/<
 pnpm install
 ```
 
-#### 3. Add ffmpeg (needed for streaming and recording)
+#### 3. ffmpeg (streaming and recording) comes along
 
-From the project folder in PowerShell:
-
-```powershell
-$repo = (Get-Location).Path
-mkdir $env:TEMP\ff -Force | Out-Null; cd $env:TEMP\ff
-npm init -y | Out-Null; npm install ffmpeg-static@5.2.0
-mkdir "$repo\resources\ffmpeg\win-x64" -Force | Out-Null
-copy node_modules\ffmpeg-static\ffmpeg.exe "$repo\resources\ffmpeg\win-x64\"
-copy node_modules\ffmpeg-static\ffmpeg.LICENSE "$repo\resources\ffmpeg\win-x64\LICENSE.txt"
-cd $repo
-```
+Nothing to do: `pnpm install` downloads the Windows ffmpeg, and `pnpm dist:win` puts it inside
+the installer.
 
 #### 4. Build
 
@@ -166,8 +149,9 @@ Security › For developers**) and build again. Running PowerShell as administra
    sudo softwareupdate --install-rosetta --agree-to-license
    ```
 2. Put a Windows `ffmpeg.exe` (and its licence as `LICENSE.txt`) in
-   `resources/ffmpeg/win-x64/`. The npm download on a Mac only gets the Mac ffmpeg, so take the
-   `.exe` from a Windows machine or the ffmpeg website.
+   `resources/ffmpeg/win-x64/`. On a Mac, `pnpm install` only downloads the Mac ffmpeg, so take
+   the `.exe` from a Windows PC (`node_modules\ffmpeg-static\` after `pnpm install` there) or
+   the ffmpeg website. Without it, the build warns and the app can't stream or record.
 3. Build:
    ```sh
    pnpm dist:win
@@ -177,8 +161,8 @@ Security › For developers**) and build again. Running PowerShell as administra
 
 - **No install warnings:** sign with an Apple Developer ID and notarize (Mac, $99 a year), and
   use a code-signing certificate (Windows). See [docs/packaging.md](docs/packaging.md).
-- **ffmpeg is GPL-licensed:** when sharing the app, keep its `LICENSE.txt` (the steps above do)
-  and point people to the ffmpeg source.
+- **ffmpeg is GPL-licensed:** when sharing the app, keep its `LICENSE.txt` (the build copies it
+  in) and point people to the ffmpeg source.
 - **New versions:** for each release, change `version` in `apps/desktop/package.json` and build
   again.
 

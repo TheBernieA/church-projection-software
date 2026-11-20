@@ -10,10 +10,10 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc -p tsconfig.node.json && tsc -p tsconfig.web.json",
-    "dist:mac": "electron-vite build && electron-builder --mac",
-    "dist:mac:local": "electron-vite build && electron-builder --mac -c.mac.notarize=false -c.mac.identity=-",
-    "dist:mac:local:intel": "electron-vite build && electron-builder --mac --x64 -c.mac.notarize=false -c.mac.identity=-",
-    "dist:win": "electron-vite build && electron-builder --win",
+    "dist:mac": "node scripts/prepareFfmpeg.mjs mac && electron-vite build && electron-builder --mac",
+    "dist:mac:local": "node scripts/prepareFfmpeg.mjs mac && electron-vite build && electron-builder --mac -c.mac.notarize=false -c.mac.identity=-",
+    "dist:mac:local:intel": "node scripts/prepareFfmpeg.mjs mac x64 && electron-vite build && electron-builder --mac --x64 -c.mac.notarize=false -c.mac.identity=-",
+    "dist:win": "node scripts/prepareFfmpeg.mjs win x64 && electron-vite build && electron-builder --win --x64",
     "e2e": "electron-vite build && playwright test"
   },
   "dependencies": {
@@ -60,6 +60,7 @@
     "electron": "45.3.1",
     "electron-builder": "26.18.0",
     "electron-vite": "6.0.0",
+    "ffmpeg-static": "5.2.0",
     "i18next": "27.1.1",
     "lucide-react": "1.72.0",
     "react": "19.3.1",
