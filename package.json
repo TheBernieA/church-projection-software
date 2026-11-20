@@ -22,6 +22,7 @@
     "e2e": "pnpm --filter @lampstand/desktop e2e",
     "dist:mac": "pnpm --filter @lampstand/desktop dist:mac",
     "dist:mac:local": "pnpm --filter @lampstand/desktop dist:mac:local",
+    "dist:mac:local:intel": "pnpm --filter @lampstand/desktop dist:mac:local:intel",
     "dist:win": "pnpm --filter @lampstand/desktop dist:win"
   },
   "devDependencies": {

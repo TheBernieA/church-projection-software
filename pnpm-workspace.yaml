@@ -6,6 +6,8 @@ allowBuilds:
   esbuild: true
   electron-winstaller: false
   koffi: false
+  # Downloads the ffmpeg binary for this computer (packaged with the app for streaming).
+  ffmpeg-static: true
 minimumReleaseAgeExclude:
   - prettier@3.10.1
   - electron@45.3.1
