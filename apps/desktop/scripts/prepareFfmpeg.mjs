@@ -7,6 +7,7 @@
 // computer. A build for another platform (the Windows installer made on a Mac, say) can't use
 // it: then an ffmpeg already placed in the folder by hand is used, or the build goes ahead
 // without one, with a warning (the app works, but can't stream or record).
+import { execFileSync } from 'node:child_process';
 import { chmodSync, copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
@@ -23,6 +24,31 @@ const dest = join(root, 'resources', 'ffmpeg', `${os}-${arch}`);
 const target = join(dest, exe);
 const here = { darwin: 'mac', win32: 'win' }[process.platform];
 
+/**
+ * Can this (Mac) ffmpeg stream securely? Built without OpenSSL, GnuTLS, mbedTLS or libtls, it
+ * falls back on Apple's SecureTransport, whose RTMPS uploads stall: YouTube then has to use its
+ * standard RTMP address (the app does that by itself) and Facebook, secure only, won't work.
+ */
+function secureOnMac(ffmpeg) {
+  if (os !== 'mac' || here !== 'mac') return true; // can't run it here to ask
+  try {
+    const conf = execFileSync(ffmpeg, ['-hide_banner', '-buildconf'], { encoding: 'utf8' });
+    return /--enable-(openssl|gnutls|mbedtls|libtls)\b/.test(conf);
+  } catch {
+    return false;
+  }
+}
+
+const WEAK_TLS = `\n⚠ ffmpeg: this Mac build can't stream securely (no OpenSSL). YouTube will use its
+  standard RTMP address and Facebook (secure only) won't work. For a full build, put an ffmpeg
+  built with OpenSSL (and its LICENSE.txt) in resources/ffmpeg/${os}-${arch}/; it's kept.\n`;
+
+// A better ffmpeg placed here by hand (one that streams securely) is kept, not overwritten.
+if (existsSync(target) && os === 'mac' && secureOnMac(target)) {
+  console.log(`ffmpeg: using the one in resources/ffmpeg/${os}-${arch}/ (streams securely)`);
+  process.exit(0);
+}
+
 if (here === os && arch === process.arch) {
   const require = createRequire(import.meta.url);
   let source = null;
@@ -38,6 +64,7 @@ if (here === os && arch === process.arch) {
     const licence = join(dirname(source), `${exe.replace('.exe', '')}.LICENSE`);
     if (existsSync(licence)) copyFileSync(licence, join(dest, 'LICENSE.txt'));
     console.log(`ffmpeg: packaged from ffmpeg-static → resources/ffmpeg/${os}-${arch}/`);
+    if (!secureOnMac(target)) console.warn(WEAK_TLS);
     process.exit(0);
   }
   // Building for this very computer, ffmpeg should always be there: stop, rather than make an

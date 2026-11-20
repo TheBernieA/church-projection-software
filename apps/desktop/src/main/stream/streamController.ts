@@ -25,7 +25,7 @@ import {
 } from '@lampstand/ipc-contract';
 import { isTrustedFrameUrl } from '../ipc/router';
 import type { SecretStore } from '../secrets/secretStore';
-import { findFfmpeg, probeAacEncoder, probeEncoders, probeProtocols } from './ffmpeg';
+import { findFfmpeg, hasGoodTls, probeAacEncoder, probeEncoders, probeProtocols } from './ffmpeg';
 import {
   buildArgs,
   destinationFailure,
@@ -149,6 +149,12 @@ const RECONNECT_CHECK_MS = [1_000, 2_000, 3_000, 5_000];
  * briefly interrupts any other destination that's still fine.
  */
 const RECONNECT_TRY_MS = [5_000, 10_000, 20_000, 30_000];
+/**
+ * A first start that has sent nothing after this long is stuck (a connection that hangs instead
+ * of failing): the service's other address is tried at once, rather than waiting for ffmpeg to
+ * give up on its own (about half a minute).
+ */
+const STUCK_START_MS = 15_000;
 
 /**
  * Livestream and recording, done by Lampstand itself. A hidden (offscreen) stream window draws
@@ -271,6 +277,8 @@ export class StreamController {
   private spawnSeq = 0;
   /** After a reconnect: clears the restart count once the stream has been steady a while. */
   private steadyTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Watches a first start: nothing sent after STUCK_START_MS means it's stuck. */
+  private stuckTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(private readonly d: StreamDeps) {
     this.status = { ...idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE), srt: null };
@@ -828,11 +836,23 @@ export class StreamController {
   /** Where the stream goes now (nowhere when only recording). */
   private async destinations(ffmpeg: string): Promise<ResolvedDestinations> {
     if (!this.want.stream) return { urls: [], status: [] };
+    const destinations = this.d.getSettings().stream.destinations;
+    // An ffmpeg that can't stream securely (a Mac build on SecureTransport stalls on RTMPS):
+    // services with a standard (RTMP) address use it instead, so the stream still goes out.
+    let alt: ReadonlySet<string> = this.altIngest;
+    if (!hasGoodTls(ffmpeg)) {
+      const plain = destinations.filter((d) => d.enabled && hasFallbackIngest(d.kind));
+      if (plain.some((d) => !this.altIngest.has(d.id)))
+        this.d.log.warn('this ffmpeg cannot stream securely; using standard RTMP addresses', {
+          kinds: plain.map((d) => d.kind),
+        });
+      alt = new Set([...this.altIngest, ...plain.map((d) => d.id)]);
+    }
     return resolveDestinations({
-      destinations: this.d.getSettings().stream.destinations,
+      destinations,
       getKey: (id) => this.d.secrets.get(keyName(id)),
       protocols: await probeProtocols(ffmpeg),
-      alt: this.altIngest,
+      alt,
       onNote: (event, info) =>
         event === 'badKey'
           ? this.d.log.warn('saved stream key looks wrong', info)
@@ -924,6 +944,7 @@ export class StreamController {
       windowsHide: true,
     });
     this.ff = ff;
+    this.watchStart(ff);
     // The encoder comes first: a busy app, browser or projector never starves it.
     try {
       if (ff.pid) setPriority(ff.pid, osConstants.priority.PRIORITY_ABOVE_NORMAL);
@@ -953,6 +974,9 @@ export class StreamController {
       destinations: urls.length,
       recording: !!record,
       size: `${width}x${height}@${profile.fps}`,
+      // Which ffmpeg, and whether it can stream securely (a Mac build without OpenSSL can't).
+      ffmpeg,
+      secure: hasGoodTls(ffmpeg),
     });
     this.setStatus(
       {
@@ -1476,13 +1500,32 @@ export class StreamController {
     }, wait);
   }
 
+  /**
+   * A first start (not yet live this session) that sends nothing for a while is stuck: try the
+   * service's other address now (YouTube's standard RTMP one), once, instead of waiting for
+   * ffmpeg to time out and restart.
+   */
+  private watchStart(ff: ChildProcess): void {
+    if (this.stuckTimer) clearTimeout(this.stuckTimer);
+    this.stuckTimer = null;
+    if (!this.want.stream || this.everLive) return;
+    this.stuckTimer = setTimeout(() => {
+      this.stuckTimer = null;
+      if (this.ff !== ff || this.status.state !== 'starting' || !this.want.stream) return;
+      this.d.log.warn('stream sent nothing after starting; trying the other address', {
+        seconds: STUCK_START_MS / 1000,
+      });
+      if (this.switchToFallbackIngest()) void this.restartEncoder(this.want.record);
+    }, STUCK_START_MS);
+  }
+
   /** ffmpeg's last lines say an output couldn't be opened (a connection that didn't happen). */
   private connectFailed(): boolean {
     return this.lastStderr.some((l) => CONNECT_FAILED.test(l));
   }
 
-  /** Switch destinations that have a second address to it, and start again (once each). */
-  private tryFallbackIngest(): boolean {
+  /** Switch destinations that have a second address to it (once each); false: none left. */
+  private switchToFallbackIngest(): boolean {
     const dests = this.d.getSettings().stream.destinations.filter((d) => d.enabled);
     const switching = dests.filter((d) => hasFallbackIngest(d.kind) && !this.altIngest.has(d.id));
     if (!switching.length) return false;
@@ -1490,6 +1533,12 @@ export class StreamController {
     this.d.log.warn('destination could not connect; trying its other address', {
       ids: switching.map((d) => d.id),
     });
+    return true;
+  }
+
+  /** Switch to the other addresses and start again (an encoder that already stopped). */
+  private tryFallbackIngest(): boolean {
+    if (!this.switchToFallbackIngest()) return false;
     void this.spawnEncoder();
     return true;
   }
@@ -1523,6 +1572,8 @@ export class StreamController {
   private async stopEncoder(): Promise<void> {
     if (this.retry) clearTimeout(this.retry);
     this.retry = null;
+    if (this.stuckTimer) clearTimeout(this.stuckTimer);
+    this.stuckTimer = null;
     // A stop, a restart or a new run: any reconnect still waiting is called off.
     this.cancelReconnect();
     if (this.steadyTimer) clearTimeout(this.steadyTimer);

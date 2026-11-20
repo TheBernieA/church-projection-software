@@ -1,4 +1,4 @@
-import { execFile } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { delimiter, join } from 'node:path';
@@ -6,25 +6,48 @@ import { app } from 'electron';
 
 const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
 
+/** Whether each ffmpeg checked can stream securely (asked once per file). */
+const tlsChecked = new Map<string, boolean>();
+
 /**
- * Where ffmpeg is, in order: LAMPSTAND_FFMPEG; the copy shipped with the app
- * (resources/ffmpeg); the `ffmpeg-static` package when installed (development); then a system
- * install (Homebrew, /usr/local, PATH). Null: none, so no streaming or recording.
+ * Can this ffmpeg stream over a secure connection (RTMPS: YouTube's and Facebook's usual
+ * address)? On a Mac, an ffmpeg built without OpenSSL, GnuTLS, mbedTLS or libtls falls back on
+ * Apple's old SecureTransport, whose uploads stall after a few frames: the stream never gets
+ * going. Elsewhere the built-in TLS (Windows' Schannel) streams fine.
+ */
+export function hasGoodTls(ffmpeg: string): boolean {
+  if (process.platform !== 'darwin') return true;
+  const known = tlsChecked.get(ffmpeg);
+  if (known !== undefined) return known;
+  let good = false;
+  try {
+    const conf = execFileSync(ffmpeg, ['-hide_banner', '-buildconf'], {
+      encoding: 'utf8',
+      timeout: 5_000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    good = /--enable-(openssl|gnutls|mbedtls|libtls)\b/.test(conf);
+  } catch {
+    /* can't tell: treat as the weaker kind */
+  }
+  tlsChecked.set(ffmpeg, good);
+  return good;
+}
+
+/**
+ * Where ffmpeg is: LAMPSTAND_FFMPEG if set; else, of the copy shipped with the app
+ * (resources/ffmpeg), a system install (Homebrew, /usr/local, PATH) and the `ffmpeg-static`
+ * package (development), the first that can stream securely (see hasGoodTls), else the first
+ * there is. Null: none, so no streaming or recording.
  */
 let found: { env: string | undefined; path: string } | null = null;
 
 export function findFfmpeg(): string | null {
   // Found once (until LAMPSTAND_FFMPEG changes); not found is looked for again next time.
   if (found && found.env === process.env.LAMPSTAND_FFMPEG) return found.path;
+  const own = process.env.LAMPSTAND_FFMPEG;
   const candidates: string[] = [];
-  if (process.env.LAMPSTAND_FFMPEG) candidates.push(process.env.LAMPSTAND_FFMPEG);
   if (app.isPackaged) candidates.push(join(process.resourcesPath, 'resources', 'ffmpeg', exe));
-  try {
-    const fromPackage = createRequire(__filename)('ffmpeg-static') as unknown;
-    if (typeof fromPackage === 'string') candidates.push(fromPackage);
-  } catch {
-    /* not installed: fine */
-  }
   candidates.push(
     '/opt/homebrew/bin/ffmpeg',
     '/usr/local/bin/ffmpeg',
@@ -34,8 +57,16 @@ export function findFfmpeg(): string | null {
       .filter(Boolean)
       .map((d) => join(d, exe)),
   );
-  const path = candidates.find((p) => existsSync(p)) ?? null;
-  found = path ? { env: process.env.LAMPSTAND_FFMPEG, path } : null;
+  try {
+    const fromPackage = createRequire(__filename)('ffmpeg-static') as unknown;
+    if (typeof fromPackage === 'string') candidates.push(fromPackage);
+  } catch {
+    /* not installed: fine */
+  }
+  const existing = [...new Set(candidates)].filter((p) => existsSync(p));
+  const path =
+    own && existsSync(own) ? own : (existing.find((p) => hasGoodTls(p)) ?? existing[0] ?? null);
+  found = path ? { env: own, path } : null;
   return path;
 }
 

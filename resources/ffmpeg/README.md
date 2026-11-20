@@ -17,3 +17,7 @@ electron-builder copies it to `resources/ffmpeg/` inside the app. Building for a
 platform than this computer's (the Windows installer on a Mac), put that platform's binary and
 licence in its folder by hand. These folders are not committed. In development, Lampstand uses
 `LAMPSTAND_FFMPEG`, the `ffmpeg-static` package, or a system install (e.g. `brew install ffmpeg`).
+
+On a Mac, an ffmpeg built without OpenSSL (the `ffmpeg-static` builds) can't stream securely:
+RTMPS stalls. Lampstand prefers an ffmpeg that can (Homebrew's, or one placed here by hand,
+which the build keeps), and with only the weak kind sends YouTube to its standard RTMP address.

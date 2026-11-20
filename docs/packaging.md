@@ -14,6 +14,11 @@ a Mac (or let GitHub do all three, below).
    platform's binary and `LICENSE.txt` there by hand; otherwise the build warns and that
    installer can't stream or record. These ffmpeg builds are GPL: shipping them means offering
    their source (a link to the ffmpeg source for that version is enough).
+   **Mac:** the `ffmpeg-static` Mac builds have no OpenSSL, so they can't stream securely
+   (RTMPS stalls after a few frames). The app then uses YouTube's standard RTMP address on its
+   own, but Facebook (secure only) won't work, and the build warns. For a full Mac build, put an
+   ffmpeg built with OpenSSL (and its LICENSE.txt) in `resources/ffmpeg/mac-arm64/` (or
+   `mac-x64/`): the build keeps it. On a Mac with Homebrew's ffmpeg, the app prefers that one.
 2. **Icon**: put a 1024×1024 PNG at `apps/desktop/build/icon.png`. electron-builder makes the
    Mac and Windows icons from it. Without it the installers use Electron's default icon.
 3. Set `version` in `apps/desktop/package.json`: it names the installers
