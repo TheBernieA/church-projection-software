@@ -1,14 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, RotateCcw, Type, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceItem, TextFormat, Theme } from '@lampstand/core';
 import { Button, Typography, IconButton } from '@lampstand/ui';
-import { BUNDLED_FONTS } from '../../constants';
 import { useItemSlides, useSelectedItem } from '../../lib/hooks';
 import { itemTitle } from '../../lib/slides';
 import { patchItem, useStore } from '../../lib/store';
 import { ColorInput } from '../form';
 import { Select } from '../Select';
+import { FormatToggle, SizeInput, useFontOptions, useSettledColor } from '../textFormat';
 
 /** Items whose slides show themed text, and so can be formatted from the Text bar. */
 type Formattable = Extract<ServiceItem, { textFormat?: TextFormat }>;
@@ -21,69 +20,6 @@ const FORMATTABLE = new Set<ServiceItem['kind']>([
 ]);
 export const isFormattable = (item: ServiceItem | null): item is Formattable =>
   !!item && FORMATTABLE.has(item.kind);
-
-/** Small square toggle used for bold, italic and alignment. */
-function Toggle({
-  label,
-  on,
-  onClick,
-  children,
-}: {
-  label: string;
-  on: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <IconButton
-      size="xs"
-      aria-label={label}
-      aria-pressed={on}
-      active={on}
-      activeTone="select"
-      onClick={onClick}
-    >
-      {children}
-    </IconButton>
-  );
-}
-
-/** Font size: typed freely, saved on Enter or when leaving the field (one undo step). */
-function SizeInput({
-  label,
-  title,
-  value,
-  onCommit,
-}: {
-  label: string;
-  title: string;
-  value: number;
-  onCommit: (v: number) => void;
-}) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const commit = (): void => {
-    const v = Math.round(Number(draft));
-    if (draft !== null && Number.isFinite(v) && v >= 8 && v <= 400 && v !== value) onCommit(v);
-    setDraft(null);
-  };
-  return (
-    <input
-      type="number"
-      aria-label={label}
-      title={title}
-      min={8}
-      max={400}
-      value={draft ?? Math.round(value)}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') commit();
-        if (e.key === 'Escape') setDraft(null);
-      }}
-      className="field tnum !h-8 !w-[72px]"
-    />
-  );
-}
 
 const Divider = () => <span aria-hidden className="mx-1 h-5 w-px bg-[var(--divider)]" />;
 
@@ -106,16 +42,6 @@ export function TextBar() {
   const format = target?.textFormat ?? {};
   const changed = Object.keys(format).length > 0;
 
-  // Colour pickers fire on every drag step: preview locally, save once things settle.
-  const [color, setColor] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-
   const set = (patch: Partial<TextFormat>): void => {
     if (!target) return;
     patchItem<Formattable>(target, (cur) => {
@@ -123,21 +49,10 @@ export function TextBar() {
     });
   };
   const close = (): void => useStore.setState({ textBarOpen: false });
-
-  const fonts = BUNDLED_FONTS.map((f) => ({
-    value: f.family,
-    label: f.family,
-    description: t(`theme.fontKinds.${f.category}`),
-    labelStyle: { fontFamily: `"${f.family}"` },
-  }));
   const family = theme?.text.fontFamily ?? '';
-  if (family && !fonts.some((f) => f.value === family))
-    fonts.unshift({
-      value: family,
-      label: family,
-      description: '',
-      labelStyle: { fontFamily: `"${family}"` },
-    });
+  const fonts = useFontOptions(family);
+  // Colour pickers fire on every drag step: preview at once, save once things settle.
+  const color = useSettledColor((hex) => set({ color: hex }));
 
   const bold = (theme?.text.fontWeight ?? 400) >= 600;
   const italic = !!theme?.text.italic;
@@ -181,49 +96,46 @@ export function TextBar() {
             onCommit={(fontSize) => set({ fontSize })}
           />
           <Divider />
-          <Toggle label={t('textBar.bold')} on={bold} onClick={() => set({ bold: !bold })}>
+          <FormatToggle label={t('textBar.bold')} on={bold} onClick={() => set({ bold: !bold })}>
             <Bold size={15} />
-          </Toggle>
-          <Toggle label={t('textBar.italic')} on={italic} onClick={() => set({ italic: !italic })}>
+          </FormatToggle>
+          <FormatToggle
+            label={t('textBar.italic')}
+            on={italic}
+            onClick={() => set({ italic: !italic })}
+          >
             <Italic size={15} />
-          </Toggle>
+          </FormatToggle>
           <ColorInput
             aria-label={t('textBar.color')}
             variant="swatch"
-            value={color ?? theme.text.color}
-            onChange={(hex) => {
-              setColor(hex);
-              if (timer.current) clearTimeout(timer.current);
-              timer.current = setTimeout(() => {
-                set({ color: hex });
-                setColor(null);
-              }, 250);
-            }}
+            value={color.shown ?? theme.text.color}
+            onChange={color.change}
             className="mx-1"
           />
           <Divider />
           <div role="group" aria-label={t('textBar.align')} className="flex items-center gap-0.5">
-            <Toggle
+            <FormatToggle
               label={t('textBar.left')}
               on={align === 'left'}
               onClick={() => set({ align: 'left' })}
             >
               <AlignLeft size={15} />
-            </Toggle>
-            <Toggle
+            </FormatToggle>
+            <FormatToggle
               label={t('textBar.center')}
               on={align === 'center'}
               onClick={() => set({ align: 'center' })}
             >
               <AlignCenter size={15} />
-            </Toggle>
-            <Toggle
+            </FormatToggle>
+            <FormatToggle
               label={t('textBar.right')}
               on={align === 'right'}
               onClick={() => set({ align: 'right' })}
             >
               <AlignRight size={15} />
-            </Toggle>
+            </FormatToggle>
           </div>
           <Divider />
           <Button

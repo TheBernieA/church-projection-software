@@ -276,7 +276,7 @@ export function SlideCanvas({
       className="relative aspect-video w-full overflow-hidden rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
       data-testid="slide-canvas"
     >
-      <SceneView scene={background} />
+      <SceneView scene={background} instant />
       <div
         className="pointer-events-none absolute left-0 top-0 origin-top-left"
         style={{ width: CANVAS.width, height: CANVAS.height, transform: `scale(${scale})` }}
@@ -288,7 +288,7 @@ export function SlideCanvas({
       {/* While its words are typed, they show in the text box only (not twice). */}
       {!typingWords && (
         <div className="pointer-events-none absolute inset-0">
-          <SceneView scene={text} transparent />
+          <SceneView scene={text} transparent instant />
         </div>
       )}
       {theme && scale > 0 && (

@@ -20,6 +20,7 @@ export const SceneView = memo(function SceneView({
   audio = false,
   transparent = false,
   mask = null,
+  instant = false,
 }: {
   scene: Scene;
   mode?: RenderMode;
@@ -33,6 +34,8 @@ export const SceneView = memo(function SceneView({
   transparent?: boolean;
   /** Screen mask, so a monitor shows the output's shape (Settings › Screens). */
   mask?: ScreenMask | null;
+  /** Changes show at once, with no transition (an editor: every keystroke is a change). */
+  instant?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<SceneRenderer | null>(null);
@@ -69,9 +72,9 @@ export const SceneView = memo(function SceneView({
     renderer.current?.setAudio(audio);
     renderer.current?.setStandby(standby);
     renderer.current?.setMask(mask);
-    renderer.current?.render(scene);
+    renderer.current?.render(scene, { instant });
     // mode/transparent: a new renderer was just built and needs the scene drawn into it.
-  }, [scene, standby, audio, sink, logo, visible, mode, transparent, mask]);
+  }, [scene, standby, audio, sink, logo, visible, mode, transparent, mask, instant]);
 
   return (
     <div

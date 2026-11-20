@@ -2,9 +2,11 @@ import { ArrowLeft, ArrowRight, Copy, Info, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatClock, omit, type ServiceItem, type TextSlide } from '@lampstand/core';
 import { Button, IconButton, Segmented, Switch, Typography, typographyClass } from '@lampstand/ui';
-import { useInService, useSelectedItem } from '../lib/hooks';
+import { useState } from 'react';
+import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
+import { TextFormatPanel } from './textFormat';
 import { deleteSlide, duplicateSlide, moveSlide } from '../lib/textSlides';
-import { updateItem, useStore } from '../lib/store';
+import { patchItem, updateItem, useStore } from '../lib/store';
 import { InspectorShell } from './canvas/editorParts';
 import { ObjectInspector } from './canvas/ObjectInspector';
 import { Field, NumberInput } from './form';
@@ -43,17 +45,51 @@ export function SlideInspector() {
   return null;
 }
 
-/** The selected canvas object's properties, or else the slide's own fields. */
+/** The item's text formatting (the Text tab), over its theme. */
+function ItemTextFormat({ item }: { item: TextItem }) {
+  const { slides } = useItemSlides(item);
+  const first = slides.find((s) => s.action.kind === 'content');
+  if (first?.action.kind !== 'content') return null;
+  return (
+    <TextFormatPanel
+      theme={first.action.content.theme}
+      format={item.textFormat ?? {}}
+      onChange={(p) =>
+        patchItem<TextItem>(item, (cur) => ({ textFormat: { ...cur.textFormat, ...p } }))
+      }
+      onReset={() => patchItem<TextItem>(item, { textFormat: undefined })}
+    />
+  );
+}
+
+/**
+ * The selected canvas object's properties; else the item and slide (Slide) or the words'
+ * formatting (Text).
+ */
 function TextOrObjectInspector({ item }: { item: TextItem }) {
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<'slide' | 'text'>('slide');
   const editCursor = useStore((s) => s.editCursor);
   const objectId = useStore((s) => s.editObjectId);
   const index =
     editCursor?.itemId === item.id ? Math.min(editCursor.index, item.slides.length - 1) : 0;
   const object = item.slides[index]?.objects?.find((o) => o.id === objectId);
-  return object ? (
-    <ObjectInspector item={item} index={index} object={object} />
-  ) : (
-    <TextInspector item={item} />
+  if (object) return <ObjectInspector item={item} index={index} object={object} />;
+  return (
+    <>
+      <div className="px-5 pt-4">
+        <Segmented<'slide' | 'text'>
+          label={t('inspector.tabs')}
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: 'slide', label: t('inspector.slideTab') },
+            { value: 'text', label: t('inspector.textTab') },
+          ]}
+        />
+      </div>
+      {tab === 'slide' ? <TextInspector item={item} /> : <ItemTextFormat item={item} />}
+    </>
   );
 }
 

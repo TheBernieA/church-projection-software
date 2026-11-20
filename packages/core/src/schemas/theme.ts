@@ -35,6 +35,20 @@ export const TextFormatSchema = z.object({
   align: z.enum(['left', 'center', 'right']).optional(),
   bold: z.boolean().optional(),
   italic: z.boolean().optional(),
+  /** Capitalization: every letter a capital. */
+  uppercase: z.boolean().optional(),
+  /** Where the words sit up and down (centre-, top- and lower-third themes). */
+  valign: z.enum(['top', 'middle', 'bottom']).optional(),
+  /** A stroke around the letters; null: none (even if the theme has one). */
+  stroke: z
+    .object({ width: z.number().min(0).max(20), color: ColorSchema })
+    .nullable()
+    .optional(),
+  /** A shadow behind the letters; null: none (even if the theme has one). */
+  shadow: z
+    .object({ x: z.number(), y: z.number(), blur: z.number().min(0).max(80), color: ColorSchema })
+    .nullable()
+    .optional(),
 });
 export type TextFormat = z.infer<typeof TextFormatSchema>;
 /** Animated backgrounds drawn by the renderer itself (no video files, any resolution). */

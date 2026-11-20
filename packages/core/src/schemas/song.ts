@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EntityMetaSchema, IdSchema } from './common';
+import { TextFormatSchema } from './theme';
 
 export const SectionKindSchema = z.enum([
   'verse',
@@ -47,6 +48,8 @@ export const SongSchema = EntityMetaSchema.extend({
   defaultArrangementId: IdSchema,
   tags: z.array(z.string().max(60)).max(50).default([]),
   themeId: IdSchema.optional(),
+  /** The song's own text formatting over its theme (font, size, colour, capitals…). */
+  textFormat: TextFormatSchema.optional(),
   language: z.string().max(35).optional(),
   translations: z.record(z.string(), z.array(SongSectionSchema)).optional(),
   /** Origin: user-created, imported, or from a bundled/downloaded hymnal (read-only). */

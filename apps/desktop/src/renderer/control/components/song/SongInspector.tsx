@@ -17,10 +17,11 @@ import { themeFor } from '../../lib/slides';
 import { openDialog, useStore } from '../../lib/store';
 import { InspectorShell, useFocusDraft } from '../canvas/editorParts';
 import { Field } from '../form';
+import { TextFormatPanel } from '../textFormat';
 import { ThemePicker } from './ThemePicker';
 import { type SongEditorState } from './useSongEditor';
 
-type Tab = 'song' | 'slide';
+type Tab = 'song' | 'slide' | 'text';
 
 /** A labelled block of the inspector. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -487,6 +488,7 @@ export function SongInspector({ ed }: { ed: SongEditorState }) {
           options={[
             { value: 'song', label: t('songEditor.songTab') },
             { value: 'slide', label: t('songEditor.slideTab') },
+            { value: 'text', label: t('songEditor.textTab') },
           ]}
         />
       </div>
@@ -501,8 +503,16 @@ export function SongInspector({ ed }: { ed: SongEditorState }) {
         </div>
       ) : tab === 'song' ? (
         <SongTab ed={ed} />
-      ) : (
+      ) : tab === 'slide' ? (
         <SlideTab ed={ed} />
+      ) : (
+        <TextFormatPanel
+          theme={ed.theme}
+          format={ed.song.textFormat ?? {}}
+          onChange={(p) => ed.patch((s) => ({ ...s, textFormat: { ...s.textFormat, ...p } }))}
+          onReset={() => ed.patch((s) => omit(s, 'textFormat'))}
+          note={t(ed.item.textFormat ? 'textFormat.itemOwn' : 'textFormat.songNote')}
+        />
       )}
     </InspectorShell>
   );

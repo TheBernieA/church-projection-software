@@ -391,6 +391,11 @@ test('songs: build arrangements and a translation, then pick them per item', asy
   await control
     .getByLabel('Translated words')
     .fill('[Verse 1]\nLinea de prueba\n\n[Chorus]\nCoro de prueba');
+  // The Text tab formats the song's words (kept with the song): all capitals here.
+  await control.getByRole('radio', { name: 'Text', exact: true }).click();
+  await control.getByRole('combobox', { name: 'Capitalization' }).click();
+  await control.getByRole('option', { name: 'All capitals' }).click();
+  await control.screenshot({ path: 'test-results/05e-text-tab.png' });
   await mode('Show');
   const slides = control.getByRole('list', { name: 'Slide list' });
   await control.getByRole('combobox', { name: 'Arrangement' }).click();
@@ -403,6 +408,7 @@ test('songs: build arrangements and a translation, then pick them per item', asy
     .first()
     .click(); // click goes live
   await expect(out.locator('.ls-block-secondary')).toHaveText('Coro de prueba');
+  await expect(out.locator('.ls-text').last()).toHaveCSS('text-transform', 'uppercase');
   await expect(out.locator('.ls-text').last()).not.toContainText('['); // the room never sees chords
   const stage = app.windows().find((w) => w.url().includes('/stage/'))!;
   await expect(stage.locator('.ls-st-chords .chord-row')).toHaveText('C');

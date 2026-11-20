@@ -107,8 +107,9 @@ export function songLook(
   item: Omit<SongItem, 'id' | 'kind' | 'songId'>,
   ctx: Pick<SlideContext, 'themes' | 'settings'>,
 ): { theme: Theme; background: BackgroundLayer | null } {
+  // The song's own formatting, then the playlist item's (the Text bar) over it.
   const theme = withTextFormat(
-    themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
+    withTextFormat(themeFor(ctx, 'lyrics', item.themeId ?? song.themeId), song.textFormat),
     item.textFormat,
   );
   return { theme, background: themeBackground(theme, behindWords(item), item.backgroundOverlay) };

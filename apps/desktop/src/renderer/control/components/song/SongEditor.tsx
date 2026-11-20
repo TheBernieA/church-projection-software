@@ -94,7 +94,7 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
       className="relative aspect-video w-full overflow-hidden rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
     >
       {/* While typing, the words show in the text box only (not twice). */}
-      <SceneView scene={ed.scene(lines, ed.at, !ed.typing)} />
+      <SceneView scene={ed.scene(lines, ed.at, !ed.typing)} instant />
       {scale > 0 && (
         <TextBox
           theme={ed.theme}

@@ -490,6 +490,8 @@ export function findTheme(themes: Theme[], id: string | undefined, fallbackId: s
 }
 
 /** The item's Text-bar formatting layered over its theme (unset fields keep the theme's). */
+const VALIGN_LAYOUT = { top: 'top', middle: 'center', bottom: 'lower-third' } as const;
+
 export function withTextFormat(theme: Theme, f?: TextFormat): Theme {
   if (!f || Object.keys(f).length === 0) return theme;
   const text = { ...theme.text };
@@ -498,7 +500,19 @@ export function withTextFormat(theme: Theme, f?: TextFormat): Theme {
   if (f.align) text.align = f.align;
   if (f.bold !== undefined) text.fontWeight = f.bold ? 700 : 400;
   if (f.italic !== undefined) text.italic = f.italic;
+  if (f.uppercase !== undefined) text.textTransform = f.uppercase ? 'uppercase' : 'none';
+  if (f.stroke !== undefined) {
+    if (f.stroke) text.outline = f.stroke;
+    else delete text.outline;
+  }
+  if (f.shadow !== undefined) {
+    if (f.shadow) text.shadow = f.shadow;
+    else delete text.shadow;
+  }
   const next: Theme = { ...theme, text };
+  // Up and down: only for themes that place the words in one block (not split or custom).
+  if (f.valign && ['center', 'top', 'lower-third'].includes(theme.layout))
+    next.layout = VALIGN_LAYOUT[f.valign];
   if (f.fontSize) {
     text.fontSize = f.fontSize;
     // Auto-fit treats the size as a ceiling, so long slides still shrink to fit.

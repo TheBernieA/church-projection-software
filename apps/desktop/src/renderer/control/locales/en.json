@@ -296,11 +296,29 @@
     "newHelp": "The song opens in Edit, ready for its first slide. Type on the slide, or press Reflow to paste the whole song at once.",
     "deleted": "{{title}} deleted. Undo with {{key}}."
   },
+  "textFormat": {
+    "capitals": "Capitalization",
+    "capsNone": "As typed",
+    "capsAll": "All capitals",
+    "valign": "Up and down",
+    "top": "Top",
+    "middle": "Middle",
+    "bottom": "Bottom",
+    "stroke": "Stroke",
+    "strokeWidth": "Stroke width",
+    "strokeColor": "Stroke colour",
+    "shadow": "Shadow",
+    "shadowBlur": "Shadow softness",
+    "shadowColor": "Shadow colour",
+    "songNote": "Kept with the song, so it looks the same in every playlist. The theme gives everything else.",
+    "itemOwn": "This playlist item has its own formatting from the toolbar’s Text bar, which goes over the song’s."
+  },
   "songEditor": {
     "canvas": "Slide being edited",
     "inspector": "Song and slide",
     "songTab": "Song",
     "slideTab": "Slide",
+    "textTab": "Text",
     "details": "Details",
     "key": "Key",
     "copyrightPlaceholder": "© 2024 Publisher",
@@ -735,6 +753,9 @@
     }
   },
   "inspector": {
+    "tabs": "Slide or text",
+    "slideTab": "Slide",
+    "textTab": "Text",
     "addSlide": "Add slide",
     "name": "Name",
     "advance": "Advance every",
