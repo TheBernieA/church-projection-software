@@ -21,16 +21,21 @@ export function resolveRoles(
 ): Map<number, OutputRole> {
   const roles = new Map<number, OutputRole>();
   const used = new Set<DisplayAssignment>();
-  for (const d of displays) {
-    const fp = fingerprint(d);
-    const exact = saved.find((s) => s.fingerprint === fp && !used.has(s));
-    const loose =
-      exact ?? saved.find((s) => !used.has(s) && nameAndSize(s.fingerprint) === nameAndSize(fp));
-    if (loose) {
-      used.add(loose);
-      roles.set(d.id, loose.role);
-    } else roles.set(d.id, 'none');
-  }
+  // Exact matches first, so a loose match can never take another display's own assignment.
+  const pass = (match: (s: DisplayAssignment, fp: string) => boolean): void => {
+    for (const d of displays) {
+      if (roles.has(d.id)) continue;
+      const fp = fingerprint(d);
+      const found = saved.find((s) => !used.has(s) && match(s, fp));
+      if (found) {
+        used.add(found);
+        roles.set(d.id, found.role);
+      }
+    }
+  };
+  pass((s, fp) => s.fingerprint === fp);
+  pass((s, fp) => nameAndSize(s.fingerprint) === nameAndSize(fp));
+  for (const d of displays) if (!roles.has(d.id)) roles.set(d.id, 'none');
   return roles;
 }
 

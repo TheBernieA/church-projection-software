@@ -11,7 +11,11 @@ const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
  * (resources/ffmpeg); the `ffmpeg-static` package when installed (development); then a system
  * install (Homebrew, /usr/local, PATH). Null: none, so no streaming or recording.
  */
+let found: { env: string | undefined; path: string } | null = null;
+
 export function findFfmpeg(): string | null {
+  // Found once (until LAMPSTAND_FFMPEG changes); not found is looked for again next time.
+  if (found && found.env === process.env.LAMPSTAND_FFMPEG) return found.path;
   const candidates: string[] = [];
   if (process.env.LAMPSTAND_FFMPEG) candidates.push(process.env.LAMPSTAND_FFMPEG);
   if (app.isPackaged) candidates.push(join(process.resourcesPath, 'resources', 'ffmpeg', exe));
@@ -30,7 +34,9 @@ export function findFfmpeg(): string | null {
       .filter(Boolean)
       .map((d) => join(d, exe)),
   );
-  return candidates.find((p) => existsSync(p)) ?? null;
+  const path = candidates.find((p) => existsSync(p)) ?? null;
+  found = path ? { env: process.env.LAMPSTAND_FFMPEG, path } : null;
+  return path;
 }
 
 let protocols: Promise<string[]> | null = null;

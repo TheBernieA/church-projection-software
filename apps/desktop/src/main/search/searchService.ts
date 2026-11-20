@@ -93,6 +93,15 @@ export class SearchService {
         p.resolve(m.hits);
       }
     } else if (m.type === 'indexed') this.log.info('search indexed', { what: m.what, ms: m.ms });
-    else if (m.type === 'error') this.log.warn('search worker error', { message: m.message });
+    else if (m.type === 'error') {
+      this.log.warn('search worker error', { message: m.message });
+      // A failed query answers at once (nothing found) instead of waiting for the timeout.
+      const p = m.id === undefined ? undefined : this.pending.get(m.id);
+      if (p && m.id !== undefined) {
+        clearTimeout(p.timer);
+        this.pending.delete(m.id);
+        p.resolve([]);
+      }
+    }
   }
 }

@@ -10,6 +10,7 @@ import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
 import { parsePptx } from '../library/pptx';
 import { type QueryHandlers, type Services } from '../types';
 import type { SecretStore } from '../secrets/secretStore';
+import { isWithin } from '../security/safePath';
 import { keyName, recordingsFolder, type StreamController } from '../stream/streamController';
 import { MAX_DECK_BYTES } from '../constants';
 
@@ -166,10 +167,10 @@ export function createQueries({
     'stream.status': () => stream.getStatus(),
     'ndi.status': () => ndi.getStatus(),
     'stream.keys': async () => {
-      const out: Record<string, boolean> = {};
-      for (const d of s.settings.get().stream.destinations)
-        out[d.id] = await secrets.has(keyName(d.id));
-      return out;
+      const saved = await secrets.names();
+      return Object.fromEntries(
+        s.settings.get().stream.destinations.map((d) => [d.id, saved.has(keyName(d.id))]),
+      );
     },
     'recording.chooseFolder': async () => {
       const folders = await openDialog({
@@ -179,11 +180,12 @@ export function createQueries({
       return { folder: folders.at(0) ?? null };
     },
     'recording.reveal': async ({ path }: QueryArgs<'recording.reveal'>) => {
-      if (path) {
+      const folder = recordingsFolder(s.settings.get().stream.recording.folder);
+      // Only a recording Lampstand made: the current one, or one in the recordings folder.
+      if (path && (path === stream.getStatus().recordingPath || isWithin(folder, path))) {
         shell.showItemInFolder(path);
         return { done: true };
       }
-      const folder = recordingsFolder(s.settings.get().stream.recording.folder);
       await mkdir(folder, { recursive: true });
       return { done: (await shell.openPath(folder)) === '' };
     },

@@ -171,7 +171,6 @@ export class StreamController {
   private slaves: string[] = [];
   private brokenEncoders = new Set<string>();
   private lastStderr: string[] = [];
-  private quitting = false;
   private machine: MachineInfo = {
     cores: cpus().length,
     memoryGB: totalmem() / 1024 ** 3,
@@ -285,14 +284,12 @@ export class StreamController {
       if (!this.fromStreamWindow(e)) return;
       this.onEncoderReport(r);
     });
-    // Finish the recording properly before the app quits.
-    app.on('before-quit', (e) => {
-      if (this.quitting || this.status.state === 'idle') return;
-      e.preventDefault();
-      this.quitting = true;
-      void this.stop({ stream: true, record: true }).finally(() => app.quit());
-    });
     void this.refreshEncoder();
+  }
+
+  /** The app is quitting: finish the recording (and end the stream) properly first. */
+  async shutdown(): Promise<void> {
+    if (this.status.state !== 'idle') await this.stop({ stream: true, record: true });
   }
 
   getStatus(): StreamStatus {
@@ -551,6 +548,7 @@ export class StreamController {
         if (this.win !== win) return;
         this.d.log.warn('stream window crashed; reopening');
         this.win = null;
+        if (!win.isDestroyed()) win.destroy();
         // Live: start again in a fresh window (the encoder must restart with it: the old one is
         // waiting for a page that's gone). Otherwise just reopen it if it's wanted.
         if (this.encoding) void this.restartWithNewWindow();

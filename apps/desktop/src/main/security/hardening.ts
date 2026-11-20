@@ -1,11 +1,4 @@
-import {
-  app,
-  session,
-  shell,
-  type BrowserWindow,
-  type WebContents,
-  type WebPreferences,
-} from 'electron';
+import { app, session, shell, type WebContents, type WebPreferences } from 'electron';
 import { join } from 'node:path';
 import { devCsp } from './csp';
 import { type Logger } from '../types';
@@ -91,5 +84,3 @@ export function installDevCsp(): void {
 export function installGlobalGuards(log: Logger): void {
   app.on('web-contents-created', (_e, wc) => lockDownWebContents(wc, log));
 }
-
-export type { BrowserWindow };

@@ -175,12 +175,11 @@ export class AppController {
       mixer: mixerFromSettings(settings.get()),
     });
     let savedMixer = live.get().mixer;
-    let mixerSave: ReturnType<typeof setTimeout> | null = null;
     live.subscribe((state) => {
       if (state.mixer === savedMixer) return;
       savedMixer = state.mixer;
-      if (mixerSave) clearTimeout(mixerSave);
-      mixerSave = setTimeout(() => settings.update({ mixer: savedMixer }), 1000);
+      const mixer = savedMixer;
+      this.saveLater('mixer', 1000, () => settings.update({ mixer }));
     });
     const mediaLibrary = new MediaLibrary(
       join(paths.library, 'media'),
@@ -201,7 +200,6 @@ export class AppController {
     };
 
     this.registerCommands();
-    let consoleSave: ReturnType<typeof setTimeout> | null = null;
     this.windows = new WindowManager({
       log: log.child('windows'),
       getSettings: () => settings.get(),
@@ -211,21 +209,18 @@ export class AppController {
       alternateThemes: () => this.outputThemes.alternate,
       onDisplaysChanged: () => this.windows.sendToControl(Channels.evDisplays),
       onNewDisplay: (label) => this.notice({ level: 'info', key: 'newDisplay', params: { label } }),
-      onLiveConsoleBounds: (b) => {
-        if (consoleSave) clearTimeout(consoleSave);
-        consoleSave = setTimeout(() => {
-          const layout = settings.get().layout;
+      onLiveConsoleBounds: (b) =>
+        this.saveLater('liveConsole', 800, () =>
           settings.update({
             layout: {
-              ...layout,
+              ...settings.get().layout,
               liveConsoleX: b.x,
               liveConsoleY: b.y,
               liveConsoleW: b.width,
               liveConsoleH: b.height,
             },
-          });
-        }, 800);
-      },
+          }),
+        ),
       onLiveConsoleClosed: () => this.windows.sendToControl(Channels.evLiveConsole, false),
     });
 
@@ -246,10 +241,7 @@ export class AppController {
     this.stream = new StreamController({
       ...pictures('stream'),
       secrets: this.secrets,
-      updateSettings: (patch) => {
-        settings.update(patch);
-        this.windows.sendToControl(Channels.evRepo, 'settings');
-      },
+      updateSettings: (patch) => settings.update(patch),
       onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
       notice: (n) => this.notice(n),
     });
@@ -259,7 +251,6 @@ export class AppController {
       onStatus: (status) => this.windows.sendToControl(Channels.evNdi, status),
     });
     this.ndi.settingsChanged();
-    app.on('will-quit', () => this.ndi.shutdown());
     this.osc = new OscServer({
       log: log.child('osc'),
       getSettings: () => settings.get(),
@@ -267,7 +258,6 @@ export class AppController {
       onStatus: (s) => this.windows.sendToControl(Channels.evOscStatus, s),
     });
     this.osc.settingsChanged();
-    app.on('will-quit', () => this.osc.close());
 
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
@@ -285,10 +275,7 @@ export class AppController {
       log.child('search'),
     );
     this.search.start();
-    this.search.setBibles(
-      bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })),
-      settings.get().defaultBibleVersion,
-    );
+    this.syncSearchBibles();
     await this.reindexSongs();
 
     registerIpc({
@@ -352,27 +339,21 @@ export class AppController {
     const outputsOf = (x: ReturnType<typeof settings.get>): string =>
       JSON.stringify([x.displays, x.windowMode, x.edgeBlend.enabled, x.edgeBlend.windows]);
     let outputKey = outputsOf(settings.get());
-    let maskKey = JSON.stringify([
-      settings.get().screenMasks,
-      settings.get().maskFor,
-      settings.get().audio.roomOutput,
-      settings.get().stageLayouts,
-      settings.get().stageLayoutId,
-      settings.get().keyFeed,
-      settings.get().screenAdjust,
-      settings.get().edgeBlend,
-    ]);
-    settings.onChange((next) => {
-      const masks = JSON.stringify([
-        next.screenMasks,
-        next.maskFor,
-        next.audio.roomOutput,
-        next.stageLayouts,
-        next.stageLayoutId,
-        next.keyFeed,
-        next.screenAdjust,
-        next.edgeBlend,
+    // What each output window is told about its screen (masks, stage, adjustments).
+    const outputInfoOf = (x: ReturnType<typeof settings.get>): string =>
+      JSON.stringify([
+        x.screenMasks,
+        x.maskFor,
+        x.audio.roomOutput,
+        x.stageLayouts,
+        x.stageLayoutId,
+        x.keyFeed,
+        x.screenAdjust,
+        x.edgeBlend,
       ]);
+    let maskKey = outputInfoOf(settings.get());
+    settings.onChange((next) => {
+      const masks = outputInfoOf(next);
       if (masks !== maskKey) {
         maskKey = masks;
         this.windows.refreshOutputInfo();
@@ -541,22 +522,23 @@ export class AppController {
             );
           }
           const kind = settings.get().stream.destinations.find((d) => d.id === destinationId)?.kind;
-          if (kind && !plausibleKey(kind, k))
+          if (kind && !plausibleKey(kind, k)) {
             this.log.warn('stream key refused', {
               kind,
               shape: pasteShape(key),
               cleanedLength: k.length,
             });
-          if (kind === 'youtube' && !plausibleKey(kind, k))
-            throw new AppError(
-              'invalid-key',
-              'That isn’t a YouTube stream key. In YouTube Studio › Go live › Stream, copy “Stream key” (like abcd-efgh-ijkl-mnop-qrst), not “Stream URL”.',
-            );
-          if (kind === 'facebook' && !plausibleKey(kind, k))
-            throw new AppError(
-              'invalid-key',
-              'That is too short to be a Facebook stream key. Copy “Stream key” from Facebook’s Live setup.',
-            );
+            if (kind === 'youtube')
+              throw new AppError(
+                'invalid-key',
+                'That isn’t a YouTube stream key. In YouTube Studio › Go live › Stream, copy “Stream key” (like abcd-efgh-ijkl-mnop-qrst), not “Stream URL”.',
+              );
+            if (kind === 'facebook')
+              throw new AppError(
+                'invalid-key',
+                'That is too short to be a Facebook stream key. Copy “Stream key” from Facebook’s Live setup.',
+              );
+          }
           await this.secrets.set(keyName(destinationId), k);
         }
         return { result: null };
@@ -698,10 +680,7 @@ export class AppController {
 
   private async reloadBibles(): Promise<void> {
     await this.s.bibles.refresh();
-    this.search.setBibles(
-      this.s.bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })),
-      this.s.settings.get().defaultBibleVersion,
-    );
+    this.syncSearchBibles();
     this.windows.sendToControl(Channels.evRepo, 'bibles');
   }
 
@@ -711,6 +690,14 @@ export class AppController {
     this.s.hymnals = hymnals;
     await this.reindexSongs();
     this.windows.sendToControl(Channels.evRepo, 'songs');
+  }
+
+  /** The installed Bibles, for the search worker to index. */
+  private syncSearchBibles(): void {
+    this.search.setBibles(
+      this.s.bibles.list().map((v) => ({ id: v.id, checksum: v.checksumSha256 })),
+      this.s.settings.get().defaultBibleVersion,
+    );
   }
 
   private reindexTimer: ReturnType<typeof setTimeout> | null = null;
@@ -752,17 +739,55 @@ export class AppController {
         setTimeout(() => void map[dir]?.reload(), 1000),
       );
     });
-    app.on('before-quit', () => void watcher.close());
+    this.closeWatcher = () => watcher.close();
   }
 
   private notice(n: Notice): void {
     if (this.started) this.windows.sendToControl(Channels.evNotice, n);
   }
 
+  /** A second launch brings the running app's control window forward. */
+  focusControl(): void {
+    const w = this.started ? this.windows.control : null;
+    if (!w || w.isDestroyed()) return;
+    if (w.isMinimized()) w.restore();
+    w.focus();
+  }
+
+  /** Settings saved a moment after the last change (the mixer, the Live console's place). */
+  private pendingSaves = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; run: () => void }
+  >();
+  private closeWatcher: (() => Promise<void>) | null = null;
+
+  private saveLater(key: string, ms: number, run: () => void): void {
+    const prev = this.pendingSaves.get(key);
+    if (prev) clearTimeout(prev.timer);
+    const timer = setTimeout(() => {
+      this.pendingSaves.delete(key);
+      run();
+    }, ms);
+    this.pendingSaves.set(key, { timer, run });
+  }
+
+  /**
+   * Quitting: finish a recording or stream properly, stop NDI and OSC, then save what's still
+   * waiting to be saved.
+   */
   async shutdown(): Promise<void> {
     if (!this.started) return;
     this.windows.setQuitting();
+    await this.stream.shutdown();
+    this.ndi.shutdown();
+    this.osc.close();
     this.search.stop();
+    await this.closeWatcher?.();
+    for (const { timer, run } of this.pendingSaves.values()) {
+      clearTimeout(timer);
+      run();
+    }
+    this.pendingSaves.clear();
     await this.s.settings.flush();
   }
 }

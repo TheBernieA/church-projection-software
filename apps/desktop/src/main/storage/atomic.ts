@@ -1,24 +1,47 @@
 import { mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { basename, dirname, join } from 'node:path';
 import type { z } from 'zod';
 import { type ReadResult } from '../types';
 
-/**
- * Atomic write (§6.2): write `file.tmp`, fsync, rename over the original. A crash never leaves
- * half-written JSON.
- */
-export async function writeFileAtomic(file: string, data: string | Uint8Array): Promise<void> {
+/** Writes still running, per file: the next write to a file waits for the one before. */
+const writing = new Map<string, Promise<void>>();
+
+async function writeNow(file: string, data: string | Uint8Array): Promise<void> {
   await mkdir(dirname(file), { recursive: true });
-  const tmp = `${file}.tmp`;
-  const fh = await open(tmp, 'w');
+  // Its own temp file, so a write can never mix with another one.
+  const tmp = `${file}.${randomUUID()}.tmp`;
   try {
-    await fh.writeFile(data);
-    await fh.sync();
-  } finally {
-    await fh.close();
+    const fh = await open(tmp, 'w');
+    try {
+      await fh.writeFile(data);
+      await fh.sync();
+    } finally {
+      await fh.close();
+    }
+    await rename(tmp, file);
+  } catch (e) {
+    await rm(tmp, { force: true });
+    throw e;
   }
-  await rename(tmp, file);
+}
+
+/**
+ * Atomic write (§6.2): write a temp file, fsync, rename over the original. A crash never leaves
+ * half-written JSON, and writes to the same file happen one after another, last one wins.
+ */
+export function writeFileAtomic(file: string, data: string | Uint8Array): Promise<void> {
+  const next = (writing.get(file) ?? Promise.resolve())
+    .catch(() => undefined)
+    .then(() => writeNow(file, data));
+  writing.set(file, next);
+  next
+    .finally(() => {
+      if (writing.get(file) === next) writing.delete(file);
+    })
+    .catch(() => undefined);
+  return next;
 }
 
 export async function writeJsonAtomic(file: string, value: unknown): Promise<void> {

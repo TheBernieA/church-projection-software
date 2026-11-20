@@ -105,18 +105,6 @@ export class BibleStore {
     return [...this.versions.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  has(id: string): boolean {
-    return this.versions.has(id);
-  }
-
-  get(id: string): BibleVersionInfo | undefined {
-    return this.versions.get(id);
-  }
-
-  dir(id: string): string {
-    return join(this.root, id);
-  }
-
   async verseCounts(versionId: string): Promise<Partial<Record<BookId, number[]>>> {
     const cached = this.counts.get(versionId);
     if (cached) return cached;

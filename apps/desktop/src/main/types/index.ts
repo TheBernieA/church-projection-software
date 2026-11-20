@@ -34,7 +34,6 @@ export interface AppPaths {
   settingsFile: string;
   bibles: string;
   hymnals: string;
-  models: string;
   cache: string;
   logs: string;
   backups: string;

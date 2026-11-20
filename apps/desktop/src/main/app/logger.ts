@@ -7,6 +7,7 @@ const SECRET_PATTERNS: [RegExp, string][] = [
   [/(rtmps?:\/\/[^\s"']+\/)[^\s"'/]+/gi, '$1[redacted]'], // stream keys at the end of RTMP URLs
   [/\b(key|token|secret|password|pin|streamkey)(["'\s:=]+)[^\s"',}]+/gi, '$1$2[redacted]'],
   [/\/\/[^/\s:@]+:[^/\s@]+@/g, '//[redacted]@'], // credentials in URLs
+  [/\b(streamid|passphrase)=[^\s&"']+/gi, '$1=[redacted]'], // SRT keys and passwords
 ];
 
 /** Redact secrets from any log line (§17.5). */
@@ -22,13 +23,15 @@ export function createLogger(dir: string, module = 'app'): Logger {
     () => undefined,
   );
 
+  /** The log file's size, kept as lines are added (one stat to begin with). */
+  let size: number | null = null;
   const rotate = async (): Promise<void> => {
-    try {
-      const s = await stat(file);
-      if (s.size < LOG_MAX_BYTES) return;
-    } catch {
-      return;
-    }
+    size ??= await stat(file).then(
+      (s) => s.size,
+      () => 0,
+    );
+    if (size < LOG_MAX_BYTES) return;
+    size = 0;
     await rm(join(dir, `lampstand.${LOG_MAX_FILES - 1}.log`), { force: true });
     for (let i = LOG_MAX_FILES - 2; i >= 1; i--)
       await rename(join(dir, `lampstand.${i}.log`), join(dir, `lampstand.${i + 1}.log`)).catch(
@@ -45,6 +48,9 @@ export function createLogger(dir: string, module = 'app'): Logger {
       chain = chain
         .then(rotate)
         .then(() => appendFile(file, line))
+        .then(() => {
+          size = (size ?? 0) + Buffer.byteLength(line);
+        })
         .catch(() => undefined);
     };
     return {

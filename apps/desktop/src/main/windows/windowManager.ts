@@ -1,4 +1,11 @@
-import { BrowserWindow, powerSaveBlocker, screen, type Display, type WebContents } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  powerSaveBlocker,
+  screen,
+  type Display,
+  type WebContents,
+} from 'electron';
 import type { BlendPart, LiveState, OutputRole, ScreenAdjust, ScreenMask } from '@lampstand/core';
 import {
   blendOrder,
@@ -67,6 +74,8 @@ export class WindowManager {
     });
     win.on('closed', () => {
       this.control = null;
+      // Offscreen picture windows (the stream, NDI feeds) would keep the app running headless.
+      app.quit();
     });
     void win.loadURL(rendererUrl('control'));
     return win;
@@ -242,7 +251,9 @@ export class WindowManager {
     win.webContents.on('render-process-gone', (_e, d) => respawn(d.reason));
     reloadOnFailedLoad(win, outputId, this.d.log);
     win.on('unresponsive', () => respawn('unresponsive'));
+    const contentsId = win.webContents.id;
     win.on('closed', () => {
+      this.kinds.delete(contentsId);
       if (this.outputs.get(outputId) === entry) {
         this.outputs.delete(outputId);
         this.updatePowerBlocker();
@@ -387,11 +398,6 @@ export class WindowManager {
     this.webViews.sync(targets, url);
   }
 
-  /** How many output windows are showing a web page right now. */
-  webViewCount(): number {
-    return this.webViews.count();
-  }
-
   /** To the control window, and the panel windows (Live console, multi-view) that are open. */
   sendToControl(channel: string, payload?: unknown): void {
     for (const w of [this.control, ...this.panels.values()])
@@ -461,11 +467,6 @@ export class WindowManager {
     this.panels.get(kind)?.close();
   }
 
-  panelOpen(kind: PanelKind): boolean {
-    const w = this.panels.get(kind);
-    return !!w && !w.isDestroyed();
-  }
-
   /**
    * The operator multi-view: every screen, the stream and each camera at once, in a window that
    * can go on its own monitor; `false` closes it.
@@ -495,14 +496,6 @@ export class WindowManager {
     );
   }
 
-  get liveConsoleOpen(): boolean {
-    return this.panelOpen('live');
-  }
-
-  outputIds(): string[] {
-    return [...this.outputs.keys()];
-  }
-
   /** Keep displays awake while outputs are active (§18). */
   private updatePowerBlocker(): void {
     const active = this.outputs.size > 0;
@@ -512,12 +505,6 @@ export class WindowManager {
       powerSaveBlocker.stop(this.blockerId);
       this.blockerId = null;
     }
-  }
-
-  destroyAll(): void {
-    this.quitting = true;
-    for (const o of this.outputs.values()) if (!o.win.isDestroyed()) o.win.destroy();
-    this.outputs.clear();
   }
 }
 

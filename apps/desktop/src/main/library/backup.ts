@@ -1,4 +1,5 @@
 import { createReadStream, createWriteStream } from 'node:fs';
+import { once } from 'node:events';
 import { mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
@@ -36,39 +37,50 @@ export async function zipLibrary(
   await mkdir(join(target, '..'), { recursive: true });
   const tmp = `${target}.tmp`;
   const out = createWriteStream(tmp);
-  await new Promise<void>((resolve, reject) => {
-    const zip = new Zip((err, chunk, final) => {
-      if (err) return reject(err);
-      out.write(chunk);
-      if (final) out.end(resolve);
-    });
-    void (async () => {
-      try {
-        for (const f of files) {
-          let s;
-          try {
-            s = await stat(f);
-          } catch {
-            continue;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      // A full disk or a lost folder fails the export (instead of crashing the app).
+      out.on('error', reject);
+      const zip = new Zip((err, chunk, final) => {
+        if (err) return reject(err);
+        out.write(chunk);
+        if (final) out.end(resolve);
+      });
+      void (async () => {
+        try {
+          for (const f of files) {
+            let s;
+            try {
+              s = await stat(f);
+            } catch {
+              continue;
+            }
+            if (!s.isFile()) continue;
+            const name = relative(library, f).split(sep).join('/');
+            const isJson = name.endsWith('.json');
+            const entry = isJson ? new ZipDeflate(name, { level: 6 }) : new ZipPassThrough(name);
+            zip.add(entry);
+            if (isJson) entry.push(new Uint8Array(await readFile(f)), true);
+            else {
+              for await (const chunk of createReadStream(f)) {
+                entry.push(new Uint8Array(chunk as Buffer), false);
+                // Read no faster than the disk writes, so big videos never pile up in memory.
+                if (out.writableNeedDrain) await once(out, 'drain');
+              }
+              entry.push(new Uint8Array(0), true);
+            }
           }
-          if (!s.isFile()) continue;
-          const name = relative(library, f).split(sep).join('/');
-          const isJson = name.endsWith('.json');
-          const entry = isJson ? new ZipDeflate(name, { level: 6 }) : new ZipPassThrough(name);
-          zip.add(entry);
-          if (isJson) entry.push(new Uint8Array(await readFile(f)), true);
-          else {
-            for await (const chunk of createReadStream(f))
-              entry.push(new Uint8Array(chunk as Buffer), false);
-            entry.push(new Uint8Array(0), true);
-          }
+          zip.end();
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error('zip failed'));
         }
-        zip.end();
-      } catch (e) {
-        reject(e instanceof Error ? e : new Error('zip failed'));
-      }
-    })();
-  });
+      })();
+    });
+  } catch (e) {
+    out.destroy();
+    await rm(tmp, { force: true });
+    throw e;
+  }
   await rename(tmp, target);
 }
 

@@ -7,10 +7,10 @@ const ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"'
 /** Decode the XML entities that appear in text runs. */
 function decode(s: string): string {
   return s.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (whole, e: string) => {
-    if (e.startsWith('#x') || e.startsWith('#X'))
-      return String.fromCodePoint(parseInt(e.slice(2), 16));
-    if (e.startsWith('#')) return String.fromCodePoint(Number(e.slice(1)));
-    return ENTITIES[e] ?? whole;
+    if (!e.startsWith('#')) return ENTITIES[e] ?? whole;
+    const code = /^#x/i.test(e) ? parseInt(e.slice(2), 16) : Number(e.slice(1));
+    // An out-of-range reference stays as written rather than failing the whole file.
+    return code <= 0x10ffff ? String.fromCodePoint(code) : whole;
   });
 }
 
@@ -30,7 +30,7 @@ function shapeText(shape: string): string {
   }
   return paragraphs
     .join('\n')
-    .replace(/\n{3 }/g, '\n\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 

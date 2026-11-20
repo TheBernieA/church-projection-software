@@ -123,7 +123,7 @@ export function plausibleKey(kind: DestinationKind, key: string): boolean {
 export const redactKeys = (line: string): string =>
   line
     .replace(/(rtmps?:\/\/[^\s'"|\]]*\/)[^\s'"|\]/]+/gi, '$1•••')
-    .replace(/(passphrase=)[^\s'"|\]&]+/gi, '$1•••');
+    .replace(/((?:passphrase|streamid)=)[^\s'"|\]&]+/gi, '$1•••');
 
 /**
  * Why a destination stopped, in ffmpeg's words: the tee's own reason ("Broken pipe",

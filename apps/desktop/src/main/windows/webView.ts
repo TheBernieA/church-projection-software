@@ -42,6 +42,7 @@ interface Shown {
   view: WebContentsView;
   url: string;
   fit: () => void;
+  closed: () => void;
 }
 
 /**
@@ -66,11 +67,6 @@ export class WebViews {
     for (const [win, s] of this.shown) if (!keep.has(win)) this.remove(win, s);
   }
 
-  /** How many windows are showing a page (diagnostics and tests). */
-  count(): number {
-    return this.shown.size;
-  }
-
   private show(t: WebTarget, url: string): void {
     let s = this.shown.get(t.win);
     if (!s) {
@@ -92,11 +88,12 @@ export class WebViews {
       };
       fit();
       t.win.on('resize', fit);
-      t.win.once('closed', () => {
+      const closed = (): void => {
         this.shown.delete(t.win);
         if (!wc.isDestroyed()) wc.close();
-      });
-      s = { view, url: '', fit };
+      };
+      t.win.once('closed', closed);
+      s = { view, url: '', fit, closed };
       this.shown.set(t.win, s);
     }
     if (s.url !== url) {
@@ -109,6 +106,7 @@ export class WebViews {
     this.shown.delete(win);
     if (!win.isDestroyed()) {
       win.removeListener('resize', s.fit);
+      win.removeListener('closed', s.closed);
       win.contentView.removeChildView(s.view);
     }
     if (!s.view.webContents.isDestroyed()) s.view.webContents.close();

@@ -13,7 +13,6 @@ export function resolvePaths(libraryOverride?: string): AppPaths {
     settingsFile: join(userData, 'settings.json'),
     bibles: join(userData, 'bibles'),
     hymnals: join(userData, 'hymnals'),
-    models: join(userData, 'models'),
     cache: join(userData, 'cache'),
     logs: join(userData, 'logs'),
     backups: join(userData, 'backups'),

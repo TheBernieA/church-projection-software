@@ -41,6 +41,6 @@ const api: ControlApi = {
   onStreamFrame: receiveGpuFrames(),
   streamWatch: (fps, ready) => ipcRenderer.send(Channels.streamWatch, { fps, ready }),
   platform: process.platform,
-} as ControlApi;
+};
 
 contextBridge.exposeInMainWorld('lampstand', api);

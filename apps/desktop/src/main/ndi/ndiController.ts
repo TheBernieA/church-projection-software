@@ -150,6 +150,11 @@ export class NdiController {
     });
     worker.on('error', (err) => {
       this.d.log.warn('ndi worker error', { err: String(err) });
+      // Let it go, so the next settings change can start a fresh one.
+      if (this.worker === worker) {
+        for (const id of [...this.feeds.keys()]) this.closeFeed(id);
+        this.stopWorker();
+      }
       this.setStatus({ error: 'loadFailed' });
     });
     this.worker = worker;

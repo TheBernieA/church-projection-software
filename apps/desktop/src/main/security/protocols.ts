@@ -37,7 +37,10 @@ export function handleAppProtocol(rendererRoot: string): void {
     if (!file) return new Response('Not found', { status: 404 });
     const res = await net.fetch(pathToFileURL(file).toString());
     const headers = new Headers(res.headers);
-    headers.set('Content-Type', MIME_TYPES[extname(file)] ?? 'application/octet-stream');
+    headers.set(
+      'Content-Type',
+      MIME_TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
+    );
     headers.set('Content-Security-Policy', PROD_CSP);
     headers.set('X-Content-Type-Options', 'nosniff');
     return new Response(res.body, { status: res.status, headers });
