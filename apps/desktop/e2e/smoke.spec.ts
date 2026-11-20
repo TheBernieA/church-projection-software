@@ -377,7 +377,6 @@ test('new song: name it, type on its slides, group them, add to service → outp
   // hovering one shows it large enough to read.
   const stepper = control.getByTestId('live-stepper');
   await expect(stepper).toContainText('2 / 2');
-  await expect(stepper.getByRole('button', { name: /^Next slide/ })).toBeDisabled();
   await stepper.getByRole('button', { name: /^Show / }).hover();
   await expect(control.getByTestId('live-stepper-zoom')).toContainText('Before: ');
   await control.waitForTimeout(300);
@@ -385,6 +384,15 @@ test('new song: name it, type on its slides, group them, add to service → outp
   await stepper.getByRole('button', { name: /^Previous slide/ }).click();
   await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
   await expect(stepper).toContainText('1 / 2');
+  // On the first slide, ◀ carries on into the item before it (across the section heading),
+  // landing on its last slide; ▶ comes back.
+  await stepper.getByRole('button', { name: /^Go to the previous item/ }).hover();
+  await expect(control.getByTestId('live-stepper-zoom')).toContainText('Previous item: ');
+  await stepper.getByRole('button', { name: /^Previous slide/ }).click();
+  await expect(out.locator('.ls-text').last()).toContainText('Nor height, nor depth');
+  await expect(stepper).toContainText('6 / 6');
+  await stepper.getByRole('button', { name: /^Next slide/ }).click();
+  await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
   await stepper.getByRole('button', { name: /^Show / }).click(); // the next one, small
   await expect(out.locator('.ls-text').last()).toContainText('Chorus test line');
 });

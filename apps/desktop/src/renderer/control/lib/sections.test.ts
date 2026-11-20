@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ServiceItem } from '@lampstand/core';
 import {
   insertInSection,
+  neighbourItem,
   intoSection,
   moveSectionBy,
   moveSectionTo,
@@ -99,5 +100,22 @@ describe('adding to a section', () => {
     expect(sectionHeaderAt(filled, 2)?.id).toBe('Worship');
     expect(sectionHeaderAt(filled, 3)?.id).toBe('Word');
     expect(sectionHeaderAt([song('x'), ...filled], 0)).toBeNull();
+  });
+});
+
+describe('neighbourItem', () => {
+  const it_ = (id: string, kind: ServiceItem['kind'] = 'presentation'): ServiceItem =>
+    ({ id, kind }) as ServiceItem;
+  const plan = [it_('h1', 'header'), it_('a'), it_('b'), it_('h2', 'header'), it_('c')];
+  it('steps to the item before or after, across section headings', () => {
+    expect(neighbourItem(plan, 'b', 1)?.id).toBe('c');
+    expect(neighbourItem(plan, 'c', -1)?.id).toBe('b');
+    expect(neighbourItem(plan, 'a', 1)?.id).toBe('b');
+  });
+  it('stops at either end, and for something not in the playlist', () => {
+    expect(neighbourItem(plan, 'a', -1)).toBeNull();
+    expect(neighbourItem(plan, 'c', 1)).toBeNull();
+    expect(neighbourItem(plan, 'adhoc-1', 1)).toBeNull();
+    expect(neighbourItem(undefined, 'a', 1)).toBeNull();
   });
 });

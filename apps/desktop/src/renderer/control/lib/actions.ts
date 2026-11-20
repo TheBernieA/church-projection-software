@@ -20,6 +20,7 @@ import { advanceOf, takesAdvance } from './advance';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
+import { neighbourItem } from './sections';
 import { addItemToService, attempt, itemIn, loadChapter, toast, useStore } from './store';
 import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
 import { openEditor } from './editing';
@@ -110,12 +111,30 @@ function mediaAutoplay(item: ServiceItem): boolean {
 
 /** Go live with the first slide of the item after `itemId` in the service (headers skipped). */
 async function goLiveNextItem(itemId: string): Promise<void> {
-  const items = get().service?.items ?? [];
-  const at = items.findIndex((i) => i.id === itemId);
-  const next = items.slice(at + 1).find((i) => i.kind !== 'header');
-  if (at < 0 || !next) return;
+  const next = neighbourItem(get().service?.items, itemId, 1);
+  if (!next) return;
   useStore.setState({ selectedItemId: next.id, adhoc: null });
   await goLiveSlide(next, 0);
+}
+
+/**
+ * The monitor's ◀ / ▶: the previous or next slide, and past either end of the item into the
+ * playlist item before or after it (its last slide, or its first). The keys stop at the
+ * item's end instead, so a song never runs into the next by accident.
+ */
+export async function stepAcross(delta: 1 | -1): Promise<void> {
+  const s = get();
+  const cursor = s.liveCursor;
+  const item = findItem(cursor?.itemId ?? null);
+  if (!cursor || !item) return step(delta);
+  const idx = cursor.index + delta;
+  if (idx >= 0 && idx < slidesFor(item).length) return goLiveSlide(item, idx);
+  const other = neighbourItem(s.service?.items, item.id, delta);
+  if (!other) return;
+  const slides = await ensureItemReady(other);
+  if (!slides.length) return;
+  useStore.setState({ selectedItemId: other.id, adhoc: null });
+  await goLiveSlide(other, delta > 0 ? 0 : slides.length - 1);
 }
 
 /** Put a slide into Preview (green). Nothing changes on screen. */

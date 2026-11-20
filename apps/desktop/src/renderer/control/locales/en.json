@@ -249,7 +249,11 @@
     "showSlide": "Show {{label}}",
     "position": "{{n}} / {{total}}",
     "upNext": "Next: {{label}}",
-    "before": "Before: {{label}}"
+    "before": "Before: {{label}}",
+    "upNextItem": "Next item: {{label}}",
+    "beforeItem": "Previous item: {{label}}",
+    "showNextItem": "Go to the next item: {{label}}",
+    "showPrevItem": "Go to the previous item: {{label}}"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -1078,7 +1082,7 @@
         },
         "step": {
           "q": "Step through the slides from the monitor",
-          "a": "1. Put a slide from a song, verse or slide set on the screens.\n2. Under the live monitor, click ▶ for the next slide or ◀ for the previous one (or press {{next}} / {{previous}}).\n3. The slides either side show small next to the buttons. Hover one to see it large enough to read; click it to put it straight on the screens.\nThe stream shows the same as the screens, so it changes with them. If the stream is showing something else, Send to stream on the monitor puts the screens on it."
+          "a": "1. Put a slide from a song, verse or slide set on the screens.\n2. Under the live monitor, click ▶ for the next slide or ◀ for the previous one.\n3. At the end of an item, ▶ carries on to the first slide of the next item in the playlist, into the next section too (section headings are skipped). At the start, ◀ goes back to the last slide of the item before.\n4. The slides either side show small next to the buttons (“Next item” when it’s the next item’s). Hover one to see it large enough to read; click it to put it straight on the screens.\nThe arrow keys ({{next}} / {{previous}}) stop at the end of an item, so a song never runs into the next by accident. The stream shows the same as the screens, so it changes with them; if it’s showing something else, Send to stream on the monitor puts the screens on it."
         }
       }
     },

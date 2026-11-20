@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { type Scene } from '@lampstand/core';
 import { Button, IconButton, Typography } from '@lampstand/ui';
-import { goLiveSlide, step } from '../../lib/actions';
+import { stepAcross } from '../../lib/actions';
+import { neighbourItem } from '../../lib/sections';
 import { useItemSlides } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { thumbScene } from '../../lib/slideThumbs';
@@ -41,9 +42,9 @@ function Neighbour({
 }
 
 /**
- * Under the live monitor: step to the previous or next slide of what's on screen (the stream
- * follows when it shows the screens), with the slides either side, small, to click or hover.
- * Only there while a slide from an item is live.
+ * Under the live monitor: step to the previous or next slide of what's on screen, and on into
+ * the playlist item before or after it (the stream follows when it shows the screens), with the
+ * slides either side, small, to click or hover. Only there while a slide from an item is live.
  */
 export function LiveStepper() {
   const { t } = useTranslation();
@@ -52,15 +53,28 @@ export function LiveStepper() {
   useStore((s) => s.settings?.shortcuts); // the key hints follow a remapped shortcut
   const { slides } = useItemSlides(item);
   const index = cursor && item && cursor.itemId === item.id ? cursor.index : -1;
-  const prev = index > 0 ? slides[index - 1] : undefined;
-  const next = index >= 0 ? slides[index + 1] : undefined;
+  // Past either end of the item: the playlist item before or after it (its last slide, or its
+  // first), so ◀ / ▶ carry on through the service, across sections.
+  const atStart = index === 0;
+  const atEnd = index >= 0 && index === slides.length - 1;
+  const prevItem = useStore((s) =>
+    atStart ? neighbourItem(s.service?.items, item?.id, -1) : null,
+  );
+  const nextItem = useStore((s) => (atEnd ? neighbourItem(s.service?.items, item?.id, 1) : null));
+  const prevItemSlides = useItemSlides(prevItem).slides;
+  const nextItemSlides = useItemSlides(nextItem).slides;
+  const prev = index > 0 ? slides[index - 1] : prevItemSlides.at(-1);
+  const next = index >= 0 && !atEnd ? slides[index + 1] : nextItemSlides[0];
+  /** Whether a neighbour is in another item (said so on its label). */
+  const prevOther = atStart && !!prev;
+  const nextOther = atEnd && !!next;
   const prevScene = useMemo(() => (prev ? thumbScene(prev) : null), [prev]);
   const nextScene = useMemo(() => (next ? thumbScene(next) : null), [next]);
   /** Which neighbour is shown large (hovered or focused). */
   const [zoom, setZoom] = useState<'previous' | 'next' | null>(null);
   const zoomed = zoom === 'previous' ? prev : zoom === 'next' ? next : undefined;
   const zoomScene = zoom === 'previous' ? prevScene : zoom === 'next' ? nextScene : null;
-  if (!item || index < 0 || slides.length < 2) return null;
+  if (!item || index < 0 || (slides.length < 2 && !prev && !next)) return null;
   const keys = effectiveShortcuts();
   const prevLabel = `${t('monitor.prevSlide')} (${displayCombo(keys.previous)})`;
   const nextLabel = `${t('monitor.nextSlideStep')} (${displayCombo(keys.next)})`;
@@ -86,7 +100,16 @@ export function LiveStepper() {
             truncate
             className="block px-2 py-1"
           >
-            {t(zoom === 'next' ? 'monitor.upNext' : 'monitor.before', { label: zoomed.label })}
+            {t(
+              zoom === 'next'
+                ? nextOther
+                  ? 'monitor.upNextItem'
+                  : 'monitor.upNext'
+                : prevOther
+                  ? 'monitor.beforeItem'
+                  : 'monitor.before',
+              { label: zoomed.label },
+            )}
           </Typography>
         </div>
       )}
@@ -95,14 +118,16 @@ export function LiveStepper() {
         aria-label={prevLabel}
         title={prevLabel}
         disabled={!prev}
-        onClick={() => void step(-1)}
+        onClick={() => void stepAcross(-1)}
       >
         <ChevronLeft size={16} />
       </IconButton>
       <Neighbour
         scene={prevScene}
-        label={t('monitor.showSlide', { label: prev?.label ?? '' })}
-        onShow={() => void goLiveSlide(item, index - 1)}
+        label={t(prevOther ? 'monitor.showPrevItem' : 'monitor.showSlide', {
+          label: prev?.label ?? '',
+        })}
+        onShow={() => void stepAcross(-1)}
         onZoom={(on) => setZoom(on ? 'previous' : null)}
       />
       <Typography
@@ -116,8 +141,10 @@ export function LiveStepper() {
       </Typography>
       <Neighbour
         scene={nextScene}
-        label={t('monitor.showSlide', { label: next?.label ?? '' })}
-        onShow={() => void goLiveSlide(item, index + 1)}
+        label={t(nextOther ? 'monitor.showNextItem' : 'monitor.showSlide', {
+          label: next?.label ?? '',
+        })}
+        onShow={() => void stepAcross(1)}
         onZoom={(on) => setZoom(on ? 'next' : null)}
       />
       <IconButton
@@ -125,7 +152,7 @@ export function LiveStepper() {
         aria-label={nextLabel}
         title={nextLabel}
         disabled={!next}
-        onClick={() => void step(1)}
+        onClick={() => void stepAcross(1)}
       >
         <ChevronRight size={16} />
       </IconButton>

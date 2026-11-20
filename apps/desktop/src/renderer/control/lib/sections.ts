@@ -132,3 +132,19 @@ export function sectionHeaderAt(
   }
   return null;
 }
+
+/**
+ * The playlist item before (-1) or after (1) `itemId`, across sections (their headings are
+ * skipped). Null at either end, or when it isn't in the playlist (a library pick).
+ */
+export function neighbourItem(
+  items: readonly ServiceItem[] | undefined,
+  itemId: string | null | undefined,
+  dir: 1 | -1,
+): ServiceItem | null {
+  const list = items ?? [];
+  const at = list.findIndex((i) => i.id === itemId);
+  if (at < 0) return null;
+  const rest = dir > 0 ? list.slice(at + 1) : list.slice(0, at).reverse();
+  return rest.find((i) => !isHeader(i)) ?? null;
+}
