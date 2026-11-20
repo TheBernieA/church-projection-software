@@ -1,42 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { newId, nowIso, SERVICE_SCHEMA_VERSION, type ServicePlan } from '@lampstand/core';
-import { Button } from '@lampstand/ui';
-import { cmd, q } from '../lib/api';
-import {
-  attempt,
-  closeDialog,
-  editService,
-  flushServiceSave,
-  openService,
-  toast,
-  useStore,
-} from '../lib/store';
-import i18n from '../i18n';
+import { SoonList } from './Soon';
+import { Button, Typography } from '@lampstand/ui';
+import { closeDialog, editService, openService, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-
-async function create(from?: ServicePlan, asTemplate = false): Promise<void> {
-  await flushServiceSave();
-  const now = nowIso();
-  const plan: ServicePlan = {
-    id: newId(),
-    schemaVersion: SERVICE_SCHEMA_VERSION,
-    createdAt: now,
-    updatedAt: now,
-    name: from
-      ? asTemplate
-        ? `${from.name} (template)`
-        : from.name.replace(/ \(template\)$/, '')
-      : 'New service',
-    date: now.slice(0, 10),
-    isTemplate: asTemplate,
-    items: from ? from.items.map((i) => ({ ...i, id: newId() })) : [],
-  };
-  await attempt(async () => {
-    await cmd('service.save', { entity: plan });
-    if (!asTemplate) await openService(plan.id);
-    else toast(i18n.t('service.templateSaved'));
-  });
-}
+import { createService, serviceFromTemplate } from '../lib/services';
 
 /** Open/create services and templates ("Sunday morning"). */
 export function ServicesDialog() {
@@ -53,9 +20,9 @@ export function ServicesDialog() {
     <Dialog name="services" title={t('top.services')}>
       {current && (
         <div className="mb-5">
-          <label className="label" htmlFor="svc-name">
+          <Typography as="label" variant="field" htmlFor="svc-name">
             {t('service.rename')}
-          </label>
+          </Typography>
           <input
             id="svc-name"
             className="field"
@@ -65,13 +32,17 @@ export function ServicesDialog() {
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
           />
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => void create().then(close)}>
+            <Button size="sm" onClick={() => void createService().then(close)}>
               + {t('service.new')}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void create(current).then(close)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void createService(current).then(close)}
+            >
               {t('service.newFromTemplate')}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => void create(current, true)}>
+            <Button size="sm" variant="ghost" onClick={() => void createService(current, true)}>
               {t('service.saveAsTemplate')}
             </Button>
           </div>
@@ -82,31 +53,29 @@ export function ServicesDialog() {
         if (!list.length) return null;
         return (
           <section key={group} className="mb-4">
-            <h3 className="label">{t(`service.${group}`)}</h3>
+            <Typography as="h3" variant="field">
+              {t(`service.${group}`)}
+            </Typography>
             <ul>
               {list.map((s) => (
                 <li
                   key={s.id}
                   className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-[var(--surface-2)]"
                 >
-                  <span
-                    className={`flex-1 truncate ${s.id === current?.id ? 'font-semibold text-[var(--accent)]' : ''}`}
+                  <Typography
+                    truncate
+                    className={`flex-1 ${s.id === current?.id ? 'font-semibold text-[var(--accent)]' : ''}`}
                   >
                     {s.name}
-                  </span>
-                  <span className="text-[11px] text-[var(--text-3)]">
+                  </Typography>
+                  <Typography size={11} tone="muted">
                     {s.itemCount} · {s.updatedAt.slice(0, 10)}
-                  </span>
+                  </Typography>
                   {group === 'templates' ? (
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() =>
-                        void q('services.get', { id: s.id }).then(async (plan) => {
-                          if (plan) await create(plan);
-                          close();
-                        })
-                      }
+                      onClick={() => void serviceFromTemplate(s.id).then(close)}
                     >
                       {t('service.new')}
                     </Button>
@@ -126,6 +95,18 @@ export function ServicesDialog() {
           </section>
         );
       })}
+      <details className="mt-5 overflow-hidden rounded-[var(--radius-card)] bg-[var(--surface-2)] shadow-[var(--shadow-1)]">
+        <Typography
+          as="summary"
+          size={12}
+          tone="secondary"
+          weight="semibold"
+          className="cursor-pointer px-4 py-2.5"
+        >
+          {t('service.syncSoon')}
+        </Typography>
+        <SoonList ids={['planning-center', 'calendar', 'cloud']} />
+      </details>
     </Dialog>
   );
 }

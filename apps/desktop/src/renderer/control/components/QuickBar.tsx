@@ -9,6 +9,7 @@ import { clearLayer, openAdhoc, toggleMask } from '../lib/actions';
 import { q } from '../lib/api';
 import { addItemToService, closeDialog, openDialog, useStore } from '../lib/store';
 import { OVERLAY_CLASS } from './Dialog';
+import { Typography, typographyClass } from '@lampstand/ui';
 
 interface Row {
   id: string;
@@ -34,6 +35,7 @@ function QuickBarBody() {
   const open = true;
   const songs = useStore((s) => s.songs);
   const versionId = useStore((s) => s.settings?.defaultBibleVersion ?? 'kjv');
+  const bookNames = useStore((s) => s.bookNames);
   const [text, setText] = useState('');
   const [rawHits, setHits] = useState<SearchHit[]>([]);
   const [active, setActive] = useState(0);
@@ -44,13 +46,14 @@ function QuickBarBody() {
     if (s.length < 3) return;
     const id = ++seq.current;
     const timer = setTimeout(() => {
-      void q('search.query', { text: s, limit: 20 }).then(
+      // Verses from the default version only (one hit per verse, not one per installed Bible).
+      void q('search.query', { text: s, limit: 20, versionId }).then(
         (r) => id === seq.current && setHits(r),
         () => undefined,
       );
     }, 80);
     return () => clearTimeout(timer);
-  }, [text]);
+  }, [text, versionId]);
 
   const rows = useMemo<Row[]>(() => {
     const s = text.trim();
@@ -68,7 +71,7 @@ function QuickBarBody() {
       out.push({
         id: `ref-${out.length}`,
         group: 'references',
-        title: formatPassages(c.passages),
+        title: formatPassages(c.passages, { names: bookNames[versionId] }),
         subtitle: versionId.toUpperCase(),
         item: { id: newId(), kind: 'scripture', passage, versionIds: [versionId] },
       });
@@ -149,12 +152,12 @@ function QuickBarBody() {
         id: 'c-song',
         group: 'commands',
         title: t('library.newSong'),
-        run: () => openDialog('song', { editingSongId: null }),
+        run: () => openDialog('newSong'),
       },
     ];
     out.push(...cmds.filter((c) => c.title.toLowerCase().includes(s.toLowerCase())));
     return out;
-  }, [text, rawHits, songs, versionId, t]);
+  }, [text, rawHits, songs, versionId, bookNames, t]);
 
   const choose = (row: Row | undefined, mode: 'preview' | 'live' | 'add'): void => {
     if (!row) return;
@@ -179,7 +182,7 @@ function QuickBarBody() {
           aria-describedby={undefined}
           className="fixed left-1/2 top-[12vh] z-50 w-[min(720px,92vw)] -translate-x-1/2 overflow-hidden rounded-[16px] bg-[var(--surface-1)] shadow-[var(--shadow-3)]"
         >
-          <RD.Title className="sr-only">Quick bar</RD.Title>
+          <RD.Title className="sr-only">{t('quick.title')}</RD.Title>
           <Search
             size={20}
             aria-hidden
@@ -187,12 +190,14 @@ function QuickBarBody() {
           />
           <input
             autoFocus
-            className="h-16 w-full bg-transparent pl-12 pr-5 text-[18px] outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)]"
+            className={`h-16 w-full bg-transparent pl-12 pr-5 outline-none !shadow-[0_1px_0_var(--hairline)] placeholder:text-[var(--text-3)] ${typographyClass({ size: 18 })}`}
             placeholder={t('quick.placeholder')}
             value={text}
             onChange={(e) => {
               setText(e.target.value);
               setActive(0);
+              // The last search's results never stand in for this one's (Enter can't pick them).
+              setHits([]);
             }}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {
@@ -217,7 +222,9 @@ function QuickBarBody() {
               if (!inGroup.length) return null;
               return (
                 <div key={g}>
-                  <div className="section-label px-3 pb-1.5 pt-3">{t(`quick.${g}`)}</div>
+                  <Typography as="div" variant="overline" className="px-3 pb-1.5 pt-3">
+                    {t(`quick.${g}`)}
+                  </Typography>
                   {inGroup.map((r) => {
                     index += 1;
                     const i = index;
@@ -231,11 +238,13 @@ function QuickBarBody() {
                         className={`flex cursor-pointer items-center gap-3 rounded-[10px] px-3 py-2 ${i === active ? 'bg-[var(--surface-3)] shadow-[inset_2px_0_0_var(--accent)]' : ''}`}
                       >
                         <RowIcon group={r.group} />
-                        <span className="shrink-0 text-[14px] font-medium">{r.title}</span>
+                        <Typography size={14} weight="medium" className="shrink-0">
+                          {r.title}
+                        </Typography>
                         {r.subtitle && (
-                          <span className="truncate text-[13px] text-[var(--text-3)]">
+                          <Typography size={13} tone="muted" truncate>
                             {r.subtitle}
-                          </span>
+                          </Typography>
                         )}
                       </div>
                     );
@@ -244,9 +253,13 @@ function QuickBarBody() {
               );
             })}
           </div>
-          <div className="bg-[var(--surface-0)]/40 px-5 py-2.5 text-[12px] text-[var(--text-3)] shadow-[0_-1px_0_var(--hairline)]">
+          <Typography
+            as="div"
+            variant="caption"
+            className="bg-[var(--surface-0)]/40 px-5 py-2.5 shadow-[0_-1px_0_var(--hairline)]"
+          >
             {t('quick.hint')}
-          </div>
+          </Typography>
         </RD.Content>
       </RD.Portal>
     </RD.Root>
@@ -257,11 +270,12 @@ const ROW_ICONS = { references: BookOpen, songs: Music, verses: TextQuote, comma
 function RowIcon({ group }: { group: Row['group'] }) {
   const Icon = ROW_ICONS[group];
   return (
-    <span
+    <Typography
+      tone="secondary"
       aria-hidden
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-2)] text-[var(--text-2)]"
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[var(--surface-2)]"
     >
       <Icon size={15} />
-    </span>
+    </Typography>
   );
 }

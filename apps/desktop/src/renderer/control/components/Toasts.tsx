@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { CircleAlert, Info, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../lib/api';
+import { type Notice } from '@lampstand/ipc-contract';
+import { api, q } from '../lib/api';
 import { toast, useStore } from '../lib/store';
+import { Typography } from '@lampstand/ui';
 
 const ICON = { info: Info, warning: TriangleAlert, error: CircleAlert } as const;
 const TONE = {
@@ -11,27 +13,38 @@ const TONE = {
   error: 'var(--tally-program)',
 } as const;
 
-/** Non-intrusive notices (bottom-left, never over the monitors). */
+/** Non-intrusive notices: compact, bottom-left (never over the monitors), the latest three. */
 export function Toasts() {
   const { t } = useTranslation();
   const toasts = useStore((s) => s.toasts);
-  useEffect(() => api.onNotice((n) => toast(t(`notice.${n.key}`, n.params ?? {}), n.level)), [t]);
+  useEffect(() => {
+    const show = (n: Notice): void => toast(t(`notice.${n.key}`, n.params ?? {}), n.level);
+    const off = api.onNotice(show);
+    // Anything found while starting up (before this window could listen), e.g. a damaged file.
+    void q('notices.missed').then(
+      (missed) => missed.forEach(show),
+      () => undefined,
+    );
+    return off;
+  }, [t]);
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed bottom-5 left-20 z-50 flex w-[380px] flex-col gap-2"
+      className="pointer-events-none fixed bottom-9 left-3 z-50 flex w-[340px] flex-col gap-1.5"
     >
-      {toasts.map((x) => {
+      {toasts.slice(-3).map((x) => {
         const Icon = ICON[x.level];
         return (
-          <div
+          <Typography
+            as="div"
+            variant="body"
             key={x.id}
             role={x.level === 'error' ? 'alert' : 'status'}
-            className="flex items-start gap-3 rounded-[12px] bg-[var(--surface-3)] px-4 py-3 text-[13px] shadow-[var(--shadow-3)]"
+            className="flex items-start gap-2.5 rounded-[10px] bg-[var(--surface-3)] px-3 py-2.5 shadow-[var(--shadow-3),var(--highlight-top)] animate-[ls-toast_200ms_var(--ease-out)]"
           >
-            <Icon size={17} className="mt-px shrink-0" style={{ color: TONE[x.level] }} />
-            <span className="leading-snug">{x.text}</span>
-          </div>
+            <Icon size={15} className="mt-px shrink-0" style={{ color: TONE[x.level] }} />
+            <Typography leading="snug">{x.text}</Typography>
+          </Typography>
         );
       })}
     </div>

@@ -2,6 +2,22 @@
 @import '@lampstand/ui/tokens.css';
 @source '../../../../../packages/ui/src';
 
+/* UI text sizes. `inline` so each use reads --text-scale where it is used: Settings ›
+   Text size scales the words without zooming icons, rows or panes. */
+@theme inline {
+  --text-ui-10: calc(10px * var(--text-scale));
+  --text-ui-11: calc(11px * var(--text-scale));
+  --text-ui-12: calc(12px * var(--text-scale));
+  --text-ui-13: calc(13px * var(--text-scale));
+  --text-ui-14: calc(14px * var(--text-scale));
+  --text-ui-15: calc(15px * var(--text-scale));
+  --text-ui-16: calc(16px * var(--text-scale));
+  --text-ui-18: calc(18px * var(--text-scale));
+  --text-ui-20: calc(20px * var(--text-scale));
+  --text-ui-26: calc(26px * var(--text-scale));
+  --text-ui-28: calc(28px * var(--text-scale));
+}
+
 html,
 body,
 #root {
@@ -11,8 +27,8 @@ body,
 body {
   background: var(--surface-0);
   color: var(--text-1);
-  font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
-  font-size: 13px;
+  font-family: var(--font-ui);
+  font-size: calc(13px * var(--text-scale));
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -56,6 +72,24 @@ select:disabled {
   cursor: grabbing;
 }
 
+/* Scrolls, but without a visible bar (tab rows that only overflow on narrow windows). */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Placeholder while a thumbnail waits to scroll into view. */
+.ls-skeleton {
+  background: linear-gradient(
+      90deg,
+      var(--surface-2) 25%,
+      var(--surface-3) 50%,
+      var(--surface-2) 75%
+    )
+    0 0 / 200% 100%;
+  animation: ls-shimmer 1.4s linear infinite;
+}
 .tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -89,7 +123,7 @@ select:disabled {
   border: 0;
   box-shadow: inset 0 0 0 1px var(--hairline-strong);
   padding: 0 12px;
-  font-size: 13px;
+  font-size: calc(13px * var(--text-scale));
   transition: box-shadow 120ms;
 }
 .field::placeholder {
@@ -113,19 +147,10 @@ textarea.field {
   line-height: 1.55;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
 }
-.label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-2);
-  margin-bottom: 6px;
-  display: block;
-}
-.section-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
+/* A main window pane: flush, edge to edge; the splitters between panes are the dividers. */
+.pane {
+  overflow: hidden;
+  background: var(--surface-1);
 }
 .panel {
   background: var(--surface-1);
@@ -138,6 +163,35 @@ input[type='checkbox'] {
   height: 15px;
 }
 
+@keyframes ls-fade {
+  from {
+    opacity: 0;
+  }
+}
+/*
+ * Dialog entrance. Tailwind centres dialogs with the `translate` property, which composes with
+ * `transform`, so this must not repeat the -50% offset (that slid dialogs in from the left).
+ */
+@keyframes ls-dialog {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+@keyframes ls-toast {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes ls-shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
 @keyframes ls-pop {
   from {
     opacity: 0;
@@ -147,4 +201,90 @@ input[type='checkbox'] {
     opacity: 1;
     transform: none;
   }
+}
+
+/* The one slider look (see Slider in @lampstand/ui): a thin rounded track filled up to --pct,
+   and a crisp white thumb. Hover brightens the track and grows the thumb; dragging or keyboard
+   focus adds a soft halo instead of a box outline. */
+.ls-range {
+  --pct: 0%;
+  --fill: var(--text-1);
+  --rail: color-mix(in srgb, var(--text-1) 14%, transparent);
+  --halo: color-mix(in srgb, var(--fill) 22%, transparent);
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.ls-range:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.ls-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--fill) 0 var(--pct), var(--rail) var(--pct) 100%);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+.ls-range:hover:not(:disabled) {
+  --rail: color-mix(in srgb, var(--text-1) 22%, transparent);
+}
+.ls-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.ls-range:hover:not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.ls-range:active:not(:disabled)::-webkit-slider-thumb,
+.ls-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 5px var(--halo);
+}
+.ls-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.45),
+    0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+/* Any slider: never the browser's rectangular focus box. */
+input[type='range']:focus {
+  outline: none;
+}
+
+/* A setting found by Settings search: a brief accent wash so the eye lands on it. */
+@keyframes ls-flash {
+  0%,
+  30% {
+    background-color: var(--accent-soft);
+  }
+}
+.ls-flash {
+  animation: ls-flash 1600ms var(--ease-out);
+}
+/* Behind a transparent slide thumbnail: what the "no background here" parts look like. */
+.ls-backdrop-checker {
+  background: repeating-conic-gradient(#3b3d43 0% 25%, #2b2d32 0% 50%) 0 0 / 14px 14px;
+}
+.ls-backdrop-black {
+  background: #000;
+}
+.ls-backdrop-grey {
+  background: #44464c;
 }

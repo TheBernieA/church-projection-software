@@ -1,21 +1,26 @@
 import { ipcMain, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron';
-import type { CommandBus, Result } from '@lampstand/core';
-import { toErrorShape } from '@lampstand/core';
+import { z } from 'zod';
+
+import type { CommandBus, OscArg, Result } from '@lampstand/core';
+import { OscArgSchema, toErrorShape } from '@lampstand/core';
 import {
   Channels,
   CommandEnvelopeSchema,
   QUERY_NAMES,
+  MeterReportSchema,
   QuerySchemas,
-  type QueryName,
-  type QueryResults,
+  type MeterReport,
 } from '@lampstand/ipc-contract';
-import type { Logger } from '../app/logger';
-import type { WindowKind } from '../security/hardening';
-import { APP_SCHEME } from '../security/protocols';
+import { type Logger, type QueryHandlers, type WindowKind } from '../types';
+import { APP_SCHEME } from '../constants';
+import { errorMessage } from '../utils';
+import type { OscStatus } from '@lampstand/ipc-contract';
 
-export type QueryHandlers = {
-  [K in QueryName]: (args: never) => Promise<QueryResults[K]> | QueryResults[K];
-};
+const StreamWatchSchema = z.object({ fps: z.number().min(0).max(60), ready: z.boolean() });
+const OscSendSchema = z.object({
+  address: z.string().min(1).max(200).startsWith('/'),
+  args: z.array(OscArgSchema).max(8),
+});
 
 /** Commands that any control-window source may issue are everything registered on the bus. */
 interface RouterDeps {
@@ -23,6 +28,13 @@ interface RouterDeps {
   queries: QueryHandlers;
   kindOf: (e: IpcMainInvokeEvent | IpcMainEvent) => WindowKind | null;
   onOutputReady: (e: IpcMainEvent) => void;
+  /** Mix levels from an output or the stream window, for the control window's meters. */
+  onMeters: (m: MeterReport) => void;
+  /** A control window watches the stream picture (Live console). */
+  onStreamWatch: (sender: number, fps: number, ready: boolean) => void;
+  /** A control window sends an OSC message to the desk. */
+  onOscSend: (address: string, args: OscArg[]) => void;
+  oscStatus: () => OscStatus;
   log: Logger;
 }
 
@@ -74,7 +86,7 @@ export function registerIpc(d: RouterDeps): void {
         const handler = d.queries[name] as (a: unknown) => Promise<unknown>;
         return { ok: true, value: await handler(parsed.data) };
       } catch (err) {
-        d.log.warn('query failed', { name, err: err instanceof Error ? err.message : 'unknown' });
+        d.log.warn('query failed', { name, err: errorMessage(err) });
         return { ok: false, error: toErrorShape(err) };
       }
     });
@@ -84,5 +96,26 @@ export function registerIpc(d: RouterDeps): void {
     if (!trusted(e)) return;
     const kind = d.kindOf(e);
     if (kind === 'output' || kind === 'stage') d.onOutputReady(e);
+  });
+
+  ipcMain.on(Channels.streamWatch, (e, raw: unknown) => {
+    if (!trusted(e) || d.kindOf(e) !== 'control') return;
+    const w = StreamWatchSchema.safeParse(raw);
+    if (w.success) d.onStreamWatch(e.sender.id, w.data.fps, w.data.ready);
+  });
+
+  ipcMain.on(Channels.oscSend, (e, raw: unknown) => {
+    if (!trusted(e) || d.kindOf(e) !== 'control') return;
+    const m = OscSendSchema.safeParse(raw);
+    if (m.success) d.onOscSend(m.data.address, m.data.args);
+  });
+  ipcMain.handle(Channels.oscStatus, (e) => (isControl(e) ? d.oscStatus() : null));
+
+  ipcMain.on(Channels.meters, (e, raw: unknown) => {
+    if (!trusted(e)) return;
+    const kind = d.kindOf(e);
+    if (kind !== 'output' && kind !== 'stream') return;
+    const m = MeterReportSchema.safeParse(raw);
+    if (m.success) d.onMeters(m.data);
   });
 }

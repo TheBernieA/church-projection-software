@@ -1,73 +1,150 @@
-import { useEffect } from 'react';
+import { installSurfaces } from './lib/surfaces';
+import { installMediaTransition } from './lib/transitions';
+import { useSwitcherSources } from './lib/switcher';
+import { useEditorExpanded } from './lib/editing';
+import { migrateLocalCameras } from './lib/inputs';
+import { saveSettings } from './lib/actions';
+import { MixerPanel } from './components/mixer/MixerPanel';
+import { LiveConsole } from './components/live/LiveConsole';
+import { Suspense, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { lazyNamed, preloadLazyViews } from './lib/lazy';
 import { installShortcuts } from './lib/shortcuts';
+import { installNumberWheelGuard } from './lib/utils';
+import { useUiTheme } from './lib/hooks';
 import { useStore } from './lib/store';
-import { LibraryPanel } from './components/LibraryPanel';
-import { MessagesDialog } from './components/MessagesDialog';
-import { Monitors } from './components/Monitors';
-import { OutputsDialog } from './components/OutputsDialog';
-import { PerfHud } from './components/PerfHud';
+import { CenterPane } from './components/modes/CenterPane';
 import { QuickBar } from './components/QuickBar';
-import { Rail } from './components/Rail';
-import { ServicePanel } from './components/ServicePanel';
-import { ServicesDialog } from './components/ServicesDialog';
-import { SettingsDialog } from './components/SettingsDialog';
-import { ShortcutsDialog } from './components/ShortcutsDialog';
-import { SlideGrid } from './components/SlideGrid';
-import { SongEditor } from './components/SongEditor';
-import { SlideInspector } from './components/SlideInspector';
-import { ThemeEditor } from './components/ThemeEditor';
+import { Bin } from './components/shell/Bin';
+import { LeftSidebar } from './components/shell/LeftSidebar';
+import { RightColumn } from './components/shell/RightColumn';
+import { Splitter, usePaneSize } from './components/shell/Splitter';
+import { TextBar } from './components/shell/TextBar';
+import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
-import { TopBar } from './components/TopBar';
+import { installMediaWatch } from './lib/actions';
+import { installAudioWatch, installCueMix, installLocalAudio } from './lib/audio';
+import { ConfirmHost } from './components/ConfirmHost';
+
+// Opened on demand: loaded the first time they're needed, not at startup.
+const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
+const PerfHud = lazyNamed(() => import('./components/PerfHud'), 'PerfHud');
+const ServicesDialog = lazyNamed(() => import('./components/ServicesDialog'), 'ServicesDialog');
+const PlaybackDialog = lazyNamed(() => import('./components/PlaybackDialog'), 'PlaybackDialog');
+const SettingsDialog = lazyNamed(() => import('./components/SettingsDialog'), 'SettingsDialog');
+const ShortcutsDialog = lazyNamed(() => import('./components/ShortcutsDialog'), 'ShortcutsDialog');
+const NewSongDialog = lazyNamed(() => import('./components/song/NewSongDialog'), 'NewSongDialog');
+const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEditor');
 
 /**
- * Control window — "Broadcast Pro" layout (§15.3, refined):
- * icon rail · optional library drawer · service plan · [monitors + transport / slides].
+ * Control window, "Show workspace" layout:
+ *   toolbar
+ *   library + service plan │ workspace (Show/Edit/Reflow/Bible/Themes/Stage) │ live output,
+ *                          │ bin (media, props, messages, timers…)          │ clear stack, masks
+ * Pane sizes are draggable and remembered.
  */
 export function App() {
-  const uiTheme = useStore((s) => s.settings?.uiTheme ?? 'dark');
-  const uiScale = useStore((s) => s.settings?.uiScale ?? 1);
-  const libraryOpen = useStore((s) => s.libraryTab !== null);
+  const { t } = useTranslation();
+  const binOpen = useStore((s) => s.binOpen);
+  const textBarOpen = useStore((s) => s.textBarOpen);
+  const dialog = useStore((s) => s.dialog);
+  const left = usePaneSize('leftWidth', 290, 220, 460);
+  const right = usePaneSize('rightWidth', 340, 280, 560);
+  const bin = usePaneSize('binHeight', 236, 150, 520);
+  const mixer = usePaneSize('mixerHeight', 300, 220, 560);
+  const mixerOpen = useStore((s) => s.mixerOpen);
+  const liveConsole = useStore((s) => s.liveConsole);
+  const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
+  // An expanded editor takes the whole window, as a presentation editor does.
+  const fullEditor = useEditorExpanded();
   useEffect(() => installShortcuts(), []);
+  useEffect(() => installSurfaces(), []);
+  useEffect(() => installMediaTransition(), []);
+  useEffect(() => installMediaWatch(), []);
+  useEffect(() => installAudioWatch(), []);
+  useEffect(() => installLocalAudio(), []);
+  useEffect(() => installCueMix(), []);
+  useSwitcherSources();
+  // Camera settings used to live in this computer's local storage: move them into settings once.
+  const settingsLoaded = useStore((s) => !!s.settings);
   useEffect(() => {
-    document.documentElement.dataset.theme = uiTheme;
-    document.documentElement.style.zoom = String(uiScale);
-  }, [uiTheme, uiScale]);
+    const s = useStore.getState().settings;
+    if (!s) return;
+    const moved = migrateLocalCameras(s.cameras);
+    if (moved) void saveSettings({ cameras: moved });
+  }, [settingsLoaded]);
+  useEffect(() => preloadLazyViews(), []);
+  useEffect(() => installNumberWheelGuard(), []);
+  useUiTheme();
 
   return (
-    <div className="flex h-full bg-[var(--surface-0)]">
-      <Rail />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
-        <div className="flex min-h-0 flex-1 gap-2 pb-2 pr-2">
-          {libraryOpen && (
-            <aside className="panel flex w-[320px] shrink-0 flex-col overflow-hidden">
-              <LibraryPanel />
+    <div className="flex h-full flex-col bg-[var(--surface-0)]">
+      <Toolbar />
+      {textBarOpen && <TextBar />}
+      {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
+      <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
+        {!fullEditor && (
+          <>
+            <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
+              <LeftSidebar binHeight={binOpen ? bin.size : null} />
             </aside>
-          )}
-          <aside className="panel flex w-[280px] shrink-0 flex-col overflow-hidden">
-            <ServicePanel />
-          </aside>
-          <main className="flex min-w-0 flex-1 flex-col gap-2">
-            <section className="panel shrink-0">
-              <Monitors />
-            </section>
-            <section className="panel flex min-h-0 flex-1 overflow-hidden">
-              <SlideGrid />
-              <SlideInspector />
-            </section>
+            <Splitter axis="x" pane={left} label={t('layout.resizeLeft')} />
+          </>
+        )}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <main className="pane flex min-h-0 flex-1 flex-col">
+            <CenterPane />
           </main>
+          {/* The media bin opens under the slides from the toolbar's Media button. */}
+          {binOpen && !fullEditor && (
+            <>
+              <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />
+              <div className="pane">
+                <Bin height={bin.size} />
+              </div>
+            </>
+          )}
         </div>
+        {!fullEditor && (
+          <>
+            <Splitter axis="x" pane={right} invert label={t('layout.resizeRight')} />
+            <aside className="pane flex shrink-0 flex-col" style={{ width: right.size }}>
+              <RightColumn />
+            </aside>
+          </>
+        )}
+        {/* The Live console, docked beside the output (or popped out into its own window). */}
+        {liveConsole === 'docked' && !fullEditor && (
+          <>
+            <Splitter axis="x" pane={liveWidth} invert label={t('layout.resizeLive')} />
+            <aside className="pane flex shrink-0 flex-col" style={{ width: liveWidth.size }}>
+              <LiveConsole mode="docked" />
+            </aside>
+          </>
+        )}
       </div>
+      {/* The Mixer docks along the bottom, under every pane, from the toolbar's Mixer button. */}
+      {mixerOpen && !fullEditor && (
+        <>
+          <Splitter axis="y" pane={mixer} invert label={t('layout.resizeMixer')} />
+          <div className="pane shrink-0">
+            <MixerPanel height={mixer.size} />
+          </div>
+        </>
+      )}
       <QuickBar />
-      <SongEditor />
-      <ThemeEditor />
-      <OutputsDialog />
-      <SettingsDialog />
-      <ShortcutsDialog />
-      <ServicesDialog />
-      <MessagesDialog />
-      <PerfHud />
+      <Suspense fallback={null}>
+        {dialog === 'newSong' && <NewSongDialog />}
+        {dialog === 'theme' && <ThemeEditor />}
+        {dialog === 'outputs' && <OutputsDialog />}
+        {dialog === 'settings' && <SettingsDialog />}
+        {dialog === 'shortcuts' && <ShortcutsDialog />}
+        {dialog === 'services' && <ServicesDialog />}
+        {dialog === 'playback' && <PlaybackDialog />}
+        {dialog === 'perf' && <PerfHud />}
+      </Suspense>
       <Toasts />
+      <ConfirmHost />
     </div>
   );
 }

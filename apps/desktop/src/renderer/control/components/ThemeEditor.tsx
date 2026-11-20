@@ -1,24 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackgroundRef, Theme } from '@lampstand/core';
-import { Button, Segmented } from '@lampstand/ui';
+import { Button, Segmented, Typography } from '@lampstand/ui';
 import { cmd } from '../lib/api';
 import { attempt, closeDialog, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-import { BUILT_IN_BACKGROUNDS, swatchCss } from './MediaPanel';
 import { Select, Swatch } from './Select';
 import { SceneView } from './SceneView';
-import { sampleScene } from './ThemesPanel';
+import { ThemeEffects } from './ThemeEffects';
+import { Checkbox, ColorInput, Field, NumberInput } from './form';
+import { sampleScene, themeCopy } from './ThemesPanel';
+import { BUILT_IN_BACKGROUNDS, BUNDLED_FONTS } from '../constants';
+import { swatchCss } from '../lib/utils';
 
-const FONTS = [
-  'Inter',
-  'Montserrat',
-  'Lora',
-  'Source Serif 4',
-  'Playfair Display',
-  'Bebas Neue',
-  'Atkinson Hyperlegible',
-];
 const SAMPLES = {
   short: 'Jesus wept.',
   long: 'For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life. For God sent not his Son into the world to condemn the world; but that the world through him might be saved.',
@@ -31,11 +25,19 @@ export function ThemeEditor() {
   const open = useStore((s) => s.dialog === 'theme');
   const id = useStore((s) => s.editingThemeId);
   const theme = useStore((s) => s.themes.find((x) => x.id === id));
-  // Theme may arrive a moment after "duplicate" — mount the editor once it exists.
-  return open && theme ? <ThemeEditorBody key={theme.id} initial={theme} /> : null;
+  const asCopy = useStore((s) => s.editingThemeCopy);
+  // A built-in theme is edited as a copy of your own; it's created when you save.
+  const initial = useMemo(() => (theme && asCopy ? themeCopy(theme) : theme), [theme, asCopy]);
+  return open && initial ? (
+    <ThemeEditorBody
+      key={`${theme?.id ?? ''}|${String(asCopy)}`}
+      initial={initial}
+      copyOf={asCopy ? (theme?.name ?? null) : null}
+    />
+  ) : null;
 }
 
-function ThemeEditorBody({ initial }: { initial: Theme }) {
+function ThemeEditorBody({ initial, copyOf }: { initial: Theme; copyOf: string | null }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Theme>(initial);
   const set = (p: Partial<Theme>): void => setDraft({ ...draft, ...p });
@@ -62,82 +64,77 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
         </>
       }
     >
+      {copyOf && (
+        <Typography
+          as="p"
+          role="note"
+          size={12}
+          tone="secondary"
+          leading="snug"
+          className="mb-4 rounded-[var(--radius-control)] bg-[var(--accent-soft)] px-3 py-2"
+        >
+          {t('theme.editingCopy', { name: copyOf })}
+        </Typography>
+      )}
       <div className="grid grid-cols-[300px_1fr] gap-5">
         <div className="space-y-3">
-          <div>
-            <label className="label" htmlFor="th-name">
-              {t('theme.name')}
-            </label>
+          <Field label={t('theme.name')} htmlFor="th-name">
             <input
               id="th-name"
               className="field"
               value={draft.name}
               onChange={(e) => set({ name: e.target.value })}
             />
-          </div>
-          <div>
-            <label className="label" htmlFor="th-font">
-              {t('theme.font')}
-            </label>
+          </Field>
+          <Field label={t('theme.font')} htmlFor="th-font">
             <Select
               id="th-font"
               value={draft.text.fontFamily}
               onChange={(fontFamily) => setText({ fontFamily })}
-              options={FONTS.map((f) => ({
-                value: f,
-                label: f,
-                labelStyle: { fontFamily: `"${f}"`, fontSize: 14 },
+              options={BUNDLED_FONTS.map((f) => ({
+                value: f.family,
+                label: f.family,
+                description: t(`theme.fontKinds.${f.category}`),
+                labelStyle: { fontFamily: `"${f.family}"`, fontSize: 14 },
               }))}
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label" htmlFor="th-size">
-                {t('theme.size')}
-              </label>
-              <input
+            <Field label={t('theme.size')} htmlFor="th-size">
+              <NumberInput
                 id="th-size"
-                type="number"
                 min={20}
                 max={200}
-                className="field"
                 value={draft.autoFit.maxSize}
-                onChange={(e) =>
+                onChange={(size) =>
                   set({
-                    autoFit: { ...draft.autoFit, maxSize: Number(e.target.value) || 60 },
-                    text: { ...draft.text, fontSize: Number(e.target.value) || 60 },
+                    autoFit: { ...draft.autoFit, maxSize: size || 60 },
+                    text: { ...draft.text, fontSize: size || 60 },
                   })
                 }
               />
-            </div>
-            <div>
-              <label className="label" htmlFor="th-color">
-                {t('theme.color')}
-              </label>
-              <input
+            </Field>
+            <Field label={t('theme.color')} htmlFor="th-color">
+              <ColorInput
                 id="th-color"
-                type="color"
-                className="field p-1"
-                value={draft.text.color.startsWith('#') ? draft.text.color.slice(0, 7) : '#ffffff'}
-                onChange={(e) => setText({ color: e.target.value })}
+                value={draft.text.color}
+                onChange={(color) => setText({ color })}
               />
-            </div>
+            </Field>
           </div>
-          <div>
-            <span className="label">{t('theme.align')}</span>
+          <Field label={t('theme.align')} group>
             <Segmented
               label={t('theme.align')}
               value={draft.text.align}
               onChange={(align) => setText({ align })}
               options={[
-                { value: 'left', label: 'Left' },
-                { value: 'center', label: 'Center' },
-                { value: 'right', label: 'Right' },
+                { value: 'left', label: t('theme.alignLeft') },
+                { value: 'center', label: t('theme.alignCenter') },
+                { value: 'right', label: t('theme.alignRight') },
               ]}
             />
-          </div>
-          <div>
-            <span className="label">{t('theme.layout')}</span>
+          </Field>
+          <Field label={t('theme.layout')} group>
             <Segmented
               label={t('theme.layout')}
               value={
@@ -145,16 +142,13 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
               }
               onChange={(layout) => set({ layout })}
               options={[
-                { value: 'center', label: 'Center' },
-                { value: 'top', label: 'Top' },
-                { value: 'lower-third', label: 'Lower third' },
+                { value: 'center', label: t('theme.layoutCenter') },
+                { value: 'top', label: t('theme.layoutTop') },
+                { value: 'lower-third', label: t('theme.layoutLowerThird') },
               ]}
             />
-          </div>
-          <div>
-            <label className="label" htmlFor="th-bg">
-              {t('theme.background')}
-            </label>
+          </Field>
+          <Field label={t('theme.background')} htmlFor="th-bg">
             <Select
               id="th-bg"
               value={bgName}
@@ -185,16 +179,14 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                 ...BUILT_IN_BACKGROUNDS.map((b) => ({
                   value: b.name,
                   label: b.name,
+                  ...(b.ref.kind === 'generated' ? { description: t('media.motionOne') } : {}),
                   leading: <Swatch background={swatchCss(b.ref)} />,
                 })),
               ]}
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="label" htmlFor="th-tr">
-                {t('theme.transition')}
-              </label>
+            <Field label={t('theme.transition')} htmlFor="th-tr">
               <Select
                 id="th-tr"
                 value={draft.transition.kind}
@@ -203,91 +195,63 @@ function ThemeEditorBody({ initial }: { initial: Theme }) {
                   (k) => ({ value: k, label: t(`theme.transitions.${k}`) }),
                 )}
               />
-            </div>
-            <div>
-              <label className="label" htmlFor="th-dur">
-                {t('theme.duration')}
-              </label>
-              <input
+            </Field>
+            <Field label={t('theme.duration')} htmlFor="th-dur">
+              <NumberInput
                 id="th-dur"
-                type="number"
                 min={0}
                 max={3000}
                 step={50}
-                className="field"
                 value={draft.transition.durationMs}
-                onChange={(e) =>
-                  set({
-                    transition: { ...draft.transition, durationMs: Number(e.target.value) || 0 },
-                  })
-                }
+                onChange={(durationMs) => set({ transition: { ...draft.transition, durationMs } })}
               />
-            </div>
+            </Field>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-2">
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!draft.text.shadow}
-                onChange={(e) =>
-                  setText({
-                    shadow: e.target.checked
-                      ? { x: 0, y: 4, blur: 18, color: 'rgba(0,0,0,0.55)' }
-                      : undefined,
-                  })
-                }
-              />
-              {t('theme.shadow')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={!!draft.text.backgroundBox}
-                onChange={(e) =>
-                  setText({
-                    backgroundBox: e.target.checked
-                      ? { color: 'rgba(10,12,20,0.72)', padding: 28, radius: 10 }
-                      : undefined,
-                  })
-                }
-              />
-              {t('theme.box')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={draft.showVerseNumbers}
-                onChange={(e) => set({ showVerseNumbers: e.target.checked })}
-              />
-              {t('theme.verseNumbers')}
-            </label>
-            <label className="flex items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={draft.redLetters}
-                onChange={(e) => set({ redLetters: e.target.checked })}
-              />
-              {t('theme.redLetters')}
-            </label>
+            <Checkbox
+              label={t('theme.box')}
+              checked={!!draft.text.backgroundBox}
+              onChange={(on) =>
+                setText({
+                  backgroundBox: on
+                    ? { color: 'rgba(10,12,20,0.72)', padding: 28, radius: 10 }
+                    : undefined,
+                })
+              }
+            />
+            <Checkbox
+              label={t('theme.verseNumbers')}
+              checked={draft.showVerseNumbers}
+              onChange={(showVerseNumbers) => set({ showVerseNumbers })}
+            />
+            <Checkbox
+              label={t('theme.redLetters')}
+              checked={draft.redLetters}
+              onChange={(redLetters) => set({ redLetters })}
+            />
           </div>
-          <div>
-            <span className="label">{t('theme.refPosition')}</span>
+          <ThemeEffects
+            draft={draft}
+            setText={setText}
+            setAdjust={(p) => set({ backgroundAdjust: { ...draft.backgroundAdjust, ...p } })}
+          />
+          <Field label={t('theme.refPosition')} group>
             <Segmented
               label={t('theme.refPosition')}
               value={draft.referencePosition}
               onChange={(referencePosition) => set({ referencePosition })}
               options={[
-                { value: 'top', label: 'Top' },
-                { value: 'bottom', label: 'Bottom' },
-                { value: 'none', label: 'Hidden' },
+                { value: 'top', label: t('theme.refTop') },
+                { value: 'bottom', label: t('theme.refBottom') },
+                { value: 'none', label: t('theme.refHidden') },
               ]}
             />
-          </div>
+          </Field>
         </div>
         <div className="space-y-3">
           {(Object.keys(SAMPLES) as (keyof typeof SAMPLES)[]).map((k) => (
             <div key={k}>
-              <span className="label">{t(`theme.sample.${k}`)}</span>
+              <Typography variant="field">{t(`theme.sample.${k}`)}</Typography>
               <SceneView
                 scene={sampleScene(
                   draft,

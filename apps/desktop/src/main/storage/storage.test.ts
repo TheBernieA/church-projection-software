@@ -6,8 +6,9 @@ import { SongSchema, type Song } from '@lampstand/core';
 import { createEmptySong } from '@lampstand/lyrics';
 import { nullLogger } from '../app/logger';
 import { cleanupTempFiles, writeJsonAtomic } from './atomic';
-import { JsonFileRepository } from './json-file-repository';
-import { MemoryRepository, type Repository } from './repository';
+import { JsonFileRepository } from './jsonFileRepository';
+import { MemoryRepository } from './repository';
+import { type Repository } from '../types';
 
 let dir: string;
 beforeEach(async () => {
@@ -72,6 +73,22 @@ describe('JsonFileRepository', () => {
     expect(quarantined.sort()).toEqual(['bad.song.json', 'wrong.song.json']);
     expect(await readdir(join(dir, 'quarantine'))).toHaveLength(2);
   });
+  it('reads only the files that changed; its own saves change nothing', async () => {
+    const repo = jsonRepo();
+    const a = await repo.upsert(song('A'));
+    const seen: string[] = [];
+    repo.watch((c) => seen.push(c.type));
+    const file = join(dir, `${a.id}.song.json`);
+    await repo.refreshFiles([file]); // our own save, coming back from the watcher
+    expect(seen).toEqual([]);
+    await writeJsonAtomic(file, { ...a, title: 'Edited elsewhere' });
+    await repo.refreshFiles([file]);
+    expect((await repo.get(a.id))?.title).toBe('Edited elsewhere');
+    await rm(file);
+    await repo.refreshFiles([file]);
+    expect(await repo.get(a.id)).toBeNull();
+    expect(seen).toEqual(['upsert', 'remove']);
+  });
   it('rejects unsafe ids (no path traversal)', async () => {
     await expect(jsonRepo().remove('../../etc/passwd')).rejects.toThrow();
   });
@@ -89,24 +106,24 @@ describe('atomic writes', () => {
 
 describe('SettingsStore.update', () => {
   it('changes only the keys in the patch (regression: Zod partial() reset defaults)', async () => {
-    const { SettingsStore } = await import('./settings-store');
+    const { SettingsStore } = await import('./settingsStore');
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
     store.update({ windowMode: true, liveEditingKinds: ['song'], shortcuts: { goLive: 'Enter' } });
-    store.update({ uiScale: 1.2 });
+    store.update({ textScale: 1.2 });
     const s = store.get();
-    expect(s.uiScale).toBe(1.2);
+    expect(s.textScale).toBe(1.2);
     expect(s.windowMode).toBe(true);
     expect(s.liveEditingKinds).toEqual(['song']);
     expect(s.shortcuts).toEqual({ goLive: 'Enter' });
     await store.flush();
   });
   it('rejects invalid values and keeps the previous settings', async () => {
-    const { SettingsStore } = await import('./settings-store');
+    const { SettingsStore } = await import('./settingsStore');
     const store = new SettingsStore(join(dir, 'settings.json'), dir, nullLogger);
     await store.load();
-    expect(() => store.update({ uiScale: 9 })).toThrow();
-    expect(store.get().uiScale).toBe(1);
+    expect(() => store.update({ textScale: 9 })).toThrow();
+    expect(store.get().textScale).toBe(1);
     await store.flush();
   });
 });

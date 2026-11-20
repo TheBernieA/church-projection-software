@@ -72,3 +72,79 @@ export function sectionCanMove(
   const prevStart = start > 0 ? sectionBounds(items, start - 1)[0] : -1;
   return { up: prevStart >= 0 && isHeader(items[prevStart]), down: end < items.length };
 }
+
+// ---------- Adding to a section ----------
+
+type Edit = (items: ServiceItem[]) => ServiceItem[];
+
+/**
+ * Where a section ends: the index just past its last item (the next heading, or the end of the
+ * playlist). -1 when there's no such section.
+ */
+export function sectionEnd(items: readonly ServiceItem[], headerId: string): number {
+  const start = items.findIndex((i) => i.id === headerId && i.kind === 'header');
+  return start < 0 ? -1 : sectionBounds(items, start)[1];
+}
+
+/** Is there nothing under this heading? */
+export const sectionIsEmpty = (items: readonly ServiceItem[], headerId: string): boolean => {
+  const start = items.findIndex((i) => i.id === headerId);
+  return start >= 0 && sectionEnd(items, headerId) === start + 1;
+};
+
+/** Put items at the end of a section (at the end of the playlist if the section has gone). */
+export function insertInSection(
+  items: readonly ServiceItem[],
+  headerId: string | null,
+  added: readonly ServiceItem[],
+): ServiceItem[] {
+  const at = headerId ? sectionEnd(items, headerId) : -1;
+  if (at < 0) return [...items, ...added];
+  return [...items.slice(0, at), ...added, ...items.slice(at)];
+}
+
+/**
+ * Turn an edit that adds items (anywhere) into one that adds them at the end of a section:
+ * whatever the edit added is moved there; anything else it did is kept.
+ */
+export function intoSection(headerId: string, edit: Edit): Edit {
+  return (items) => {
+    const next = edit(items);
+    const had = new Set(items.map((i) => i.id));
+    const added = next.filter((i) => !had.has(i.id));
+    if (!added.length) return next;
+    return insertInSection(
+      next.filter((i) => had.has(i.id)),
+      headerId,
+      added,
+    );
+  };
+}
+
+/** The heading a row falls under (itself, for a heading); null before the first heading. */
+export function sectionHeaderAt(
+  items: readonly ServiceItem[],
+  index: number,
+): Extract<ServiceItem, { kind: 'header' }> | null {
+  for (let i = index; i >= 0; i--) {
+    const it = items[i];
+    if (it?.kind === 'header') return it;
+  }
+  return null;
+}
+
+/**
+ * The playlist item before (-1) or after (1) `itemId`, across sections (their headings are
+ * skipped). Null at either end, or when it isn't in the playlist (a library pick).
+ */
+export function neighbourItem(
+  items: readonly ServiceItem[] | undefined,
+  itemId: string | null | undefined,
+  dir: 1 | -1,
+): ServiceItem | null {
+  const list = items ?? [];
+  const at = list.findIndex((i) => i.id === itemId);
+  if (at < 0) return null;
+  const rest = dir > 0 ? list.slice(at + 1) : list.slice(0, at).reverse();
+  return rest.find((i) => !isHeader(i)) ?? null;
+}

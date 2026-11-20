@@ -1,13 +1,16 @@
-import { mediaPositionAt, type BackgroundLayer, type MediaLayer } from '@lampstand/core';
-import { el, FILL, loop, safePlay } from './dom';
-import { gradientCss } from './style';
-
-export interface MediaResolver {
-  /** URL for a library media id, e.g. `lampstand-media://<id>`. */
-  mediaUrl(mediaId: string): string;
-}
-
-export type RenderMode = 'output' | 'monitor' | 'thumbnail';
+import {
+  mediaEnd,
+  mediaFadeAt,
+  mediaPositionAt,
+  mediaStart,
+  type BackgroundLayer,
+  type MediaLayer,
+} from '@lampstand/core';
+import { el, loop, safePlay, trySetSink } from './dom';
+import { backgroundFilter, gradientCss, scrimCss } from './style';
+import { buildGenerated } from './generated';
+import { FILL } from './constants';
+import { type MediaResolver, type RenderMode } from './types';
 
 /** Build a background element. Videos loop seamlessly and keep playing across slide changes. */
 export function buildBackground(
@@ -44,7 +47,9 @@ export function buildBackground(
     }
     case 'video': {
       const v = el(doc, 'video', '', { ...FILL, objectFit: 'cover' });
-      v.muted = true;
+      // Read with permission (CORS), so its sound can join a mixer when it's switched on.
+      v.crossOrigin = 'anonymous';
+      v.muted = true; // syncBackgroundSound unmutes it where the room's sound plays
       v.loop = ref.loop;
       v.playsInline = true;
       v.src = media.mediaUrl(ref.mediaId);
@@ -62,80 +67,71 @@ export function buildBackground(
       break;
   }
   if (inner) {
-    if (bg.adjust?.blur) inner.style.filter = `blur(${bg.adjust.blur}px)`;
+    const filter = backgroundFilter(bg.adjust);
+    if (filter) inner.style.filter = filter;
     wrap.append(inner);
   }
+  if (bg.adjust?.tint && bg.adjust.tint.opacity > 0)
+    wrap.append(
+      el(doc, 'div', 'ls-bg-tint', {
+        ...FILL,
+        background: bg.adjust.tint.color,
+        opacity: String(bg.adjust.tint.opacity),
+      }),
+    );
   if (bg.adjust?.dim)
     wrap.append(el(doc, 'div', '', { ...FILL, background: `rgba(0,0,0,${bg.adjust.dim})` }));
+  syncScrim(doc, wrap, bg);
   return wrap;
 }
 
-/** Lightweight in-engine animated backgrounds (§12). Transform/opacity only — GPU composited. */
-function buildGenerated(
-  doc: Document,
-  preset: 'aurora' | 'drift' | 'glow',
-  colors: string[],
-  speed: number,
-  animated: boolean,
-): HTMLElement {
-  const root = el(doc, 'div', '', {
-    ...FILL,
-    background: colors[colors.length - 1] ?? '#000',
-    overflow: 'hidden',
-  });
-  const dur = (ms: number): number => ms / speed;
-  if (preset === 'drift') {
-    const layer = el(doc, 'div', '', {
-      position: 'absolute',
-      left: '-50%',
-      top: '-50%',
-      width: '200%',
-      height: '200%',
-      background: `linear-gradient(120deg, ${colors.join(', ')}, ${colors[0] ?? '#000'})`,
-    });
-    root.append(layer);
-    if (animated)
-      loop(
-        layer,
-        [
-          { transform: 'translate(0,0) rotate(0deg)' },
-          { transform: 'translate(10%, 8%) rotate(8deg)' },
-        ],
-        { duration: dur(40000), direction: 'alternate', easing: 'ease-in-out' },
-      );
-    return root;
+/**
+ * The readability overlay over a background (its last layer): added, changed or removed in
+ * place, so changing it never rebuilds the background (a video keeps playing).
+ */
+export function syncScrim(doc: Document, wrap: HTMLElement, bg: BackgroundLayer | null): void {
+  const scrim = bg?.adjust?.scrim;
+  let layer = wrap.querySelector<HTMLElement>(':scope > .ls-bg-scrim');
+  if (!scrim || scrim.strength <= 0) {
+    layer?.remove();
+    return;
   }
-  colors.forEach((c, i) => {
-    const size = preset === 'glow' ? 120 : 90;
-    const blob = el(doc, 'div', '', {
-      position: 'absolute',
-      width: `${size}%`,
-      height: `${size * 1.6}%`,
-      left: `${((i * 37) % 60) - 20}%`,
-      top: `${((i * 53) % 50) - 40}%`,
-      background: `radial-gradient(closest-side, ${c}, transparent)`,
-      opacity: '0.9',
-    });
-    root.append(blob);
-    if (animated) {
-      const dx = 18 - i * 9;
-      const dy = -12 + i * 10;
-      loop(
-        blob,
-        preset === 'glow'
-          ? [
-              { opacity: 0.55, transform: 'scale(1)' },
-              { opacity: 1, transform: 'scale(1.15)' },
-            ]
-          : [
-              { transform: 'translate(0,0) scale(1)' },
-              { transform: `translate(${dx}%, ${dy}%) scale(1.2)` },
-            ],
-        { duration: dur(18000 + i * 7000), direction: 'alternate', easing: 'ease-in-out' },
-      );
-    }
-  });
-  return root;
+  if (!layer) {
+    layer = el(doc, 'div', 'ls-bg-scrim', { ...FILL });
+    wrap.append(layer);
+  }
+  layer.style.background = scrimCss(scrim);
+}
+
+/** Send a video's sound to `sinkId` (the room output), where the engine can (not in jsdom). */
+function routeSound(v: HTMLMediaElement, sinkId: string): void {
+  const routed = v as HTMLMediaElement & { lsSink?: string };
+  if (routed.lsSink === sinkId) return;
+  routed.lsSink = sinkId;
+  trySetSink(v, sinkId);
+}
+
+/**
+ * A background video's sound: heard only when it's switched on for that background and this
+ * renderer plays the room's sound (the main output, or the Program monitor with no output),
+ * through the same mix and room output as a media video.
+ */
+export function syncBackgroundSound(
+  node: HTMLElement,
+  bg: BackgroundLayer | null,
+  mode: RenderMode,
+  audio: boolean,
+  sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
+): void {
+  const v = node.querySelector('video');
+  if (!v || mode === 'thumbnail') return;
+  const on = audio && bg?.ref.kind === 'video' && !!bg.ref.sound;
+  if (on) {
+    if (tap) tap(v);
+    routeSound(v, sinkId);
+  }
+  v.muted = !on;
 }
 
 /**
@@ -152,25 +148,93 @@ export function syncMedia(
   m: MediaLayer,
   mode: RenderMode,
   audio: boolean,
+  sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
 ): void {
   const v = node.querySelector('video');
   if (!v || mode === 'thumbnail') return;
-  v.loop = m.loop;
+  // This renderer plays the sound: it goes through the mix (once tapped, it never plays direct).
+  if (audio && tap) tap(v);
+  // The room hears a video's sound where Settings › Audio sends room audio.
+  if (audio) routeSound(v, sinkId);
+  const trimmed = m.start !== undefined || m.end !== undefined;
+  // A trimmed clip loops between its in- and out-points (handled below), not the whole file.
+  v.loop = m.loop && !trimmed;
   // Only one renderer plays audio (the main output, or the Program monitor when there is no
   // output), so the room never hears doubled sound.
   v.muted = m.muted || !audio;
-  v.volume = m.volume;
+  const held = v as HTMLVideoElement & { lsHold?: ReturnType<typeof setTimeout> };
+  if (held.lsHold) clearTimeout(held.lsHold);
   const apply = (): void => {
+    // Off the screen already, or a newer state has taken over: never play it.
+    const latest = (v as HTMLVideoElement & { lsPlayback?: MediaLayer }).lsPlayback;
+    if (!v.isConnected || (latest && latest !== m)) return;
+    // Synced to start later (a countdown video ending on the start time): hold its first frame
+    // until then, so every output starts it together.
+    const wait = m.playing && m.syncedAt ? Date.parse(m.syncedAt) - Date.now() : 0;
+    if (wait > 50) {
+      v.pause();
+      if (Math.abs(v.currentTime - m.position) > 0.05) v.currentTime = m.position;
+      held.lsHold = setTimeout(apply, Math.min(wait, 2_147_000_000));
+      return;
+    }
     const duration = Number.isFinite(v.duration) ? v.duration : undefined;
     const target = mediaPositionAt(m, Date.now(), duration);
     if (Math.abs(v.currentTime - target) > 0.3) v.currentTime = target;
-    const finished = !m.loop && duration !== undefined && target >= duration - 0.05;
+    const end = mediaEnd(m, duration);
+    const finished = !m.loop && end !== undefined && target >= end - 0.05;
     // play() on an ended video would restart it from 0 — a finished clip stays on its last frame.
     if (m.playing && !finished) safePlay(v);
     else v.pause();
   };
+  // The newest state first, so an older one still waiting for metadata knows to stand aside.
+  watchPlayback(v, m);
   if (v.readyState >= 1) apply();
   else v.addEventListener('loadedmetadata', apply, { once: true });
+}
+
+/**
+ * Per frame while a clip shows: fade it in and out (picture and sound together), and honour
+ * the out-point: stop there, or jump back to the in-point when looping. One loop per element;
+ * a newer playback state replaces the older one.
+ */
+function watchPlayback(v: HTMLVideoElement, m: MediaLayer): void {
+  const state = v as HTMLVideoElement & { lsPlayback?: MediaLayer; lsWatching?: boolean };
+  state.lsPlayback = m;
+  const needs = m.fadeIn || m.fadeOut || m.start !== undefined || m.end !== undefined;
+  if (!needs) {
+    v.style.opacity = '';
+    v.volume = m.volume;
+    return;
+  }
+  const win = v.ownerDocument.defaultView;
+  if (state.lsWatching || !win) return;
+  state.lsWatching = true;
+  const tick = (): void => {
+    const cur = state.lsPlayback;
+    const still =
+      cur && (cur.fadeIn || cur.fadeOut || cur.start !== undefined || cur.end !== undefined);
+    // Stop when the element is gone, or when a newer state no longer trims or fades.
+    if (!cur || !still || !v.isConnected) {
+      state.lsWatching = false;
+      return;
+    }
+    const duration = Number.isFinite(v.duration) ? v.duration : undefined;
+    const end = mediaEnd(cur, duration);
+    // Judged by the shared state, not the element: at the file's end the browser has already
+    // paused it (native loop is off for trimmed clips), and a loop must still jump back.
+    if (end !== undefined && cur.playing && v.currentTime >= end - 0.02) {
+      if (cur.loop) {
+        v.currentTime = mediaStart(cur);
+        safePlay(v);
+      } else if (!v.paused) v.pause();
+    }
+    const a = mediaFadeAt(cur, v.currentTime, duration);
+    v.style.opacity = String(a);
+    v.volume = Math.max(0, Math.min(1, cur.volume * a));
+    win.requestAnimationFrame(tick);
+  };
+  win.requestAnimationFrame(tick);
 }
 
 export function buildMedia(
@@ -179,6 +243,8 @@ export function buildMedia(
   media: MediaResolver,
   mode: RenderMode,
   audio: boolean,
+  sinkId = '',
+  tap?: (v: HTMLMediaElement) => void,
 ): HTMLElement {
   const wrap = el(doc, 'div', 'ls-media', { ...FILL, background: '#000' });
   if (m.kind === 'image') {
@@ -188,12 +254,14 @@ export function buildMedia(
     wrap.append(img);
   } else {
     const v = el(doc, 'video', '', { ...FILL, objectFit: m.fit });
+    // Read with permission (CORS): a mixer gets silence from media it may only play.
+    v.crossOrigin = 'anonymous';
     v.src = media.mediaUrl(m.mediaId);
     v.playsInline = true;
     v.preload = mode === 'thumbnail' ? 'metadata' : 'auto';
     v.muted = true; // syncMedia sets the real audio state once metadata is known
     wrap.append(v);
-    syncMedia(wrap, m, mode, audio);
+    syncMedia(wrap, m, mode, audio, sinkId, tap);
   }
   return wrap;
 }

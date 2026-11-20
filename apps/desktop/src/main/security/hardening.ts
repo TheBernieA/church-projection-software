@@ -1,20 +1,11 @@
-import {
-  app,
-  session,
-  shell,
-  type BrowserWindow,
-  type WebContents,
-  type WebPreferences,
-} from 'electron';
+import { app, session, shell, type WebContents, type WebPreferences } from 'electron';
 import { join } from 'node:path';
-import type { Logger } from '../app/logger';
 import { devCsp } from './csp';
-
-export type WindowKind = 'control' | 'output' | 'stage';
+import { type Logger } from '../types';
 
 /** Hardened webPreferences applied to EVERY window (§17.1). */
 export function secureWebPreferences(
-  preload: 'control' | 'output',
+  preload: 'control' | 'output' | 'stream',
   extra: Partial<WebPreferences> = {},
 ): WebPreferences {
   return {
@@ -44,7 +35,7 @@ export function isSafeExternalUrl(url: string): boolean {
   }
 }
 
-export function lockDownWebContents(wc: WebContents, log: Logger): void {
+function lockDownWebContents(wc: WebContents, log: Logger): void {
   wc.on('will-navigate', (e, url) => {
     const allowedDev = process.env.ELECTRON_RENDERER_URL;
     if (allowedDev && url.startsWith(allowedDev)) return; // Vite HMR full reloads in dev
@@ -59,17 +50,21 @@ export function lockDownWebContents(wc: WebContents, log: Logger): void {
 }
 
 /**
- * Permission policy: camera/mic only for the control window, and only once a feature that needs
- * it is enabled (Phase 2/3). Everything else is denied.
+ * Permission policy: camera/mic (video and audio inputs) and MIDI only for the app's own control
+ * and output windows; everything else, and every other permission, is denied.
  */
 export function installPermissionHandlers(
   isMediaAllowed: (wc: WebContents | null) => boolean,
 ): void {
   const ses = session.defaultSession;
+  // MIDI for desks and controllers driving the show. Lampstand only asks for plain MIDI, but
+  // Electron files every Web MIDI request under 'midiSysex', so both names are let through.
+  const allowed = (permission: string): boolean =>
+    permission === 'media' || permission === 'midi' || permission === 'midiSysex';
   ses.setPermissionRequestHandler((wc, permission, cb) => {
-    cb(permission === 'media' && isMediaAllowed(wc));
+    cb(allowed(permission) && isMediaAllowed(wc));
   });
-  ses.setPermissionCheckHandler((wc, permission) => permission === 'media' && isMediaAllowed(wc));
+  ses.setPermissionCheckHandler((wc, permission) => allowed(permission) && isMediaAllowed(wc));
   ses.setDevicePermissionHandler(() => false);
 }
 
@@ -89,5 +84,3 @@ export function installDevCsp(): void {
 export function installGlobalGuards(log: Logger): void {
   app.on('web-contents-created', (_e, wc) => lockDownWebContents(wc, log));
 }
-
-export type { BrowserWindow };

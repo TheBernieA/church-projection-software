@@ -4,10 +4,13 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { scrub } from '../app/logger';
 import { sniffMedia } from '../library/sniff';
-import { resolveRoles, upsertAssignment, type DisplayLike } from '../windows/displays';
+import { resolveRoles, upsertAssignment } from '../windows/displays';
 import { PROD_CSP } from './csp';
-import { fileResponse, parseRange } from './file-response';
-import { resolveInside } from './safe-path';
+import { fileResponse, parseRange } from './fileResponse';
+import { webViewPreferences } from '../windows/webView';
+import { resolveInside } from './safePath';
+import { type DisplayLike } from '../types';
+import { WEB_PARTITION } from '../constants';
 
 let dir: string;
 beforeEach(async () => {
@@ -78,6 +81,14 @@ describe('display mapping (§7.3 hot-plug)', () => {
     const saved = upsertAssignment([], d(5, 'Epson', 1920), 'stage');
     expect(resolveRoles([d(7, 'Epson', -1920)], saved).get(7)).toBe('stage');
   });
+  it("an exact match wins over another display's loose match, whatever the order", () => {
+    // Two identical projectors: the stage one moved, the main one did not.
+    let saved = upsertAssignment([], d(1, 'Epson', 1920), 'main');
+    saved = upsertAssignment(saved, d(2, 'Epson', 3840), 'stage');
+    const roles = resolveRoles([d(3, 'Epson', 5760), d(4, 'Epson', 1920)], saved);
+    expect(roles.get(4)).toBe('main');
+    expect(roles.get(3)).toBe('stage');
+  });
   it('only one main output', () => {
     let saved = upsertAssignment([], d(1, 'A', 0), 'main');
     saved = upsertAssignment(saved, d(2, 'B', 1920), 'main');
@@ -127,5 +138,20 @@ describe('media byte ranges (video seeking)', () => {
     expect(bad.status).toBe(416);
     expect(bad.headers.get('content-range')).toBe('bytes */1000');
     expect((await fileResponse(join(dir, 'missing.mp4'), null)).status).toBe(404);
+  });
+});
+
+describe('web pages on slides run isolated', () => {
+  it('sandboxed, no preload, no node, own throwaway session', () => {
+    const p = webViewPreferences();
+    expect(p.preload).toBeUndefined(); // no bridge into the app or its IPC
+    expect(p.sandbox).toBe(true);
+    expect(p.contextIsolation).toBe(true);
+    expect(p.nodeIntegration).toBe(false);
+    expect(p.nodeIntegrationInSubFrames).toBe(false);
+    expect(p.webviewTag).toBe(false);
+    expect(p.devTools).toBe(false);
+    expect(p.partition).toBe(WEB_PARTITION);
+    expect(WEB_PARTITION.startsWith('persist:')).toBe(false); // nothing kept between runs
   });
 });

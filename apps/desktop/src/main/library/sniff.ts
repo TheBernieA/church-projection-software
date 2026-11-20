@@ -1,10 +1,4 @@
-import type { MediaKind } from '@lampstand/core';
-
-export interface Sniffed {
-  kind: MediaKind;
-  mime: string;
-  ext: string;
-}
+import { type Sniffed } from '../types';
 
 const ascii = (b: Uint8Array, start: number, len: number): string =>
   String.fromCharCode(...b.subarray(start, start + len));

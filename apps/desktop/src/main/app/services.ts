@@ -1,10 +1,10 @@
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-  CommandBus,
-  LiveStateStore,
+  MEDIA_PLAYLIST_SCHEMA_VERSION,
   MEDIA_SCHEMA_VERSION,
   MediaItemSchema,
+  MediaPlaylistSchema,
   SERVICE_SCHEMA_VERSION,
   ServicePlanSchema,
   SONG_SCHEMA_VERSION,
@@ -12,43 +12,26 @@ import {
   ThemeSchema,
   type HymnalFile,
   type MediaItem,
+  type MediaPlaylist,
   type ServicePlan,
   type Song,
   type Theme,
 } from '@lampstand/core';
 import { hymnToSong } from '@lampstand/lyrics';
-import type { Logger } from './logger';
-import type { AppPaths } from './paths';
-import { JsonFileRepository } from '../storage/json-file-repository';
-import { SettingsStore } from '../storage/settings-store';
-import { BibleStore, installBibleModule } from '../modules/bible-modules';
-import { MediaLibrary } from '../library/media-library';
-import { readHymnals, type InstalledHymnal } from '../modules/hymnal-modules';
+import { JsonFileRepository } from '../storage/jsonFileRepository';
+import { BibleStore, installBibleModule } from '../modules/bibleModules';
+import { readHymnals } from '../modules/hymnalModules';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
-import { sha256 } from '../modules/package-io';
-
-/** Everything the app needs, constructed once and injected (no service globals — §19.1). */
-export interface Services {
-  paths: AppPaths;
-  log: Logger;
-  settings: SettingsStore;
-  bus: CommandBus;
-  live: LiveStateStore;
-  songs: JsonFileRepository<Song>;
-  services: JsonFileRepository<ServicePlan>;
-  themes: JsonFileRepository<Theme>;
-  media: JsonFileRepository<MediaItem>;
-  mediaLibrary: MediaLibrary;
-  bibles: BibleStore;
-  hymnSongs: Song[];
-  hymnals: InstalledHymnal[];
-}
+import { sha256 } from '../modules/packageIo';
+import { type AppPaths, type InstalledHymnal, type Logger } from '../types';
+import { errorMessage } from '../utils';
 
 export async function ensureLibrary(library: string): Promise<void> {
   for (const d of [
     'songs',
     'services',
     'themes',
+    'media-playlists',
     'media',
     join('media', '.thumbs'),
     join('media', '.meta'),
@@ -92,6 +75,13 @@ export function createRepos(paths: AppPaths, log: Logger, onQuarantine: (f: stri
       schema: ThemeSchema,
       schemaVersion: 1,
     }),
+    mediaPlaylists: new JsonFileRepository<MediaPlaylist>({
+      ...common,
+      dir: join(paths.library, 'media-playlists'),
+      suffix: '.mediaplaylist.json',
+      schema: MediaPlaylistSchema,
+      schemaVersion: MEDIA_PLAYLIST_SCHEMA_VERSION,
+    }),
     media: new JsonFileRepository<MediaItem>({
       ...common,
       dir: join(paths.library, 'media', '.meta'),
@@ -128,7 +118,7 @@ export async function installBundledBibles(
     } catch (e) {
       log.error('bundled bible install failed', {
         file: f,
-        err: e instanceof Error ? e.message : 'unknown',
+        err: errorMessage(e),
       });
     }
   }

@@ -1,7 +1,5 @@
+import type { StyleInit } from './types';
 /** Tiny DOM helpers. Text is ALWAYS set via text nodes — never innerHTML (§17.1). */
-/** Plain style object (not a CSSStyleDeclaration, which is iterable and unsafe to spread). */
-export type StyleInit = Partial<Record<Extract<keyof CSSStyleDeclaration, string>, string>>;
-
 export function el<K extends keyof HTMLElementTagNameMap>(
   doc: Document,
   tag: K,
@@ -13,14 +11,6 @@ export function el<K extends keyof HTMLElementTagNameMap>(
   if (style) Object.assign(e.style, style);
   return e;
 }
-
-export const FILL: StyleInit = {
-  position: 'absolute',
-  left: '0',
-  top: '0',
-  width: '100%',
-  height: '100%',
-};
 
 /** WAAPI animation that resolves when done. Falls back to instant where WAAPI is missing (tests). */
 export function animate(
@@ -35,7 +25,13 @@ export function animate(
         if (k !== 'offset' && k !== 'easing') target.style.setProperty(k, String(v));
     return Promise.resolve();
   }
-  const a = target.animate(keyframes, { fill: 'forwards', ...opts });
+  let a: Animation;
+  try {
+    a = target.animate(keyframes, { fill: 'forwards', ...opts });
+  } catch {
+    // An easing the browser doesn't know: show the end state at once rather than fail.
+    return animate(target, keyframes, { ...opts, duration: 0 });
+  }
   return a.finished.then(
     () => {
       // Bake the end state into inline styles and release the animation. Without this every
@@ -52,7 +48,7 @@ export function animate(
 }
 
 /** Start playback; autoplay can be refused (e.g. no user gesture) and that must never throw. */
-export function safePlay(v: HTMLVideoElement): void {
+export function safePlay(v: HTMLMediaElement): void {
   try {
     const p = v.play() as Promise<void> | undefined;
     p?.catch(() => undefined);
@@ -73,4 +69,26 @@ export function loop(
     ? 'transform, opacity'
     : 'transform';
   target.animate(keyframes, { iterations: Infinity, ...opts });
+}
+
+/** Retired media: off the page and its file let go, never to play again. */
+const released = new WeakSet<HTMLMediaElement>();
+
+/** Stop a media element for good and free its file (the renderer is done with it). */
+export function releaseMedia(v: HTMLMediaElement): void {
+  released.add(v);
+  v.pause();
+  v.removeAttribute('src');
+  v.load();
+}
+
+export const isReleased = (v: HTMLMediaElement): boolean => released.has(v);
+
+/**
+ * Send a media element's or an audio context's sound to an output device ('' = the default).
+ * Not in every engine (jsdom in tests), and a device that's gone keeps the current one.
+ */
+export function trySetSink(target: object, sinkId: string): void {
+  const sinkable = target as { setSinkId?: (id: string) => Promise<void> };
+  void sinkable.setSinkId?.(sinkId).catch(() => undefined);
 }

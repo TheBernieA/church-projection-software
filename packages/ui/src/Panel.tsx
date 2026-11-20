@@ -1,28 +1,5 @@
 import type { ReactNode } from 'react';
-
-/** Panel header: sentence-case title (13px semibold), optional icon, actions on the right. */
-export function PanelHeader({
-  title,
-  icon,
-  actions,
-  subtitle,
-}: {
-  title: ReactNode;
-  icon?: ReactNode;
-  actions?: ReactNode;
-  subtitle?: ReactNode;
-}) {
-  return (
-    <div className="flex h-12 shrink-0 items-center justify-between gap-2 px-4">
-      <div className="flex min-w-0 items-center gap-2">
-        {icon && <span className="text-[var(--text-3)]">{icon}</span>}
-        <h2 className="truncate text-[13px] font-semibold text-[var(--text-1)]">{title}</h2>
-        {subtitle && <span className="truncate text-[12px] text-[var(--text-3)]">{subtitle}</span>}
-      </div>
-      {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
-    </div>
-  );
-}
+import { Typography } from './Typography';
 
 /** Tally label for monitors: a coloured dot + label. Colour is meaning, never decoration. */
 export function TallyLabel({
@@ -36,8 +13,10 @@ export function TallyLabel({
 }) {
   const c = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
-    <span
-      className="inline-flex items-center gap-1.5 text-[12px] font-semibold"
+    <Typography
+      size={12}
+      weight="semibold"
+      className="inline-flex items-center gap-1.5"
       style={{ color: active ? c : 'var(--text-3)' }}
     >
       {/* Static glow, no pulsing: the control UI has no ambient animation (§15.3). */}
@@ -50,43 +29,30 @@ export function TallyLabel({
         }}
       />
       {children}
-    </span>
+    </Typography>
   );
 }
 
-/** Toggle chip used for masks (black / logo / freeze). Red when engaged — it changes the live output. */
-export function ToggleChip({
-  on,
-  onClick,
-  icon,
-  label,
-  hint,
+/** Small corner tag on a thumbnail: LIVE (red) or PREVIEW (green). */
+export function TallyTag({
+  tone,
+  children,
+  className = '',
 }: {
-  on: boolean;
-  onClick: () => void;
-  icon: ReactNode;
-  label: string;
-  hint?: string;
+  tone: 'program' | 'preview';
+  children: ReactNode;
+  className?: string;
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={on}
-      onClick={onClick}
-      title={hint ? `${label} (${hint})` : label}
-      className={`group inline-flex h-9 cursor-pointer items-center gap-2 rounded-[var(--radius-control)] px-3 text-[13px] font-medium transition-[background-color,box-shadow,color] duration-150 focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
-        on
-          ? 'bg-[var(--tally-program)] text-white shadow-[0_4px_16px_rgba(239,74,80,0.35)]'
-          : 'bg-[var(--surface-2)] text-[var(--text-1)] shadow-[var(--shadow-1)] hover:bg-[var(--surface-3)]'
-      }`}
+    <Typography
+      size={10}
+      tone="white"
+      weight="bold"
+      className={`absolute right-1.5 top-1.5 rounded-[4px] px-1.5 py-px tracking-[0.06em] shadow-[0_2px_8px_rgba(0,0,0,0.35)] ${
+        tone === 'program' ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'
+      } ${className}`}
     >
-      {icon}
-      <span>{label}</span>
-      {hint && (
-        <span className={`text-[11px] ${on ? 'text-white/75' : 'text-[var(--text-3)]'}`}>
-          {hint}
-        </span>
-      )}
-    </button>
+      {children}
+    </Typography>
   );
 }

@@ -16,10 +16,13 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "security:check": "node scripts/security-check.mjs",
-    "build:kjv": "node scripts/build-kjv-module.mjs",
+    "security:check": "node scripts/securityCheck.mjs",
+    "build:bibles": "node scripts/buildBibleModules.mjs",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm security:check",
-    "e2e": "pnpm --filter @lampstand/desktop e2e"
+    "e2e": "pnpm --filter @lampstand/desktop e2e",
+    "dist:mac": "pnpm --filter @lampstand/desktop dist:mac",
+    "dist:mac:local": "pnpm --filter @lampstand/desktop dist:mac:local",
+    "dist:win": "pnpm --filter @lampstand/desktop dist:win"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

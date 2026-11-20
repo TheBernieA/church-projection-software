@@ -1,16 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd } from '@lampstand/ui';
-import { cmd } from '../lib/api';
-import {
-  comboFromEvent,
-  DEFAULT_SHORTCUTS,
-  displayCombo,
-  effectiveShortcuts,
-  type ShortcutAction,
-} from '../lib/shortcuts';
+import { saveSettings } from '../lib/actions';
+import { comboFromEvent, displayCombo, effectiveShortcuts } from '../lib/shortcuts';
 import { useStore } from '../lib/store';
 import { Dialog } from './Dialog';
+import { DEFAULT_SHORTCUTS } from '../constants';
+import { type ShortcutAction } from '../types';
 
 /** Cheat sheet + remapping (§14.3). Click a shortcut, press the new keys. */
 export function ShortcutsDialog() {
@@ -20,12 +16,20 @@ export function ShortcutsDialog() {
   const map = effectiveShortcuts();
 
   const record = (action: ShortcutAction, e: React.KeyboardEvent): void => {
+    if (e.key === 'Tab') return setRecording(null); // moving on, not a shortcut
     e.preventDefault();
     e.stopPropagation();
+    if (e.key === 'Escape') return setRecording(null); // cancel: the shortcut stays as it was
     if (['Shift', 'Meta', 'Control', 'Alt'].includes(e.key)) return;
     const combo = comboFromEvent(e.nativeEvent);
     const current = useStore.getState().settings?.shortcuts ?? {};
-    void cmd('settings.update', { patch: { shortcuts: { ...current, [action]: combo } } });
+    // Keys another action had: the two swap, so no two actions ever share one.
+    const other = (Object.keys(map) as ShortcutAction[]).find(
+      (a) => a !== action && map[a] === combo,
+    );
+    void saveSettings({
+      shortcuts: { ...current, [action]: combo, ...(other ? { [other]: map[action] } : {}) },
+    });
     setRecording(null);
   };
 
@@ -34,10 +38,7 @@ export function ShortcutsDialog() {
       name="shortcuts"
       title={t('shortcuts.title')}
       footer={
-        <Button
-          variant="ghost"
-          onClick={() => void cmd('settings.update', { patch: { shortcuts: {} } })}
-        >
+        <Button variant="ghost" onClick={() => void saveSettings({ shortcuts: {} })}>
           {t('shortcuts.reset')}
         </Button>
       }
@@ -48,8 +49,9 @@ export function ShortcutsDialog() {
             <tr key={a} className="border-b border-[var(--border)] last:border-0">
               <td className="py-1.5">{t(`shortcuts.action.${a}`)}</td>
               <td className="py-1.5 text-right">
-                <button
-                  type="button"
+                <Button
+                  variant="bare"
+
                   className="rounded px-1 hover:bg-[var(--surface-2)]"
                   onClick={() => setRecording(a)}
                   onKeyDown={(e) => recording === a && record(a, e)}
@@ -60,7 +62,7 @@ export function ShortcutsDialog() {
                   ) : (
                     <Kbd>{displayCombo(map[a])}</Kbd>
                   )}
-                </button>
+                </Button>
               </td>
             </tr>
           ))}

@@ -1,23 +1,5 @@
 import type { EntityMeta, ID, Unsubscribe } from '@lampstand/core';
-
-export interface ListQuery {
-  limit?: number;
-}
-
-export type RepoChange<T> =
-  { type: 'upsert'; entity: T } | { type: 'remove'; id: ID } | { type: 'reload' };
-
-/**
- * Storage port (§6.3). v1: JsonFileRepository. Later: SQLite or cloud sync — no UI or command
- * code changes required. Contract tests run against every implementation.
- */
-export interface Repository<T extends EntityMeta> {
-  get(id: ID): Promise<T | null>;
-  list(query?: ListQuery): Promise<T[]>;
-  upsert(entity: T): Promise<T>;
-  remove(id: ID): Promise<void>;
-  watch(cb: (change: RepoChange<T>) => void): Unsubscribe;
-}
+import { type ListQuery, type RepoChange, type Repository } from '../types';
 
 /** In-memory implementation — used for tests and read-only collections (e.g. hymnals). */
 export class MemoryRepository<T extends EntityMeta> implements Repository<T> {

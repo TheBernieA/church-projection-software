@@ -1,55 +1,78 @@
 /*
- * Lampstand design tokens — "Broadcast Pro" (§15.2, refined).
- * Depth comes from layered graphite surfaces + soft shadows, not borders.
- * Tally red/green are reserved for live/preview state ONLY. Gold is interaction.
+ * Lampstand design tokens: "Show workspace" (pro-AV console feel).
+ * Depth comes from layered neutral graphite panes, not borders.
+ * Tally red/green are reserved for live/preview state ONLY. Amber is interaction;
+ * indigo marks "Coming soon".
  */
 :root,
 [data-theme='dark'] {
-  --surface-0: #0c0e13; /* app canvas */
-  --surface-1: #13161d; /* panels */
-  --surface-2: #1a1e27; /* raised: cards, inputs */
-  --surface-3: #232835; /* hover / pressed */
-  --surface-4: #2c3242;
+  /* Neutral graphite workspace: a pro-AV console feel, colour reserved for content and state. */
+  --surface-0: #1c1c1e; /* slide canvas, the darkest well */
+  --surface-1: #2a2a2d; /* panes: sidebars, headers */
+  --surface-2: #333337; /* raised: cards, inputs, rows */
+  --surface-3: #3d3d42; /* hover / pressed */
+  --surface-4: #47474d;
   --hairline: rgba(255, 255, 255, 0.06);
-  --hairline-strong: rgba(255, 255, 255, 0.1);
-  --border: rgba(255, 255, 255, 0.08);
-  --text-1: #eef0f5;
-  --text-2: #a3a9ba;
-  --text-3: #6c7387;
-  --accent: #e8b04b;
-  --accent-ink: #1b1608;
-  --accent-soft: rgba(232, 176, 75, 0.12);
-  --accent-line: rgba(232, 176, 75, 0.45);
+  --hairline-strong: rgba(255, 255, 255, 0.11);
+  --border: rgba(255, 255, 255, 0.09);
+  --text-1: #ececef;
+  --text-2: #b7b7be;
+  --text-3: #9a9aa3; /* ≥4.5:1 on surface-1 */
+  --accent: #f0a73a;
+  --accent-ink: #1c1306;
+  --accent-soft: rgba(240, 167, 58, 0.13);
+  --accent-line: rgba(240, 167, 58, 0.5);
   --switch-off: rgba(255, 255, 255, 0.16);
   --tally-program: #ef4a50;
   --tally-program-soft: rgba(239, 74, 80, 0.14);
-  --tally-program-glow: 0 0 0 1px rgba(239, 74, 80, 0.9), 0 0 24px rgba(239, 74, 80, 0.35);
+  --tally-program-glow: 0 0 0 2px rgba(239, 74, 80, 0.95), 0 0 18px rgba(239, 74, 80, 0.3);
   --tally-preview: #34b27a;
   --tally-preview-soft: rgba(52, 178, 122, 0.14);
   --warning: #f5a524;
   --danger-soft: rgba(239, 74, 80, 0.12);
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--hairline);
-  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--hairline);
-  --shadow-3: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--hairline-strong);
+  --soon: #8b8bf5; /* "Coming soon" badges */
+  --soon-soft: rgba(139, 139, 245, 0.14);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 0 0 1px var(--hairline), var(--highlight-top);
+  --shadow-2: 0 10px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--hairline), var(--highlight-top);
+  --shadow-3: 0 24px 64px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--hairline-strong);
   --focus-ring: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--accent);
-  --radius-control: 8px;
-  --radius-card: 10px;
-  --radius-panel: 14px;
+  /* Window chrome and pane dividers (operator-console layout). */
+  --toolbar: #3a3a3d;
+  --divider: #141416;
+  /* List selection: a system-style blue, so "selected" never reads as "live". */
+  --select: #2f6ad9;
+  --select-soft: rgba(47, 106, 217, 0.28);
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  /* Raised surfaces catch a little light on their top edge. */
+  --highlight-top: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  /* Settings › Text size multiplies every UI text size (see Typography in @lampstand/ui). */
+  --text-scale: 1;
+  /* Motion. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-control: 5px;
+  --radius-card: 4px;
+  --radius-panel: 6px;
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --surface-0: #e9ebf0;
-  --surface-1: #f6f7f9;
+  --surface-0: #d9d9dd;
+  --surface-1: #ececee;
   --surface-2: #ffffff;
-  --surface-3: #eceef3;
-  --surface-4: #dfe2ea;
+  --surface-3: #ebebed;
+  --surface-4: #dcdce0;
   --hairline: rgba(15, 20, 35, 0.07);
   --hairline-strong: rgba(15, 20, 35, 0.12);
   --border: rgba(15, 20, 35, 0.1);
   --text-1: #141720;
   --text-2: #4f566b;
-  --text-3: #818899;
+  --text-3: #5f6475; /* ≥4.5:1 on surface-1 */
   --accent: #b47a12;
   --accent-ink: #ffffff;
   --accent-soft: rgba(180, 122, 18, 0.1);
@@ -62,6 +85,13 @@
   --tally-preview-soft: rgba(31, 138, 89, 0.1);
   --warning: #b97200;
   --danger-soft: rgba(217, 52, 58, 0.08);
+  --soon: #5b5bd6;
+  --soon-soft: rgba(91, 91, 214, 0.1);
+  --highlight-top: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --toolbar: #e2e2e6;
+  --divider: #c4c4ca;
+  --select: #2563d6;
+  --select-soft: rgba(37, 99, 214, 0.16);
   --shadow-1: 0 1px 2px rgba(15, 20, 35, 0.08), 0 0 0 1px var(--hairline);
   --shadow-2: 0 8px 24px rgba(15, 20, 35, 0.12), 0 0 0 1px var(--hairline);
   --shadow-3: 0 24px 64px rgba(15, 20, 35, 0.2), 0 0 0 1px var(--hairline-strong);

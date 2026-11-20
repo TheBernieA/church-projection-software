@@ -1,29 +1,19 @@
 import { appendFile, mkdir, rename, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-
-export type Level = 'debug' | 'info' | 'warn' | 'error';
-
-export interface Logger {
-  debug(msg: string, data?: Record<string, unknown>): void;
-  info(msg: string, data?: Record<string, unknown>): void;
-  warn(msg: string, data?: Record<string, unknown>): void;
-  error(msg: string, data?: Record<string, unknown>): void;
-  child(module: string): Logger;
-}
+import { type Level, type Logger } from '../types';
+import { LOG_MAX_BYTES, LOG_MAX_FILES } from '../constants';
 
 const SECRET_PATTERNS: [RegExp, string][] = [
   [/(rtmps?:\/\/[^\s"']+\/)[^\s"'/]+/gi, '$1[redacted]'], // stream keys at the end of RTMP URLs
   [/\b(key|token|secret|password|pin|streamkey)(["'\s:=]+)[^\s"',}]+/gi, '$1$2[redacted]'],
   [/\/\/[^/\s:@]+:[^/\s@]+@/g, '//[redacted]@'], // credentials in URLs
+  [/\b(streamid|passphrase)=[^\s&"']+/gi, '$1=[redacted]'], // SRT keys and passwords
 ];
 
 /** Redact secrets from any log line (§17.5). */
 export function scrub(text: string): string {
   return SECRET_PATTERNS.reduce((t, [re, replacement]) => t.replace(re, replacement), text);
 }
-
-const MAX_BYTES = 5 * 1024 * 1024;
-const MAX_FILES = 5;
 
 /** Structured JSON-lines logger with rotation (5 × 5 MB) and a secret scrubber. */
 export function createLogger(dir: string, module = 'app'): Logger {
@@ -33,15 +23,17 @@ export function createLogger(dir: string, module = 'app'): Logger {
     () => undefined,
   );
 
+  /** The log file's size, kept as lines are added (one stat to begin with). */
+  let size: number | null = null;
   const rotate = async (): Promise<void> => {
-    try {
-      const s = await stat(file);
-      if (s.size < MAX_BYTES) return;
-    } catch {
-      return;
-    }
-    await rm(join(dir, `lampstand.${MAX_FILES - 1}.log`), { force: true });
-    for (let i = MAX_FILES - 2; i >= 1; i--)
+    size ??= await stat(file).then(
+      (s) => s.size,
+      () => 0,
+    );
+    if (size < LOG_MAX_BYTES) return;
+    size = 0;
+    await rm(join(dir, `lampstand.${LOG_MAX_FILES - 1}.log`), { force: true });
+    for (let i = LOG_MAX_FILES - 2; i >= 1; i--)
       await rename(join(dir, `lampstand.${i}.log`), join(dir, `lampstand.${i + 1}.log`)).catch(
         () => undefined,
       );
@@ -56,6 +48,9 @@ export function createLogger(dir: string, module = 'app'): Logger {
       chain = chain
         .then(rotate)
         .then(() => appendFile(file, line))
+        .then(() => {
+          size = (size ?? 0) + Buffer.byteLength(line);
+        })
         .catch(() => undefined);
     };
     return {
