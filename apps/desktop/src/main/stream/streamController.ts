@@ -140,9 +140,15 @@ const STEADY_MS = 60_000;
  * After the stream has been live, a dropped connection is retried quietly for this long (the
  * internet coming back after a few minutes keeps the stream going) before it's given up.
  */
-const RECONNECT_WINDOW_MS = 10 * 60_000;
-/** Waits between reconnect attempts: quick at first, then every few seconds. */
-const RECONNECT_STEPS_MS = [1_000, 2_000, 3_000, 5_000];
+const RECONNECT_WINDOW_MS = Number(process.env.LAMPSTAND_RECONNECT_WINDOW_MS) || 10 * 60_000;
+/** While the network is down: how often to check whether it's back (quick at first). */
+const RECONNECT_CHECK_MS = [1_000, 2_000, 3_000, 5_000];
+/**
+ * After the server answered but the stream still didn't get through (the service refused it),
+ * wait longer before the next try: each try restarts the encoder, which splits a recording and
+ * briefly interrupts any other destination that's still fine.
+ */
+const RECONNECT_TRY_MS = [5_000, 10_000, 20_000, 30_000];
 
 /**
  * Livestream and recording, done by Lampstand itself. A hidden (offscreen) stream window draws
@@ -174,8 +180,19 @@ export class StreamController {
   private everLive = false;
   /** When the current outage began (reconnecting since); null while connected. */
   private outageSince: number | null = null;
-  /** The destinations' servers (host and port, never the key), to check the network is back. */
-  private endpoints: Endpoint[] = [];
+  /** Each destination's server (host and port, never the key), to check the network is back. */
+  private endpoints = new Map<string, Endpoint | null>();
+  /** Reconnect attempts that are waiting or checking; bumped to cancel them (stop, a new run). */
+  private reconnectSeq = 0;
+  /** A reconnect is waiting or checking the network (only one at a time). */
+  private reconnecting = false;
+  /** Encoder restarts made since the outage began whose stream still didn't get through. */
+  private reconnectTries = 0;
+  /**
+   * Destinations that are down in the running encoder (their output failed; the others go on).
+   * They stay down until a new encoder connects them: progress never marks them on air.
+   */
+  private down = new Set<string>();
   private statusTimer: ReturnType<typeof setTimeout> | null = null;
   private lastEmit = 0;
   private part = 1;
@@ -343,6 +360,8 @@ export class StreamController {
       this.status = { ...this.status, restarts: 0, error: null, advice: null };
       this.everLive = false;
       this.outageSince = null;
+      this.reconnectTries = 0;
+      this.cancelReconnect();
       // A window that was getting ready under another mode starts again at the right size.
       if (this.win && this.winProfile?.height !== this.freshProfile().height) this.closeWindow();
       if (!this.win) this.openWindow();
@@ -832,7 +851,14 @@ export class StreamController {
     const encoder = await this.usableEncoder(ffmpeg);
     const { urls, status: destinations } = await this.destinations(ffmpeg);
     if (run !== this.spawnSeq) return; // another start overtook this one
-    this.endpoints = urls.map(endpointOf).filter((e): e is Endpoint => e !== null);
+    // A new encoder tries every destination afresh.
+    this.down.clear();
+    // (The addresses come in the same order as the destinations that can start.)
+    this.endpoints = new Map(
+      destinations
+        .filter((x) => x.state === 'connecting')
+        .map((x, i) => [x.id, endpointOf(urls[i] ?? '')]),
+    );
     const streamIds = destinations.filter((x) => x.state === 'connecting').map((x) => x.id);
     if (this.want.stream && urls.length === 0) {
       this.want.stream = false;
@@ -1206,7 +1232,11 @@ export class StreamController {
   private onProgress(p: Progress): void {
     const destinations =
       p.time > 1
-        ? this.markDestinations('ok', undefined, (x) => x.state === 'connecting')
+        ? this.markDestinations(
+            'ok',
+            undefined,
+            (x) => x.state === 'connecting' && !this.down.has(x.id),
+          )
         : this.status.destinations;
     const first = this.status.state === 'starting' && p.time > 1;
     this.ffmpegDropped = p.dropped;
@@ -1244,11 +1274,18 @@ export class StreamController {
       },
       first,
     );
-    if (first && this.want.stream && destinations.some((x) => x.state === 'ok')) {
+    // On air: the first time, or back after a drop (with none of the destinations still down).
+    if (
+      first &&
+      this.want.stream &&
+      this.down.size === 0 &&
+      destinations.some((x) => x.state === 'ok')
+    ) {
       // Back after a drop: say so once (the outage is over); else it's the first time on air.
       this.d.notice({ level: 'info', key: this.outageSince ? 'streamReconnected' : 'streamLive' });
       this.everLive = true;
       this.outageSince = null;
+      this.reconnectTries = 0;
       // On air again: the console stops saying "Reconnecting".
       if (this.status.error === 'reconnecting') this.setStatus({ error: null }, true);
     }
@@ -1276,6 +1313,7 @@ export class StreamController {
       true,
     );
     if (!id || id === 'record') return;
+    this.down.add(id);
     // Live before, and the connection went: keep the recording going and reconnect quietly.
     if (this.want.stream && this.everLive) return this.reconnectLater();
     this.d.notice({ level: 'warning', key: 'streamDestinationFailed' });
@@ -1283,66 +1321,97 @@ export class StreamController {
 
   /**
    * The stream dropped after it had been live (a network blip, a router restart): stay on and
-   * try again, quietly, for a while, instead of ending it. Each attempt first checks that a
-   * destination's server answers, so nothing restarts while the internet is still down. A
-   * recording carries on meanwhile (or, if the encoder stopped, continues as a new part).
+   * try again, quietly, for a while, instead of ending it. Before each try it checks that the
+   * dropped destinations' servers answer, so nothing restarts while the internet is still down
+   * (a recording, or another destination that's still fine, carries on untouched meanwhile).
    */
   private reconnectLater(): void {
-    if (this.retry) return; // one attempt at a time
+    if (this.reconnecting) return; // one attempt at a time (waiting, or checking the network)
     const now = Date.now();
     const first = this.outageSince === null;
     this.outageSince ??= now;
     if (now - this.outageSince > RECONNECT_WINDOW_MS) return this.giveUpReconnecting();
-    const n = this.status.restarts;
-    const wait = RECONNECT_STEPS_MS[Math.min(n, RECONNECT_STEPS_MS.length - 1)] ?? 5_000;
+    const steps = this.reconnectTries > 0 ? RECONNECT_TRY_MS : RECONNECT_CHECK_MS;
+    const n = this.reconnectTries > 0 ? this.reconnectTries - 1 : this.status.restarts;
+    const wait = steps[Math.min(n, steps.length - 1)] ?? 5_000;
     this.setStatus(
       {
         ...(this.ff ? {} : { state: 'starting' as const }),
-        restarts: n + 1,
+        restarts: this.status.restarts + 1,
         error: 'reconnecting',
-        destinations: this.markDestinations('connecting', undefined, (x) => x.id !== 'record'),
+        // The ones that are down show as reconnecting (all of them if the encoder stopped).
+        destinations: this.markDestinations(
+          'connecting',
+          undefined,
+          (x) => x.id !== 'record' && (!this.ff || this.down.has(x.id)),
+        ),
       },
       true,
     );
     if (first) {
-      this.d.log.warn('stream dropped; reconnecting', { endpoints: this.endpoints.length });
+      this.d.log.warn('stream dropped; reconnecting', { servers: this.endpoints.size });
       this.d.notice({ level: 'warning', key: 'streamReconnecting' });
     }
+    this.reconnecting = true;
+    const attempt = ++this.reconnectSeq;
     this.retry = setTimeout(() => {
       this.retry = null;
-      void (async () => {
-        if (!this.want.stream) return;
-        // Still no network: wait and check again (no restart, no new recording part).
-        if (!(await anyReachable(this.endpoints))) return this.reconnectLater();
-        // Ended (or another attempt queued) while the network was being checked: leave it.
-        if (!this.stillReconnecting()) return;
-        if (this.ff) await this.restartEncoder(this.want.record);
-        else {
-          if (this.want.record) this.part += 1;
-          await this.spawnEncoder();
-        }
-      })();
+      void this.tryReconnect(attempt);
     }, wait);
   }
 
-  /** Still waiting to reconnect (not ended, and no other attempt queued). */
-  private stillReconnecting(): boolean {
-    return this.want.stream && this.retry === null;
+  /** One reconnect attempt: check the network, then (if it's back) restart the encoder. */
+  private async tryReconnect(attempt: number): Promise<void> {
+    const current = (): boolean => attempt === this.reconnectSeq && this.want.stream;
+    if (!current()) return;
+    // Only the destinations that are down (one that's still streaming always answers); with
+    // the encoder gone, all of them.
+    const ids = this.ff ? [...this.down] : [...this.endpoints.keys()];
+    const down = ids.map((id) => this.endpoints.get(id)).filter((e): e is Endpoint => !!e);
+    const back = await anyReachable(down);
+    // Ended, restarted or overtaken while the network was being checked: leave it.
+    if (!current()) return;
+    this.reconnecting = false;
+    if (!back) return this.reconnectLater(); // still offline: no restart, no new part
+    this.reconnectTries += 1;
+    if (this.ff) await this.restartEncoder(this.want.record);
+    else {
+      if (this.want.record) this.part += 1;
+      await this.spawnEncoder();
+    }
   }
 
-  /** Reconnecting went on too long: stop the stream (a recording that's still going carries on). */
+  /** Cancel a reconnect that's waiting or checking the network. */
+  private cancelReconnect(): void {
+    this.reconnectSeq += 1;
+    this.reconnecting = false;
+  }
+
+  /**
+   * Reconnecting went on too long. The destinations that couldn't come back are marked failed
+   * and left; whatever is still going (a recording, another destination) carries on. With
+   * nothing left, the stream ends.
+   */
   private giveUpReconnecting(): void {
     this.d.log.warn('stream could not reconnect; giving up', {
       minutes: RECONNECT_WINDOW_MS / 60_000,
     });
     this.outageSince = null;
-    if (this.ff && this.want.record) {
-      this.want.stream = false;
+    this.reconnectTries = 0;
+    this.cancelReconnect();
+    const otherLive =
+      !!this.ff && this.status.destinations.some((d) => d.id !== 'record' && !this.down.has(d.id));
+    if (this.ff && (this.want.record || otherLive)) {
+      if (!otherLive) this.want.stream = false;
       this.setStatus(
         {
           error: 'reconnectFailed',
-          streaming: false,
-          destinations: this.markDestinations('failed', undefined, (x) => x.id !== 'record'),
+          streaming: otherLive,
+          destinations: this.markDestinations(
+            'failed',
+            undefined,
+            (x) => x.id !== 'record' && this.down.has(x.id),
+          ),
         },
         true,
       );
@@ -1454,6 +1523,8 @@ export class StreamController {
   private async stopEncoder(): Promise<void> {
     if (this.retry) clearTimeout(this.retry);
     this.retry = null;
+    // A stop, a restart or a new run: any reconnect still waiting is called off.
+    this.cancelReconnect();
     if (this.steadyTimer) clearTimeout(this.steadyTimer);
     this.steadyTimer = null;
     this.stopFeeding();

@@ -744,7 +744,7 @@
     "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder.",
     "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming.",
     "streamReconnected": "The stream is back on.",
-    "streamGaveUp": "The stream couldn’t reconnect for 10 minutes and has stopped. The recording carries on. Check the internet, then Go live again."
+    "streamGaveUp": "A stream destination couldn’t reconnect for 10 minutes and has stopped. Anything else (a recording, other destinations) carries on."
   },
   "perf": {
     "fps": "Control FPS",
