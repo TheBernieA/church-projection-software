@@ -56,12 +56,16 @@ export function useSongEditor(song: Song, item: SongItem) {
    * new slide joining the song as you type is the same slide, mid-word).
    */
   const [visit, setVisit] = useState(0);
+  /**
+   * What the text box holds, once typed in (it can differ from the slide: emptied, not saved).
+   * Null until then: the slide's own words.
+   */
+  const draft = useRef<string | null>(null);
   const go = (next: Cursor): void => {
     setCursor(next);
     setVisit((n) => n + 1);
+    draft.current = null;
   };
-  /** What the text box holds right now (it can differ from the slide: emptied, not yet saved). */
-  const draft = useRef('');
   /** The group whose name is being typed in the slide list. */
   const [renaming, setRenaming] = useState<string | null>(null);
 
@@ -139,7 +143,11 @@ export function useSongEditor(song: Song, item: SongItem) {
     select,
     /** Step by position as shown (the pending slide counts). */
     step: (shown: number) => select(pending && shown > at ? shown - 1 : shown),
-    startTyping: () => !readOnly && setTyping(true),
+    startTyping: () => {
+      if (readOnly) return;
+      draft.current = null;
+      setTyping(true);
+    },
     startRenaming: setRenaming,
     stopRenaming: () => setRenaming(null),
 
@@ -176,7 +184,7 @@ export function useSongEditor(song: Song, item: SongItem) {
     },
     /** Stop typing with what the text box holds (a click away from it). */
     finishTyping: () => {
-      if (typing) stopTyping(draft.current);
+      if (typing) stopTyping(draft.current ?? current?.lines.join('\n') ?? '');
     },
     stopTyping,
 

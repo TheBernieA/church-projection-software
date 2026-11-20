@@ -8,6 +8,9 @@ import { RED_LETTER } from './constants';
 
 const fitCache = new FitCache();
 
+/** A slide's heading (text slides) and other emphasised words: warm gold over the theme's colour. */
+export const EMPHASIS_COLOR = '#E8B04B';
+
 function appendSpans(doc: Document, parent: HTMLElement, spans: Span[], theme: Theme): void {
   for (const span of spans) {
     if (span.style === 'verse-number') {
@@ -32,7 +35,7 @@ function appendSpans(doc: Document, parent: HTMLElement, spans: Span[], theme: T
     if (span.style === 'wj' && theme.redLetters) s.style.color = RED_LETTER;
     if (span.style === 'add') s.style.fontStyle = 'italic';
     if (span.style === 'nd') s.style.fontVariant = 'small-caps';
-    if (span.style === 'emphasis') s.style.color = '#E8B04B';
+    if (span.style === 'emphasis') s.style.color = EMPHASIS_COLOR;
     parent.append(s);
   }
 }

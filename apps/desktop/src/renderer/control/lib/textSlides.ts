@@ -18,10 +18,29 @@ export const selectSlide = (item: TextItem, index: number): void =>
     editObjectId: null,
   });
 
-export function addSlide(item: TextItem, after = item.slides.length - 1): void {
+/** A new, empty slide after slide `after` (the last, by default), selected. Returns its id. */
+export function addSlide(item: TextItem, after = item.slides.length - 1): string {
+  const id = newId();
   const slides = [...item.slides];
-  slides.splice(after + 1, 0, { id: newId(), title: '', body: '' });
+  slides.splice(after + 1, 0, { id, title: '', body: '' });
   edit(item, slides, after + 1);
+  return id;
+}
+
+/**
+ * Break slide `index` at the caret: its text keeps what came before, a new slide after it takes
+ * the rest (selected). Read from the item as it is now, so typing just before isn't lost.
+ * Returns the new slide's id.
+ */
+export function breakSlide(item: TextItem, index: number, before: string, after: string): string {
+  const id = newId();
+  updateItem<TextItem>(item.id, (x) => {
+    const slides = x.slides.map((s, i) => (i === index ? { ...s, body: before.trimEnd() } : s));
+    slides.splice(index + 1, 0, { id, title: '', body: after.trimStart() });
+    return { ...x, slides };
+  });
+  useStore.setState({ editCursor: { itemId: item.id, index: index + 1 }, editObjectId: null });
+  return id;
 }
 
 export function duplicateSlide(item: TextItem, index: number): void {

@@ -328,12 +328,14 @@ test('new song: name it, type on its slides, group them, add to service → outp
   await expect(words).toHaveValue('Chorus test line');
   await words.press('Escape');
   await expect(words).toHaveCount(0);
-  const list = control.getByRole('navigation', { name: 'Song slides' });
+  const list = control.getByRole('navigation', { name: 'Slides' });
   await expect(list.getByRole('button', { name: /^Slide \d of 2$/ })).toHaveCount(2);
   // Right-click the second slide: group it as the chorus.
   await list.getByRole('button', { name: 'Slide 2 of 2' }).click({ button: 'right' });
-  await control.getByRole('menuitem', { name: 'Group' }).click();
-  await control.getByRole('menuitem', { name: 'Chorus', exact: true }).click();
+  await control.getByRole('menuitem', { name: 'Group' }).hover(); // opens its submenu
+  const chorus = control.getByRole('menuitem', { name: 'Chorus', exact: true });
+  await expect(chorus).toBeVisible();
+  await chorus.click();
   await expect(list.getByText('Chorus', { exact: true })).toBeVisible();
   await control.screenshot({ path: 'test-results/05-song-editor.png' });
   // ⌥↩ breaks a slide at the caret; a slide emptied when typing stops goes.
@@ -371,7 +373,8 @@ test('songs: build arrangements and a translation, then pick them per item', asy
   // Chords go in brackets inside lines; only the stage display shows them.
   const canvas = control.getByTestId('song-canvas');
   const words = control.getByRole('textbox', { name: 'Words', exact: true });
-  const list = control.getByRole('navigation', { name: 'Song slides' });
+  // Opened from the Edit tab, it's compact: the slides run along the bottom.
+  const list = control.getByRole('list', { name: 'Slides' });
   await list.getByRole('button', { name: 'Slide 1 of 2' }).click();
   await canvas.dblclick();
   await words.fill('[G]Hallelujah test line');
@@ -697,6 +700,11 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await expect(control.getByText('Slide 1 of 1')).toBeVisible();
   await control.getByRole('button', { name: 'Add slide' }).click();
   await expect(control.getByText('Slide 2 of 2')).toBeVisible();
+  // A new slide opens ready to type on it; Esc stops, the inspector edits it too.
+  await expect(
+    control.getByTestId('slide-canvas').getByLabel('Text', { exact: true }),
+  ).toBeFocused();
+  await control.keyboard.press('Escape');
   await control.getByLabel('Heading', { exact: true }).fill('Welcome');
   await control.getByLabel('Text', { exact: true }).fill('Coffee is served after the service');
   await expect(control.getByRole('button', { name: /Welcome/ }).first()).toBeVisible();
@@ -738,10 +746,12 @@ test('canvas editor: add a rectangle, drag it, and it shows on the output where 
   const strip = control.getByRole('list', { name: 'Slides' });
   const before = await strip.getByRole('listitem').count();
   await strip.getByRole('listitem').first().hover();
-  await strip.getByRole('button', { name: 'Duplicate slide 1' }).click();
+  await strip.getByRole('button', { name: 'Options for slide 1' }).click();
+  await control.getByRole('menuitem', { name: 'Duplicate' }).click();
   await expect(strip.getByRole('listitem')).toHaveCount(before + 1);
   await strip.getByRole('listitem').nth(1).hover();
-  await strip.getByRole('button', { name: 'Delete slide 2' }).click();
+  await strip.getByRole('button', { name: 'Options for slide 2' }).click();
+  await control.getByRole('menuitem', { name: 'Delete slide' }).click();
   await expect(strip.getByRole('listitem')).toHaveCount(before);
   await control.screenshot({ path: 'test-results/11b-canvas.png' });
   await mode('Show');
@@ -2742,9 +2752,10 @@ test('words edit in place on the canvas; Bible picks wait; announcements can sto
   await mode('Edit');
   const canvas = control.getByTestId('slide-canvas');
   await canvas.dblclick({ position: { x: 24, y: 24 } });
-  const words = control.getByRole('dialog', { name: 'Edit the words on this slide' });
-  await words.getByLabel('Text', { exact: true }).fill('Typed on the slide');
-  await words.getByRole('button', { name: 'Done' }).click();
+  // Typed right on the slide, in its own font; Esc stops typing.
+  const words = canvas.getByLabel('Text', { exact: true });
+  await words.fill('Typed on the slide');
+  await words.press('Escape');
   await expect(words).toHaveCount(0);
   await expect(canvas.locator('.ls-text').last()).toContainText('Typed on the slide');
 

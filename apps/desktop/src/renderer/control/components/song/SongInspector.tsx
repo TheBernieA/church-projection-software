@@ -452,7 +452,7 @@ function SlideTab({ ed }: { ed: SongEditorState }) {
       </Section>
       <div className="flex flex-wrap gap-1.5 px-4 py-4">
         <Button size="xs" variant="ghost" icon={<Plus size={13} />} onClick={() => ed.newSlide()}>
-          {t('songEditor.newSlide')}
+          {t('canvas.newSlide')}
         </Button>
         <Button
           size="xs"
@@ -460,10 +460,10 @@ function SlideTab({ ed }: { ed: SongEditorState }) {
           icon={<Copy size={13} />}
           onClick={() => ed.duplicate(at)}
         >
-          {t('songEditor.duplicate')}
+          {t('canvas.duplicate')}
         </Button>
         <Button size="xs" variant="ghost" icon={<Trash2 size={13} />} onClick={() => ed.remove(at)}>
-          {t('songEditor.delete')}
+          {t('canvas.deleteSlide')}
         </Button>
       </div>
     </>

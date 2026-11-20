@@ -1,5 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { FileQuestion, FolderPlus, Plus, Rows3, Scissors, Type } from 'lucide-react';
+import { FileQuestion, FolderPlus, Plus, Scissors, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { type Song } from '@lampstand/core';
 import { Button, Typography } from '@lampstand/ui';
@@ -7,70 +6,24 @@ import { useSize } from '../../lib/hooks';
 import { displayCombo } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
+import { KindTile } from '../kindIcons';
 import { SceneView } from '../SceneView';
-import {
-  ExpandToggle,
-  InspectorToggle,
-  SlideStage,
-  useFit,
-  useInspector,
-  usePageKeys,
-} from '../canvas/editorParts';
+import { SlideEditor } from '../canvas/SlideEditor';
+import { ObjectsPanel, type ListSlide } from '../canvas/SlideList';
+import { TextBox } from '../canvas/TextBox';
+import { Tool, ToolBar } from '../canvas/tools';
+import { GroupHeader, SongAddMenu, SongSlideMenu } from './SongGroups';
 import { SongInspector } from './SongInspector';
-import { SongSlideList } from './SongSlideList';
-import { isNewSlideKey, SongTextBox } from './SongTextBox';
 import { useSongEditor, type SongEditorState } from './useSongEditor';
 import { type SongItem } from '../../types';
 
-/** One tool on the floating bar: an icon over its name. */
-function Tool({
-  icon,
-  label,
-  title,
-  onClick,
-  active,
-  disabled,
-}: {
-  icon: ReactNode;
-  label: string;
-  title?: string;
-  onClick: () => void;
-  active?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <Button
-      variant="bare"
-      title={title ?? label}
-      aria-label={label}
-      aria-pressed={active}
-      disabled={disabled}
-      onClick={onClick}
-      className={`flex min-w-[58px] flex-col items-center gap-0.5 rounded-[7px] px-2 py-1 transition-colors disabled:opacity-35 ${
-        active
-          ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
-          : 'text-[var(--text-2)] hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]'
-      }`}
-    >
-      {icon}
-      <Typography size={10} weight="medium" tone="inherit">
-        {label}
-      </Typography>
-    </Button>
-  );
-}
-
-/** The tools floating over the stage: type, new slide, new group, split, Reflow. */
-function ToolBar({ ed }: { ed: SongEditorState }) {
+/** The song's tools: type on the slide, a new slide, a new group, split a long slide. */
+function SongTools({ ed }: { ed: SongEditorState }) {
   const { t } = useTranslation();
-  const long = !ed.pending && (ed.current?.lines.length ?? 0) > ed.maxLines;
   if (ed.readOnly) return null;
+  const long = !ed.pending && (ed.current?.lines.length ?? 0) > ed.maxLines;
   return (
-    <div
-      role="toolbar"
-      aria-label={t('songEditor.tools')}
-      className="flex items-center gap-0.5 rounded-[11px] bg-[var(--surface-2)] p-1 shadow-[var(--shadow-2),inset_0_0_0_1px_var(--hairline)]"
-    >
+    <ToolBar label={t('songEditor.tools')}>
       <Tool
         icon={<Type size={17} />}
         label={t('songEditor.toolText')}
@@ -81,7 +34,7 @@ function ToolBar({ ed }: { ed: SongEditorState }) {
       <Tool
         icon={<Plus size={17} />}
         label={t('songEditor.toolSlide')}
-        title={`${t('songEditor.newSlide')} (${displayCombo('Mod+Shift+N')})`}
+        title={`${t('canvas.newSlide')} (${displayCombo('Mod+Shift+N')})`}
         onClick={() => ed.newSlide()}
       />
       <Tool
@@ -97,19 +50,12 @@ function ToolBar({ ed }: { ed: SongEditorState }) {
         disabled={!long}
         onClick={() => ed.splitLong(ed.at)}
       />
-      <span aria-hidden className="mx-1 h-8 w-px bg-[var(--hairline-strong)]" />
-      <Tool
-        icon={<Rows3 size={17} />}
-        label={t('canvas.reflow')}
-        title={t('canvas.reflowHint')}
-        onClick={() => useStore.setState({ mode: 'reflow' })}
-      />
-    </div>
+    </ToolBar>
   );
 }
 
 /**
- * The slide being edited, drawn as the room will see it, with its text box on top. Double-click
+ * The slide being edited, drawn as the room will see it, with its text box on top: double-click
  * the words (or press Enter) to type them in place; the arrow keys move between slides; a click
  * on the slide away from the words stops typing.
  */
@@ -117,10 +63,8 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
   const { t } = useTranslation();
   const [host, size] = useSize();
   const scale = size.width / ed.theme.canvas.width;
-  const done = (text: string): void => {
-    ed.stopTyping(text);
-    host.current?.focus();
-  };
+  const lines = ed.current?.lines ?? [];
+  const refocus = (): void => host.current?.focus();
   return (
     <div
       ref={host}
@@ -129,10 +73,9 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
       aria-label={t('songEditor.canvas')}
       data-testid="song-canvas"
       onDoubleClick={ed.startTyping}
-      // A click on the slide away from the words stops typing.
       onPointerDown={() => {
         ed.finishTyping();
-        host.current?.focus();
+        refocus();
       }}
       onKeyDown={(e) => {
         const steps: Record<string, number> = {
@@ -151,17 +94,85 @@ function SongCanvas({ ed }: { ed: SongEditorState }) {
       className="relative aspect-video w-full overflow-hidden rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--accent)]"
     >
       {/* While typing, the words show in the text box only (not twice). */}
-      <SceneView scene={ed.scene(ed.current?.lines ?? [], ed.at, !ed.typing)} />
-      {scale > 0 && <SongTextBox ed={ed} scale={scale} onDone={done} />}
+      <SceneView scene={ed.scene(lines, ed.at, !ed.typing)} />
+      {scale > 0 && (
+        <TextBox
+          theme={ed.theme}
+          scale={scale}
+          editing={ed.typing}
+          visit={ed.visit}
+          onStart={ed.startTyping}
+          fields={[
+            {
+              key: 'words',
+              label: t('songEditor.words'),
+              placeholder: t('songEditor.wordsPlaceholder'),
+              value: lines.join('\n'),
+              onChange: (v) => {
+                ed.draft(v);
+                ed.type(v);
+              },
+            },
+          ]}
+          onDone={(v) => {
+            ed.stopTyping(v.words ?? '');
+            refocus();
+          }}
+          onBreak={ed.breakSlide}
+          onNewSlide={(v) => ed.breakSlide(v.words ?? '', '')}
+        />
+      )}
     </div>
   );
 }
 
+/** A song's slides for the list: each group's heading first, a new slide's place held. */
+function listSlides(ed: SongEditorState, prompt: string, long: string): ListSlide[] {
+  const pending: ListSlide = {
+    key: 'pending',
+    scene: ed.scene([], ed.at),
+    index: null,
+    overlay: (
+      <Typography
+        size={11}
+        tone="inherit"
+        className="absolute inset-0 flex items-center justify-center px-2 text-center text-white/70"
+      >
+        {prompt}
+      </Typography>
+    ),
+  };
+  const out: ListSlide[] = [];
+  ed.slides.forEach((s, i) => {
+    if (ed.pending && i === ed.at) out.push(pending);
+    out.push({
+      key: `${s.sectionId}:${i}`,
+      scene: ed.scene(s.lines, i),
+      index: i,
+      header:
+        ed.slides[i - 1]?.sectionId !== s.sectionId ? (
+          <GroupHeader ed={ed} index={i} slide={s} />
+        ) : undefined,
+      badge:
+        s.lines.length > ed.maxLines ? (
+          <Typography
+            size={10}
+            weight="bold"
+            tone="inherit"
+            className="absolute bottom-1.5 right-1.5 rounded-[4px] bg-[#b7791f] px-1 text-black"
+          >
+            {long}
+          </Typography>
+        ) : undefined,
+    });
+  });
+  if (ed.pending && ed.at >= ed.slides.length) out.push(pending);
+  return out;
+}
+
 /**
- * A song in the Edit workspace, laid out like a presentation editor and given the whole window:
- * its slides under their groups on the left, the slide on a stage in the middle with the tools
- * floating above it (type right on the slide), and the song's and the slide's details on the
- * right.
+ * A song in the Edit workspace: its slides under their groups (Verse 1, Chorus…), the slide on a
+ * stage (type right on it), and the song's and the slide's details.
  */
 export function SongEditor({ item }: { item: SongItem }) {
   const { t } = useTranslation();
@@ -174,62 +185,51 @@ export function SongEditor({ item }: { item: SongItem }) {
 function SongEditorBody({ song, item }: { song: Song; item: SongItem }) {
   const { t } = useTranslation();
   const ed = useSongEditor(song, item);
-  const [root, size] = useSize();
-  const inspector = useInspector(size.width);
-  const [stage, width] = useFit(40);
-  usePageKeys(ed.at, ed.step);
-  // ⇧⌘N: a new slide after this one (while typing, the text box handles it).
-  const newSlide = useRef(ed.newSlide);
-  useEffect(() => {
-    newSlide.current = ed.newSlide;
-  });
-  useEffect(() => {
-    const onKey = (e: globalThis.KeyboardEvent): void => {
-      if (e.defaultPrevented || !isNewSlideKey(e) || useStore.getState().dialog) return;
-      e.preventDefault();
-      newSlide.current();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
-
   return (
-    <div ref={root} className="@container relative flex min-h-0 flex-1">
-      <SongSlideList ed={ed} />
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--surface-0)]">
-        <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-center px-3">
-          <div className="pointer-events-auto">
-            <ToolBar ed={ed} />
-          </div>
-          <div className="pointer-events-auto absolute right-3 top-0 flex gap-1">
-            <ExpandToggle />
-            <InspectorToggle {...inspector} />
-          </div>
-        </div>
-        {ed.slides.length ? (
-          <div className="flex min-h-0 flex-1 flex-col pt-16">
-            <SlideStage
-              stageRef={stage}
-              width={width}
-              hint={ed.readOnly ? t('song.readOnly') : undefined}
-              onBackgroundPointerDown={ed.finishTyping}
-            >
-              <SongCanvas ed={ed} />
-            </SlideStage>
-          </div>
-        ) : (
-          <EmptyState
-            icon={<FileQuestion size={28} />}
-            title={t('songEditor.empty')}
-            action={
-              <Button variant="primary" onClick={ed.addGroup}>
-                {t('songEditor.newGroup')}
-              </Button>
-            }
+    <SlideEditor
+      icon={<KindTile kind="song" size={24} />}
+      title={song.title}
+      list={{
+        slides: listSlides(ed, t('songEditor.typeNew'), t('songEditor.long')),
+        selected: ed.at,
+        onSelect: ed.step,
+        onMove: ed.move,
+        onDelete: ed.remove,
+        menu: (index) => <SongSlideMenu ed={ed} index={index} />,
+        addMenu: <SongAddMenu ed={ed} />,
+        onAdd: () => ed.newSlide(),
+        readOnly: ed.readOnly,
+        footer: (
+          <ObjectsPanel
+            rows={[
+              {
+                key: 'words',
+                icon: <Type size={14} />,
+                label: ed.current?.lines[0] ?? t('songEditor.toolText'),
+                selected: ed.typing,
+                onClick: ed.startTyping,
+              },
+            ]}
           />
-        )}
-      </div>
-      {inspector.open && <SongInspector ed={ed} />}
-    </div>
+        ),
+      }}
+      tools={<SongTools ed={ed} />}
+      canvas={ed.slides.length ? <SongCanvas ed={ed} /> : null}
+      empty={
+        <EmptyState
+          icon={<FileQuestion size={28} />}
+          title={t('songEditor.empty')}
+          action={
+            <Button variant="primary" onClick={ed.addGroup}>
+              {t('songEditor.newGroup')}
+            </Button>
+          }
+        />
+      }
+      inspector={<SongInspector ed={ed} />}
+      onStageBackground={ed.finishTyping}
+      onNewSlide={() => ed.newSlide()}
+      hint={ed.readOnly ? t('song.readOnly') : undefined}
+    />
   );
 }

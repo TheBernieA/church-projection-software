@@ -270,11 +270,11 @@ function ItemSection({
           selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-0)]'
         }`}
       >
+        {/* The whole bar up to its tools selects the item. */}
         <Button
           variant="bare"
-
           onClick={select}
-          className="flex min-w-0 cursor-pointer items-center gap-2 text-left"
+          className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
         >
           <KindTile kind={item.kind} size={20} />
           <Typography size={13} weight="semibold" truncate>
@@ -286,7 +286,7 @@ function ItemSection({
         </Button>
         {/* Tools in groups, as in other presentation software: the item's own settings, what's
             coming, then where it plays. */}
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
           {/* Every item with slides can move on by itself (announcements loop by default). */}
           <LoopToggle item={item} />

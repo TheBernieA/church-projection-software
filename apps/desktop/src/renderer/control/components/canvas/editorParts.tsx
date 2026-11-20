@@ -1,23 +1,21 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   Maximize2,
   Minimize2,
   PanelRightClose,
   PanelRightOpen,
-  Rows3,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button, IconButton, Typography } from '@lampstand/ui';
+import { IconButton, Typography } from '@lampstand/ui';
 import { useStore } from '../../lib/store';
 import { usePaneSize } from '../shell/Splitter';
 
 /**
- * Pieces every slide editor in the Edit workspace shares (text slides and songs): the
- * inspector's show/hide and its frame, the slide fitted to the stage, the slide stepper, and the
- * panel for typing a slide's words in place.
+ * Pieces the Edit workspace's editors share: the inspector's show/hide and its frame, the
+ * expand button, the slide fitted to its stage, the slide stepper, Page Up / Page Down, and a
+ * text field that saves as you type.
  */
 
 /** Narrower than this, the inspector floats over the slide instead of beside it. */
@@ -186,56 +184,6 @@ export function SlideStepper({
   );
 }
 
-/**
- * The editor's header: what is being edited, which slide of how many (with previous and next),
- * anything the editor adds (`children`), then Reflow (all the words at once) and the inspector.
- * Narrow, it keeps what's needed.
- */
-export function EditorBar({
-  icon,
-  title,
-  index,
-  total,
-  onStep,
-  inspector,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  index: number;
-  total: number;
-  onStep: (index: number) => void;
-  inspector: ReturnType<typeof useInspector>;
-  children?: ReactNode;
-}) {
-  const { t } = useTranslation();
-  return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--hairline)] bg-[var(--surface-1)] px-3 @max-[560px]:gap-1.5 @max-[560px]:px-2">
-      <span className="contents @max-[560px]:hidden">{icon}</span>
-      <div className="min-w-0 @max-[560px]:hidden">
-        <Typography as="h2" size={14} weight="semibold" tone="primary" truncate>
-          {title}
-        </Typography>
-      </div>
-      <SlideStepper index={index} total={total} onStep={onStep} />
-      {children}
-      <span className="flex-1" />
-      <Button
-        size="sm"
-        variant="ghost"
-        icon={<Rows3 size={14} />}
-        title={t('canvas.reflowHint')}
-        aria-label={t('canvas.reflow')}
-        onClick={() => useStore.setState({ mode: 'reflow' })}
-      >
-        <span className="@max-[560px]:hidden">{t('canvas.reflow')}</span>
-      </Button>
-      <ExpandToggle />
-      <InspectorToggle {...inspector} />
-    </header>
-  );
-}
-
 /** Page Up / Page Down step through the slides being edited (not while typing). */
 export function usePageKeys(index: number, select: (index: number) => void): void {
   const latest = useRef(select);
@@ -253,54 +201,6 @@ export function usePageKeys(index: number, select: (index: number) => void): voi
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [index]);
-}
-
-/** Class for the fields inside the typing panel. */
-export const INLINE_FIELD =
-  'w-full resize-none rounded-[8px] border-0 bg-white/8 px-3 py-2 text-white outline-none ring-1 ring-white/15 placeholder:text-white/35 focus:ring-2 focus:ring-[var(--accent)]';
-
-/**
- * A slide's words, typed right on it: a panel over the slide (which keeps changing behind it as
- * you type). Escape, ⌘↩ or Done closes it; keys typed here never reach the canvas or the show.
- */
-export function InlinePanel({
-  hint,
-  onClose,
-  children,
-}: {
-  hint: ReactNode;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div
-      role="dialog"
-      aria-label={t('canvas.editWords')}
-      onPointerDown={(e) => e.stopPropagation()}
-      onDoubleClick={(e) => e.stopPropagation()}
-      onKeyDown={(e) => {
-        e.stopPropagation(); // typing here never nudges objects or changes slides
-        if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) {
-          e.preventDefault();
-          onClose();
-        }
-      }}
-      className="absolute inset-0 z-10 flex items-center justify-center bg-black/45 p-[6%] backdrop-blur-[2px]"
-    >
-      <div className="flex w-full max-w-[720px] flex-col gap-2.5 rounded-[12px] bg-[rgba(18,20,28,0.92)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.08)]">
-        {children}
-        <div className="flex items-center gap-3">
-          <Typography size={11} tone="inherit" className="flex-1 text-white/55">
-            {hint}
-          </Typography>
-          <Button size="xs" variant="primary" icon={<Check size={13} />} onClick={onClose}>
-            {t('canvas.done')}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /**
