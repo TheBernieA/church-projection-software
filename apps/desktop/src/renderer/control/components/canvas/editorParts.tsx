@@ -92,7 +92,7 @@ export function SlideStage({
   stageRef: RefObject<HTMLDivElement | null>;
   width: number;
   onBackgroundPointerDown?: () => void;
-  hint: string;
+  hint?: string;
   children: ReactNode;
 }) {
   return (
@@ -109,13 +109,15 @@ export function SlideStage({
       >
         {children}
       </div>
-      <Typography
-        size={11}
-        tone="muted"
-        className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap"
-      >
-        {hint}
-      </Typography>
+      {hint && (
+        <Typography
+          size={11}
+          tone="muted"
+          className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap"
+        >
+          {hint}
+        </Typography>
+      )}
     </div>
   );
 }

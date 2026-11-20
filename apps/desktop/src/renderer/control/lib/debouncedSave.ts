@@ -5,6 +5,8 @@
  */
 export class DebouncedSave {
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Saves sent and not yet answered. */
+  private saving = 0;
 
   constructor(
     private readonly save: () => Promise<void>,
@@ -14,6 +16,14 @@ export class DebouncedSave {
   /** A save is waiting. A method, not a field: it changes while a save is awaited. */
   isPending(): boolean {
     return this.timer !== null;
+  }
+
+  /**
+   * A save is waiting or still on its way. Until it lands, a copy read from disk may be older
+   * than what's on screen, so it mustn't replace it.
+   */
+  isBusy(): boolean {
+    return this.timer !== null || this.saving > 0;
   }
 
   schedule(typing: boolean): void {
@@ -26,6 +36,11 @@ export class DebouncedSave {
     if (!this.timer) return;
     clearTimeout(this.timer);
     this.timer = null;
-    await this.save();
+    this.saving += 1;
+    try {
+      await this.save();
+    } finally {
+      this.saving -= 1;
+    }
   }
 }

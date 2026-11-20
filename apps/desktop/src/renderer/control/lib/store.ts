@@ -161,12 +161,12 @@ export async function refresh(kind: RepoKind | 'all'): Promise<void> {
       q('services.list').then(async (services) => {
         patch({ services });
         const current = get().service?.id ?? get().settings?.lastServiceId ?? services[0]?.id;
-        if (current && !serviceSave.isPending()) {
+        if (current && !serviceSave.isBusy()) {
           const service = await q('services.get', { id: current });
           // While that was read, another playlist may have been opened, or this one edited:
           // then what was read is stale, and showing it would undo what the user just did.
           const open = get().service?.id;
-          if ((open === undefined || open === current) && !serviceSave.isPending())
+          if ((open === undefined || open === current) && !serviceSave.isBusy())
             patch({ service: service ?? null });
         }
       }),
@@ -244,25 +244,37 @@ export function flushServiceSave(): Promise<void> {
 // ---------- Song editing, autosaved the same way ----------
 /** Each edited song's save (kept per song, so two songs' typing never merge into one save). */
 const songSaves = new Map<string, DebouncedSave>();
+/** When each song was last saved from here: a copy read from disk older than that is stale. */
+const songSavedAt = new Map<string, string>();
 
 function songSave(id: string): DebouncedSave {
   let save = songSaves.get(id);
   if (!save) {
     save = new DebouncedSave(async () => {
       const song = get().songs.find((s) => s.id === id);
-      if (song) await attempt(() => cmd('song.save', { entity: song }), 'errors.save');
+      if (!song) return;
+      const saved = await attempt(() => cmd<Song>('song.save', { entity: song }), 'errors.save');
+      if (saved) songSavedAt.set(id, saved.updatedAt);
     });
     songSaves.set(id, save);
   }
   return save;
 }
 
-/** The library as read, but with any song whose edits aren't saved yet as it is here. */
+/**
+ * The library as read, but with any song still being saved from here as it is on screen: a
+ * copy read while a save was waiting or on its way (or read before the last save) is older
+ * than the edits, and showing it would undo them under the operator's hands.
+ */
 function withUnsavedSongs(songs: Song[]): Song[] {
   const local = get().songs;
-  return songs.map((s) =>
-    songSaves.get(s.id)?.isPending() ? (local.find((l) => l.id === s.id) ?? s) : s,
-  );
+  return songs.map((s) => {
+    const mine = local.find((l) => l.id === s.id);
+    if (!mine) return s;
+    const busy = songSaves.get(s.id)?.isBusy() ?? false;
+    const stale = s.updatedAt < (songSavedAt.get(s.id) ?? '');
+    return busy || stale ? mine : s;
+  });
 }
 
 /**

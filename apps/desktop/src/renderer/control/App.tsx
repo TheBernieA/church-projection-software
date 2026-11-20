@@ -1,6 +1,7 @@
 import { installSurfaces } from './lib/surfaces';
 import { installMediaTransition } from './lib/transitions';
 import { useSwitcherSources } from './lib/switcher';
+import { useSongEditorOpen } from './lib/hooks';
 import { migrateLocalCameras } from './lib/inputs';
 import { saveSettings } from './lib/actions';
 import { MixerPanel } from './components/mixer/MixerPanel';
@@ -54,6 +55,8 @@ export function App() {
   const mixerOpen = useStore((s) => s.mixerOpen);
   const liveConsole = useStore((s) => s.liveConsole);
   const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
+  // Editing a song takes the whole window, as a presentation editor does.
+  const fullEditor = useSongEditorOpen();
   useEffect(() => installShortcuts(), []);
   useEffect(() => installSurfaces(), []);
   useEffect(() => installMediaTransition(), []);
@@ -84,16 +87,20 @@ export function App() {
       {textBarOpen && <TextBar />}
       {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
       <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
-        <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
-          <LeftSidebar binHeight={binOpen ? bin.size : null} />
-        </aside>
-        <Splitter axis="x" pane={left} label={t('layout.resizeLeft')} />
+        {!fullEditor && (
+          <>
+            <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
+              <LeftSidebar binHeight={binOpen ? bin.size : null} />
+            </aside>
+            <Splitter axis="x" pane={left} label={t('layout.resizeLeft')} />
+          </>
+        )}
         <div className="flex min-w-0 flex-1 flex-col">
           <main className="pane flex min-h-0 flex-1 flex-col">
             <CenterPane />
           </main>
           {/* The media bin opens under the slides from the toolbar's Media button. */}
-          {binOpen && (
+          {binOpen && !fullEditor && (
             <>
               <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />
               <div className="pane">
@@ -102,12 +109,16 @@ export function App() {
             </>
           )}
         </div>
-        <Splitter axis="x" pane={right} invert label={t('layout.resizeRight')} />
-        <aside className="pane flex shrink-0 flex-col" style={{ width: right.size }}>
-          <RightColumn />
-        </aside>
+        {!fullEditor && (
+          <>
+            <Splitter axis="x" pane={right} invert label={t('layout.resizeRight')} />
+            <aside className="pane flex shrink-0 flex-col" style={{ width: right.size }}>
+              <RightColumn />
+            </aside>
+          </>
+        )}
         {/* The Live console, docked beside the output (or popped out into its own window). */}
-        {liveConsole === 'docked' && (
+        {liveConsole === 'docked' && !fullEditor && (
           <>
             <Splitter axis="x" pane={liveWidth} invert label={t('layout.resizeLive')} />
             <aside className="pane flex shrink-0 flex-col" style={{ width: liveWidth.size }}>
@@ -117,7 +128,7 @@ export function App() {
         )}
       </div>
       {/* The Mixer docks along the bottom, under every pane, from the toolbar's Mixer button. */}
-      {mixerOpen && (
+      {mixerOpen && !fullEditor && (
         <>
           <Splitter axis="y" pane={mixer} invert label={t('layout.resizeMixer')} />
           <div className="pane shrink-0">

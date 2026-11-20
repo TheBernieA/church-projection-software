@@ -311,6 +311,7 @@ test('new song: name it, type on its slides, group them, add to service → outp
   // It opens in Edit on its first (empty) slide, ready to type.
   const words = control.getByRole('textbox', { name: 'Words', exact: true });
   await words.fill('Hallelujah test line');
+  await control.screenshot({ path: 'test-results/05a-song-typing.png' });
   // ⇧⌘N: a new slide after it, typed straight away.
   await words.press('ControlOrMeta+Shift+N');
   await expect(words).toHaveValue('');

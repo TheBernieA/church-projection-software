@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Copy, FolderPlus, MoreHorizontal, Plus, Scissors, Tag, Trash2 } from 'lucide-react';
+import { Copy, FolderPlus, MoreHorizontal, Plus, Scissors, Tag, Trash2, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { GROUP_LABELS, type EditorSlide } from '@lampstand/lyrics';
 import { Button, IconButton, Typography } from '@lampstand/ui';
@@ -236,6 +236,35 @@ function GroupHeader({
   );
 }
 
+/** The "+" by the song's name: a new slide (⇧⌘N) or a new group. */
+function AddMenu({ ed }: { ed: SongEditorState }) {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <IconButton size="xs" variant="quiet" aria-label={t('songEditor.add')}>
+          <Plus size={15} />
+        </IconButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="end" sideOffset={4} className={`${MENU_CLASS} w-[200px]`}>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => ed.newSlide()}>
+            <Plus size={13} />
+            <span className="flex-1">{t('songEditor.newSlide')}</span>
+            <Typography size={11} tone="muted">
+              {displayCombo('Mod+Shift+N')}
+            </Typography>
+          </DropdownMenu.Item>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={ed.addGroup}>
+            <FolderPlus size={13} />
+            {t('songEditor.newGroup')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
 /** One slide's picture, numbered, outlined when it's the one being edited. */
 function Thumb({
   ed,
@@ -257,32 +286,32 @@ function Thumb({
   children?: ReactNode;
 }) {
   return (
-    <Button
-      variant="bare"
-      data-slide
-      aria-current={selected || undefined}
-      aria-label={label}
-      onClick={onClick}
-      onKeyDown={onKeyDown}
-      className="relative block w-full overflow-hidden rounded-[6px] text-left focus-visible:outline-none"
-      style={{
-        boxShadow: selected
-          ? '0 0 0 2px var(--accent), 0 8px 22px rgba(0,0,0,0.4)'
-          : '0 0 0 1px var(--hairline-strong)',
-      }}
-    >
-      <SceneView scene={ed.scene(lines, n - 1)} mode="thumbnail" />
+    <>
+      <Button
+        variant="bare"
+        data-slide
+        aria-current={selected || undefined}
+        aria-label={label}
+        onClick={onClick}
+        onKeyDown={onKeyDown}
+        className="relative block w-full overflow-hidden rounded-[3px] text-left focus-visible:outline-none"
+        style={{
+          boxShadow: selected ? '0 0 0 3px var(--accent)' : '0 0 0 1px var(--hairline-strong)',
+        }}
+      >
+        <SceneView scene={ed.scene(lines, n - 1)} mode="thumbnail" />
+        {children}
+      </Button>
       <Typography
         size={11}
-        weight="bold"
-        tone="white"
+        weight={selected ? 'semibold' : 'regular'}
+        tone={selected ? 'primary' : 'muted'}
         tabular
-        className="absolute bottom-1.5 left-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 backdrop-blur-sm"
+        className="mt-1 block"
       >
-        {n}
+        {n}.
       </Typography>
-      {children}
-    </Button>
+    </>
   );
 }
 
@@ -318,8 +347,14 @@ export function SongSlideList({ ed }: { ed: SongEditorState }) {
   return (
     <nav
       aria-label={t('songEditor.slides')}
-      className="flex w-[220px] shrink-0 flex-col border-r border-[var(--hairline)] bg-[var(--surface-1)] @max-[640px]:w-[150px]"
+      className="flex w-[240px] shrink-0 flex-col border-r border-[var(--hairline)] bg-[var(--surface-1)] @max-[640px]:w-[160px]"
     >
+      <header className="flex h-10 shrink-0 items-center gap-2 border-b border-[var(--hairline)] pl-3 pr-1.5">
+        <Typography as="h2" size={13} weight="semibold" tone="primary" truncate className="flex-1">
+          {ed.song.title}
+        </Typography>
+        {!ed.readOnly && <AddMenu ed={ed} />}
+      </header>
       <ol data-song-slides className="min-h-0 flex-1 overflow-y-auto pb-2">
         {ed.slides.map((slide, i) => {
           const shown = ed.pending && i >= ed.at ? i + 2 : i + 1;
@@ -415,29 +450,29 @@ export function SongSlideList({ ed }: { ed: SongEditorState }) {
         })}
         {ed.pending && ed.at >= ed.slides.length && placeholder}
       </ol>
-      {!ed.readOnly && (
-        <div className="flex shrink-0 gap-1 border-t border-[var(--hairline)] p-2">
-          <Button
-            size="xs"
-            variant="ghost"
-            icon={<Plus size={13} />}
-            className="flex-1"
-            title={displayCombo('Mod+Shift+N')}
-            onClick={() => ed.newSlide()}
-          >
-            {t('songEditor.newSlide')}
-          </Button>
-          <Button
-            size="xs"
-            variant="ghost"
-            icon={<FolderPlus size={13} />}
-            className="flex-1"
-            onClick={ed.addGroup}
-          >
-            {t('songEditor.newGroup')}
-          </Button>
-        </div>
-      )}
+      {/* The slide's objects: for a song, its one text box (click to type in it). */}
+      <section
+        aria-label={t('songEditor.objects')}
+        className="shrink-0 border-t border-[var(--hairline)] bg-[var(--surface-1)] pb-2"
+      >
+        <Typography as="h3" variant="overline" className="flex h-8 items-center px-3">
+          {t('songEditor.objects')}
+        </Typography>
+        <Button
+          variant="bare"
+          aria-pressed={ed.typing}
+          disabled={ed.readOnly}
+          onClick={ed.startTyping}
+          className={`mx-2 flex h-8 w-[calc(100%-16px)] items-center gap-2 rounded-[5px] px-2 text-left ${
+            ed.typing ? 'bg-[var(--select)] text-white' : 'hover:bg-[var(--surface-2)]'
+          }`}
+        >
+          <Type size={14} className="shrink-0" />
+          <Typography size={12} tone="inherit" truncate>
+            {ed.current?.lines[0] ?? t('songEditor.toolText')}
+          </Typography>
+        </Button>
+      </section>
     </nav>
   );
 }

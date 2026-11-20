@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { makeScene, type Scene, type Song } from '@lampstand/core';
 import {
   addGroup,
@@ -60,6 +60,8 @@ export function useSongEditor(song: Song, item: SongItem) {
     setCursor(next);
     setVisit((n) => n + 1);
   };
+  /** What the text box holds right now (it can differ from the slide: emptied, not yet saved). */
+  const draft = useRef('');
   /** The group whose name is being typed in the slide list. */
   const [renaming, setRenaming] = useState<string | null>(null);
 
@@ -79,18 +81,21 @@ export function useSongEditor(song: Song, item: SongItem) {
   const credit = songCredit(song, { settings });
   const sceneOf = useMemo(
     () =>
-      (lines: string[], i: number): Scene =>
-        makeScene({
-          background: look.background,
-          content: {
-            key: `${song.id}:edit:${i}`,
-            kind: 'lyrics',
-            theme: look.theme,
-            blocks: [{ spans: [{ text: lines.map(stripChords).join('\n') }] }],
-            // The credits show on the first slide, as they will on screen.
-            ...(i === 0 && credit ? { copyright: credit } : {}),
-          },
-        }),
+      (lines: string[], i: number, words = true): Scene =>
+        // Without words: just the background (the text box draws them while typing).
+        !words
+          ? makeScene({ background: look.background })
+          : makeScene({
+              background: look.background,
+              content: {
+                key: `${song.id}:edit:${i}`,
+                kind: 'lyrics',
+                theme: look.theme,
+                blocks: [{ spans: [{ text: lines.map(stripChords).join('\n') }] }],
+                // The credits show on the first slide, as they will on screen.
+                ...(i === 0 && credit ? { copyright: credit } : {}),
+              },
+            }),
     [look, credit, song.id],
   );
 
@@ -99,6 +104,12 @@ export function useSongEditor(song: Song, item: SongItem) {
     let next = song;
     editSong(song.id, (s) => (next = fn(s)), { typing: typingEdit });
     return next;
+  };
+  /** Typing stopped: a new slide left empty is dropped, an emptied slide removed. */
+  const stopTyping = (text: string): void => {
+    setTyping(false);
+    if (pending) setCursor({ at: Math.max(0, at - 1), pending: false });
+    else if (!slideLines(text).length) change((s) => setSlideLines(s, at, []));
   };
   const select = (i: number): void => {
     const to = clamp(i, 0, slides.length - 1);
@@ -123,6 +134,8 @@ export function useSongEditor(song: Song, item: SongItem) {
     visit,
     renaming,
     scene: sceneOf,
+    /** The theme the slides are drawn with (the text box types in its font). */
+    theme: look.theme,
     select,
     /** Step by position as shown (the pending slide counts). */
     step: (shown: number) => select(pending && shown > at ? shown - 1 : shown),
@@ -157,12 +170,15 @@ export function useSongEditor(song: Song, item: SongItem) {
       });
       go({ at: at + 1, pending: !tail.length });
     },
-    /** Typing stopped: a new slide left empty is dropped, an emptied slide removed. */
-    stopTyping: (text: string) => {
-      setTyping(false);
-      if (pending) setCursor({ at: Math.max(0, at - 1), pending: false });
-      else if (!slideLines(text).length) change((s) => setSlideLines(s, at, []));
+    /** The text box's words as they are typed. */
+    draft: (text: string) => {
+      draft.current = text;
     },
+    /** Stop typing with what the text box holds (a click away from it). */
+    finishTyping: () => {
+      if (typing) stopTyping(draft.current);
+    },
+    stopTyping,
 
     duplicate: (i: number) => {
       change((s) => duplicateSlide(s, i));

@@ -19,6 +19,19 @@ describe('DebouncedSave', () => {
     expect(save).toHaveBeenCalledTimes(2);
   });
 
+  it('is busy while a save is waiting or on its way', async () => {
+    let land = (): void => undefined;
+    const d = new DebouncedSave(() => new Promise<void>((r) => (land = r)));
+    d.schedule(true);
+    expect(d.isBusy()).toBe(true);
+    const saving = d.flush();
+    expect(d.isPending()).toBe(false);
+    expect(d.isBusy()).toBe(true);
+    land();
+    await saving;
+    expect(d.isBusy()).toBe(false);
+  });
+
   it('flushes what is waiting, and nothing when nothing is', async () => {
     const save = vi.fn(() => Promise.resolve());
     const d = new DebouncedSave(save);

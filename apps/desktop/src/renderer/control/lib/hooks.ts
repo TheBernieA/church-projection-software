@@ -216,3 +216,18 @@ export function useLiveEdited(): { edited: boolean; update: () => void } {
   const edited = !!now && !!program && now.key === program.key && shown(now) !== shown(program);
   return { edited, update: () => void (cursor && refreshLiveSlide(cursor.itemId)) };
 }
+
+/**
+ * A song is open in Edit: its editor takes the whole window (like a presentation editor), the
+ * library, output column, media bin and mixer making way until Show (or another page) is picked.
+ */
+export function useSongEditorOpen(): boolean {
+  return useStore((s) => {
+    if (s.mode !== 'edit') return false;
+    const item =
+      s.adhoc?.id === s.selectedItemId
+        ? s.adhoc
+        : s.service?.items.find((i) => i.id === s.selectedItemId);
+    return item?.kind === 'song';
+  });
+}
