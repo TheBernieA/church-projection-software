@@ -7,11 +7,13 @@ a Mac (or let GitHub do all three, below).
 
 ## Before the first build
 
-1. **ffmpeg** (livestream and recording): put the platform's binary and its licence in
-   `resources/ffmpeg/<os>-<arch>/` (`mac-arm64`, `mac-x64`, `win-x64`); see
-   `resources/ffmpeg/README.md`. Without it the app works, but can't stream or record.
-   The ffmpeg builds from `ffmpeg-static` are GPL: shipping them means offering their source
-   (a link to the ffmpeg source for that version is enough).
+1. **ffmpeg** (livestream and recording) is automatic: `pnpm install` downloads it for the
+   computer you're on (`ffmpeg-static`), and every `dist:*` script copies it into
+   `resources/ffmpeg/<os>-<arch>/` first (`apps/desktop/scripts/prepareFfmpeg.mjs`). Building for
+   another platform (the Windows installer on a Mac, the Intel one on Apple silicon), put that
+   platform's binary and `LICENSE.txt` there by hand; otherwise the build warns and that
+   installer can't stream or record. These ffmpeg builds are GPL: shipping them means offering
+   their source (a link to the ffmpeg source for that version is enough).
 2. **Icon**: put a 1024×1024 PNG at `apps/desktop/build/icon.png`. electron-builder makes the
    Mac and Windows icons from it. Without it the installers use Electron's default icon.
 3. Set `version` in `apps/desktop/package.json`: it names the installers
@@ -67,7 +69,7 @@ You get `Lampstand Setup <version>.exe`. Unsigned installers make Windows SmartS
 ## All three on GitHub
 
 `.github/workflows/release.yml` builds Mac (Apple silicon and Intel) and Windows installers on
-GitHub's machines, fetching ffmpeg for each. Start it by pushing a version tag
+GitHub's machines, each with its own ffmpeg. Start it by pushing a version tag
 (`git tag v0.1.0 && git push origin v0.1.0`), or from Actions › Release builds › Run workflow
 once the workflow is on the default branch; the installers are under Artifacts on the run's
 page. For signed builds add these repository

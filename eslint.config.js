@@ -14,6 +14,7 @@ export default tseslint.config(
       '**/release/**',
       '**/test-results/**',
       'scripts/**',
+      'apps/desktop/scripts/**',
       '**/*.worklet.js',
       '**/*.config.*',
       'eslint.config.js',
