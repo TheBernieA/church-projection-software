@@ -982,7 +982,7 @@
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
-          "a": "1. Click + next to PLAYLISTS to make a playlist.\n2. Add sections (Walk-in, Worship, Word…) with the + above the items.\n3. On the Show page, click the “+ Add to …” card at the end of a section (or the + on its coloured band) to add songs, verses, slides or media to it. You can also drag things onto the section.\n4. Drag items to reorder them. A section moves with everything under it.\nDeleting a section deletes everything in it. The … beside a playlist’s name duplicates or deletes the playlist."
+          "a": "1. Click + next to PLAYLISTS to make a playlist.\n2. Add sections (Walk-in, Worship, Word…) with the + above the items.\n3. On the Show page, click the “+ Add to …” card at the end of a section (or the + on its coloured band) to add songs, verses, slides or media to it. You can also drag things onto the section.\n4. Drag items to reorder them. A section moves with everything under it.\nDeleting a section deletes everything in it. The … beside a playlist’s name renames, duplicates or deletes it; double-click the name to rename it too."
         },
         "verse": {
           "q": "Put a Bible verse on screen",
@@ -1776,7 +1776,9 @@
     "delete": "Delete playlist",
     "confirmDelete": "Delete the playlist “{{name}}”? Its songs and media stay in the library.",
     "deleted": "“{{name}}” deleted. Undo brings it back.",
-    "copyOf": "{{name}} copy"
+    "copyOf": "{{name}} copy",
+    "rename": "Rename",
+    "playlistName": "Playlist name"
   },
   "showControls": {
     "label": "Show controls",

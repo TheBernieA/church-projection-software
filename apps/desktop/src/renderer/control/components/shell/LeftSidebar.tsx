@@ -8,16 +8,18 @@ import {
   ListMusic,
   MoreHorizontal,
   Music2,
+  Pencil,
   Plus,
   Trash2,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { importSlides } from '../../lib/importSlides';
 import {
   createService,
   deleteService,
   duplicateService,
+  renameService,
   serviceFromTemplate,
 } from '../../lib/services';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
@@ -147,9 +149,52 @@ function OutlineRow({
   );
 }
 
-/** A playlist's own menu (shown on hover, and while it is the open one): duplicate, delete. */
-function PlaylistMenu({ id, name, selected }: { id: string; name: string; selected: boolean }) {
+/**
+ * A playlist's name being typed, in place of its row: Enter or clicking away keeps it, Esc
+ * leaves the old name.
+ */
+function PlaylistNameInput({
+  name,
+  onDone,
+}: {
+  name: string;
+  onDone: (name: string | null) => void;
+}) {
   const { t } = useTranslation();
+  return (
+    <input
+      autoFocus
+      aria-label={t('sidebar.playlistName')}
+      defaultValue={name}
+      maxLength={200}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={(e) => onDone(e.currentTarget.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') {
+          e.preventDefault(); // cancels here; it never reaches the show
+          onDone(null);
+        }
+      }}
+      className="field mx-1.5 my-0.5 !h-8 w-[calc(100%-12px)]"
+    />
+  );
+}
+
+/** A playlist's own menu (shown on hover, and while it is the open one): rename, duplicate, delete. */
+function PlaylistMenu({
+  id,
+  name,
+  selected,
+  onRename,
+}: {
+  id: string;
+  name: string;
+  selected: boolean;
+  onRename: () => void;
+}) {
+  const { t } = useTranslation();
+  const renameNext = useRef(false);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -165,7 +210,22 @@ function PlaylistMenu({ id, name, selected }: { id: string; name: string; select
         </IconButton>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_CLASS}>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={4}
+          className={MENU_CLASS}
+          // Rename picked: the name box takes the focus, not the menu button.
+          onCloseAutoFocus={(e) => {
+            if (!renameNext.current) return;
+            renameNext.current = false;
+            e.preventDefault();
+            onRename();
+          }}
+        >
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => (renameNext.current = true)}>
+            <Pencil size={14} />
+            {t('sidebar.rename')}
+          </DropdownMenu.Item>
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void duplicateService(id)}>
             <Copy size={14} />
             {t('sidebar.duplicate')}
@@ -197,6 +257,8 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
   // The media sidebar has its own height, whatever the bin beside it does (drag the line above it).
   const mediaNav = usePaneSize('mediaNavHeight', 340, 120, 720);
   const playlists = services.filter((s) => !s.isTemplate);
+  /** The playlist whose name is being typed. */
+  const [renaming, setRenaming] = useState<string | null>(null);
 
   const library = (id: 'songs' | 'hymns') => () =>
     useStore.setState({ sidebarView: 'library', libraryTab: id });
@@ -231,17 +293,39 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
         {playlists.map((p) => {
           const selected = view === 'playlist' && current === p.id;
           return (
-            <div key={p.id} className="group relative">
-              <OutlineRow
-                icon={<ListMusic size={14} />}
-                label={p.name}
-                selected={selected}
-                onClick={() => {
-                  useStore.setState({ sidebarView: 'playlist' });
-                  if (current !== p.id) void openService(p.id);
-                }}
-              />
-              <PlaylistMenu id={p.id} name={p.name} selected={selected} />
+            <div
+              key={p.id}
+              className="group relative"
+              // Double-click the name to rename it.
+              onDoubleClick={() => setRenaming(p.id)}
+            >
+              {renaming === p.id ? (
+                <PlaylistNameInput
+                  name={p.name}
+                  onDone={(name) => {
+                    setRenaming(null);
+                    if (name !== null) void renameService(p.id, name);
+                  }}
+                />
+              ) : (
+                <>
+                  <OutlineRow
+                    icon={<ListMusic size={14} />}
+                    label={p.name}
+                    selected={selected}
+                    onClick={() => {
+                      useStore.setState({ sidebarView: 'playlist' });
+                      if (current !== p.id) void openService(p.id);
+                    }}
+                  />
+                  <PlaylistMenu
+                    id={p.id}
+                    name={p.name}
+                    selected={selected}
+                    onRename={() => setRenaming(p.id)}
+                  />
+                </>
+              )}
             </div>
           );
         })}
