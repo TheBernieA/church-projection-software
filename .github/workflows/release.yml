@@ -1,9 +1,14 @@
 # Installers for Mac (Apple silicon and Intel) and Windows, built on GitHub's own machines.
-# Run it by hand: Actions › Release builds › Run workflow. The installers are attached to the run.
+# Start it by pushing a version tag (git tag v0.1.0 && git push origin v0.1.0), or by hand from
+# Actions › Release builds › Run workflow (once this file is on the default branch). The
+# installers are attached to the run (Artifacts, at the bottom of its page).
 # Each is built on its own platform: native libraries (NDI, PDF) are fetched for the machine
 # doing the build, so a Windows installer can't be made on a Mac.
 name: Release builds
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
 
 jobs:
   build:
@@ -14,7 +19,7 @@ jobs:
           - os: macos-latest # Apple silicon
             target: mac
             ffmpeg: mac-arm64
-          - os: macos-13 # Intel
+          - os: macos-15-intel # Intel
             target: mac
             ffmpeg: mac-x64
           - os: windows-latest
