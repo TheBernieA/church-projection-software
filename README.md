@@ -14,11 +14,173 @@ pnpm install
 pnpm dev                 # run the app: UI hot-reloads; main-process changes restart the app automatically
 pnpm verify              # typecheck + lint + unit/integration tests + security checklist
 pnpm e2e                 # build, then Playwright-for-Electron end-to-end tests
-pnpm --filter @lampstand/desktop dist:mac   # or dist:win — signed installers need certificates (see §17.6)
+pnpm dist:mac:local     # a Mac installer (see "Building the installers" below for Windows and more)
 ```
 
 > In VS Code's integrated terminal, run Electron commands as `env -u ELECTRON_RUN_AS_NODE pnpm dev`. VS Code sets that
 > variable, and it makes Electron run as plain Node.
+
+## Building the installers
+
+How to make the installable apps: a `.dmg` for Mac and a setup `.exe` for Windows. Signing,
+notarizing and building on GitHub are covered in [docs/packaging.md](docs/packaging.md).
+
+### Part 1: Mac installers (on a Mac)
+
+#### 1. One-time setup on a new Mac
+
+1. Install **Node.js 22**: download "LTS" from https://nodejs.org and run the installer.
+2. In Terminal, turn on pnpm (the project fixes the version itself):
+   ```sh
+   corepack enable
+   ```
+3. Get the project (it's a private repository, so sign in to GitHub when asked):
+   ```sh
+   git clone https://github.com/TheBernieA/church-projection-software.git
+   cd church-projection-software
+   ```
+
+#### 2. Install the project's dependencies
+
+From the project folder:
+
+```sh
+pnpm install
+```
+
+Run this again whenever you pull new changes.
+
+#### 3. Add ffmpeg (needed for streaming and recording)
+
+Without it the app still works, but can't livestream or record. For Apple-silicon Macs, from
+the project folder:
+
+```sh
+mkdir -p /tmp/ff && cd /tmp/ff && npm init -y >/dev/null && npm install ffmpeg-static@5.2.0
+cd -
+mkdir -p resources/ffmpeg/mac-arm64
+cp /tmp/ff/node_modules/ffmpeg-static/ffmpeg resources/ffmpeg/mac-arm64/
+cp /tmp/ff/node_modules/ffmpeg-static/ffmpeg.LICENSE resources/ffmpeg/mac-arm64/LICENSE.txt
+```
+
+That download is the ffmpeg for the Mac you're on. For an Intel Mac build, put an Intel ffmpeg
+in `resources/ffmpeg/mac-x64/` (the easiest way: run the same download on an Intel Mac).
+
+#### 4. Optional: app icon and version
+
+- **Icon:** a square 1024×1024 PNG at `apps/desktop/build/icon.png`. Without it, the app uses
+  Electron's default icon.
+- **Version:** `"version"` in `apps/desktop/package.json` (now `0.1.0`). The installer file
+  names use it.
+
+#### 5. Build
+
+- For Apple-silicon Macs (M1 and later):
+  ```sh
+  pnpm dist:mac:local
+  ```
+- For Intel Macs:
+  ```sh
+  pnpm dist:mac:local:intel
+  ```
+
+Each takes about 1–3 minutes. The installers appear in `apps/desktop/release/<version>/`:
+
+- `Lampstand-<version>-arm64.dmg`: Apple silicon
+- `Lampstand-<version>.dmg`: Intel
+
+#### 6. Install on a Mac
+
+1. Double-click the `.dmg` and drag **Lampstand** into **Applications**.
+2. The first time, right-click Lampstand in Applications and choose **Open**, then **Open**
+   again. macOS asks because the app isn't notarized by Apple. If there's no Open button, go to
+   **System Settings › Privacy & Security** and click **Open Anyway**.
+3. When asked, allow the camera and microphone if you want to use them.
+
+### Part 2: Windows installer (on a Windows PC)
+
+#### 1. One-time setup
+
+1. Install **Node.js 22 LTS** from https://nodejs.org (accept the defaults).
+2. Install **Git** from https://git-scm.com/download/win (accept the defaults).
+3. Open **PowerShell** (Start menu, type "PowerShell", press Enter), then:
+   ```powershell
+   corepack enable
+   ```
+   If that says "access denied", open PowerShell with **Run as administrator** for this one
+   command.
+4. Get the project:
+   ```powershell
+   cd $HOME\Documents
+   git clone https://github.com/TheBernieA/church-projection-software.git
+   cd church-projection-software
+   ```
+   Or copy the project folder over from a Mac (leave out `node_modules` and
+   `apps\desktop\release`).
+
+#### 2. Install the project's dependencies
+
+```powershell
+pnpm install
+```
+
+#### 3. Add ffmpeg (needed for streaming and recording)
+
+From the project folder in PowerShell:
+
+```powershell
+$repo = (Get-Location).Path
+mkdir $env:TEMP\ff -Force | Out-Null; cd $env:TEMP\ff
+npm init -y | Out-Null; npm install ffmpeg-static@5.2.0
+mkdir "$repo\resources\ffmpeg\win-x64" -Force | Out-Null
+copy node_modules\ffmpeg-static\ffmpeg.exe "$repo\resources\ffmpeg\win-x64\"
+copy node_modules\ffmpeg-static\ffmpeg.LICENSE "$repo\resources\ffmpeg\win-x64\LICENSE.txt"
+cd $repo
+```
+
+#### 4. Build
+
+```powershell
+pnpm dist:win
+```
+
+It takes about 2–4 minutes. The installer appears at
+`apps\desktop\release\<version>\Lampstand Setup <version>.exe`.
+
+If the build stops with **"Cannot create symbolic link"**, turn on Developer Mode
+(**Settings › System › For developers › Developer Mode**; on Windows 10, **Settings › Update &
+Security › For developers**) and build again. Running PowerShell as administrator also works.
+
+#### 5. Install on a Windows PC
+
+1. Double-click `Lampstand Setup <version>.exe`.
+2. When Windows shows "Windows protected your PC", click **More info**, then **Run anyway**.
+   That's because the installer isn't code-signed.
+3. Choose where to install, then finish. Lampstand appears in the Start menu.
+
+### Building the Windows installer on a Mac instead
+
+1. Install Rosetta once (the Windows installer tool is an Intel program). In Terminal, enter
+   your Mac password when asked:
+   ```sh
+   sudo softwareupdate --install-rosetta --agree-to-license
+   ```
+2. Put a Windows `ffmpeg.exe` (and its licence as `LICENSE.txt`) in
+   `resources/ffmpeg/win-x64/`. The npm download on a Mac only gets the Mac ffmpeg, so take the
+   `.exe` from a Windows machine or the ffmpeg website.
+3. Build:
+   ```sh
+   pnpm dist:win
+   ```
+
+### Before sharing it widely
+
+- **No install warnings:** sign with an Apple Developer ID and notarize (Mac, $99 a year), and
+  use a code-signing certificate (Windows). See [docs/packaging.md](docs/packaging.md).
+- **ffmpeg is GPL-licensed:** when sharing the app, keep its `LICENSE.txt` (the steps above do)
+  and point people to the ffmpeg source.
+- **New versions:** for each release, change `version` in `apps/desktop/package.json` and build
+  again.
 
 ## Layout
 
@@ -31,7 +193,7 @@ apps/desktop/          Electron app
   src/workers/search/  SearchWorker (utilityProcess, MiniSearch over Bibles + songs)
   e2e/                 Playwright for Electron
 packages/
-  core/                domain schemas (Zod), CommandBus (undo/redo + audit), LiveStateStore, EventBus, themes
+  core/                domain schemas (Zod), CommandBus (undo/redo + audit), LiveStateStore, themes
   scripture/           reference parser (typed + spoken), formatting, navigation, slide splitting
   lyrics/              song text format, arrangements, slide building, hymnal conversion
   renderer/            Scene → DOM renderer: layers, auto-fit, transitions, background continuity, masks
