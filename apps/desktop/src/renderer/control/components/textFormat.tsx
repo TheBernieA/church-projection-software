@@ -7,12 +7,19 @@ import {
   AlignVerticalJustifyEnd,
   AlignVerticalJustifyStart,
   Bold,
+  CalendarDays,
+  CaseUpper,
+  Clock,
   ClipboardPaste,
   Copy,
   Italic,
+  List,
+  ListOrdered,
   RotateCcw,
+  Shrink,
   Strikethrough,
   Underline,
+  WrapText,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { omit, type TextFormat, type Theme } from '@lampstand/core';
@@ -188,38 +195,9 @@ function Option({
   );
 }
 
-/** A labelled dropdown in a row: name on the left, choice on the right. */
-function Choice<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: SelectOption<T>[];
-  onChange: (v: T) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <Typography size={12} tone="secondary">
-        {label}
-      </Typography>
-      <Select
-        size="sm"
-        aria-label={label}
-        value={value}
-        onChange={onChange}
-        options={options}
-        className="!w-40"
-      />
-    </div>
-  );
-}
-
 /**
  * The Text tab: the words' font, size, style, capitals, colour, alignment (across and up and
- * down), scaling, line transform, list, stroke, shadow, lines only, scrolling and linked text,
+ * down), capitals, shrink to fit, joined lines, list, stroke, shadow, lines only, scrolling and linked text,
  * shown as they are now (`theme`, with the formatting applied) and kept as formatting over the
  * theme. Copy style takes this formatting to paste onto another song or item; Use theme clears it.
  */
@@ -272,6 +250,53 @@ export function TextFormatPanel({
       set: () => onChange({ strike: !text.strike }),
     },
   ] as const;
+  const upper = text.textTransform === 'uppercase';
+  const fit = theme.autoFit.enabled;
+  const list = text.list ?? null;
+  const linked = text.linked ?? null;
+  const options = [
+    {
+      key: 'options',
+      items: [
+        { key: 'capsAll', icon: CaseUpper, on: upper, set: () => onChange({ uppercase: !upper }) },
+        { key: 'scaleFit', icon: Shrink, on: fit, set: () => onChange({ autoFit: !fit }) },
+        {
+          key: 'joinLines',
+          icon: WrapText,
+          on: !!text.joinLines,
+          set: () => onChange({ joinLines: !text.joinLines }),
+        },
+      ],
+    },
+    {
+      key: 'list',
+      items: (
+        [
+          ['bullet', 'listBullet', List],
+          ['number', 'listNumber', ListOrdered],
+        ] as const
+      ).map(([v, key, icon]) => ({
+        key,
+        icon,
+        on: list === v,
+        set: () => onChange({ list: list === v ? null : v }),
+      })),
+    },
+    {
+      key: 'linked',
+      items: (
+        [
+          ['time', 'linkedTime', Clock],
+          ['date', 'linkedDate', CalendarDays],
+        ] as const
+      ).map(([v, key, icon]) => ({
+        key,
+        icon,
+        on: linked === v,
+        set: () => onChange({ linked: linked === v ? null : v }),
+      })),
+    },
+  ];
   return (
     <div className="space-y-4 px-4 py-4">
       {/* Copy this formatting (not the text box's place) to paste onto another song or item. */}
@@ -377,54 +402,22 @@ export function TextFormatPanel({
           </div>
         )}
       </div>
-      <div className="space-y-2">
-        <Choice
-          label={t('textFormat.capitals')}
-          value={text.textTransform === 'uppercase' ? 'upper' : 'none'}
-          onChange={(v) => onChange({ uppercase: v === 'upper' })}
-          options={[
-            { value: 'none', label: t('textFormat.capsNone') },
-            { value: 'upper', label: t('textFormat.capsAll') },
-          ]}
-        />
-        <Choice
-          label={t('textFormat.scaling')}
-          value={theme.autoFit.enabled ? 'fit' : 'none'}
-          onChange={(v) => onChange({ autoFit: v === 'fit' })}
-          options={[
-            { value: 'fit', label: t('textFormat.scaleFit') },
-            { value: 'none', label: t('textFormat.scaleNone') },
-          ]}
-        />
-        <Choice
-          label={t('textFormat.lineTransform')}
-          value={text.joinLines ? 'join' : 'keep'}
-          onChange={(v) => onChange({ joinLines: v === 'join' })}
-          options={[
-            { value: 'keep', label: t('textFormat.keepLines') },
-            { value: 'join', label: t('textFormat.joinLines') },
-          ]}
-        />
-        <Choice
-          label={t('textFormat.list')}
-          value={text.list ?? 'none'}
-          onChange={(v) => onChange({ list: v === 'none' ? null : v })}
-          options={[
-            { value: 'none', label: t('textFormat.listNone') },
-            { value: 'bullet', label: t('textFormat.listBullet') },
-            { value: 'number', label: t('textFormat.listNumber') },
-          ]}
-        />
-        <Choice
-          label={t('textFormat.linked')}
-          value={text.linked ?? 'none'}
-          onChange={(v) => onChange({ linked: v === 'none' ? null : v })}
-          options={[
-            { value: 'none', label: t('textFormat.linkedNone') },
-            { value: 'time', label: t('textFormat.linkedTime') },
-            { value: 'date', label: t('textFormat.linkedDate') },
-          ]}
-        />
+      {/* Capitals, scaling, joined lines, lists and linked text: each an icon, on or off. */}
+      <div className="flex flex-wrap items-center gap-3">
+        {options.map((group) => (
+          <div
+            key={group.key}
+            role="group"
+            aria-label={t(`textFormat.${group.key}`)}
+            className="flex items-center gap-0.5"
+          >
+            {group.items.map(({ key, icon: Icon, on, set }) => (
+              <FormatToggle key={key} label={t(`textFormat.${key}`)} on={on} onClick={set}>
+                <Icon size={15} />
+              </FormatToggle>
+            ))}
+          </div>
+        ))}
       </div>
       <Option
         label={t('textFormat.stroke')}

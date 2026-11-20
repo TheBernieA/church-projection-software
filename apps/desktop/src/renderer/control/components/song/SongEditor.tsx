@@ -1,58 +1,20 @@
-import { FileQuestion, FolderPlus, Plus, Scissors, Type } from 'lucide-react';
+import { FileQuestion, Type } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { type Song } from '@lampstand/core';
 import { Button, Typography } from '@lampstand/ui';
 import { useSize } from '../../lib/hooks';
-import { displayCombo } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { KindTile } from '../kindIcons';
 import { SceneView } from '../SceneView';
+import { EditorToolbar } from '../canvas/EditorToolbar';
 import { SlideEditor } from '../canvas/SlideEditor';
 import { ObjectsPanel, type ListSlide } from '../canvas/SlideList';
 import { TextBox } from '../canvas/TextBox';
-import { Tool, ToolBar } from '../canvas/tools';
 import { GroupHeader, SongAddMenu, SongSlideMenu } from './SongGroups';
 import { SongInspector } from './SongInspector';
 import { useSongEditor, type SongEditorState } from './useSongEditor';
 import { type SongItem } from '../../types';
-
-/** The song's tools: type on the slide, a new slide, a new group, split a long slide. */
-function SongTools({ ed }: { ed: SongEditorState }) {
-  const { t } = useTranslation();
-  if (ed.readOnly) return null;
-  const long = !ed.pending && (ed.current?.lines.length ?? 0) > ed.maxLines;
-  return (
-    <ToolBar label={t('songEditor.tools')}>
-      <Tool
-        icon={<Type size={17} />}
-        label={t('songEditor.toolText')}
-        title={t('songEditor.toolTextHint')}
-        active={ed.typing}
-        onClick={ed.startTyping}
-      />
-      <Tool
-        icon={<Plus size={17} />}
-        label={t('songEditor.toolSlide')}
-        title={`${t('canvas.newSlide')} (${displayCombo('Mod+Shift+N')})`}
-        onClick={() => ed.newSlide()}
-      />
-      <Tool
-        icon={<FolderPlus size={17} />}
-        label={t('songEditor.toolGroup')}
-        title={t('songEditor.newGroup')}
-        onClick={ed.addGroup}
-      />
-      <Tool
-        icon={<Scissors size={17} />}
-        label={t('songEditor.split')}
-        title={t('songEditor.longHint', { max: ed.maxLines })}
-        disabled={!long}
-        onClick={() => ed.splitLong(ed.at)}
-      />
-    </ToolBar>
-  );
-}
 
 /**
  * The slide being edited, drawn as the room will see it, with its text box on top: double-click
@@ -210,7 +172,7 @@ function SongEditorBody({ song, item }: { song: Song; item: SongItem }) {
               {
                 key: 'words',
                 icon: <Type size={14} />,
-                label: ed.current?.lines[0] ?? t('songEditor.toolText'),
+                label: ed.current?.lines[0] ?? t('canvas.toolText'),
                 selected: ed.typing,
                 onClick: ed.startTyping,
               },
@@ -218,7 +180,21 @@ function SongEditorBody({ song, item }: { song: Song; item: SongItem }) {
           />
         ),
       }}
-      tools={<SongTools ed={ed} />}
+      tools={
+        ed.readOnly ? undefined : (
+          <EditorToolbar
+            typing={ed.typing}
+            onType={ed.startTyping}
+            onNewSlide={() => ed.newSlide()}
+            onNewGroup={ed.addGroup}
+            split={{
+              disabled: ed.pending || (ed.current?.lines.length ?? 0) <= ed.maxLines,
+              title: t('songEditor.longHint', { max: ed.maxLines }),
+              onClick: () => ed.splitLong(ed.at),
+            }}
+          />
+        )
+      }
       canvas={ed.slides.length ? <SongCanvas ed={ed} /> : null}
       empty={
         <EmptyState

@@ -22,12 +22,15 @@ import { usePaneSize } from '../shell/Splitter';
 const FLOAT_BELOW = 720;
 
 /**
- * Whether the inspector is showing. Beside the slide it's remembered between sessions; floating
- * over it (a narrow workspace) it starts closed, so the slide shows.
+ * Whether the inspector is showing. Expanded (the whole window) it's always there. Beside the
+ * slide it's remembered between sessions; floating over it (a narrow workspace) it starts
+ * closed, so the slide shows. `toggle` is missing while it can't be hidden.
  */
-export function useInspector(width: number) {
+export function useInspector(width: number): { open: boolean; toggle?: () => void } {
+  const expanded = useStore((s) => s.editExpanded);
   const pane = usePaneSize('editInspector', 1, 0, 1);
   const [floatOpen, setFloatOpen] = useState(false);
+  if (expanded) return { open: true };
   const floating = width > 0 && width < FLOAT_BELOW;
   const open = floating ? floatOpen : pane.size === 1;
   return {
@@ -36,9 +39,10 @@ export function useInspector(width: number) {
   };
 }
 
-/** Show/hide button for the inspector. */
-export function InspectorToggle({ open, toggle }: { open: boolean; toggle: () => void }) {
+/** Show/hide button for the inspector (none while it's always shown). */
+export function InspectorToggle({ open, toggle }: { open: boolean; toggle?: () => void }) {
   const { t } = useTranslation();
+  if (!toggle) return null;
   const label = open ? t('canvas.hideInspector') : t('canvas.showInspector');
   return (
     <IconButton size="sm" aria-label={label} title={label} aria-expanded={open} onClick={toggle}>

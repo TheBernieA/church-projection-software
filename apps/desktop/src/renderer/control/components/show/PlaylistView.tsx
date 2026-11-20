@@ -247,7 +247,7 @@ function ItemSection({
     <section
       ref={register}
       aria-label={title}
-      className={`relative scroll-mt-1 ${dropping ? 'before:absolute before:inset-x-0 before:top-0 before:z-[2] before:h-0.5 before:bg-[var(--select)]' : ''}`}
+      className={`relative scroll-mt-1 ${dropping ? 'before:absolute before:inset-x-0 before:top-0 before:z-[3] before:h-0.5 before:bg-[var(--select)]' : ''}`}
       onDragOver={(e) => {
         if (!isLibraryDrag(e)) return;
         e.preventDefault();
@@ -266,7 +266,7 @@ function ItemSection({
       }}
     >
       <header
-        className={`sticky top-0 z-[1] flex h-9 items-center gap-2 border-b border-[var(--divider)] px-3 ${
+        className={`sticky top-0 z-[2] flex h-9 items-center gap-2 border-b border-[var(--divider)] px-3 ${
           selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-0)]'
         }`}
       >

@@ -395,8 +395,11 @@ test('songs: build arrangements and a translation, then pick them per item', asy
     .fill('[Verse 1]\nLinea de prueba\n\n[Chorus]\nCoro de prueba');
   // The Text tab formats the song's words (kept with the song): all capitals here.
   await control.getByRole('radio', { name: 'Text', exact: true }).click();
-  await control.getByRole('combobox', { name: 'Capitalization' }).click();
-  await control.getByRole('option', { name: 'All capitals' }).click();
+  await control.getByRole('button', { name: 'All capitals' }).click();
+  await expect(control.getByRole('button', { name: 'All capitals' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await control.screenshot({ path: 'test-results/05e-text-tab.png' });
   await mode('Show');
   const slides = control.getByRole('list', { name: 'Slide list' });
@@ -702,6 +705,12 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
 test('text slides: inspector edits the selected slide, add-slide card appends', async () => {
   await addToPlan('Slides'); // something new opens in Edit, expanded to the whole window
   await expect(control.getByRole('region', { name: 'Library' })).toHaveCount(0);
+  // Expanded, the inspector is always there, and the same tool bar as a song's.
+  await expect(control.getByRole('button', { name: 'Hide inspector' })).toHaveCount(0);
+  await expect(control.getByRole('radio', { name: 'Slide', exact: true })).toBeVisible();
+  const tools = control.getByRole('toolbar', { name: 'Slide tools' });
+  await expect(tools.getByRole('button', { name: 'Text', exact: true })).toBeVisible();
+  await expect(tools.getByRole('button', { name: 'Slide', exact: true })).toBeVisible();
   await control
     .getByRole('button', { name: 'Show the playlist and output beside the editor' })
     .click();
@@ -714,15 +723,16 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   ).toBeFocused();
   await control.keyboard.press('Escape');
   await control.getByLabel('Heading', { exact: true }).fill('Welcome');
-  await control.getByLabel('Text', { exact: true }).fill('Coffee is served after the service');
+  await control
+    .getByRole('textbox', { name: 'Text', exact: true })
+    .fill('Coffee is served after the service');
   await expect(control.getByRole('button', { name: /Welcome/ }).first()).toBeVisible();
   await control.waitForTimeout(400);
   await control.screenshot({ path: 'test-results/11-inspector.png' });
   // The Text tab: the words as a numbered list, then back to the theme.
   const canvas = control.getByTestId('slide-canvas');
   await control.getByRole('radio', { name: 'Text', exact: true }).click();
-  await control.getByRole('combobox', { name: 'List' }).click();
-  await control.getByRole('option', { name: 'Numbers' }).click();
+  await control.getByRole('button', { name: 'Numbers' }).click();
   await expect(canvas.locator('.ls-text ol li')).toHaveText(['Coffee is served after the service']);
   await control.screenshot({ path: 'test-results/11c-text-tab.png' });
   await control.getByRole('button', { name: 'Use theme' }).click();
@@ -753,7 +763,7 @@ test('canvas editor: add a rectangle, drag it, and it shows on the output where 
   const canvas = control.getByTestId('slide-canvas');
   await expect(canvas).toBeVisible();
   await control
-    .getByRole('toolbar', { name: 'Canvas tools' })
+    .getByRole('toolbar', { name: 'Slide tools' })
     .getByRole('button', { name: 'Rectangle' })
     .click();
   const rect = canvas.getByRole('button', { name: 'Rectangle on the slide' });
@@ -2897,7 +2907,7 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
   await expect(out.locator('.ls-text').last()).toContainText(/type your text here/i);
   await textItem.getByRole('listitem').first().hover();
   await textItem.getByRole('button', { name: /^Edit slide 1/ }).click();
-  await control.getByLabel('Text', { exact: true }).fill('Edited while live');
+  await control.getByRole('textbox', { name: 'Text', exact: true }).fill('Edited while live');
   const updateLive = control.getByRole('button', { name: 'Update live' });
   await expect(updateLive).toBeVisible();
   await control.waitForTimeout(400);

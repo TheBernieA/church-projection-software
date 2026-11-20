@@ -17,7 +17,7 @@ import {
 import { KindTile } from '../kindIcons';
 import { LoopToggle } from '../LoopToggle';
 import { SlideInspector } from '../SlideInspector';
-import { CanvasToolbar } from './CanvasToolbar';
+import { EditorToolbar } from './EditorToolbar';
 import { SlideCanvas, type TypingTarget } from './SlideCanvas';
 import { SlideEditor } from './SlideEditor';
 import { MenuItem, MenuSeparator, ObjectsPanel, type ListSlide } from './SlideList';
@@ -161,7 +161,14 @@ export function TextSlideEditor({ item }: { item: TextItem }) {
           <LoopToggle item={item} />
         </>
       }
-      tools={<CanvasToolbar item={item} index={index} />}
+      tools={
+        <EditorToolbar
+          typing={here?.kind === 'slide'}
+          onType={() => type({ kind: 'slide', heading: !!slide?.title })}
+          onNewSlide={() => newSlide()}
+          objects={{ item, index }}
+        />
+      }
       canvas={
         <SlideCanvas
           item={item}

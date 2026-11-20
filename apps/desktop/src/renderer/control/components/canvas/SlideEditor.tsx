@@ -117,10 +117,11 @@ export function SlideEditor({
       {expanded && <SlideList orientation="vertical" title={title} {...list} />}
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden bg-[var(--surface-0)]">
         {expanded ? (
-          // Tools float over the stage; the item's state and the view buttons sit at the right.
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex items-start justify-center px-3">
-            <div className="pointer-events-auto">{tools}</div>
-            <div className="pointer-events-auto absolute right-3 top-0 flex items-center gap-1">
+          // Tools float over the stage, centred while there's room; the item's state and the
+          // view buttons sit at the right and never go under them.
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-10 grid grid-cols-[minmax(0,1fr)_auto_minmax(max-content,1fr)] items-center gap-3 px-3">
+            <div className="pointer-events-auto col-start-2">{tools}</div>
+            <div className="pointer-events-auto flex items-center justify-end gap-1">
               {extras}
               <ReflowButton />
               {controls}

@@ -3,9 +3,11 @@ import {
   ArrowDownToLine,
   ArrowUpToLine,
   Circle,
+  FolderPlus,
   Image as ImageIcon,
   Minus,
   Plus,
+  Scissors,
   Square,
   Trash2,
   Type,
@@ -15,6 +17,7 @@ import { Typography } from '@lampstand/ui';
 import { usePictures } from '../../lib/hooks';
 import { importMedia } from '../../lib/mediaPlaylists';
 import { editObjects, newObject } from '../../lib/objects';
+import { displayCombo } from '../../lib/shortcuts';
 import { useStore } from '../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS } from '../menu';
 import { mediaUrl } from '../../../shared/mediaUrl';
@@ -75,11 +78,8 @@ function PictureTool({ onPick }: { onPick: (mediaId: string) => void }) {
   );
 }
 
-/**
- * The canvas tools, as a floating bar over the slide: add a text box, shape, line or picture;
- * with something selected, bring it forward, send it back or delete it.
- */
-export function CanvasToolbar({ item, index }: { item: TextItem; index: number }) {
+/** Shapes and pictures to add to a text slide, and the selected one's order (or delete it). */
+function ObjectTools({ item, index }: { item: TextItem; index: number }) {
   const { t } = useTranslation();
   const selected = useStore((s) => s.editObjectId);
   const objects = item.slides[index]?.objects ?? [];
@@ -97,7 +97,8 @@ export function CanvasToolbar({ item, index }: { item: TextItem; index: number }
       return next;
     });
   return (
-    <ToolBar label={t('canvas.tools')}>
+    <>
+      <ToolDivider />
       {ADD.map(({ kind, icon: Icon }) => (
         <Tool
           key={kind}
@@ -130,6 +131,67 @@ export function CanvasToolbar({ item, index }: { item: TextItem; index: number }
           useStore.setState({ editObjectId: null });
         }}
       />
+    </>
+  );
+}
+
+/**
+ * The editor's one tool bar, the same for every item: type the slide's words, add a slide, then
+ * what the item can hold. Songs add groups and split long slides; text slides add text boxes,
+ * shapes and pictures. Tools an item can't use are left out.
+ */
+export function EditorToolbar({
+  typing,
+  onType,
+  onNewSlide,
+  onNewGroup,
+  split,
+  objects,
+}: {
+  /** Typing the slide's words now. */
+  typing: boolean;
+  onType: () => void;
+  onNewSlide: () => void;
+  onNewGroup?: () => void;
+  /** Split a long slide (songs). */
+  split?: { disabled: boolean; title: string; onClick: () => void };
+  /** The slide whose shapes and pictures to edit (text slides). */
+  objects?: { item: TextItem; index: number };
+}) {
+  const { t } = useTranslation();
+  return (
+    <ToolBar label={t('canvas.tools')}>
+      <Tool
+        icon={<Type size={17} />}
+        label={t('canvas.toolText')}
+        title={t('canvas.toolTextHint')}
+        active={typing}
+        onClick={onType}
+      />
+      <Tool
+        icon={<Plus size={17} />}
+        label={t('canvas.toolSlide')}
+        title={`${t('canvas.newSlide')} (${displayCombo('Mod+Shift+N')})`}
+        onClick={onNewSlide}
+      />
+      {onNewGroup && (
+        <Tool
+          icon={<FolderPlus size={17} />}
+          label={t('canvas.toolGroup')}
+          title={t('songEditor.newGroup')}
+          onClick={onNewGroup}
+        />
+      )}
+      {split && (
+        <Tool
+          icon={<Scissors size={17} />}
+          label={t('songEditor.split')}
+          title={split.title}
+          disabled={split.disabled}
+          onClick={split.onClick}
+        />
+      )}
+      {objects && <ObjectTools {...objects} />}
     </ToolBar>
   );
 }
