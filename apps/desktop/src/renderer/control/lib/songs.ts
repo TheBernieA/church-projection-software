@@ -5,6 +5,7 @@ import { cmd } from './api';
 import { addItemToService, attempt, flushSongSaves, openService, toast, useStore } from './store';
 import i18n from '../i18n';
 import { type SongItem } from '../types';
+import { openEditor } from './editing';
 
 /** A song as picked from the library (shown on its own, not part of the playlist). */
 export const libraryItem = (song: Song): SongItem => ({
@@ -37,7 +38,7 @@ export async function createSong(o: {
     await openAdhoc(libraryItem(song), 'select');
     useStore.setState({ sidebarView: 'library', libraryTab: 'songs' });
   }
-  useStore.setState({ mode: 'edit' });
+  openEditor(true);
   return true;
 }
 
@@ -51,7 +52,7 @@ export async function copySong(song: Song): Promise<void> {
   const { songs } = useStore.getState();
   useStore.setState({ songs: [...songs, copy], sidebarView: 'library', libraryTab: 'songs' });
   await openAdhoc(libraryItem(copy), 'select');
-  useStore.setState({ mode: 'edit' });
+  openEditor(true);
 }
 
 /** Delete a song (Undo brings it back), leaving Edit. */

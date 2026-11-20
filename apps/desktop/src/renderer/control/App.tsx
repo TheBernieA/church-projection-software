@@ -1,7 +1,7 @@
 import { installSurfaces } from './lib/surfaces';
 import { installMediaTransition } from './lib/transitions';
 import { useSwitcherSources } from './lib/switcher';
-import { useSongEditorOpen } from './lib/hooks';
+import { useEditorExpanded } from './lib/editing';
 import { migrateLocalCameras } from './lib/inputs';
 import { saveSettings } from './lib/actions';
 import { MixerPanel } from './components/mixer/MixerPanel';
@@ -55,8 +55,8 @@ export function App() {
   const mixerOpen = useStore((s) => s.mixerOpen);
   const liveConsole = useStore((s) => s.liveConsole);
   const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
-  // Editing a song takes the whole window, as a presentation editor does.
-  const fullEditor = useSongEditorOpen();
+  // An expanded editor takes the whole window, as a presentation editor does.
+  const fullEditor = useEditorExpanded();
   useEffect(() => installShortcuts(), []);
   useEffect(() => installSurfaces(), []);
   useEffect(() => installMediaTransition(), []);

@@ -17,6 +17,7 @@ import { SongControls } from './SongControls';
 import { ItemBackground } from './ItemBackground';
 import { takesBackground } from '../lib/itemBackground';
 import { type PresentableSlide } from '../types';
+import { openEditor } from '../lib/editing';
 
 /**
  * The selected item's slides as a grid of thumbnails, each with a group-coloured label strip.
@@ -52,7 +53,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
   };
   const quickEdit = (it: ServiceItem, i: number): void => {
     if (!editable(it)) return;
-    useStore.setState({ editCursor: { itemId: it.id, index: i }, mode: 'edit' });
+    openEditor(false, { editCursor: { itemId: it.id, index: i } });
   };
   const stateOf = (slide: PresentableSlide, i: number): SlideState => {
     if (!item) return 'idle';
@@ -92,7 +93,7 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
               size="sm"
               variant="ghost"
               icon={<Pencil size={14} />}
-              onClick={() => useStore.setState({ mode: 'edit' })}
+              onClick={() => openEditor(false)}
             >
               {t('library.edit')}
             </Button>

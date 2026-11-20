@@ -41,6 +41,7 @@ import { DefaultTransitions, ItemTransition } from '../slides/Transitions';
 import { takesTransition } from '../../lib/transitions';
 import { takesAdvance } from '../../lib/advance';
 import { type PresentableSlide } from '../../types';
+import { openEditor } from '../../lib/editing';
 
 /** A planned per-item tool: a dimmed icon with a small "soon" dot; the tooltip says what it'll do. */
 function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
@@ -171,11 +172,7 @@ function AddSlideCard({ item, list }: { item: ServiceItem; list: boolean }) {
         ? { ...x, slides: [...x.slides, { id: newId(), title: '', body: '' }] }
         : x,
     );
-    useStore.setState({
-      selectedItemId: item.id,
-      editCursor: { itemId: item.id, index },
-      mode: 'edit',
-    });
+    openEditor(false, { selectedItemId: item.id, editCursor: { itemId: item.id, index } });
   };
   return (
     <li>
@@ -243,11 +240,7 @@ function ItemSection({
   const addsSlides = item.kind === 'presentation' || item.kind === 'announcements';
   const quickEdit = (i: number): void => {
     if (!editable(item)) return;
-    useStore.setState({
-      selectedItemId: item.id,
-      editCursor: { itemId: item.id, index: i },
-      mode: 'edit',
-    });
+    openEditor(false, { selectedItemId: item.id, editCursor: { itemId: item.id, index: i } });
   };
 
   return (

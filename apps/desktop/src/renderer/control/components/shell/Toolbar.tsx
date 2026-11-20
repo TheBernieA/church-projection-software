@@ -316,7 +316,8 @@ export function Toolbar() {
             icon={<Icon size={20} />}
             label={t(`modes.${m}`)}
             pressed={mode === m}
-            onClick={() => useStore.setState({ mode: m })}
+            // Edit from here opens compact, beside the playlist (its Expand button widens it).
+            onClick={() => useStore.setState({ mode: m, editExpanded: false })}
           />
         ))}
         <MoreMenu />

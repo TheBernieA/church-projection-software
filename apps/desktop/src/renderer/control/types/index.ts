@@ -134,6 +134,8 @@ export interface ControlState {
   /** What the left sidebar lists below its outline: a library's songs, or the open playlist. */
   sidebarView: 'library' | 'playlist';
   mode: Mode;
+  /** The editor takes the whole window (else it sits beside the playlist and output). */
+  editExpanded: boolean;
   binTab: BinTab;
   /** The media playlist open in the bin (when binTab is 'playlist'). */
   binPlaylistId: string | null;

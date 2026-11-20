@@ -31,6 +31,7 @@ export const useStore = create<ControlState>((set) => ({
   liveCursor: null,
   libraryTab: 'songs',
   mode: 'show',
+  editExpanded: false,
   binTab: 'media',
   binPlaylistId: null,
   announceItemId: null,

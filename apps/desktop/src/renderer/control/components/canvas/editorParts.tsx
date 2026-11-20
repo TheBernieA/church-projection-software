@@ -3,6 +3,8 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Maximize2,
+  Minimize2,
   PanelRightClose,
   PanelRightOpen,
   Rows3,
@@ -43,6 +45,24 @@ export function InspectorToggle({ open, toggle }: { open: boolean; toggle: () =>
   return (
     <IconButton size="sm" aria-label={label} title={label} aria-expanded={open} onClick={toggle}>
       {open ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
+    </IconButton>
+  );
+}
+
+/** Expand the editor to the whole window, or bring the playlist and output back beside it. */
+export function ExpandToggle() {
+  const { t } = useTranslation();
+  const expanded = useStore((s) => s.editExpanded);
+  const label = expanded ? t('canvas.collapse') : t('canvas.expand');
+  return (
+    <IconButton
+      size="sm"
+      aria-label={label}
+      title={label}
+      aria-pressed={expanded}
+      onClick={() => useStore.setState({ editExpanded: !expanded })}
+    >
+      {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
     </IconButton>
   );
 }
@@ -210,6 +230,7 @@ export function EditorBar({
       >
         <span className="@max-[560px]:hidden">{t('canvas.reflow')}</span>
       </Button>
+      <ExpandToggle />
       <InspectorToggle {...inspector} />
     </header>
   );

@@ -978,7 +978,7 @@
         },
         "edit": {
           "q": "Make your own slides",
-          "a": "1. Add Slides from the + menu.\n2. Click the pencil on a slide card (or open the Edit workspace).\n3. Click the words on the canvas and type. Add text boxes, shapes, lines and pictures from the toolbar.\n4. Drag to move things; pull the corners to resize.\n5. Click the + card after the last slide to add another.\nYou can edit a slide while it’s live: the screen keeps the old version until you press Update live."
+          "a": "1. Add Slides from the + menu.\n2. Click the pencil on a slide card (or open the Edit workspace).\n3. Click the words on the canvas and type. Add text boxes, shapes, lines and pictures from the toolbar.\n4. Drag to move things; pull the corners to resize.\n5. Click the + card after the last slide to add another.\nYou can edit a slide while it’s live: the screen keeps the old version until you press Update live.\nSomething new opens in Edit expanded to the whole window; editing something that’s already there opens it beside the playlist and output. The expand button at the top right switches between the two."
         },
         "import": {
           "q": "Bring in PowerPoint or PDF",
@@ -1276,6 +1276,8 @@
     "noPictures": "No pictures in the library yet.",
     "importPicture": "Import a picture…",
     "editWords": "Edit the words on this slide",
+    "expand": "Expand the editor to the whole window",
+    "collapse": "Show the playlist and output beside the editor",
     "inlineHint": "Changes save as you type. Esc or ⌘↩ to close.",
     "done": "Done"
   },

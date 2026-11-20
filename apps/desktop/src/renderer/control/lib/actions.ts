@@ -22,6 +22,7 @@ import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
 import { addItemToService, attempt, loadChapter, toast, useStore } from './store';
 import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
+import { openEditor } from './editing';
 
 const get = useStore.getState;
 
@@ -506,7 +507,7 @@ export function addVideoCountdown(mediaId: string | null): void {
     target: { durationSec: length ? Math.max(60, Math.ceil(length)) : 300 },
     ...(m ? { video: { mediaId: m.id }, hideTimer: true } : {}),
   });
-  useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
+  openEditor(true, { selectedItemId: id, adhoc: null });
 }
 
 /**

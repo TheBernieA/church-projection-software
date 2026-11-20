@@ -312,6 +312,14 @@ test('new song: name it, type on its slides, group them, add to service → outp
   const words = control.getByRole('textbox', { name: 'Words', exact: true });
   await words.fill('Hallelujah test line');
   await control.screenshot({ path: 'test-results/05a-song-typing.png' });
+  // A new song opens expanded (the library makes way); Collapse brings it back beside it.
+  await expect(library).toHaveCount(0);
+  await control
+    .getByRole('button', { name: 'Show the playlist and output beside the editor' })
+    .click();
+  await expect(library).toBeVisible();
+  await control.getByRole('button', { name: 'Expand the editor to the whole window' }).click();
+  await expect(library).toHaveCount(0);
   // ⇧⌘N: a new slide after it, typed straight away.
   await words.press('ControlOrMeta+Shift+N');
   await expect(words).toHaveValue('');
@@ -681,9 +689,11 @@ test('styled dropdowns open, pick, and work with the keyboard', async () => {
 });
 
 test('text slides: inspector edits the selected slide, add-slide card appends', async () => {
-  await addToPlan('Slides');
-  await control.getByText('Text slides').last().click();
-  await mode('Edit'); // the slide inspector lives in the Edit workspace
+  await addToPlan('Slides'); // something new opens in Edit, expanded to the whole window
+  await expect(control.getByRole('region', { name: 'Library' })).toHaveCount(0);
+  await control
+    .getByRole('button', { name: 'Show the playlist and output beside the editor' })
+    .click();
   await expect(control.getByText('Slide 1 of 1')).toBeVisible();
   await control.getByRole('button', { name: 'Add slide' }).click();
   await expect(control.getByText('Slide 2 of 2')).toBeVisible();
@@ -2833,6 +2843,7 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
         : null;
     });
   await expect.poll(kinds).toBe('header slides×1 header');
+  await mode('Show'); // new slides open in Edit: back to the playlist
   await expect(emptyPlaceholders).toHaveCount(1);
   await expect(
     show.getByRole('button', { name: 'Add to New section', exact: false }),

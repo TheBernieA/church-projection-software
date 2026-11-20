@@ -9,6 +9,7 @@ import { useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { SceneView } from '../SceneView';
 import {
+  ExpandToggle,
   InspectorToggle,
   SlideStage,
   useFit,
@@ -200,7 +201,8 @@ function SongEditorBody({ song, item }: { song: Song; item: SongItem }) {
           <div className="pointer-events-auto">
             <ToolBar ed={ed} />
           </div>
-          <div className="pointer-events-auto absolute right-3 top-0">
+          <div className="pointer-events-auto absolute right-3 top-0 flex gap-1">
+            <ExpandToggle />
             <InspectorToggle {...inspector} />
           </div>
         </div>

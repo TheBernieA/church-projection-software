@@ -332,7 +332,7 @@ export function SongSlideList({ ed }: { ed: SongEditorState }) {
     );
   };
   const placeholder = (
-    <li key="pending" className="px-2 pb-2">
+    <li key="pending" className="px-2 pb-2 pt-1">
       <Thumb ed={ed} lines={[]} n={ed.at + 1} selected label={t('songEditor.newSlide')}>
         <Typography
           size={11}
@@ -368,7 +368,7 @@ export function SongSlideList({ ed }: { ed: SongEditorState }) {
             ) : null,
             <li
               key={`${slide.sectionId}:${i}`}
-              className={`group relative px-2 pb-2 ${dragFrom === i ? 'opacity-40' : ''}`}
+              className={`group relative px-2 pb-2 pt-1 ${dragFrom === i ? 'opacity-40' : ''}`}
               draggable={!ed.readOnly}
               onDragStart={(e) => {
                 e.dataTransfer.setData(DRAG, String(i));

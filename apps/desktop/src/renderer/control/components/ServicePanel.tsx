@@ -32,6 +32,7 @@ import {
 import { editItems, useStore } from '../lib/store';
 import { KindTile } from './kindIcons';
 import { urlHost } from '../lib/utils';
+import { openEditor } from '../lib/editing';
 
 /** Secondary line under each item: what it is, at a glance. */
 function useItemSubtitle(): (item: ServiceItem) => string {
@@ -382,26 +383,32 @@ export function AddMenu({
         icon: <Presentation size={15} />,
         label: t('service.kind.presentation'),
         help: t('service.addHelp.presentation'),
-        run: () =>
+        run: () => {
+          const id = newId();
           add({
-            id: newId(),
+            id,
             kind: 'presentation',
             title: t('service.textSlideTitle'),
             slides: [{ id: newId(), title: '', body: 'Type your text here' }],
-          }),
+          });
+          openEditor(true, { selectedItemId: id, adhoc: null });
+        },
       },
       {
         key: 'countdown',
         icon: <Timer size={15} />,
         label: t('service.kind.countdown'),
         help: t('service.addHelp.countdown'),
-        run: () =>
+        run: () => {
+          const id = newId();
           add({
-            id: newId(),
+            id,
             kind: 'countdown',
             title: t('service.countdownTitle'),
             target: { durationSec: 300 },
-          }),
+          });
+          openEditor(true, { selectedItemId: id, adhoc: null });
+        },
       },
       {
         key: 'web',
@@ -411,7 +418,7 @@ export function AddMenu({
         run: () => {
           const id = newId();
           add({ id, kind: 'web', title: t('service.webTitle'), url: 'https://example.com' });
-          useStore.setState({ selectedItemId: id, adhoc: null, mode: 'edit' });
+          openEditor(true, { selectedItemId: id, adhoc: null });
         },
       },
       {

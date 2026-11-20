@@ -6,6 +6,7 @@ import { updateItem } from '../../lib/store';
 import { SceneView } from '../SceneView';
 import { type WebItem } from '../../types';
 import { Typography } from '@lampstand/ui';
+import { ExpandToggle } from '../canvas/editorParts';
 
 /**
  * Edit a web page item: its name and https address. The address is only saved once it's valid,
@@ -19,9 +20,10 @@ export function WebEditor({ item }: { item: WebItem }) {
     <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-6">
       <div className="flex items-center gap-2">
         <Globe size={18} className="text-[var(--text-3)]" />
-        <Typography as="h2" size={15} weight="semibold">
+        <Typography as="h2" size={15} weight="semibold" className="flex-1">
           {t('web.title')}
         </Typography>
+        <ExpandToggle />
       </div>
       <div className="grid max-w-xl gap-4">
         <Typography
