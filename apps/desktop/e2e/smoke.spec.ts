@@ -2959,12 +2959,37 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
   await control.screenshot({ path: 'test-results/43b-confirm.png' });
   await answer('Remove');
   await expect.poll(kinds).toBe('header');
-  // Delete the playlist from its own menu: the other playlist opens in its place.
+  // Rename it from its menu (typed in place, Enter keeps it)…
   await library.getByRole('button', { name: 'New service', exact: true }).hover();
   await library.getByRole('button', { name: 'Options for New service' }).click();
+  await control.getByRole('menuitem', { name: 'Rename' }).click();
+  const nameBox = library.getByRole('textbox', { name: 'Playlist name' });
+  await expect(nameBox).toBeFocused();
+  await nameBox.fill('Evening service');
+  await nameBox.press('Enter');
+  await expect(library.getByRole('button', { name: 'Evening service', exact: true })).toBeVisible();
+  // …and a double-click starts typing it too; Esc leaves the name as it was.
+  await library.getByRole('button', { name: 'Evening service', exact: true }).dblclick();
+  await nameBox.fill('Not this');
+  await nameBox.press('Escape');
+  await expect(library.getByRole('button', { name: 'Evening service', exact: true })).toBeVisible();
+  // Kept with the playlist (saved), not only on screen.
+  await expect
+    .poll(async () =>
+      control.evaluate(async () => {
+        const r = await window.lampstand.query('services.list');
+        return r.ok ? r.value.some((p) => p.name === 'Evening service') : false;
+      }),
+    )
+    .toBe(true);
+  // Delete the playlist from its own menu: the other playlist opens in its place.
+  await library.getByRole('button', { name: 'Evening service', exact: true }).hover();
+  await library.getByRole('button', { name: 'Options for Evening service' }).click();
   await control.getByRole('menuitem', { name: 'Delete playlist' }).click();
   await answer('Delete');
-  await expect(library.getByRole('button', { name: 'New service', exact: true })).toHaveCount(0);
+  await expect(library.getByRole('button', { name: 'Evening service', exact: true })).toHaveCount(
+    0,
+  );
   await expect
     .poll(async () =>
       control.evaluate(async () => {
