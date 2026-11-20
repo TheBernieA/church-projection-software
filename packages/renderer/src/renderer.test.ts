@@ -1,10 +1,19 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { EMPTY_MASKS, EMPTY_SCENE, STARTER_THEMES, type Scene } from '@lampstand/core';
+import {
+  EMPTY_MASKS,
+  EMPTY_SCENE,
+  GeneratedPresetSchema,
+  LogoStyleSchema,
+  STARTER_THEMES,
+  type Scene,
+} from '@lampstand/core';
+import { buildGenerated } from './generated';
+import { buildLogoCard } from './logoCard';
 import { FitCache, fitFontSize } from './fit';
-import { SceneRenderer } from './scene-renderer';
-import { backgroundKey } from './style';
-import { formatCountdown } from './content';
+import { SceneRenderer } from './sceneRenderer';
+import { backgroundFilter, backgroundKey } from './style';
+import { buildContent, formatCountdown, linkedText } from './content';
 
 const theme = {
   ...STARTER_THEMES[0]!,
@@ -77,6 +86,157 @@ describe('SceneRenderer', () => {
     const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
     r.render({ ...scene('x'), masks: { ...EMPTY_MASKS, black: true } }, { instant: true });
     expect((host.querySelector('.ls-mask-black') as HTMLElement).style.opacity).toBe('1');
+  });
+});
+
+describe('web pages', () => {
+  const web = { ...EMPTY_SCENE, web: { key: 'w', url: 'https://example.com/give' } };
+  it('monitors show a card naming the page', () => {
+    const host = document.createElement('div');
+    new SceneRenderer(host, { mode: 'monitor', mediaUrl: (id) => id }).render(web, {
+      instant: true,
+    });
+    expect(host.querySelector('.ls-web-url')?.textContent).toBe('example.com/give');
+  });
+  it('outputs draw nothing (the isolated web view covers them)', () => {
+    const host = document.createElement('div');
+    new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id }).render(web, {
+      instant: true,
+    });
+    expect(host.querySelector('.ls-web')).toBeNull();
+  });
+});
+
+describe('slide objects', () => {
+  it('draws text boxes, shapes and pictures at their canvas positions, under the slide text', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => `media://${id}` });
+    const s = scene('Title');
+    r.render(
+      {
+        ...s,
+        content: {
+          ...s.content!,
+          objects: [
+            { id: 'r', kind: 'rect', x: 100, y: 200, w: 300, h: 150, fill: '#ff0000', radius: 12 },
+            {
+              id: 't',
+              kind: 'text',
+              x: 0,
+              y: 0,
+              w: 500,
+              h: 100,
+              text: 'Hello',
+              fontSize: 40,
+              color: '#fff',
+              align: 'center',
+            },
+            { id: 'i', kind: 'image', x: 10, y: 10, w: 50, h: 50, mediaId: 'pic', fit: 'cover' },
+          ],
+        },
+      },
+      { instant: true },
+    );
+    const rect = host.querySelector('.ls-object-rect') as HTMLElement;
+    expect([rect.style.left, rect.style.top, rect.style.width]).toEqual([
+      '100px',
+      '200px',
+      '300px',
+    ]);
+    expect(rect.style.borderRadius).toBe('12px');
+    expect(host.querySelector('.ls-object-text')?.textContent).toBe('Hello');
+    expect(host.querySelector('.ls-object-image img')?.getAttribute('src')).toBe('media://pic');
+    expect((host.querySelector('.ls-text') as HTMLElement).style.zIndex).toBe('1');
+  });
+});
+
+describe('text and background effects', () => {
+  it('glow adds a soft halo to the text shadow', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const s = scene('Glow');
+    const theme = {
+      ...s.content!.theme,
+      text: { ...s.content!.theme.text, glow: { blur: 24, color: '#ff0000' } },
+    };
+    r.render({ ...s, content: { ...s.content!, theme } }, { instant: true });
+    expect((host.querySelector('.ls-text') as HTMLElement).style.textShadow).toContain('24px');
+  });
+
+  it('background adjustments become a filter chain and a tint wash', () => {
+    expect(backgroundFilter({ blur: 4, brightness: 0.8, contrast: 1, saturate: 1.5 })).toBe(
+      'blur(4px) brightness(0.8) saturate(1.5)',
+    );
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    r.render(
+      {
+        ...scene('x'),
+        background: {
+          ref: { kind: 'color', color: '#123456' },
+          adjust: { tint: { color: '#0000ff', opacity: 0.4 } },
+        },
+      },
+      { instant: true },
+    );
+    expect((host.querySelector('.ls-bg-tint') as HTMLElement).style.opacity).toBe('0.4');
+  });
+
+  it('changing only the adjustments rebuilds the background', () => {
+    const ref = { kind: 'color' as const, color: '#123456' };
+    expect(backgroundKey({ ref })).not.toBe(backgroundKey({ ref, adjust: { dim: 0.5 } }));
+  });
+});
+
+describe('bilingual lyrics', () => {
+  it('draws a secondary (translation) block smaller and in italics under the lyric', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const s = scene('Amazing grace');
+    r.render(
+      {
+        ...s,
+        content: {
+          ...s.content!,
+          blocks: [
+            { spans: [{ text: 'Amazing grace' }] },
+            { spans: [{ text: 'Sublime gracia' }], role: 'secondary' },
+          ],
+        },
+      },
+      { instant: true },
+    );
+    const second = host.querySelector('.ls-block-secondary') as HTMLElement;
+    expect(second.textContent).toBe('Sublime gracia');
+    expect(second.style.fontStyle).toBe('italic');
+    expect(second.style.fontSize).toBe('0.72em');
+  });
+});
+
+describe('props', () => {
+  it('draws a library picture in its position and keeps it when other overlays change', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => `media://${id}` });
+    const prop = {
+      id: 'p1',
+      kind: 'prop' as const,
+      text: '',
+      mediaId: 'logo',
+      mediaKind: 'image' as const,
+      position: 'top-right' as const,
+    };
+    r.render({ ...EMPTY_SCENE, overlays: [prop] }, { instant: true });
+    const img = host.querySelector('.ls-prop-top-right img');
+    expect(img?.getAttribute('src')).toBe('media://logo');
+    r.render(
+      { ...EMPTY_SCENE, overlays: [prop, { id: 'm', kind: 'lower-third', text: 'Parent of 12' }] },
+      { instant: true },
+    );
+    expect(host.querySelector('.ls-prop-top-right img')).toBe(img); // not rebuilt
+    expect(host.querySelector('.ls-lower-third')?.textContent).toBe('Parent of 12');
+    r.render({ ...EMPTY_SCENE, overlays: [prop] }, { instant: true });
+    expect(host.querySelector('.ls-lower-third')).toBeNull();
+    expect(host.querySelector('.ls-prop-top-right img')).toBe(img);
   });
 });
 
@@ -170,6 +330,96 @@ describe('off-air screen', () => {
     expect(host.querySelector('.ls-logo-logo')?.textContent).toBe('Grace Church');
   });
 
+  it('a full announcement hides the slide words under it; a lower third leaves them', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const words = host.querySelector<HTMLElement>('.ls-layer-content');
+    const notice = (layout: typeof theme.layout) => ({
+      key: 'n',
+      kind: 'text' as const,
+      theme: { ...theme, layout },
+      blocks: [{ spans: [{ text: 'Welcome' }] }],
+    });
+    r.render({ ...scene('one'), announcement: notice('center') }, { instant: true });
+    expect(words?.style.opacity).toBe('0');
+    r.render({ ...scene('one'), announcement: notice('lower-third') }, { instant: true });
+    expect(words?.style.opacity).toBe('');
+    r.render({ ...scene('one'), announcement: null }, { instant: true });
+    expect(words?.style.opacity).toBe('');
+  });
+
+  it("turns a background video's sound on and off without restarting it", () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id, audio: true });
+    const withVideo = (sound?: boolean): Scene => ({
+      ...scene('one'),
+      background: { ref: { kind: 'video', mediaId: 'v', loop: true, sound } },
+    });
+    r.render(withVideo());
+    const v = host.querySelector('.ls-bg video') as HTMLVideoElement;
+    expect(v.muted).toBe(true);
+    r.render(withVideo(true));
+    expect(host.querySelector('.ls-bg video')).toBe(v);
+    expect(v.muted).toBe(false);
+    // A video over everything silences it; it's heard again when that goes.
+    r.render({
+      ...withVideo(true),
+      media: {
+        mediaId: 'm',
+        kind: 'video',
+        loop: false,
+        muted: false,
+        fit: 'cover',
+        playing: true,
+        position: 0,
+        volume: 1,
+      },
+    });
+    expect(v.muted).toBe(true);
+    r.render(withVideo(true));
+    expect(v.muted).toBe(false);
+    // Only the renderer that plays the room's sound is heard.
+    r.setAudio(false);
+    expect(v.muted).toBe(true);
+  });
+
+  it('changes the readability overlay without rebuilding the background', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, { mode: 'output', mediaUrl: (id) => id });
+    const withOverlay = (style?: 'bottom' | 'even'): Scene => ({
+      ...scene('one'),
+      background: {
+        ref: { kind: 'video', mediaId: 'v', loop: true },
+        ...(style ? { adjust: { scrim: { style, strength: 0.5 } } } : {}),
+      },
+    });
+    r.render(withOverlay());
+    const bg = host.querySelector('.ls-bg');
+    expect(host.querySelector('.ls-bg-scrim')).toBeNull();
+    r.render(withOverlay('bottom'));
+    expect(host.querySelector('.ls-bg')).toBe(bg);
+    expect(host.querySelector<HTMLElement>('.ls-bg-scrim')?.style.background).toContain(
+      'linear-gradient',
+    );
+    r.render(withOverlay('even'));
+    expect(host.querySelectorAll('.ls-bg-scrim')).toHaveLength(1);
+    r.render(withOverlay());
+    expect(host.querySelector('.ls-bg')).toBe(bg);
+    expect(host.querySelector('.ls-bg-scrim')).toBeNull();
+  });
+
+  it('centres the words on a canvas wider than the theme (edge blending)', () => {
+    const host = document.createElement('div');
+    const r = new SceneRenderer(host, {
+      mode: 'output',
+      mediaUrl: (id) => id,
+      canvas: { width: 3552, height: 1080 },
+    });
+    r.render(scene('wide'));
+    const words = host.querySelector<HTMLElement>('.ls-layer-content > *');
+    expect(words?.style.left).toBe(`${(3552 - theme.canvas.width) / 2}px`);
+  });
+
   it('is never drawn in thumbnails', () => {
     const host = document.createElement('div');
     const r = new SceneRenderer(host, { mode: 'thumbnail', mediaUrl: (id) => id });
@@ -188,5 +438,92 @@ describe('helpers', () => {
     expect(formatCountdown(new Date(65_000).toISOString(), 0)).toBe('01:05');
     expect(formatCountdown(new Date(3_661_000).toISOString(), 0)).toBe('1:01:01');
     expect(formatCountdown(new Date(0).toISOString(), 10_000)).toBe('00:00');
+  });
+});
+
+describe('motion backgrounds and logo cards', () => {
+  it('draws every generated preset, still in thumbnails', () => {
+    for (const preset of GeneratedPresetSchema.options) {
+      const node = buildGenerated(document, preset, ['#ffffff', '#336699', '#000000'], 1, false);
+      expect(node.classList.contains(`ls-gen-${preset}`)).toBe(true);
+      expect(node.children.length).toBeGreaterThan(0);
+    }
+  });
+  it('the name card shows the name and tagline as text, in every look', () => {
+    for (const style of LogoStyleSchema.options) {
+      const node = document.createElement('div');
+      buildLogoCard(document, node, { text: '<b>Grace</b>', style, tagline: 'Welcome' }, false);
+      expect(node.querySelector('.ls-logo-name')?.textContent).toBe('<b>Grace</b>');
+      expect(node.querySelector('b')).toBeNull();
+      expect(node.querySelector('.ls-logo-tagline')?.textContent).toBe('Welcome');
+    }
+  });
+});
+
+describe('mixer gain staging', () => {
+  it("takes the Web Audio compressor's hidden makeup gain back out", async () => {
+    const { autoMakeupDb } = await import('./mixer');
+    // A channel compressor at −18 dB, 3:1 would add about 7 dB by itself.
+    expect(autoMakeupDb(-18, 3)).toBeCloseTo(7.2, 1);
+    // The limiter (20:1 near the top) adds under a dB; none at all when it's off.
+    expect(autoMakeupDb(-1.5, 20)).toBeCloseTo(0.855, 2);
+    expect(autoMakeupDb(0, 1)).toBeCloseTo(0, 6);
+  });
+});
+
+describe('slide text options', () => {
+  const words = (text: string, extra: Partial<(typeof theme)['text']>) =>
+    buildContent(
+      document,
+      {
+        key: 'k',
+        kind: 'text',
+        theme: { ...theme, text: { ...theme.text, ...extra } },
+        blocks: [{ spans: [{ text }] }],
+      },
+      { live: false },
+    ).root;
+
+  it('makes each line a numbered or bulleted list item', () => {
+    const root = words('One\nTwo\n\nThree', { list: 'number' });
+    const list = root.querySelector('ol')!;
+    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      'One',
+      'Two',
+      'Three',
+    ]);
+    expect(words('A\nB', { list: 'bullet' }).querySelector('ul li')).not.toBeNull();
+    // A heading block stays as it is.
+    const titled = buildContent(
+      document,
+      {
+        key: 't',
+        kind: 'text',
+        theme: { ...theme, text: { ...theme.text, list: 'number' } },
+        blocks: [{ spans: [{ text: 'Title', style: 'emphasis' }] }, { spans: [{ text: 'A\nB' }] }],
+      },
+      { live: false },
+    ).root;
+    expect([...titled.querySelectorAll('li')].map((li) => li.textContent)).toEqual(['A', 'B']);
+  });
+
+  it('joins lines into one paragraph, and puts a bar behind each line (lines only)', () => {
+    expect(words('One\nTwo', { joinLines: true }).querySelector('.ls-block')!.textContent).toBe(
+      'One Two',
+    );
+    const bar = words('One', { lineBackground: { color: '#000000', padding: 8 } }).querySelector(
+      '.ls-line-bar',
+    ) as HTMLElement;
+    expect(bar.textContent).toBe('One');
+    expect(bar.style.background).toContain('rgb(0, 0, 0)');
+  });
+
+  it('underlines and strikes through, and shows linked text instead of the words', () => {
+    const text = words('Hi', { underline: true, strike: true }).querySelector(
+      '.ls-text',
+    ) as HTMLElement;
+    expect(text.style.textDecoration).toBe('underline line-through');
+    const linked = words('Ignored', { linked: 'date' }).querySelector('.ls-block')!.textContent;
+    expect(linked).toBe(linkedText('date', Date.now()));
   });
 });

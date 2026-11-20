@@ -1,12 +1,11 @@
 import { createReadStream, createWriteStream } from 'node:fs';
+import { once } from 'node:events';
 import { mkdir, readFile, rename, rm, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { Zip, ZipDeflate, ZipPassThrough } from 'fflate';
 import { listDir, writeFileAtomic } from '../storage/atomic';
 import { safeUnzip } from '../modules/zip';
-
-const DATA_DIRS = ['songs', 'services', 'themes', join('media', '.meta')];
-const KEEP_BACKUPS = 14;
+import { BACKUP_DATA_DIRS, KEEP_BACKUPS } from '../constants';
 
 async function walk(dir: string): Promise<string[]> {
   const out: string[] = [];
@@ -28,7 +27,7 @@ export async function zipLibrary(
   includeMedia: boolean,
 ): Promise<void> {
   const files: string[] = [];
-  for (const d of DATA_DIRS) files.push(...(await walk(join(library, d))));
+  for (const d of BACKUP_DATA_DIRS) files.push(...(await walk(join(library, d))));
   files.push(join(library, 'library.manifest.json'));
   if (includeMedia) {
     for (const f of await walk(join(library, 'media')))
@@ -38,39 +37,50 @@ export async function zipLibrary(
   await mkdir(join(target, '..'), { recursive: true });
   const tmp = `${target}.tmp`;
   const out = createWriteStream(tmp);
-  await new Promise<void>((resolve, reject) => {
-    const zip = new Zip((err, chunk, final) => {
-      if (err) return reject(err);
-      out.write(chunk);
-      if (final) out.end(resolve);
-    });
-    void (async () => {
-      try {
-        for (const f of files) {
-          let s;
-          try {
-            s = await stat(f);
-          } catch {
-            continue;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      // A full disk or a lost folder fails the export (instead of crashing the app).
+      out.on('error', reject);
+      const zip = new Zip((err, chunk, final) => {
+        if (err) return reject(err);
+        out.write(chunk);
+        if (final) out.end(resolve);
+      });
+      void (async () => {
+        try {
+          for (const f of files) {
+            let s;
+            try {
+              s = await stat(f);
+            } catch {
+              continue;
+            }
+            if (!s.isFile()) continue;
+            const name = relative(library, f).split(sep).join('/');
+            const isJson = name.endsWith('.json');
+            const entry = isJson ? new ZipDeflate(name, { level: 6 }) : new ZipPassThrough(name);
+            zip.add(entry);
+            if (isJson) entry.push(new Uint8Array(await readFile(f)), true);
+            else {
+              for await (const chunk of createReadStream(f)) {
+                entry.push(new Uint8Array(chunk as Buffer), false);
+                // Read no faster than the disk writes, so big videos never pile up in memory.
+                if (out.writableNeedDrain) await once(out, 'drain');
+              }
+              entry.push(new Uint8Array(0), true);
+            }
           }
-          if (!s.isFile()) continue;
-          const name = relative(library, f).split(sep).join('/');
-          const isJson = name.endsWith('.json');
-          const entry = isJson ? new ZipDeflate(name, { level: 6 }) : new ZipPassThrough(name);
-          zip.add(entry);
-          if (isJson) entry.push(new Uint8Array(await readFile(f)), true);
-          else {
-            for await (const chunk of createReadStream(f))
-              entry.push(new Uint8Array(chunk as Buffer), false);
-            entry.push(new Uint8Array(0), true);
-          }
+          zip.end();
+        } catch (e) {
+          reject(e instanceof Error ? e : new Error('zip failed'));
         }
-        zip.end();
-      } catch (e) {
-        reject(e instanceof Error ? e : new Error('zip failed'));
-      }
-    })();
-  });
+      })();
+    });
+  } catch (e) {
+    out.destroy();
+    await rm(tmp, { force: true });
+    throw e;
+  }
   await rename(tmp, target);
 }
 
@@ -102,7 +112,7 @@ export async function dailyBackup(
 }
 
 const IMPORT_PATH =
-  /^(songs\/[A-Za-z0-9-]+\.song\.json|services\/[A-Za-z0-9-]+\.service\.json|themes\/[A-Za-z0-9-]+\.theme\.json|media\/\.meta\/[A-Za-z0-9-]+\.media\.json|media\/[A-Za-z0-9-]+\.[a-z0-9]{2,5}|backgrounds\/[A-Za-z0-9._-]+|library\.manifest\.json)$/;
+  /^(songs\/[A-Za-z0-9-]+\.song\.json|services\/[A-Za-z0-9-]+\.service\.json|themes\/[A-Za-z0-9-]+\.theme\.json|media-playlists\/[A-Za-z0-9-]+\.mediaplaylist\.json|media\/\.meta\/[A-Za-z0-9-]+\.media\.json|media\/[A-Za-z0-9-]+\.[a-z0-9]{2,5}|backgrounds\/[A-Za-z0-9._-]+|library\.manifest\.json)$/;
 
 /**
  * Import a library export. Only known entry paths are accepted; everything goes through the
@@ -111,7 +121,7 @@ const IMPORT_PATH =
  */
 export async function importLibraryZip(zipFile: string, library: string): Promise<number> {
   const data = new Uint8Array(await readFile(zipFile));
-  const entries = safeUnzip(data, {
+  const entries = await safeUnzip(data, {
     maxFiles: 50000,
     maxTotalBytes: 1024 * 1024 * 1024,
     maxFileBytes: 900 * 1024 * 1024,

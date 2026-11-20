@@ -1,3 +1,4 @@
+import { Button } from './Button';
 /** Accessible on/off switch (role="switch"). Gold when on — gold means interaction, never live state. */
 export function Switch({
   checked,
@@ -13,9 +14,9 @@ export function Switch({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
+      variant="bare"
       id={id}
-      type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
@@ -31,6 +32,6 @@ export function Switch({
         aria-hidden
         className={`inline-block h-[18px] w-[18px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-transform duration-150 ${checked ? 'translate-x-[18px]' : 'translate-x-[2px]'}`}
       />
-    </button>
+    </Button>
   );
 }

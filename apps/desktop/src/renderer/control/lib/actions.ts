@@ -1,13 +1,29 @@
-import type { Layer, ServiceItem } from '@lampstand/core';
+import {
+  layersClearedBy,
+  mediaEnd,
+  mediaPositionAt,
+  newId,
+  type BackgroundLayer,
+  type BackgroundRef,
+  type Layer,
+  type Look,
+  type MediaLayer,
+  type Overlay,
+  type RestorableLayer,
+  type ServiceItem,
+  type Settings,
+  type Theme,
+} from '@lampstand/core';
+import { knownDuration } from './mediaDurations';
+import { slideTransitionFor } from './transitions';
+import { advanceOf, takesAdvance } from './advance';
 import { cmd } from './api';
 import i18n from '../i18n';
-import {
-  buildItemSlides,
-  type ItemSlides,
-  type PresentableSlide,
-  type SlideContext,
-} from './slides';
-import { attempt, loadChapter, toast, useStore, type Cursor } from './store';
+import { buildItemSlides, countdownTarget } from './slides';
+import { neighbourItem } from './sections';
+import { addItemToService, attempt, itemIn, loadChapter, toast, useStore } from './store';
+import { type Cursor, type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
+import { openEditor } from './editing';
 
 const get = useStore.getState;
 
@@ -22,7 +38,7 @@ function warnIfNoOutput(): void {
   toast(i18n.t('outputs.noneToast'), 'warning');
 }
 
-export function slideContext(): SlideContext {
+function slideContext(): SlideContext {
   const s = get();
   return {
     songs: s.songs,
@@ -31,15 +47,13 @@ export function slideContext(): SlideContext {
     settings: s.settings,
     versions: s.versions,
     verseCounts: s.verseCounts,
+    bookNames: s.bookNames,
     chapters: s.chapters,
   };
 }
 
 export function findItem(itemId: string | null): ServiceItem | null {
-  if (!itemId) return null;
-  const s = get();
-  if (s.adhoc?.id === itemId) return s.adhoc;
-  return s.service?.items.find((i) => i.id === itemId) ?? null;
+  return itemIn(get(), itemId);
 }
 
 /** Load any Bible chapters an item still needs (cached + de-duplicated by the store). */
@@ -60,16 +74,71 @@ async function safe(p: Promise<unknown>): Promise<void> {
 }
 
 function withFreshCountdown(slide: PresentableSlide): PresentableSlide {
-  if (!slide.countdownSec || slide.action.kind !== 'content') return slide;
-  const content = {
-    ...slide.action.content,
-    countdownTo: new Date(Date.now() + slide.countdownSec * 1000).toISOString(),
-  };
+  if (slide.action.kind !== 'content') return slide;
+  const target = slide.countdownSec ? { durationSec: slide.countdownSec } : slide.countdownClock;
+  if (!target) return slide;
+  const content = { ...slide.action.content, countdownTo: countdownTarget(target, Date.now()) };
   return { ...slide, action: { ...slide.action, content } };
 }
 
+/**
+ * A countdown video's media layer, synced so its last frame lands on the countdown's zero: it
+ * starts (length) seconds before the target; early, it waits on its first frame; late, it joins
+ * part-way through. With an unknown length it just starts now.
+ */
+function countdownVideoLayer(mediaId: string, targetIso: string): MediaLayer {
+  const lib = get().media.find((m) => m.id === mediaId)?.durationSec;
+  const length = knownDuration(mediaId, lib);
+  const startMs = length ? Date.parse(targetIso) - length * 1000 : Date.now();
+  return {
+    mediaId,
+    kind: 'video',
+    loop: false,
+    muted: false,
+    fit: 'cover',
+    playing: true,
+    position: 0,
+    syncedAt: new Date(startMs).toISOString(),
+    volume: 1,
+  };
+}
+
+/** Does this item's video start playing as soon as it goes live? (Settings › Presenting.) */
+function mediaAutoplay(item: ServiceItem): boolean {
+  const own = item.kind === 'media' ? item.playback?.autoplay : undefined;
+  return own ?? get().settings?.mediaAutoplay !== false;
+}
+
+/** Go live with the first slide of the item after `itemId` in the service (headers skipped). */
+async function goLiveNextItem(itemId: string): Promise<void> {
+  const next = neighbourItem(get().service?.items, itemId, 1);
+  if (!next) return;
+  useStore.setState({ selectedItemId: next.id, adhoc: null });
+  await goLiveSlide(next, 0);
+}
+
+/**
+ * The monitor's ◀ / ▶: the previous or next slide, and past either end of the item into the
+ * playlist item before or after it (its last slide, or its first). The keys stop at the
+ * item's end instead, so a song never runs into the next by accident.
+ */
+export async function stepAcross(delta: 1 | -1): Promise<void> {
+  const s = get();
+  const cursor = s.liveCursor;
+  const item = findItem(cursor?.itemId ?? null);
+  if (!cursor || !item) return step(delta);
+  const idx = cursor.index + delta;
+  if (idx >= 0 && idx < slidesFor(item).length) return goLiveSlide(item, idx);
+  const other = neighbourItem(s.service?.items, item.id, delta);
+  if (!other) return;
+  const slides = await ensureItemReady(other);
+  if (!slides.length) return;
+  useStore.setState({ selectedItemId: other.id, adhoc: null });
+  await goLiveSlide(other, delta > 0 ? 0 : slides.length - 1);
+}
+
 /** Put a slide into Preview (green). Nothing changes on screen. */
-export async function previewSlide(item: ServiceItem, index: number): Promise<void> {
+async function previewSlide(item: ServiceItem, index: number): Promise<void> {
   const slides = slidesFor(item);
   const slide = slides[index];
   if (!slide) return;
@@ -93,6 +162,7 @@ export async function previewSlide(item: ServiceItem, index: number): Promise<vo
           slide.action.kind === 'media'
             ? { ...slide.action.media, playing: false, position: 0 }
             : null,
+        web: slide.action.kind === 'web' ? slide.action.web : null,
         next: null,
       }),
     );
@@ -103,6 +173,8 @@ export async function goLiveSlide(
   item: ServiceItem,
   index: number,
   source: 'ui' | 'shortcut' = 'ui',
+  /** `playNow`: a video plays at once even with "Wait for Play" on (a tile's play button). */
+  opts: { playNow?: boolean } = {},
 ): Promise<void> {
   const slides = slidesFor(item);
   const raw = slides[index];
@@ -113,20 +185,43 @@ export async function goLiveSlide(
   useStore.setState({ liveCursor: { itemId: item.id, index } });
   const a = slide.action;
   if (a.kind === 'content') {
+    const transition = slideTransitionFor(item);
+    const cv = slide.countdownVideo;
+    const video =
+      cv && a.content.countdownTo ? countdownVideoLayer(cv.mediaId, a.content.countdownTo) : null;
     await safe(
       cmd(
         'live.goLive',
         {
-          content: a.content,
+          // A countdown video can hide the numbers (it shows its own).
+          content: video && cv?.hideTimer ? null : a.content,
           background: a.background,
+          ...(video ? { media: video, keepTiming: true } : {}),
           next: next?.action.kind === 'content' ? next.action.content : null,
+          keepInput: get().settings?.keepCameraUnderWords ?? false,
+          // The item's own transition, else the default (Show, bottom left), else the theme's.
+          ...(transition ? { transition } : {}),
         },
         source,
       ),
     );
   } else if (a.kind === 'media') {
     // Full-screen media replaces the slide on screen (the text is cleared; background stays).
-    await safe(cmd('live.goLive', { media: a.media, content: null, next: null }, source));
+    await safe(
+      cmd(
+        'live.goLive',
+        {
+          media: a.media,
+          content: null,
+          next: null,
+          autoplay: opts.playNow || mediaAutoplay(item),
+        },
+        source,
+      ),
+    );
+  } else if (a.kind === 'web') {
+    // A web page replaces the slide too; outputs show it in an isolated web view.
+    await safe(cmd('live.goLive', { web: a.web, content: null, next: null }, source));
   } else {
     await safe(cmd('live.setBackground', { background: a.background }, source));
   }
@@ -137,9 +232,29 @@ export async function goLiveSlide(
   scheduleAnnouncements(item, index);
 }
 
-/** Space/Enter: Preview → Program. Falls back to the selected item's first slide. */
+/**
+ * Re-send the live slide of an item after it changed (e.g. transposed chords), in place:
+ * no transition for the room, no reset of the elapsed timer.
+ */
+export async function refreshLiveSlide(itemId: string): Promise<void> {
+  const cur = get().liveCursor;
+  const item = findItem(itemId);
+  if (cur?.itemId !== itemId || !item) return;
+  const slide = slidesFor(item)[cur.index];
+  if (slide?.action.kind !== 'content') return;
+  await safe(cmd('live.updateContent', { content: slide.action.content }));
+}
+
+/** Space/Enter: Preview → Program ("Preview first"), or the next slide when clicks go live. */
 export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<void> {
   const s = get();
+  if (s.settings?.clickGoesLive !== false) {
+    // No Preview stage: Space walks forward through the live item, or starts the selected one.
+    const selected = findItem(s.selectedItemId);
+    if (s.liveCursor && selected && s.liveCursor.itemId === selected.id) return step(1);
+    if (selected) return goLiveSlide(selected, 0, source);
+    return;
+  }
   const pc = s.previewCursor;
   const item = findItem(pc?.itemId ?? null);
   if (pc && item) return goLiveSlide(item, pc.index, source);
@@ -150,7 +265,8 @@ export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<vo
 export async function step(delta: 1 | -1): Promise<void> {
   const s = get();
   const cursor: Cursor | null = s.liveCursor ?? s.previewCursor;
-  const item = findItem(cursor?.itemId ?? s.selectedItemId);
+  // The live item, or (gone from the playlist, or replaced by another pick) the selected one.
+  const item = findItem(cursor?.itemId ?? null) ?? findItem(s.selectedItemId);
   if (!item) return;
   const slides = slidesFor(item);
   const idx = cursor && cursor.itemId === item.id ? cursor.index + delta : 0;
@@ -158,17 +274,80 @@ export async function step(delta: 1 | -1): Promise<void> {
   await goLiveSlide(item, idx, 'shortcut');
 }
 
-export const clearLayer = (layer: Layer): Promise<void> => {
-  if (layer === 'content' || layer === 'all' || layer === 'panic')
+/** Which slide was live when the slide layer was last cleared, so bringing it back re-marks it. */
+let clearedCursor: Cursor | null = null;
+
+/**
+ * What the control window does when layers come off: the slide takes its live highlight (kept
+ * for "bring back") and its own announcement loop with it; the announcements layer stops looping.
+ */
+function beforeClear(layers: readonly RestorableLayer[]): void {
+  if (layers.includes('announcements')) stopAnnounceLoop();
+  if (layers.includes('content')) {
+    const cursor = get().liveCursor;
+    if (cursor) clearedCursor = cursor;
     useStore.setState({ liveCursor: null });
-  stopAnnouncements();
+    stopAnnouncements();
+  }
+}
+
+export const clearLayer = (layer: Layer): Promise<void> => {
+  beforeClear(layersClearedBy(layer));
   return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
+};
+
+/** A custom clear group: clear exactly these layers, in one step. */
+export const clearGroup = (layers: RestorableLayer[]): Promise<void> => {
+  if (!layers.length) return Promise.resolve();
+  beforeClear(layers);
+  return safe(cmd('live.clearLayers', { layers }, 'ui'));
+};
+
+/**
+ * Power button after Turn off live: bring every layer back. A click within a second of turning
+ * off is ignored, so a nervous double-click never flashes the screen back on.
+ */
+export const restoreAll = (): Promise<void> => {
+  const off = get().live?.cleared.off;
+  if (!off || Date.now() - Date.parse(off.at) < 1000) return Promise.resolve();
+  if (off.layers.includes('content') && clearedCursor) {
+    useStore.setState({ liveCursor: clearedCursor });
+    clearedCursor = null;
+  }
+  return safe(cmd('live.restoreAll', {}, 'ui'));
+};
+
+/** Bring back what the last clear took off a layer (see LiveState.cleared). */
+export const restoreLayer = (layer: RestorableLayer): Promise<void> => {
+  if (layer === 'content' && clearedCursor) {
+    useStore.setState({ liveCursor: clearedCursor });
+    clearedCursor = null;
+  }
+  return safe(cmd('live.restoreLayer', { layer }, 'ui'));
 };
 
 export const toggleMask = (mask: 'black' | 'logo' | 'freeze'): Promise<void> =>
   safe(cmd('live.setMask', { mask }, 'shortcut'));
 
-// ---------- Announcements loop (auto-advance while live) ----------
+/** Put an overlay (message, prop) on screen, replacing any with the same id. */
+export function showOverlay(overlay: Overlay): Promise<void> {
+  const others = (get().live?.program.overlays ?? []).filter((o) => o.id !== overlay.id);
+  return safe(cmd('live.setOverlays', { overlays: [...others, overlay].slice(-10) }));
+}
+
+/** Take an overlay off screen (nothing to do if it isn't showing). */
+export async function hideOverlay(id: string): Promise<void> {
+  const current = get().live?.program.overlays ?? [];
+  if (!current.some((o) => o.id === id)) return;
+  await safe(cmd('live.setOverlays', { overlays: current.filter((o) => o.id !== id) }));
+}
+
+/** Save part of the settings (validated against the full schema in main). */
+export async function saveSettings(patch: Partial<Settings>): Promise<void> {
+  await attempt(() => cmd('settings.update', { patch }), 'errors.setting');
+}
+
+// ---------- Auto-advance while live (announcements, and any item set to move on by itself) ----------
 let loopTimer: ReturnType<typeof setTimeout> | null = null;
 function stopAnnouncements(): void {
   if (loopTimer) clearTimeout(loopTimer);
@@ -176,16 +355,24 @@ function stopAnnouncements(): void {
 }
 function scheduleAnnouncements(item: ServiceItem, index: number): void {
   stopAnnouncements();
-  if (item.kind !== 'announcements' || item.slides.length < 2) return;
+  const adv = advanceOf(item);
+  const count = adv ? slidesFor(item).length : 0;
+  if (!adv || count < 2) return;
+  // The last slide: back to the first when looping, else it stays.
+  const next = index + 1 < count ? index + 1 : adv.loop ? 0 : -1;
+  if (next < 0) return;
   loopTimer = setTimeout(() => {
     const cur = get().liveCursor;
     if (cur?.itemId !== item.id || cur.index !== index) return;
-    void goLiveSlide(item, (index + 1) % item.slides.length, 'ui');
-  }, item.loopIntervalSec * 1000);
+    // The item as it is now: edited slides show, and auto-advance turned off stops here.
+    const now = findItem(item.id);
+    if (!now || !advanceOf(now)) return;
+    void goLiveSlide(now, next, 'ui');
+  }, adv.seconds * 1000);
 }
 
 /** Wait until an item's slides can be built (e.g. Bible chapters loaded). */
-export async function ensureItemReady(item: ServiceItem): Promise<PresentableSlide[]> {
+async function ensureItemReady(item: ServiceItem): Promise<PresentableSlide[]> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const built = buildItemSlides(item, slideContext());
     if (!built.missing.length) return built.slides;
@@ -194,15 +381,165 @@ export async function ensureItemReady(item: ServiceItem): Promise<PresentableSli
   return [];
 }
 
+/**
+ * Click-goes-live (the default): a click sends straight to the screen. With "Preview first"
+ * on, clicks load Preview and Go live sends it (except item kinds set to live editing).
+ */
+export function clickGoesLive(kind?: ServiceItem['kind']): boolean {
+  const s = get().settings;
+  if (!s || s.clickGoesLive) return true;
+  return !!kind && s.liveEditingKinds.includes(kind);
+}
+
+/**
+ * A pick from the Bible or the media bin. It reaches the screen at once only when the operator
+ * chose that (Bible › "Click shows it now"). Otherwise it never interrupts the room: with
+ * Preview first on it loads Preview, else it opens in the slides, ready to show.
+ */
+export function openPick(item: ServiceItem): Promise<void> {
+  const s = get().settings;
+  const safe = s?.clickGoesLive === false ? 'preview' : 'select';
+  return openAdhoc(item, s?.pickShowsNow ? 'preview' : safe);
+}
+
+/** A slide was clicked: show it, or load Preview, following {@link clickGoesLive}. */
+export function triggerSlide(item: ServiceItem, index: number): Promise<void> {
+  useStore.setState({ editCursor: { itemId: item.id, index } });
+  return clickGoesLive(item.kind) ? goLiveSlide(item, index) : previewSlide(item, index);
+}
+
 /** Show an ad-hoc item (from library or quick bar) in the slide grid, then preview or show it. */
 export async function openAdhoc(
   item: ServiceItem,
-  mode: 'select' | 'preview' | 'live' = 'preview',
+  requested: 'select' | 'preview' | 'live' = 'preview',
+  /** `playNow`: going live, a video plays at once (Settings' "Wait for Play" doesn't hold it). */
+  opts: { playNow?: boolean } = {},
 ): Promise<void> {
   useStore.setState({ adhoc: item, selectedItemId: item.id });
-  if (mode === 'select') return;
+  if (requested === 'select') return;
+  const mode = requested === 'preview' && clickGoesLive(item.kind) ? 'live' : requested;
   const slides = await ensureItemReady(item);
-  if (!slides.length) return;
-  if (mode === 'live') await goLiveSlide(item, 0);
+  // Another pick came while this one loaded: that one wins.
+  if (!slides.length || get().adhoc?.id !== item.id) return;
+  if (mode === 'live') await goLiveSlide(item, 0, 'ui', opts);
   else await previewSlide(item, 0);
+}
+
+// ---------- End of a video cue: go to the next item ----------
+/**
+ * Watch the live video: when a cue set to "Go to the next item" reaches its out-point (or the
+ * file's end), the next item in the playlist goes live. Once per play-through.
+ */
+export function installMediaWatch(): () => void {
+  let fired = '';
+  const timer = setInterval(() => {
+    const s = get();
+    const m = s.live?.program.media;
+    const cur = s.liveCursor;
+    if (!m || m.kind !== 'video' || m.loop || !m.playing || !cur) return;
+    const item = findItem(cur.itemId);
+    if (item?.kind !== 'media' || !item.autoAdvance || item.mediaId !== m.mediaId) return;
+    const duration = knownDuration(m.mediaId, s.media.find((x) => x.id === m.mediaId)?.durationSec);
+    const end = mediaEnd(m, duration);
+    const key = `${m.mediaId}|${m.syncedAt ?? ''}`;
+    if (end === undefined || key === fired) return;
+    if (mediaPositionAt(m, Date.now(), duration) >= end - 0.1) {
+      fired = key;
+      void goLiveNextItem(item.id);
+    }
+  }, 200);
+  return () => clearInterval(timer);
+}
+
+/**
+ * Lower-third mode on the audience screens: draw the words with this theme (null: off, each
+ * slide's own theme again). Instant, like a mask.
+ */
+export const setLowerThird = (theme: Theme | null): Promise<void> =>
+  safe(cmd('live.setLowerThird', { theme }, 'ui'));
+
+/** Switch the Look on screen (null: every layer on every screen). Instant, like a mask. */
+export const setLook = (look: Look | null): Promise<void> =>
+  safe(cmd('live.setLook', { look }, 'ui'));
+
+// ---------- Announcements layer ----------
+let announceTimer: ReturnType<typeof setTimeout> | null = null;
+
+let announceRun = 0;
+
+function stopAnnounceLoop(): void {
+  announceRun++;
+  if (announceTimer) clearTimeout(announceTimer);
+  announceTimer = null;
+  if (get().announceItemId) useStore.setState({ announceItemId: null });
+}
+
+/**
+ * Loop an announcements (or slides) item on the announcements layer, its own layer above the
+ * slide: the main presentation carries on underneath, and Looks can send it to lobby screens.
+ */
+export async function runOnAnnouncementsLayer(item: ServiceItem): Promise<void> {
+  if (!takesAdvance(item)) return;
+  stopAnnounceLoop();
+  // Each run gets a token: a step still waiting on the previous run can never revive it.
+  const run = ++announceRun;
+  const slides = (await ensureItemReady(item)).filter((sl) => sl.action.kind === 'content');
+  if (!slides.length || run !== announceRun) return;
+  const every = (advanceOf(item)?.seconds ?? 8) * 1000;
+  useStore.setState({ announceItemId: item.id });
+  const show = async (i: number): Promise<void> => {
+    if (run !== announceRun || get().announceItemId !== item.id) return;
+    const sl = slides[i % slides.length];
+    if (sl?.action.kind === 'content')
+      await safe(cmd('live.setAnnouncement', { content: sl.action.content }, 'ui'));
+    if (run !== announceRun) return;
+    if (slides.length > 1) announceTimer = setTimeout(() => void show(i + 1), every);
+  };
+  await show(0);
+}
+
+/** Stop the announcements loop and take the layer off the screen (it can be brought back). */
+export async function stopAnnouncementsLayer(): Promise<void> {
+  stopAnnounceLoop();
+  await clearLayer('announcements');
+}
+
+/** Put an item's background (with its theme's adjustments) on the screens; the words stay. */
+export const showBackgroundLayer = (background: BackgroundLayer | null): Promise<void> =>
+  safe(cmd('live.setBackground', { background }, 'ui'));
+
+/** Put a background behind the words on screen. */
+export const setBackground = (ref: BackgroundRef): Promise<void> =>
+  safe(cmd('live.setBackground', { background: { ref } }, 'ui'));
+
+/**
+ * Add a countdown to the service that plays `mediaId` so it ends on zero (its length by
+ * default), and open it for editing.
+ */
+export function addVideoCountdown(mediaId: string | null): void {
+  const s = get();
+  const m = mediaId ? s.media.find((x) => x.id === mediaId) : undefined;
+  const length = m ? knownDuration(m.id, m.durationSec) : undefined;
+  const id = newId();
+  addItemToService({
+    id,
+    kind: 'countdown',
+    title: i18n.t('service.countdownTitle'),
+    target: { durationSec: length ? Math.max(60, Math.ceil(length)) : 300 },
+    ...(m ? { video: { mediaId: m.id }, hideTimer: true } : {}),
+  });
+  openEditor(true, { selectedItemId: id, adhoc: null });
+}
+
+/**
+ * A picture or video as the background, with the slide's words on top (unlike showing it as
+ * media, which takes the whole screen). If it is on screen as media, it moves behind the words.
+ */
+export async function putBehindWords(media: { mediaId: string; kind: string }): Promise<void> {
+  await setBackground(
+    media.kind === 'video'
+      ? { kind: 'video', mediaId: media.mediaId, loop: true }
+      : { kind: 'image', mediaId: media.mediaId },
+  );
+  if (get().live?.program.media?.mediaId === media.mediaId) await clearLayer('media');
 }

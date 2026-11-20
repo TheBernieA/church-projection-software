@@ -1,0 +1,437 @@
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ListPlus, Plus } from 'lucide-react';
+import {
+  ClipboardGlyph,
+  HEADER_TOOL,
+  PlayBoxGlyph,
+  TargetGlyph,
+  TimelineGlyph,
+} from '../icons/ConsoleIcons';
+import { useTranslation } from 'react-i18next';
+import { newId, type ServiceItem } from '@lampstand/core';
+import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
+import {
+  goLiveSlide,
+  runOnAnnouncementsLayer,
+  stopAnnouncementsLayer,
+  triggerSlide,
+} from '../../lib/actions';
+import { feature } from '../../lib/features';
+import { useItemSlides } from '../../lib/hooks';
+import { isLibraryDrag, readLibraryDrop } from '../../lib/libraryDrag';
+import { insertInSection, intoSection, sectionHeaderAt } from '../../lib/sections';
+import { itemTitle, sectionColor } from '../../lib/slides';
+import { editItems, openDialog, updateItem, useStore } from '../../lib/store';
+import { EmptyState } from '../EmptyState';
+import { KindTile } from '../kindIcons';
+import { AddMenu, SectionAdd } from '../ServicePanel';
+import { editable } from '../../lib/slideThumbs';
+import { SongControls } from '../SongControls';
+import { ItemBackground } from '../ItemBackground';
+import { LoopToggle } from '../LoopToggle';
+import { takesBackground } from '../../lib/itemBackground';
+import { type SlideState } from '../slides/SlideCards';
+import {
+  ItemSlides,
+  SlideViewControls,
+  useSlideViewPrefs,
+  type SlideViewPrefs,
+} from '../slides/ItemSlides';
+import { DefaultTransitions, ItemTransition } from '../slides/Transitions';
+import { takesTransition } from '../../lib/transitions';
+import { takesAdvance } from '../../lib/advance';
+import { type PresentableSlide } from '../../types';
+import { openEditor } from '../../lib/editing';
+
+/** A planned per-item tool: a dimmed icon with a small "soon" dot; the tooltip says what it'll do. */
+function SoonTool({ id, icon }: { id: string; icon: ReactNode }) {
+  const { t } = useTranslation();
+  const f = feature(id);
+  return (
+    <Typography
+      tone="muted"
+      role="img"
+      aria-label={`${f.name} (${t('soon.badge')})`}
+      title={`${t('soon.tooltip', { name: f.name })}. ${f.description}`}
+      className="relative flex h-[30px] w-[30px] items-center justify-center"
+    >
+      {icon}
+      <span
+        aria-hidden
+        className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-[var(--soon)]"
+      />
+    </Typography>
+  );
+}
+
+/** A thin upright line between groups of tools in an item's header. */
+function ToolDivider() {
+  return <span aria-hidden className="mx-1 h-5 w-px shrink-0 bg-[var(--hairline-strong)]" />;
+}
+
+/**
+ * A section's coloured band: its name, "Add here" and "+" on the right. Things dragged from
+ * the library onto it go into the section.
+ */
+function SectionBand({
+  header,
+  update,
+}: {
+  header: Extract<ServiceItem, { kind: 'header' }>;
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+}) {
+  const [dropping, setDropping] = useState(false);
+  return (
+    <div
+      data-section={header.label}
+      onDragOver={(e) => {
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        setDropping(false);
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        const dropped = readLibraryDrop(e);
+        if (!dropped) return;
+        update((xs) => insertInSection(xs, header.id, [dropped]));
+        useStore.setState({ selectedItemId: dropped.id, adhoc: null });
+      }}
+      className={dropping ? 'shadow-[inset_0_0_0_2px_var(--select)]' : ''}
+    >
+      <div
+        className="flex h-9 items-center gap-2 px-3"
+        style={{ background: sectionColor(header.label) }}
+      >
+        <Typography
+          as="div"
+          size={15}
+          tone="white"
+          weight="semibold"
+          role="heading"
+          aria-level={2}
+          truncate
+          className="min-w-0 flex-1"
+        >
+          {header.label}
+        </Typography>
+        <SectionAdd header={header} update={update} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The end of a section: a "+" to add slides, a song, a countdown and the rest into it (an empty
+ * section says so first).
+ */
+function SectionPlaceholder({
+  header,
+  empty,
+  update,
+}: {
+  header: Extract<ServiceItem, { kind: 'header' }>;
+  empty: boolean;
+  update: (fn: (xs: ServiceItem[]) => ServiceItem[]) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="px-3 pb-3 pt-1">
+      <AddMenu
+        update={(fn) => update(intoSection(header.id, fn))}
+        trigger={
+          <Button
+            variant="bare"
+            className={`flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-[6px] border border-dashed border-[var(--hairline-strong)] text-[var(--text-3)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${typographyClass({ size: 12, weight: 'medium' })}`}
+          >
+            <Plus size={14} />
+            {empty
+              ? `${t('service.sectionEmpty')} ${t('service.addToSection', { name: header.label })}`
+              : t('service.addToSection', { name: header.label })}
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
+/** The last card of a text item: "+" adds a slide and opens it in Edit. */
+function AddSlideCard({ item, list }: { item: ServiceItem; list: boolean }) {
+  const { t } = useTranslation();
+  const title = item.kind === 'presentation' ? item.title : t('service.kind.announcements');
+  const add = (): void => {
+    if (item.kind !== 'presentation' && item.kind !== 'announcements') return;
+    const index = item.slides.length;
+    updateItem(item.id, (x) =>
+      x.kind === 'presentation' || x.kind === 'announcements'
+        ? { ...x, slides: [...x.slides, { id: newId(), title: '', body: '' }] }
+        : x,
+    );
+    openEditor(false, { selectedItemId: item.id, editCursor: { itemId: item.id, index } });
+  };
+  return (
+    <li>
+      <Button
+        variant="bare"
+        aria-label={t('service.addSlideOf', { name: title })}
+        title={t('service.addSlide')}
+        onClick={add}
+        className={`flex w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-[3px] border border-dashed border-[var(--hairline-strong)] text-[var(--text-3)] transition-colors hover:border-[var(--accent)] hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${
+          list ? 'h-10 flex-row' : 'aspect-video h-auto'
+        } ${typographyClass({ size: 12, weight: 'medium' })}`}
+      >
+        <Plus size={list ? 14 : 22} />
+        {t('service.addSlide')}
+      </Button>
+    </li>
+  );
+}
+
+/** One playlist item: its header bar (icon, title, tools) and its slides. */
+function ItemSection({
+  item,
+  selected,
+  prefs,
+  register,
+  onLibraryDrop,
+}: {
+  item: ServiceItem;
+  selected: boolean;
+  prefs: SlideViewPrefs;
+  register: (el: HTMLElement | null) => void;
+  /** A song, verse or media dragged in from the library lands just before this item. */
+  onLibraryDrop: (dropped: ServiceItem) => void;
+}) {
+  const [dropping, setDropping] = useState(false);
+  const { t } = useTranslation();
+  const { slides } = useItemSlides(item);
+  const announcing = useStore((s) => s.announceItemId === item.id);
+  const songs = useStore((s) => s.songs);
+  const media = useStore((s) => s.media);
+  const bookNames = useStore((s) => s.bookNames);
+  const liveKey = useStore((s) => s.live?.program.content?.key);
+  const liveCursor = useStore((s) => s.liveCursor);
+  const previewCursor = useStore((s) => s.previewCursor);
+  const song = item.kind === 'song' ? songs.find((s) => s.id === item.songId) : undefined;
+  const title = itemTitle(item, { songs, media, bookNames });
+
+  const stateOf = (slide: PresentableSlide, i: number): SlideState => {
+    const here = (c: { itemId: string; index: number } | null): boolean =>
+      c?.itemId === item.id && c.index === i;
+    if (here(liveCursor) && (slide.action.kind !== 'content' || liveKey === slide.key))
+      return 'live';
+    if (here(previewCursor)) return 'preview';
+    return 'idle';
+  };
+  const select = (): void => useStore.setState({ selectedItemId: item.id, adhoc: null });
+  const click = (i: number): void => {
+    select();
+    void triggerSlide(item, i);
+  };
+  const live = (i: number): void => {
+    select();
+    void goLiveSlide(item, i);
+  };
+  const addsSlides = item.kind === 'presentation' || item.kind === 'announcements';
+  const quickEdit = (i: number): void => {
+    if (!editable(item)) return;
+    openEditor(false, { selectedItemId: item.id, editCursor: { itemId: item.id, index: i } });
+  };
+
+  return (
+    <section
+      ref={register}
+      aria-label={title}
+      className={`relative scroll-mt-1 ${dropping ? 'before:absolute before:inset-x-0 before:top-0 before:z-[3] before:h-0.5 before:bg-[var(--select)]' : ''}`}
+      onDragOver={(e) => {
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setDropping(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+      }}
+      onDrop={(e) => {
+        setDropping(false);
+        if (!isLibraryDrag(e)) return;
+        e.preventDefault();
+        const dropped = readLibraryDrop(e);
+        if (dropped) onLibraryDrop(dropped);
+      }}
+    >
+      <header
+        className={`sticky top-0 z-[2] flex h-9 items-center gap-2 border-b border-[var(--divider)] px-3 ${
+          selected ? 'bg-[#2b3a55]' : 'bg-[var(--surface-0)]'
+        }`}
+      >
+        {/* The whole bar up to its tools selects the item. */}
+        <Button
+          variant="bare"
+          onClick={select}
+          className="flex h-full min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+        >
+          <KindTile kind={item.kind} size={20} />
+          <Typography size={13} weight="semibold" truncate>
+            {title}
+          </Typography>
+          <Typography variant="caption" className="shrink-0">
+            {t('slides.count', { count: slides.length })}
+          </Typography>
+        </Button>
+        {/* Tools in groups, as in other presentation software: the item's own settings, what's
+            coming, then where it plays. */}
+        <div className="flex shrink-0 items-center gap-1">
+          {song && item.kind === 'song' && selected && <SongControls item={item} song={song} />}
+          {/* Every item with slides can move on by itself (announcements loop by default). */}
+          <LoopToggle item={item} />
+          {takesBackground(item) && <ItemBackground item={item} />}
+          <ToolDivider />
+          <SoonTool id="slide-actions" icon={<ClipboardGlyph />} />
+          <SoonTool id="timeline" icon={<TimelineGlyph />} />
+          {takesTransition(item) && <ItemTransition item={item} />}
+          {(takesAdvance(item) || item.kind === 'media') && <ToolDivider />}
+          {/* Every item with slides can loop on the announcements layer. */}
+          {takesAdvance(item) && (
+            <IconButton
+              size="2xs"
+              variant="quiet"
+              aria-label={announcing ? t('announce.stop') : t('announce.run')}
+              title={announcing ? t('announce.stop') : t('announce.run')}
+              aria-pressed={announcing}
+              active={announcing}
+              activeTone="preview"
+              className={HEADER_TOOL}
+              onClick={() =>
+                void (announcing ? stopAnnouncementsLayer() : runOnAnnouncementsLayer(item))
+              }
+            >
+              {/* Where the slides go: a target, green while on the announcements layer. */}
+              <TargetGlyph />
+            </IconButton>
+          )}
+          {item.kind === 'media' && (
+            <IconButton
+              size="2xs"
+              variant="quiet"
+              aria-label={t('playback.open')}
+              active={!!item.playback || item.loop || item.autoAdvance}
+              className={HEADER_TOOL}
+              onClick={() => openDialog('playback', { playbackItemId: item.id })}
+            >
+              <PlayBoxGlyph />
+            </IconButton>
+          )}
+        </div>
+      </header>
+      {/* The selected item's slides are "the" slide list; the others are named after their item. */}
+      <ItemSlides
+        item={item}
+        slides={slides}
+        prefs={prefs}
+        stateOf={stateOf}
+        onClick={click}
+        onDoubleClick={live}
+        onQuickEdit={editable(item) ? quickEdit : undefined}
+        hint={editable(item) ? t('slides.quickEditHint') : undefined}
+        label={selected ? t('slides.list') : t('slides.itemSlides', { title })}
+        add={addsSlides ? (list) => <AddSlideCard item={item} list={list} /> : undefined}
+        className="p-3"
+      />
+    </section>
+  );
+}
+
+/**
+ * Show workspace for a playlist: every item's slides on one scrolling page, in service order,
+ * with sections as coloured bands, so the operator can see (and fire) anything without
+ * switching items. Picking an item in the sidebar scrolls to it.
+ */
+export function PlaylistView() {
+  const { t } = useTranslation();
+  const service = useStore((s) => s.service);
+  const selected = useStore((s) => s.selectedItemId);
+  const prefs = useSlideViewPrefs();
+  const sections = useRef(new Map<string, HTMLElement>());
+  const items = service?.items ?? [];
+
+  // Bring the selected item into view (e.g. after clicking it in the sidebar).
+  useEffect(() => {
+    if (!selected) return;
+    sections.current.get(selected)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selected]);
+
+  const update = (fn: (xs: ServiceItem[]) => ServiceItem[]): void => editItems(fn);
+
+  return (
+    <section
+      className="@container flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--surface-0)]"
+      aria-label={t('slides.title')}
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {items.length === 0 && (
+          <EmptyState icon={<ListPlus size={28} strokeWidth={1.5} />} title={t('service.empty')} />
+        )}
+        {items.map((item, i) => {
+          // The section this row belongs to, and whether it is that section's last row.
+          const header = sectionHeaderAt(items, i);
+          const next = items[i + 1];
+          const endsSection = !!header && (!next || next.kind === 'header');
+          const placeholder = endsSection && (
+            <SectionPlaceholder
+              key={`${header.id}:add`}
+              header={header}
+              empty={item.kind === 'header'}
+              update={update}
+            />
+          );
+          return item.kind === 'header' ? (
+            <Fragment key={item.id}>
+              <SectionBand header={item} update={update} />
+              {placeholder}
+            </Fragment>
+          ) : (
+            <Fragment key={item.id}>
+              <ItemSection
+                item={item}
+                selected={selected === item.id}
+                prefs={prefs}
+                onLibraryDrop={(dropped) => {
+                  update((xs) => {
+                    const at = xs.findIndex((x) => x.id === item.id);
+                    return [...xs.slice(0, at), dropped, ...xs.slice(at)];
+                  });
+                  useStore.setState({ selectedItemId: dropped.id, adhoc: null });
+                }}
+                register={(el) => {
+                  if (el) sections.current.set(item.id, el);
+                  else sections.current.delete(item.id);
+                }}
+              />
+              {placeholder}
+            </Fragment>
+          );
+        })}
+      </div>
+      <div className="flex h-9 shrink-0 items-center gap-3 overflow-hidden border-t border-[var(--divider)] bg-[var(--surface-1)] px-2 @max-[560px]:gap-1.5">
+        <AddMenu
+          update={update}
+          trigger={
+            <Button size="xs" variant="ghost" icon={<Plus size={14} />}>
+              {t('service.add')}
+            </Button>
+          }
+        />
+        <span aria-hidden className="h-4 w-px bg-[var(--hairline-strong)]" />
+        <DefaultTransitions />
+        <span className="flex-1" />
+        <SlideViewControls prefs={prefs} />
+      </div>
+    </section>
+  );
+}

@@ -1,12 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
-import { ListPlus, Plus, Search } from 'lucide-react';
+import { ListPlus, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
-import { Button, IconButton } from '@lampstand/ui';
+import { stripChords } from '@lampstand/lyrics';
+import { IconButton, Typography, typographyClass, Button } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
-import { libraryDragSource } from '../lib/library-drag';
-import { addItemToService, openDialog, useStore } from '../lib/store';
+import { libraryDragSource } from '../lib/libraryDrag';
+import { addItemToService, useStore } from '../lib/store';
+import { SoonFeature } from './Soon';
+import { REVEAL } from './cards';
 
 function haystack(s: Song): string {
   return [
@@ -16,7 +19,7 @@ function haystack(s: Song): string {
     s.ccliNumber ?? '',
     ...(s.hymnNumber?.map((h) => `#${h.number}`) ?? []),
     ...s.tags,
-    s.sections[0]?.lines[0] ?? '',
+    stripChords(s.sections[0]?.lines[0] ?? ''),
   ]
     .join(' ')
     .toLowerCase();
@@ -31,19 +34,23 @@ export function SongList({ hymns }: { hymns: boolean }) {
   const parent = useRef<HTMLDivElement>(null);
   const addToService = addItemToService;
 
-  const rows = useMemo(() => {
-    const f = filter.trim().toLowerCase().replace(/^#/, '');
+  // Sorted, with each song's searchable text, once per library change (not per keystroke).
+  const sorted = useMemo(() => {
     const base = songs.filter((s) => (s.origin === 'hymnal') === hymns);
-    const sorted = hymns
+    const list = hymns
       ? base.sort(
           (a, b) => Number(a.hymnNumber?.[0]?.number ?? 0) - Number(b.hymnNumber?.[0]?.number ?? 0),
         )
       : base.sort((a, b) => a.title.localeCompare(b.title));
-    if (!f) return sorted;
-    return sorted.filter(
-      (s) => haystack(s).includes(f) || s.hymnNumber?.some((h) => h.number === f),
-    );
-  }, [songs, filter, hymns]);
+    return list.map((song) => ({ song, text: haystack(song) }));
+  }, [songs, hymns]);
+  const rows = useMemo(() => {
+    const f = filter.trim().toLowerCase().replace(/^#/, '');
+    const hits = f
+      ? sorted.filter((r) => r.text.includes(f) || r.song.hymnNumber?.some((h) => h.number === f))
+      : sorted;
+    return hits.map((r) => r.song);
+  }, [sorted, filter]);
 
   // TanStack Virtual returns non-memoizable functions; fine since we don't use the React Compiler.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -56,7 +63,7 @@ export function SongList({ hymns }: { hymns: boolean }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex gap-2 px-4 pb-3">
+      <div className="flex gap-2 px-3 pb-2">
         <div className="relative flex-1">
           <Search
             size={15}
@@ -71,21 +78,31 @@ export function SongList({ hymns }: { hymns: boolean }) {
             aria-label={t('library.filter')}
           />
         </div>
-        {!hymns && (
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Plus size={15} />}
-            onClick={() => openDialog('song', { editingSongId: null })}
-          >
-            {t('library.newSong')}
-          </Button>
-        )}
       </div>
+      {!hymns && (
+        // Ways to bring songs in, coming soon.
+        <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
+          <SoonFeature
+            id="song-import"
+            label={t('library.importFile')}
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
+          />
+          <SoonFeature
+            id="songselect"
+            label="SongSelect"
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
+          />
+          <SoonFeature
+            id="multitracks"
+            label="MultiTracks"
+            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
+          />
+        </div>
+      )}
       {rows.length === 0 && (
-        <p className="px-5 py-3 text-[13px] leading-relaxed text-[var(--text-3)]">
+        <Typography as="p" size={13} tone="muted" leading="relaxed" className="px-5 py-3">
           {hymns && !filter ? t('library.noHymnals') : t('library.noResults')}
-        </p>
+        </Typography>
       )}
       <div ref={parent} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         <div style={{ height: v.getTotalSize(), position: 'relative' }}>
@@ -100,28 +117,36 @@ export function SongList({ hymns }: { hymns: boolean }) {
                 className="group absolute left-0 right-0 flex items-center gap-1 pr-1"
                 style={{ top: row.start, height: row.size }}
               >
-                <button
-                  type="button"
+                <Button
+                  variant="bare"
+
                   className={`flex h-[46px] min-w-0 flex-1 items-center gap-3 rounded-[8px] px-2.5 text-left transition-colors ${active ? 'bg-[var(--surface-3)]' : 'hover:bg-[var(--surface-2)]'}`}
                   onClick={() => void openAdhoc(item, 'select')}
                   onDoubleClick={() => addToService({ ...item, id: newId() })}
                   {...libraryDragSource(() => item)}
                 >
                   {s.hymnNumber?.[0] && (
-                    <span className="tnum w-8 shrink-0 text-right text-[13px] font-semibold text-[var(--accent)]">
+                    <Typography
+                      size={13}
+                      weight="semibold"
+                      tabular
+                      className="w-8 shrink-0 text-right text-[var(--accent)]"
+                    >
                       {s.hymnNumber[0].number}
-                    </span>
+                    </Typography>
                   )}
-                  <span className="flex min-w-0 flex-col leading-tight">
-                    <span className="truncate text-[13px] font-medium">{s.title}</span>
-                    <span className="truncate text-[12px] text-[var(--text-3)]">
-                      {s.sections[0]?.lines[0] ?? ''}
-                    </span>
-                  </span>
-                </button>
+                  <Typography leading="tight" className="flex min-w-0 flex-col">
+                    <Typography variant="label" truncate>
+                      {s.title}
+                    </Typography>
+                    <Typography variant="caption" truncate>
+                      {stripChords(s.sections[0]?.lines[0] ?? '')}
+                    </Typography>
+                  </Typography>
+                </Button>
                 <IconButton
                   size="xs"
-                  className="opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  className={REVEAL}
                   aria-label={t('library.addToService')}
                   onClick={() => addToService({ ...item, id: newId() })}
                 >

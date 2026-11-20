@@ -22,7 +22,14 @@ interface VerseDoc {
 const port = process.parentPort;
 let biblesDir = '';
 let cacheDir = '';
-const verseIndexes = new Map<string, { index: MiniSearch<VerseDoc>; texts: Map<string, string> }>();
+const verseIndexes = new Map<
+  string,
+  { checksum: string; index: MiniSearch<VerseDoc>; texts: Map<string, string> }
+>();
+/** Installed versions (id → checksum). Each is indexed the first time it's searched (an index is
+ *  about 60 MB, so a dozen Bibles indexed up front would be most of a gigabyte). */
+const installed = new Map<string, string>();
+const indexing = new Map<string, Promise<void>>();
 let songIndex: MiniSearch<SongDoc> | null = null;
 let songsById = new Map<string, SongDoc>();
 
@@ -67,8 +74,21 @@ async function indexBible(versionId: string, checksum: string): Promise<void> {
     await mkdir(cacheDir, { recursive: true });
     await writeFile(cacheFile, JSON.stringify(index)).catch(() => undefined);
   }
-  verseIndexes.set(versionId, { index, texts });
+  verseIndexes.set(versionId, { checksum, index, texts });
   send({ type: 'indexed', what: 'bible', versionId, ms: Date.now() - started });
+}
+
+/** Index a version if it's installed and not indexed (or indexing) already. */
+function ensureIndexed(versionId: string): Promise<void> {
+  const checksum = installed.get(versionId);
+  if (checksum === undefined || verseIndexes.get(versionId)?.checksum === checksum)
+    return Promise.resolve();
+  let p = indexing.get(versionId);
+  if (!p) {
+    p = indexBible(versionId, checksum).finally(() => indexing.delete(versionId));
+    indexing.set(versionId, p);
+  }
+  return p;
 }
 
 function indexSongs(docs: SongDoc[]): void {
@@ -106,6 +126,7 @@ function query(text: string, limit: number, versionId?: string): SearchHit[] {
       });
     }
   }
+  // One version when asked for; otherwise those indexed so far.
   const versions =
     versionId && verseIndexes.has(versionId) ? [versionId] : [...verseIndexes.keys()];
   for (const vid of versions) {
@@ -147,15 +168,19 @@ port.on('message', (e: { data: ToWorker }) => {
           send({ type: 'ready' });
           break;
         case 'bibles':
-          for (const id of [...verseIndexes.keys()])
-            if (!m.versions.some((v) => v.id === id)) verseIndexes.delete(id);
-          for (const v of m.versions) await indexBible(v.id, v.checksum);
+          installed.clear();
+          for (const v of m.versions) installed.set(v.id, v.checksum);
+          // Drop indexes of versions removed or changed; the default is indexed now.
+          for (const [id, e] of [...verseIndexes])
+            if (installed.get(id) !== e.checksum) verseIndexes.delete(id);
+          if (m.warm) await ensureIndexed(m.warm);
           break;
         case 'songs':
           indexSongs(m.docs);
           break;
         case 'query': {
           const t = Date.now();
+          if (m.versionId) await ensureIndexed(m.versionId);
           send({
             type: 'result',
             id: m.id,

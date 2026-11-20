@@ -31,6 +31,9 @@ export class FitCache {
     }
     return v;
   }
+  clear(): void {
+    this.map.clear();
+  }
   set(key: string, size: number): void {
     this.map.set(key, size);
     if (this.map.size > this.limit) {

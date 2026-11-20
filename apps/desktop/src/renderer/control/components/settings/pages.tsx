@@ -1,26 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   BookOpen,
   Download,
   HardDriveDownload,
   ListMusic,
   PackagePlus,
-  ShieldCheck,
   Trash2,
+  Type,
   Upload,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { EMPTY_MASKS, EMPTY_SCENE, type Scene, type Settings, type Standby } from '@lampstand/core';
+import {
+  EMPTY_MASKS,
+  EMPTY_SCENE,
+  newId,
+  type Scene,
+  type Settings,
+  type Standby,
+} from '@lampstand/core';
 import type { AppInfo, ModuleSummary } from '@lampstand/ipc-contract';
-import { Button, Segmented, Switch } from '@lampstand/ui';
+import { Button, IconButton, Segmented, Slider, Switch, Typography } from '@lampstand/ui';
 import { api, cmd, q } from '../../lib/api';
-import { useStandby } from '../../lib/hooks';
+import { usePictures, useStandby } from '../../lib/hooks';
 import { attempt, toast, useStore } from '../../lib/store';
-import { CommitSlider, DeferredInput } from '../DeferredControls';
+import { DeferredInput } from '../DeferredControls';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
-import { IconTile } from '../kind-icons';
-import { Group, Row, SettingsPage, ThemeTiles, UnitInput } from './parts';
+import { IconTile } from '../kindIcons';
+import { LogoLooks } from './LogoLooks';
+import {
+  Group,
+  LayerChips,
+  NameRow,
+  Notice,
+  Row,
+  SettingsPage,
+  ThemeTiles,
+  UnitInput,
+} from './parts';
+import { LIVE_KINDS } from '../../constants';
+import { clamp } from '../../lib/utils';
+import { ask } from '../../lib/confirm';
 
 type Update = (patch: Partial<Settings>) => void;
 interface PageProps {
@@ -41,22 +61,122 @@ export function GeneralPage({ s, update }: PageProps) {
           />
         </Row>
         <Row
-          label={t('settings.uiScale')}
-          description={t('settings.uiScaleHelp')}
-          htmlFor="ui-scale"
+          label={t('settings.textScale')}
+          description={t('settings.textScaleHelp')}
+          htmlFor="text-scale"
+          stack
         >
-          <CommitSlider
-            id="ui-scale"
-            min={0.9}
-            max={1.5}
-            step={0.05}
-            value={s.uiScale}
-            onCommit={(uiScale) => update({ uiScale })}
-            format={(v) => `${Math.round(v * 100)}%`}
-          />
+          <TextSize value={s.textScale} onCommit={(textScale) => update({ textScale })} />
         </Row>
       </Group>
     </SettingsPage>
+  );
+}
+
+const TEXT_MIN = 0.85;
+const TEXT_MAX = 1.4;
+const TEXT_STEP = 0.05;
+
+/**
+ * Text size: a slider with A−/A+ steps and a live preview drawn at the size being chosen, so the
+ * operator sees the result while dragging. The setting is saved once, on release.
+ */
+function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) => void }) {
+  const { t } = useTranslation();
+  const [draft, setDraft] = useState<number | null>(null);
+  const shown = draft ?? value;
+  const round = (v: number): number =>
+    Math.round(clamp(v, TEXT_MIN, TEXT_MAX) / TEXT_STEP) * TEXT_STEP;
+  const commit = (v = draft): void => {
+    if (v !== null && Math.abs(v - value) > 0.001) onCommit(round(v));
+    setDraft(null);
+  };
+  const rows = t('settings.textPreviewRows').split('|');
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <IconButton
+          size="xs"
+          aria-label={t('settings.textSmaller')}
+          disabled={shown <= TEXT_MIN}
+          onClick={() => commit(shown - TEXT_STEP)}
+        >
+          <Type size={12} />
+        </IconButton>
+        <Slider
+          format={null}
+          id="text-scale"
+          min={TEXT_MIN}
+          max={TEXT_MAX}
+          step={TEXT_STEP}
+          value={shown}
+          onChange={(e) => setDraft(Number(e.target.value))}
+          onPointerUp={() => commit()}
+          onKeyUp={() => commit()}
+          onBlur={() => commit()}
+          className="w-56"
+        />
+        <IconButton
+          size="xs"
+          aria-label={t('settings.textLarger')}
+          disabled={shown >= TEXT_MAX}
+          onClick={() => commit(shown + TEXT_STEP)}
+        >
+          <Type size={17} />
+        </IconButton>
+        <Typography size={13} tone="secondary" tabular className="w-12 text-right">
+          {Math.round(shown * 100)}%
+        </Typography>
+        {Math.abs(shown - 1) > 0.001 && (
+          <Button size="xs" variant="ghost" onClick={() => commit(1)}>
+            {t('settings.textReset')}
+          </Button>
+        )}
+      </div>
+      {/* Drawn with the chosen scale, using the same text sizes as the real panels. */}
+      <figure
+        aria-label={t('settings.textPreview')}
+        style={{ '--text-scale': shown } as CSSProperties}
+        className="m-0 flex max-w-[460px] overflow-hidden rounded-[var(--radius-md)] border border-[var(--divider)] bg-[var(--surface-1)]"
+      >
+        <div className="w-[190px] shrink-0 border-r border-[var(--divider)] py-2">
+          <Typography as="p" variant="overline" className="px-3 pb-1">
+            {t('sidebar.playlists')}
+          </Typography>
+          {rows.map((r, i) => (
+            <Typography
+              as="p"
+              size={13}
+              key={r}
+              className={`mx-1.5 flex h-[26px] items-center gap-2 rounded-[4px] px-2 ${
+                i === 1 ? 'bg-[var(--select)] text-white' : 'text-[var(--text-1)]'
+              }`}
+            >
+              <ListMusic size={14} className="shrink-0 opacity-80" />
+              <Typography truncate>{r}</Typography>
+            </Typography>
+          ))}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 p-3">
+          <div>
+            <Typography as="p" size={13} tone="primary" weight="semibold" truncate>
+              {t('settings.textPreviewHeading')}
+            </Typography>
+            <Typography as="p" variant="caption" leading="snug" className="mt-0.5">
+              {t('settings.textPreviewNote')}
+            </Typography>
+          </div>
+          <Typography
+            size={11}
+            tone="white"
+            weight="medium"
+            className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5"
+          >
+            {t('settings.sampleGroup')}
+          </Typography>
+        </div>
+      </figure>
+    </div>
   );
 }
 
@@ -116,7 +236,7 @@ export function ScripturePage({ s, update }: PageProps) {
               update({
                 scripture: {
                   ...s.scripture,
-                  maxCharsPerSlide: Math.min(1200, Math.max(60, Number(v) || 320)),
+                  maxCharsPerSlide: clamp(Number(v) || 320, 60, 1200),
                 },
               })
             }
@@ -143,9 +263,7 @@ export function SongsPage({ s, update }: PageProps) {
             max={12}
             unit={t('settings.lines')}
             value={String(s.lyrics.maxLinesPerSlide)}
-            onCommit={(v) =>
-              update({ lyrics: { maxLinesPerSlide: Math.min(12, Math.max(1, Number(v) || 4)) } })
-            }
+            onCommit={(v) => update({ lyrics: { maxLinesPerSlide: clamp(Number(v) || 4, 1, 12) } })}
           />
         </Row>
       </Group>
@@ -155,7 +273,7 @@ export function SongsPage({ s, update }: PageProps) {
             id="ccli"
             type="text"
             wide
-            placeholder="e.g. 1234567"
+            placeholder={t('settings.ccliPlaceholder')}
             value={s.ccliLicenseNumber ?? ''}
             onCommit={(v) => update({ ccliLicenseNumber: v.trim() || undefined })}
           />
@@ -165,16 +283,8 @@ export function SongsPage({ s, update }: PageProps) {
   );
 }
 
-const LIVE_KINDS = ['song', 'scripture', 'presentation', 'announcements'] as const;
-
 type OffAirKind = Settings['offAir']['kind'];
 type LogoKind = Settings['logo']['kind'];
-
-/** Library images and videos: what the logo and off-air screen can show. */
-function usePictures() {
-  const library = useStore((st) => st.media);
-  return library.filter((m) => m.kind === 'image' || m.kind === 'video');
-}
 
 /** "Picture" row: pick an image or video from the library (shared by Logo and Off-air). */
 function PictureRow({
@@ -204,7 +314,7 @@ function PictureRow({
           }))}
         />
       ) : (
-        <span className="text-[12px] text-[var(--text-3)]">{t('settings.picture.none')}</span>
+        <Typography variant="caption">{t('settings.picture.none')}</Typography>
       )}
     </Row>
   );
@@ -264,19 +374,42 @@ function LogoGroup({ s, update }: PageProps) {
         />
       </Row>
       {s.logo.kind === 'text' ? (
-        <Row
-          label={t('settings.logo.name')}
-          description={t('settings.logo.nameHelp')}
-          htmlFor="logo-name"
-        >
-          <DeferredInput
-            id="logo-name"
-            className="field !h-8 !w-56"
-            maxLength={80}
-            value={s.logo.text}
-            onCommit={(text) => set({ text })}
-          />
-        </Row>
+        <>
+          <Row
+            label={t('settings.logo.name')}
+            description={t('settings.logo.nameHelp')}
+            htmlFor="logo-name"
+          >
+            <DeferredInput
+              id="logo-name"
+              className="field !h-8 !w-56"
+              maxLength={80}
+              value={s.logo.text}
+              onCommit={(text) => set({ text })}
+            />
+          </Row>
+          <Row
+            label={t('settings.logo.tagline')}
+            description={t('settings.logo.taglineHelp')}
+            htmlFor="logo-tagline"
+          >
+            <DeferredInput
+              id="logo-tagline"
+              className="field !h-8 !w-56"
+              maxLength={120}
+              value={s.logo.tagline ?? ''}
+              placeholder={t('settings.logo.taglinePlaceholder')}
+              onCommit={(tagline) => set({ tagline: tagline.trim() || undefined })}
+            />
+          </Row>
+          <Row label={t('settings.logo.look')} description={t('settings.logo.lookHelp')} stack>
+            <LogoLooks
+              value={s.logo.style}
+              text={s.logo.text}
+              onChange={(style) => set({ style })}
+            />
+          </Row>
+        </>
       ) : (
         <PictureRow
           label={t('settings.logo.picture')}
@@ -322,6 +455,61 @@ function OffAirGroup({ s, update }: PageProps) {
   );
 }
 
+type ClearGroup = Settings['clearGroups'][number];
+
+/**
+ * Custom clear groups: named buttons (in the "…" menu beside the monitor) that clear exactly
+ * the layers ticked here, e.g. "Words & props" leaves the background and video playing.
+ */
+function ClearGroupsGroup({ s, update }: PageProps) {
+  const { t } = useTranslation();
+  const groups = s.clearGroups;
+  const save = (next: ClearGroup[]): void => update({ clearGroups: next });
+  const edit = (id: string, patch: Partial<ClearGroup>): void =>
+    save(groups.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+  return (
+    <Group title={t('clearGroups.title')} footnote={t('clearGroups.help')}>
+      {groups.map((g) => (
+        <div key={g.id} className="flex flex-col gap-2.5 px-4 py-3.5">
+          <NameRow
+            value={g.name}
+            label={t('clearGroups.name')}
+            deleteLabel={t('clearGroups.delete', { name: g.name })}
+            onRename={(name) => edit(g.id, { name })}
+            onDelete={() => save(groups.filter((x) => x.id !== g.id))}
+          />
+          <LayerChips
+            label={t('clearGroups.layersLabel', { name: g.name })}
+            value={g.layers}
+            onChange={(layers) => edit(g.id, { layers })}
+            names={(l) => t(`clearGroups.layers.${l}`)}
+            minOne
+          />
+        </div>
+      ))}
+      <div className="px-4 py-3">
+        <Button
+          size="sm"
+          variant="ghost"
+          disabled={groups.length >= 12}
+          onClick={() =>
+            save([
+              ...groups,
+              {
+                id: newId(),
+                name: t('clearGroups.newName', { n: groups.length + 1 }),
+                layers: ['content', 'props'],
+              },
+            ])
+          }
+        >
+          + {t('clearGroups.add')}
+        </Button>
+      </div>
+    </Group>
+  );
+}
+
 export function PresentingPage({ s, update }: PageProps) {
   const { t } = useTranslation();
   return (
@@ -329,6 +517,7 @@ export function PresentingPage({ s, update }: PageProps) {
       title={t('settings.pages.presenting')}
       description={t('settings.pagesHelp.presenting')}
     >
+      <ClearGroupsGroup s={s} update={update} />
       <LogoGroup s={s} update={update} />
       <OffAirGroup s={s} update={update} />
       <Group title={t('settings.liveEditing')} footnote={t('settings.liveEditingHelp')}>
@@ -367,8 +556,13 @@ export function PackagesPage() {
     for (const f of r.failed) toast(`${f.file}: ${f.message}`, 'error');
     load();
   };
-  const remove = (m: ModuleSummary): void => {
-    if (!window.confirm(t('modules.confirmRemove', { name: m.name }))) return;
+  const remove = async (m: ModuleSummary): Promise<void> => {
+    const ok = await ask({
+      message: t('modules.confirmRemove', { name: m.name }),
+      confirm: t('confirm.remove'),
+      tone: 'danger',
+    });
+    if (!ok) return;
     void attempt(() => cmd('module.remove', { kind: m.kind, id: m.id })).then(load);
   };
   const groups = (['bible', 'hymnal'] as const).map((kind) => ({
@@ -394,26 +588,35 @@ export function PackagesPage() {
       {groups.map(({ kind, items }) => (
         <Group key={kind} title={t(`modules.groups.${kind}`)}>
           {items.length === 0 ? (
-            <p className="px-4 py-4 text-[13px] text-[var(--text-3)]">
+            <Typography as="p" size={13} tone="muted" className="px-4 py-4">
               {t(`modules.empty.${kind}`)}
-            </p>
+            </Typography>
           ) : (
             items.map((m) => (
               <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                 <IconTile icon={kind === 'bible' ? BookOpen : ListMusic} size={36} />
-                <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                  <span className="truncate text-[13px] font-medium">{m.name}</span>
-                  <span className="truncate text-[12px] text-[var(--text-3)]">{m.detail}</span>
-                </span>
-                <span className="rounded-full bg-[var(--surface-3)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-2)]">
+                <Typography leading="tight" className="flex min-w-0 flex-1 flex-col">
+                  <Typography variant="label" truncate>
+                    {m.name}
+                  </Typography>
+                  <Typography variant="caption" truncate>
+                    {m.detail}
+                  </Typography>
+                </Typography>
+                <Typography
+                  size={11}
+                  tone="secondary"
+                  weight="medium"
+                  className="rounded-full bg-[var(--surface-3)] px-2 py-0.5"
+                >
                   {t(`modules.source.${m.source}`)}
-                </span>
+                </Typography>
                 {m.removable && (
                   <Button
                     size="xs"
                     variant="danger"
                     icon={<Trash2 size={13} />}
-                    onClick={() => remove(m)}
+                    onClick={() => void remove(m)}
                   >
                     {t('modules.remove')}
                   </Button>
@@ -494,20 +697,12 @@ export function AboutPage() {
   }, []);
   return (
     <SettingsPage title={t('settings.pages.about')} description={t('settings.pagesHelp.about')}>
-      <div className="flex gap-3 rounded-[var(--radius-card)] bg-[var(--surface-2)] p-4 shadow-[var(--shadow-1)]">
-        <ShieldCheck size={20} className="mt-0.5 shrink-0 text-[var(--accent)]" />
-        <div className="space-y-1.5">
-          <p className="text-[13px] font-medium">{t('settings.privacyTitle')}</p>
-          <p className="text-[12px] leading-relaxed text-[var(--text-2)]">
-            {t('settings.privacyText')}
-          </p>
-        </div>
-      </div>
+      <Notice title={t('settings.privacyTitle')}>{t('settings.privacyText')}</Notice>
       <Group title={t('settings.version')}>
         <Row label="Lampstand">
-          <span className="tnum text-[13px] text-[var(--text-2)]">
+          <Typography size={13} tone="secondary" tabular>
             {info ? `${info.version} · Electron ${info.electron} · ${info.platform}` : '…'}
-          </span>
+          </Typography>
         </Row>
       </Group>
     </SettingsPage>

@@ -1,48 +1,10 @@
-import { clearLayer, goLive, step, toggleMask } from './actions';
-import { cmd } from './api';
-import { openDialog, redo, undo, useStore } from './store';
-
-export type ShortcutAction =
-  | 'goLive'
-  | 'next'
-  | 'previous'
-  | 'clearContent'
-  | 'clearMedia'
-  | 'clearBackground'
-  | 'clearOverlays'
-  | 'clearAll'
-  | 'black'
-  | 'logo'
-  | 'freeze'
-  | 'panic'
-  | 'quickBar'
-  | 'undo'
-  | 'redo'
-  | 'cheatSheet'
-  | 'perfHud'
-  | 'mediaToggle';
-
-/** Defaults from §3.5 and §8.5. Fully remappable via settings.shortcuts. */
-export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
-  goLive: 'Space',
-  next: 'ArrowRight',
-  previous: 'ArrowLeft',
-  clearContent: 'F1',
-  clearMedia: 'F2',
-  clearBackground: 'F3',
-  clearOverlays: 'F4',
-  clearAll: 'F5',
-  black: 'B',
-  logo: 'L',
-  freeze: 'F',
-  panic: 'Escape',
-  quickBar: 'Mod+K',
-  undo: 'Mod+Z',
-  redo: 'Mod+Shift+Z',
-  cheatSheet: '?',
-  perfHud: 'Mod+Alt+P',
-  mediaToggle: 'P',
-};
+import { clearLayer, goLive, slidesFor, step, toggleMask, triggerSlide } from './actions';
+import { slideForHotkey } from './groupKeys';
+import { api, cmd } from './api';
+import { itemIn, openDialog, redo, undo, useStore } from './store';
+import { auto, cut, previewSource, switcherSource, take } from './switcher';
+import { DEFAULT_SHORTCUTS } from '../constants';
+import { type ShortcutAction } from '../types';
 
 /** Secondary keys that always work (broadcast muscle memory). */
 const ALIASES: Partial<Record<string, ShortcutAction>> = {
@@ -65,7 +27,8 @@ export function comboFromEvent(e: KeyboardEvent): string {
   if (e.altKey && e.code.startsWith('Key')) key = e.code.slice(3);
   if (key === '?') return mod ? 'Mod+?' : '?';
   if (e.shiftKey && key.length > 1) parts.push('Shift');
-  else if (e.shiftKey && /^[A-Z]$/.test(key) && mod) parts.push('Shift');
+  // Shift+letter is its own combo ("Shift+B" for Black): plain letters are group hotkeys.
+  else if (e.shiftKey && /^[A-Z]$/.test(key)) parts.push('Shift');
   parts.push(key);
   return parts.join('+');
 }
@@ -103,16 +66,40 @@ const RUN: Record<ShortcutAction, () => void> = {
     void clearLayer('panic');
   },
   quickBar: () => openDialog('quick'),
+  newSong: () => openDialog('newSong'),
   undo: () => void undo(),
   redo: () => void redo(),
   cheatSheet: () => openDialog('shortcuts'),
   perfHud: () =>
     useStore.setState({ dialog: useStore.getState().dialog === 'perf' ? null : 'perf' }),
+  settings: () => openDialog('settings'),
+  switcherCut: () => void cut('shortcut'),
+  switcherAuto: () => void auto('shortcut'),
   mediaToggle: () => {
     if (useStore.getState().live?.program.media?.kind === 'video')
       void cmd('live.media', { action: 'toggle' }, 'shortcut');
   },
 };
+
+/**
+ * A plain letter: go to that section (C → the Chorus) of the item being worked on, the one
+ * selected in the plan (or picked from the library), from where it is on screen now. Only in
+ * Show, with no dialog open. Returns whether the letter did something.
+ */
+function goToGroup(letter: string): boolean {
+  const s = useStore.getState();
+  if (s.mode !== 'show' || (s.dialog && s.dialog !== 'perf')) return false;
+  const item = itemIn(s, s.selectedItemId);
+  if (!item) return false;
+  const from = s.liveCursor?.itemId === item.id ? s.liveCursor.index : -1;
+  const i = slideForHotkey(slidesFor(item), letter, from);
+  if (i < 0) return false;
+  void triggerSlide(item, i);
+  return true;
+}
+
+/** Run a show action (a key, or a button on a desk or controller). */
+export const runShowAction = (action: ShortcutAction): void => RUN[action]();
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -120,17 +107,57 @@ function isTyping(target: EventTarget | null): boolean {
   return el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
 }
 
+/** A control that Space and Enter press (a button, tab, menu item…), not the show. */
+function pressesKeys(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el?.closest) return false;
+  return !!el.closest(
+    'button, a[href], summary, [role="button"], [role="tab"], [role="radio"], [role="checkbox"], [role="switch"], [role="menuitem"], [role="option"], [role="slider"]',
+  );
+}
+
+/**
+ * Show keys that the Edit and Reflow pages use for themselves (moving between slides, typing):
+ * there, unmodified, they never change what's on screen.
+ */
+const EDITOR_OWNED: ShortcutAction[] = ['goLive', 'next', 'previous'];
+
 /** Global keyboard handler. Single keys never fire while typing in a field. */
 export function installShortcuts(): () => void {
   const onKey = (e: KeyboardEvent): void => {
+    // A dialog, menu or dropdown already used this key (Esc to close it, Space or arrows to
+    // pick): it isn't also a show shortcut. Radix marks the keys it takes, before we see them.
+    if (e.defaultPrevented) return;
     if (e.repeat && !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    // Cameras by number: 1–9 to Preview, Shift+1–9 straight to the screen.
+    const digit = /^Digit([1-9])$/.exec(e.code);
+    if (digit && !e.metaKey && !e.ctrlKey && !e.altKey && !isTyping(e.target)) {
+      const dialog = useStore.getState().dialog;
+      const device = switcherSource(Number(digit[1]));
+      if (device && (!dialog || dialog === 'perf')) {
+        e.preventDefault();
+        void (e.shiftKey ? take(device, true, 'shortcut') : previewSource(device));
+        return;
+      }
+    }
     const combo = comboFromEvent(e);
     const map = effectiveShortcuts();
     let action = (Object.keys(map) as ShortcutAction[]).find((a) => map[a] === combo);
     if (!action) action = ALIASES[combo];
-    if (!action) return;
+    if (!action) {
+      // A plain letter with no show action of its own: a group hotkey.
+      if (/^[A-Z]$/.test(combo) && !isTyping(e.target) && goToGroup(combo)) e.preventDefault();
+      return;
+    }
     const hasModifier = combo.includes('Mod');
     if (isTyping(e.target) && !hasModifier && !/^F\d+$/.test(combo)) return;
+    const mode = useStore.getState().mode;
+    // Off the Show page, Space and Enter on a focused button press the button. (On it, Space
+    // always shows the slide, whatever was clicked last: an operator's muscle memory.)
+    if (mode !== 'show' && (combo === 'Space' || combo === 'Enter') && pressesKeys(e.target))
+      return;
+    if (!hasModifier && EDITOR_OWNED.includes(action) && (mode === 'edit' || mode === 'reflow'))
+      return;
     // In a text field, ⌘Z / ⌘⇧Z undo the typing (native), not the service plan.
     if (isTyping(e.target) && (action === 'undo' || action === 'redo')) return;
     const dialogOpen = useStore.getState().dialog && useStore.getState().dialog !== 'perf';
@@ -141,5 +168,15 @@ export function installShortcuts(): () => void {
     RUN[action]();
   };
   window.addEventListener('keydown', onKey);
-  return () => window.removeEventListener('keydown', onKey);
+  // Edit › Undo / Redo in the menu bar: the same rules as the keys.
+  // (The menu itself undoes typing in a focused field, natively.)
+  const offMenu = api.onMenu((action) => {
+    if (isTyping(document.activeElement)) return;
+    const dialogOpen = useStore.getState().dialog && useStore.getState().dialog !== 'perf';
+    if (!dialogOpen) void (action === 'undo' ? undo() : redo());
+  });
+  return () => {
+    window.removeEventListener('keydown', onKey);
+    offMenu();
+  };
 }

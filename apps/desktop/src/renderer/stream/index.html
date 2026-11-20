@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Lampstand Stream</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      #stream,
+      #camera,
+      #back,
+      #words {
+        position: absolute;
+        inset: 0;
+      }
+      /* Lower third: the slide's words, smaller, near the bottom, over a soft dark band
+         (main.ts sizes and places them: wordsLayout.ts). */
+      body.lower-third #words .ls-layer-content {
+        transform-origin: 0 0;
+      }
+      /* Where the words sit across the picture, whatever the theme says. */
+      body.words-left #words .ls-layer-content .ls-content {
+        align-items: flex-start !important;
+      }
+      body.words-right #words .ls-layer-content .ls-content {
+        align-items: flex-end !important;
+      }
+      body.words-center #words .ls-layer-content .ls-content {
+        align-items: center !important;
+      }
+      body.words-center #words .ls-layer-content :is(.ls-text, .ls-reference) {
+        text-align: center !important;
+      }
+      body.words-left #words .ls-layer-content :is(.ls-text, .ls-reference) {
+        text-align: left !important;
+      }
+      body.words-right #words .ls-layer-content :is(.ls-text, .ls-reference) {
+        text-align: right !important;
+      }
+      #band {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 36%;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.72) 55%);
+        display: none;
+        pointer-events: none;
+      }
+      body.lower-third.has-words #band {
+        display: block;
+      }
+      /* Words along the top: the band comes down from the top instead. */
+      body.words-top #band {
+        top: 0;
+        bottom: auto;
+        background: linear-gradient(to top, transparent, rgba(0, 0, 0, 0.72) 55%);
+      }
+      /* Two cameras: side by side (each half, cropped to fill), or the second in a corner. */
+      #camera.layout-sideBySide > .ls-input:nth-child(1) {
+        right: 50% !important;
+      }
+      #camera.layout-sideBySide > .ls-input:nth-child(2) {
+        left: 50% !important;
+      }
+      #camera.layout-pip > .ls-input:nth-child(2) {
+        left: auto !important;
+        bottom: auto !important;
+        top: 4% !important;
+        right: 3% !important;
+        width: 30% !important;
+        height: 30% !important;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      }
+      /* Mirroring the stage display: only it shows. */
+      #stage {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: #07080c;
+      }
+      body.mirror-stage #stage {
+        display: block;
+      }
+      body.mirror-stage #camera,
+      body.mirror-stage #back,
+      body.mirror-stage #band,
+      body.mirror-stage #words {
+        visibility: hidden;
+      }
+      /* The NDI words feed: see-through behind the words (alpha), for keying over cameras. */
+      html:has(body.transparent),
+      body.transparent {
+        background: transparent;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stream">
+      <div id="camera"></div>
+      <div id="back"></div>
+      <div id="band"></div>
+      <div id="words"></div>
+      <div id="stage"></div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

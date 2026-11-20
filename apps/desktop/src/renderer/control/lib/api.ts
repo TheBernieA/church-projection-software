@@ -1,8 +1,8 @@
 import type { AppErrorShape } from '@lampstand/core';
 import type { QueryArgs, QueryName, QueryResults } from '@lampstand/ipc-contract';
-import '../../shared/output-api.d';
+import '../../shared/outputApi.d';
 
-export class ApiError extends Error {
+class ApiError extends Error {
   constructor(readonly shape: AppErrorShape) {
     super(shape.message);
   }

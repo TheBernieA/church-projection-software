@@ -107,5 +107,8 @@ app; operators use "Duplicate to edit". Only distribute hymnals whose words you 
 7. The search index is rebuilt in the SearchWorker; the UI refreshes.
 
 Bundled packages: any valid `.lsbible` in `resources/bibles/` (or hymnal `.json` in `resources/hymns/`) ships with the
-app and installs on first run — adding one is a content change, not a code change. `scripts/build-kjv-module.mjs`
-builds the bundled KJV from eBible.org's public-domain USFM and records provenance in the manifest.
+app and installs on first run — adding one is a content change, not a code change. `scripts/buildBibleModules.mjs`
+builds the bundled Bibles from eBible.org's public-domain USFM and records provenance in each manifest:
+KJV, ASV, WEB, YLT, Darby, BBE and Webster (English), Diodati and Riveduta (Italian), Reina-Valera 1909
+(Spanish), Louis Segond 1910 (French) and Luther 1912 (German). Add one by adding a row to its `VERSIONS`
+table and running `pnpm build:bibles <id>`.

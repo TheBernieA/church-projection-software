@@ -9,14 +9,23 @@ export interface FormatOptions {
    * "3:1–36" can collapse to "3". Without it, an open end prints as "end".
    */
   readonly lastVerseOfChapter?: (book: BookId, chapter: number) => number;
+  /** The Bible version's own book names ("Genesi", "Juan"), used instead of the English ones. */
+  readonly names?: Partial<Record<BookId, string>>;
 }
 
 // Display uses an en dash for ranges (typographic convention for number ranges).
 const DASH = '–';
 
-function bookLabel(book: BookId, short: boolean, plural: boolean): string {
+function bookLabel(
+  book: BookId,
+  short: boolean,
+  plural: boolean,
+  names?: Partial<Record<BookId, string>>,
+): string {
   const b = getBook(book);
   if (short) return b.shortName;
+  const own = names?.[book];
+  if (own) return own;
   // "Psalm 23" for one psalm, "Psalms 23–24" when spanning several.
   if (book === 'PSA' && !plural) return 'Psalm';
   return b.name;
@@ -65,12 +74,12 @@ export function formatPassage(p: PassageRef, opts: FormatOptions = {}): string {
   if (p.start.book !== p.end.book) {
     // Not produced by the parser, but representable; spell both ends out in full.
     const a = formatPassage({ start: p.start, end: { ...p.start } }, opts);
-    const endName = bookLabel(p.end.book, short, false);
+    const endName = bookLabel(p.end.book, short, false, opts.names);
     return `${a}${DASH}${endName} ${String(p.end.chapter)}:${String(endVerse(p, opts))}`;
   }
   const plural = p.start.chapter !== p.end.chapter;
   const loc = locator(p, opts);
-  const name = bookLabel(p.start.book, short, plural);
+  const name = bookLabel(p.start.book, short, plural, opts.names);
   return loc === '' ? name : `${name} ${loc}`;
 }
 
@@ -92,7 +101,9 @@ export function formatPassages(list: readonly PassageRef[], opts: FormatOptions 
       const loc = locator(p, opts);
       const plural = groupPlural || p.start.chapter !== p.end.chapter;
       const name =
-        p.start.book === p.end.book ? bookLabel(p.start.book, opts.short === true, plural) : '';
+        p.start.book === p.end.book
+          ? bookLabel(p.start.book, opts.short === true, plural, opts.names)
+          : '';
       const full = name === '' ? formatPassage(p, opts) : loc === '' ? name : `${name} ${loc}`;
       out += prev ? `; ${full}` : full;
     } else {

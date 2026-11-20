@@ -1,111 +1,75 @@
+import { publishMeters } from './meters';
 import { create } from 'zustand';
-import type {
-  BibleVersionInfo,
-  BookId,
-  LiveState,
-  MediaItem,
-  ServiceItem,
-  ServicePlan,
-  Settings,
-  Song,
-  Theme,
-} from '@lampstand/core';
-import type { DisplayInfo, Notice, ServiceSummary } from '@lampstand/ipc-contract';
+import type { BookId, ServiceItem, ServicePlan, Song } from '@lampstand/core';
+import { DebouncedSave } from './debouncedSave';
 import { api, cmd, q } from './api';
 import i18n from '../i18n';
+import { type ControlState, type DialogName, type Toast } from '../types';
+import { type EditOptions } from '../types';
 
-export type LibraryTab = 'bible' | 'songs' | 'hymns' | 'media' | 'backgrounds' | 'themes';
-export type DialogName =
-  | 'quick'
-  | 'outputs'
-  | 'settings'
-  | 'shortcuts'
-  | 'song'
-  | 'theme'
-  | 'services'
-  | 'messages'
-  | 'perf'
-  | null;
-
-export interface Toast {
-  id: number;
-  level: Notice['level'];
-  text: string;
-}
-
-/** Where the operator is: the item + slide that is live (for next/previous). */
-export interface Cursor {
-  itemId: string;
-  index: number;
-}
-
-export interface ControlState {
-  live: LiveState | null;
-  settings: Settings | null;
-  songs: Song[];
-  themes: Theme[];
-  media: MediaItem[];
-  versions: BibleVersionInfo[];
-  verseCounts: Record<string, Partial<Record<BookId, number[]>>>;
-  chapters: Record<string, string[]>;
-  services: ServiceSummary[];
-  service: ServicePlan | null;
-  displays: DisplayInfo[];
-  /** Item shown in the slide grid: from the service, or ad-hoc from the library/quick bar. */
-  selectedItemId: string | null;
-  adhoc: ServiceItem | null;
-  previewCursor: Cursor | null;
-  /** Slide selected for editing in the inspector. */
-  editCursor: Cursor | null;
-  liveCursor: Cursor | null;
-  /** Open library drawer, or null when collapsed. */
-  libraryTab: LibraryTab | null;
-  dialog: DialogName;
-  editingSongId: string | null;
-  editingThemeId: string | null;
-  history: { canUndo: boolean; canRedo: boolean };
-  toasts: Toast[];
-  set: (p: Partial<ControlState>) => void;
-}
-
-/**
- * Stable empty fallbacks for selectors. A selector must never return a *new* object/array
- * (e.g. `?? []`): zustand would see a different value on every read and React would re-render
- * until it hits "Maximum update depth exceeded" (blank window). Lint enforces this.
- */
-export const EMPTY_LIST: readonly unknown[] = Object.freeze([]);
-export const EMPTY_RECORD: Readonly<Record<string, never>> = Object.freeze({});
-
-export const useStore = create<ControlState>((set) => ({
+export const useStore = create<ControlState>(() => ({
   live: null,
   settings: null,
   songs: [],
   themes: [],
   media: [],
+  mediaPlaylists: [],
   versions: [],
   verseCounts: {},
+  bookNames: {},
   chapters: {},
   services: [],
   service: null,
   displays: [],
+  stream: null,
+  ndi: null,
   selectedItemId: null,
   adhoc: null,
   previewCursor: null,
   editCursor: null,
+  editObjectId: null,
   liveCursor: null,
-  libraryTab: 'bible',
+  libraryTab: 'songs',
+  mode: 'show',
+  editExpanded: false,
+  copiedTextFormat: null,
+  binTab: 'media',
+  binPlaylistId: null,
+  announceItemId: null,
+  audioPlaylistId: null,
+  controlsTab: 'audio',
+  binOpen: true,
+  mixerOpen: false,
+  liveConsole: 'closed',
+  streamTakeover: null,
+  textBarOpen: false,
+  settingsPage: 'general',
   dialog: null,
-  editingSongId: null,
+  playbackItemId: null,
   editingThemeId: null,
-  history: { canUndo: false, canRedo: false },
+  editingThemeCopy: false,
   toasts: [],
-  set: (p) => set(p),
+  saving: false,
+  sidebarView: 'playlist',
 }));
 
 const get = useStore.getState;
 const patch = (p: Partial<ControlState>): void => useStore.setState(p);
 
 let toastSeq = 0;
+/**
+ * An item by id: the library pick when it's that one, else the playlist's. The one rule every
+ * lookup uses, so a leftover library pick never stands in for a playlist item.
+ */
+export function itemIn(
+  s: Pick<ControlState, 'adhoc' | 'service'>,
+  id: string | null | undefined,
+): ServiceItem | null {
+  if (!id) return null;
+  if (s.adhoc?.id === id) return s.adhoc;
+  return s.service?.items.find((i) => i.id === id) ?? null;
+}
+
 export function toast(text: string, level: Toast['level'] = 'info'): void {
   const id = ++toastSeq;
   patch({ toasts: [...get().toasts, { id, level, text }] });
@@ -116,7 +80,7 @@ export function toast(text: string, level: Toast['level'] = 'info'): void {
 }
 
 /** User-facing text for an error: the command's own (safe) message, else a translated fallback. */
-export function errorText(e: unknown, fallbackKey = 'errors.generic'): string {
+function errorText(e: unknown, fallbackKey = 'errors.generic'): string {
   return e instanceof Error && e.message ? e.message : i18n.t(fallbackKey);
 }
 
@@ -169,22 +133,33 @@ export function loadChapter(versionId: string, book: BookId, chapter: number): P
   return p;
 }
 
-export async function loadVerseCounts(versionId: string): Promise<void> {
+async function loadVerseCounts(versionId: string): Promise<void> {
   if (get().verseCounts[versionId]) return;
-  const counts = await q('bible.verseCounts', { versionId });
-  patch({ verseCounts: { ...get().verseCounts, [versionId]: counts } });
+  const [counts, names] = await Promise.all([
+    q('bible.verseCounts', { versionId }),
+    q('bible.bookNames', { versionId }),
+  ]);
+  patch({
+    verseCounts: { ...get().verseCounts, [versionId]: counts },
+    bookNames: { ...get().bookNames, [versionId]: names },
+  });
 }
 
-export async function refresh(
-  kind: 'songs' | 'services' | 'themes' | 'media' | 'bibles' | 'settings' | 'displays' | 'all',
-): Promise<void> {
+/** The kinds of library data the store loads (each refreshed on its own). */
+export type RepoKind =
+  'songs' | 'services' | 'themes' | 'media' | 'mediaPlaylists' | 'bibles' | 'settings' | 'displays';
+
+export async function refresh(kind: RepoKind | 'all'): Promise<void> {
   const all = kind === 'all';
   const tasks: Promise<void>[] = [];
   if (all || kind === 'settings')
     tasks.push(q('settings.get').then((settings) => patch({ settings })));
-  if (all || kind === 'songs') tasks.push(q('songs.list').then((songs) => patch({ songs })));
+  if (all || kind === 'songs')
+    tasks.push(q('songs.list').then((songs) => patch({ songs: withUnsavedSongs(songs) })));
   if (all || kind === 'themes') tasks.push(q('themes.list').then((themes) => patch({ themes })));
   if (all || kind === 'media') tasks.push(q('media.list').then((media) => patch({ media })));
+  if (all || kind === 'mediaPlaylists')
+    tasks.push(q('mediaPlaylists.list').then((mediaPlaylists) => patch({ mediaPlaylists })));
   if (all || kind === 'displays')
     tasks.push(q('displays.list').then((displays) => patch({ displays })));
   if (all || kind === 'bibles')
@@ -199,9 +174,13 @@ export async function refresh(
       q('services.list').then(async (services) => {
         patch({ services });
         const current = get().service?.id ?? get().settings?.lastServiceId ?? services[0]?.id;
-        if (current && !pendingSave) {
+        if (current && !serviceSave.isBusy()) {
           const service = await q('services.get', { id: current });
-          patch({ service: service ?? null });
+          // While that was read, another playlist may have been opened, or this one edited:
+          // then what was read is stale, and showing it would undo what the user just did.
+          const open = get().service?.id;
+          if ((open === undefined || open === current) && !serviceSave.isBusy())
+            patch({ service: service ?? null });
         }
       }),
     );
@@ -209,15 +188,13 @@ export async function refresh(
 }
 
 // ---------- Service editing with debounced autosave (§6.2: 500 ms) ----------
-let pendingSave: ReturnType<typeof setTimeout> | null = null;
-
-export interface EditOptions {
-  /**
-   * Typing: group rapid edits into one save (and one undo step) after a short pause.
-   * Everything else (add, drop, move, delete…) is saved immediately as its own undo step.
-   */
-  typing?: boolean;
-}
+const serviceSave = new DebouncedSave(async () => {
+  const s = get().service;
+  if (!s) return;
+  await attempt(() => cmd('service.save', { entity: s }), 'errors.saveService');
+  // An edit made while this save was in flight schedules another save; stay "Saving…" for it.
+  if (!serviceSave.isPending()) patch({ saving: false });
+});
 
 /**
  * Edit the current service (autosaved, undoable). Each discrete action becomes exactly one undo
@@ -227,12 +204,11 @@ export interface EditOptions {
 export function editService(mutate: (s: ServicePlan) => ServicePlan, opts: EditOptions = {}): void {
   if (!get().service) return;
   // Commit pending typing as its own step before a discrete action (reads the pre-edit state).
-  if (!opts.typing && pendingSave) void flushServiceSave();
+  if (!opts.typing && serviceSave.isPending()) void serviceSave.flush();
   const current = get().service;
   if (!current) return;
-  patch({ service: mutate(current) });
-  if (pendingSave) clearTimeout(pendingSave);
-  pendingSave = setTimeout(() => void flushServiceSave(), opts.typing ? 500 : 0);
+  patch({ service: mutate(current), saving: true });
+  serviceSave.schedule(!!opts.typing);
 }
 
 /** Edit the current service's item list (autosaved, undoable). */
@@ -252,37 +228,118 @@ export function updateItem<T extends ServiceItem>(
   editItems((items) => items.map((i) => (i.id === id ? mutate(i as T) : i)), opts);
 }
 
-/** Append an item (usually from the library or quick bar) to the service and select it. */
-export function addItemToService(item: ServiceItem): void {
-  editItems((items) => [...items, item]);
-  patch({ adhoc: null, selectedItemId: item.id });
+/**
+ * Change an item wherever it lives: in the service plan (saved, undoable) or, for a library
+ * pick shown ad hoc, just on screen.
+ */
+export function patchItem<T extends ServiceItem>(
+  item: T,
+  change: Partial<T> | ((current: T) => Partial<T>),
+): void {
+  // A function reads the item as it is NOW, so quick repeated clicks never lose a step.
+  const apply = (x: T): T => ({ ...x, ...(typeof change === 'function' ? change(x) : change) });
+  const adhoc = get().adhoc;
+  if (adhoc?.id === item.id) patch({ adhoc: apply(adhoc as T) });
+  else updateItem<T>(item.id, apply);
 }
 
-export async function flushServiceSave(): Promise<void> {
-  // Nothing pending → nothing to save. Saving anyway would push a no-op step onto the undo
-  // history, so Undo would "undo" that instead of the operator's real change.
-  if (!pendingSave) return;
-  clearTimeout(pendingSave);
-  pendingSave = null;
-  const s = get().service;
-  if (!s) return;
-  await attempt(() => cmd('service.save', { entity: s }), 'errors.saveService');
+/**
+ * Append an item (usually from the library or quick bar) to the service and select it. False
+ * (and a message) when no playlist is open to add it to.
+ */
+export function addItemToService(item: ServiceItem): boolean {
+  if (!get().service) {
+    toast(i18n.t('errors.noService'), 'warning');
+    return false;
+  }
+  editItems((items) => [...items, item]);
+  patch({ adhoc: null, selectedItemId: item.id });
+  return true;
+}
+
+/** Save the service now if an edit is waiting (nothing waiting: no save, no empty undo step). */
+export function flushServiceSave(): Promise<void> {
+  return serviceSave.flush();
+}
+
+// ---------- Song editing, autosaved the same way ----------
+/** Each edited song's save (kept per song, so two songs' typing never merge into one save). */
+const songSaves = new Map<string, DebouncedSave>();
+/** When each song was last saved from here: a copy read from disk older than that is stale. */
+const songSavedAt = new Map<string, string>();
+
+function songSave(id: string): DebouncedSave {
+  let save = songSaves.get(id);
+  if (!save) {
+    save = new DebouncedSave(async () => {
+      const song = get().songs.find((s) => s.id === id);
+      if (!song) return;
+      const saved = await attempt(() => cmd<Song>('song.save', { entity: song }), 'errors.save');
+      if (saved) songSavedAt.set(id, saved.updatedAt);
+    });
+    songSaves.set(id, save);
+  }
+  return save;
+}
+
+/**
+ * The library as read, but with any song still being saved from here as it is on screen: a
+ * copy read while a save was waiting or on its way (or read before the last save) is older
+ * than the edits, and showing it would undo them under the operator's hands.
+ */
+function withUnsavedSongs(songs: Song[]): Song[] {
+  const local = new Map(get().songs.map((l) => [l.id, l]));
+  return songs.map((s) => {
+    const mine = local.get(s.id);
+    if (!mine) return s;
+    const busy = songSaves.get(s.id)?.isBusy() ?? false;
+    const stale = s.updatedAt < (songSavedAt.get(s.id) ?? '');
+    return busy || stale ? mine : s;
+  });
+}
+
+/**
+ * Edit a library song (shown at once, autosaved, undoable). As with the service, typing is
+ * saved after a pause and each other change is its own undo step.
+ */
+export function editSong(id: string, mutate: (s: Song) => Song, opts: EditOptions = {}): void {
+  const save = songSave(id);
+  if (!opts.typing && save.isPending()) void save.flush();
+  const current = get().songs.find((s) => s.id === id);
+  if (!current || current.origin === 'hymnal') return;
+  patch({ songs: get().songs.map((s) => (s === current ? mutate(s) : s)) });
+  save.schedule(!!opts.typing);
+}
+
+/** Save every song edit still waiting. */
+export async function flushSongSaves(): Promise<void> {
+  await Promise.all([...songSaves.values()].map((s) => s.flush()));
+}
+
+/** Save everything still waiting (service and songs), e.g. before an undo. */
+function flushAll(): Promise<unknown> {
+  return Promise.all([serviceSave.flush(), flushSongSaves()]);
 }
 
 export async function openService(id: string): Promise<void> {
   await flushServiceSave();
   const service = await q('services.get', { id });
-  patch({ service: service ?? null, selectedItemId: null, adhoc: null, previewCursor: null });
+  patch({
+    service: service ?? null,
+    selectedItemId: null,
+    adhoc: null,
+    previewCursor: null,
+  });
   await cmd('settings.update', { patch: { lastServiceId: id } });
 }
 
 export async function undo(): Promise<void> {
-  await flushServiceSave();
+  await flushAll();
   const r = await api.undo();
   if (!r.ok) toast(r.error.message, 'error');
 }
 export async function redo(): Promise<void> {
-  await flushServiceSave();
+  await flushAll();
   const r = await api.redo();
   if (!r.ok) toast(r.error.message, 'error');
 }
@@ -310,12 +367,21 @@ export async function bootstrap(attempt = 0): Promise<void> {
 }
 
 /** Wire main → renderer events. */
-export function connect(): void {
+export function connect(opts: { only?: readonly RepoKind[] } = {}): void {
   api.onLiveState((live) => patch({ live }));
-  api.onRepoChanged((kind) => void refresh(kind));
+  // Panel windows (the Live console, the multi-view) keep only what they show up to date.
+  api.onRepoChanged((kind) => {
+    if (!opts.only || opts.only.includes(kind)) void refresh(kind);
+  });
   api.onDisplaysChanged(() => void refresh('displays'));
-  api.onHistoryChanged((history) => patch({ history }));
-  void q('history.state').then((history) => patch({ history }));
+  api.onStream((stream) => patch({ stream }));
+  api.onNdi((ndi) => patch({ ndi }));
+  // The console's own window opened, or closed (the console docks back in the main window).
+  api.onLiveConsole((open) => patch({ liveConsole: open ? 'window' : 'docked' }));
+  api.onMeters(publishMeters);
+  void q('stream.status').then((stream) => patch({ stream }));
+  void q('ndi.status').then((ndi) => patch({ ndi }));
   void q('live.get').then((live) => patch({ live }));
-  window.addEventListener('beforeunload', () => void flushServiceSave());
+  // Closing or reloading the window: song typing still waiting is sent too.
+  window.addEventListener('beforeunload', () => void flushAll());
 }

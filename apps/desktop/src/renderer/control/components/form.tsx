@@ -1,0 +1,195 @@
+import { useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { Slider, Typography, type SliderProps } from '@lampstand/ui';
+import { useDraft } from '../lib/slider';
+
+/**
+ * Shared form controls for editors and inspectors, so every label, colour well, number box,
+ * slider and checkbox looks and behaves the same everywhere.
+ */
+
+/**
+ * A labelled control with an optional hint.
+ * - `htmlFor`: the label points at the control's id.
+ * - `group`: a caption over a group of buttons (Segmented etc.), which a <label> must not wrap.
+ * - neither: the label wraps the control (implicit association).
+ */
+export function Field({
+  label,
+  htmlFor,
+  group = false,
+  hint,
+  children,
+  className = '',
+}: {
+  label: ReactNode;
+  htmlFor?: string;
+  group?: boolean;
+  hint?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  const hintNode = hint && (
+    <Typography as="p" variant="caption" className="mt-1.5">
+      {hint}
+    </Typography>
+  );
+  if (htmlFor || group)
+    return (
+      <div className={className}>
+        {htmlFor ? (
+          <Typography as="label" variant="field" htmlFor={htmlFor}>
+            {label}
+          </Typography>
+        ) : (
+          <Typography variant="field">{label}</Typography>
+        )}
+        {children}
+        {hintNode}
+      </div>
+    );
+  return (
+    <label className={`block ${className}`}>
+      <Typography variant="field">{label}</Typography>
+      {children}
+      {hintNode}
+    </label>
+  );
+}
+
+type InputRest = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>;
+
+export { ColorInput } from './ColorInput';
+
+/**
+ * Number box that only reports real numbers. While typing, the box may be empty or half-typed
+ * (it keeps its own draft); it shows the stored value again when it loses focus.
+ */
+export function NumberInput({
+  value,
+  onChange,
+  round = false,
+  className = '',
+  onBlur,
+  ...rest
+}: InputRest & {
+  value: number;
+  onChange: (v: number) => void;
+  /** Show whole numbers (canvas pixels). */
+  round?: boolean;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <input
+      type="number"
+      className={`field ${className}`}
+      value={draft ?? (round ? Math.round(value) : value)}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const v = Number(e.target.value);
+        if (e.target.value !== '' && Number.isFinite(v)) onChange(v);
+      }}
+      onBlur={(e) => {
+        setDraft(null);
+        onBlur?.(e);
+      }}
+      {...rest}
+    />
+  );
+}
+
+/** A labelled slider with its value shown; reports every move (live preview). */
+export function RangeField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  format = (v) => String(v),
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  format?: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <Typography
+      as="label"
+      size={12}
+      tone="secondary"
+      className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-2"
+    >
+      <span>{label}</span>
+      <Slider
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        format={format}
+        onChange={(e) => onChange(Number(e.target.value))}
+      />
+    </Typography>
+  );
+}
+
+/**
+ * A slider that saves once, when it's let go (or per arrow key): one settings change and one
+ * undo step, not one per pixel of the drag. It shows where it's being dragged meanwhile.
+ */
+export function SettledSlider({
+  value,
+  onCommit,
+  ...rest
+}: Omit<SliderProps, 'onChange' | 'ref'> & { onCommit: (v: number) => void }) {
+  const draft = useDraft(value, (v) => {
+    if (v !== value) onCommit(v);
+  });
+  return <Slider {...rest} {...draft.props} value={draft.draft ?? value} />;
+}
+
+/** A checkbox with its label, and an optional line of help under the label. */
+export function Checkbox({
+  label,
+  description,
+  checked,
+  onChange,
+  className = '',
+  ...rest
+}: Omit<InputRest, 'checked'> & {
+  label: ReactNode;
+  description?: ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  const box = (
+    <input
+      type="checkbox"
+      className={description ? 'mt-1' : ''}
+      checked={checked}
+      onChange={(e) => onChange(e.target.checked)}
+      {...rest}
+    />
+  );
+  if (!description)
+    return (
+      <label className={`flex cursor-pointer items-center gap-1.5 ${className}`}>
+        {box}
+        {label}
+      </label>
+    );
+  return (
+    <label className={`flex cursor-pointer items-start gap-2 ${className}`}>
+      {box}
+      <span>
+        <Typography weight="medium">{label}</Typography>
+        <Typography size={12} tone="secondary" className="block">
+          {description}
+        </Typography>
+      </span>
+    </label>
+  );
+}

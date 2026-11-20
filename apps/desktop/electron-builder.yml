@@ -14,7 +14,16 @@ extraResources:
   - from: ../../resources/hymns
     to: resources/hymns
     filter: ['*.json']
+  # The video encoder for livestreaming and recording (docs/streaming.md): put the platform's
+  # ffmpeg binary here before packaging (signed with the app on macOS).
+  - from: ../../resources/ffmpeg/${os}-${arch}
+    to: resources/ffmpeg
+    filter: ['ffmpeg', 'ffmpeg.exe', 'LICENSE*']
 asar: true
+# koffi (NDI) loads a native module, which can't run from inside the asar.
+asarUnpack:
+  - node_modules/koffi/**
+  - node_modules/@koromix/**
 # Electron Fuses (§17.1): no RunAsNode, no NODE_OPTIONS / --inspect, asar-only with integrity checks.
 electronFuses:
   runAsNode: false

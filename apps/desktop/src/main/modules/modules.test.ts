@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { BibleStore, installBibleModule } from './bible-modules';
-import { installHymnalModule, readHymnals } from './hymnal-modules';
-import { isSafeEntryName, MODULE_LIMITS, safeUnzip, ZipError } from './zip';
+import { BibleStore, installBibleModule } from './bibleModules';
+import { installHymnalModule, readHymnals } from './hymnalModules';
+import { isSafeEntryName, safeUnzip, ZipError } from './zip';
+import { MODULE_LIMITS } from '../constants';
 
 let dir: string;
 beforeEach(async () => {
@@ -54,23 +55,23 @@ function bibleZip(opts: { tamper?: boolean; extra?: Record<string, Uint8Array> }
 }
 
 describe('zip guards', () => {
-  it('rejects zip-slip entry names', () => {
+  it('rejects zip-slip entry names', async () => {
     for (const bad of ['../x', '/etc/passwd', 'a/../../b', 'C:\\x', 'a\\b', './a'])
       expect(isSafeEntryName(bad)).toBe(false);
     expect(isSafeEntryName('books/GEN.json')).toBe(true);
-    expect(() => safeUnzip(zipSync({ '../evil.txt': strToU8('x') }), MODULE_LIMITS)).toThrow(
-      ZipError,
-    );
+    await expect(
+      safeUnzip(zipSync({ '../evil.txt': strToU8('x') }), MODULE_LIMITS),
+    ).rejects.toThrow(ZipError);
   });
-  it('rejects zip bombs by ratio and size', () => {
+  it('rejects zip bombs by ratio and size', async () => {
     const bomb = zipSync({ 'a.json': [new Uint8Array(5 * 1024 * 1024), { level: 9 }] });
-    expect(() => safeUnzip(bomb, MODULE_LIMITS)).toThrow(/zip-ratio|zip-too-large/);
+    await expect(safeUnzip(bomb, MODULE_LIMITS)).rejects.toThrow(/zip-ratio|zip-too-large/);
   });
-  it('rejects too many files and garbage', () => {
+  it('rejects too many files and garbage', async () => {
     const many: Record<string, Uint8Array> = {};
     for (let i = 0; i < 400; i++) many[`f${i}.json`] = strToU8('{}');
-    expect(() => safeUnzip(zipSync(many), MODULE_LIMITS)).toThrow(/zip-too-many/);
-    expect(() => safeUnzip(strToU8('not a zip'), MODULE_LIMITS)).toThrow(ZipError);
+    await expect(safeUnzip(zipSync(many), MODULE_LIMITS)).rejects.toThrow(/zip-too-many/);
+    await expect(safeUnzip(strToU8('not a zip'), MODULE_LIMITS)).rejects.toThrow(ZipError);
   });
 });
 

@@ -1,5 +1,5 @@
-import { app, BrowserWindow } from 'electron';
-import { AppController } from './app/app-controller';
+import { app } from 'electron';
+import { AppController } from './app/appController';
 import { registerSchemes } from './security/protocols';
 
 // Test/portable override: isolated profile directory (used by the E2E suite).
@@ -13,15 +13,7 @@ if (!app.requestSingleInstanceLock()) {
   app.enableSandbox();
   const controller = new AppController();
 
-  app.on('second-instance', () => {
-    // Focus handled by the window manager's control window.
-    for (const w of BrowserWindow.getAllWindows()) {
-      if (w.getTitle() === 'Lampstand') {
-        if (w.isMinimized()) w.restore();
-        w.focus();
-      }
-    }
-  });
+  app.on('second-instance', () => controller.focusControl());
 
   app
     .whenReady()

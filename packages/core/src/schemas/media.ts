@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EntityMetaSchema } from './common';
+import { EntityMetaSchema, IdSchema } from './common';
 
 export const MediaKindSchema = z.enum(['image', 'video', 'audio']);
 export type MediaKind = z.infer<typeof MediaKindSchema>;
@@ -23,3 +23,16 @@ export const MediaItemSchema = EntityMetaSchema.extend({
 });
 export type MediaItem = z.infer<typeof MediaItemSchema>;
 export const MEDIA_SCHEMA_VERSION = 1;
+
+/**
+ * A media playlist: the operator's own grouping of library media ("Sunday loops", "Christmas"),
+ * in their chosen order. Media can be in several playlists; deleting a playlist never deletes media.
+ */
+export const MediaPlaylistSchema = EntityMetaSchema.extend({
+  name: z.string().min(1).max(120),
+  /** `audio`: an audio playlist (Audio tab under the monitor); `media`: the media bin. */
+  kind: z.enum(['media', 'audio']).default('media'),
+  mediaIds: z.array(IdSchema).max(5000).default([]),
+});
+export type MediaPlaylist = z.infer<typeof MediaPlaylistSchema>;
+export const MEDIA_PLAYLIST_SCHEMA_VERSION = 1;
