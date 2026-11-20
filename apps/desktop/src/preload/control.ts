@@ -26,7 +26,6 @@ const api: ControlApi = {
   onLiveState: (cb) => listen(Channels.evLive, cb),
   onRepoChanged: (cb) => listen(Channels.evRepo, cb),
   onDisplaysChanged: (cb) => listen(Channels.evDisplays, cb),
-  onHistoryChanged: (cb) => listen(Channels.evHistory, cb),
   onNotice: (cb) => listen(Channels.evNotice, cb),
   onMenu: (cb) => listen(Channels.evMenu, cb),
   onStream: (cb) => listen(Channels.evStream, cb),

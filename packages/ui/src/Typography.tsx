@@ -28,7 +28,7 @@ interface Style {
   extra?: string;
 }
 
-export const TYPOGRAPHY_VARIANTS: Record<TypographyVariant, Style> = {
+const TYPOGRAPHY_VARIANTS: Record<TypographyVariant, Style> = {
   /** Small all-caps section heading ("LIBRARY", "APPEARANCE", inspector sections). */
   overline: { size: 11, weight: 'semibold', tone: 'muted', caps: true },
   /** The label above a form field ("Title", "Lyrics"). */

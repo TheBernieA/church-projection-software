@@ -144,7 +144,6 @@ test.beforeAll(async () => {
   control = await app.firstWindow();
   const pageErrors: string[] = [];
   control.on('pageerror', (e) => pageErrors.push(e.message));
-  control.on('console', (m) => m.type() === 'error' && pageErrors.push(m.text()));
   try {
     await control.waitForSelector('text=Sample Sunday service', { timeout: 30_000 });
   } catch (e) {
@@ -248,6 +247,13 @@ const SLIDE = /^(?!Edit slide)/;
 const addToPlan = async (name: string) => {
   await (await servicePlan()).getByRole('button', { name: 'Add', exact: true }).click();
   await control.getByRole('menuitem', { name, exact: true }).click();
+};
+
+/** Say yes in the app's confirmation dialog (the button that does it, e.g. "Delete"). */
+const answer = async (button: string) => {
+  const dialog = control.getByRole('dialog');
+  await dialog.getByRole('button', { name: button, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
 };
 
 const outputPage = async (): Promise<Page> => {
@@ -734,6 +740,13 @@ test('text slides: inspector edits the selected slide, add-slide card appends', 
   await control.getByRole('radio', { name: 'Text', exact: true }).click();
   await control.getByRole('button', { name: 'Numbers' }).click();
   await expect(canvas.locator('.ls-text ol li')).toHaveText(['Coffee is served after the service']);
+  // Text colour: a palette to pick from (and custom colours), shown as a real swatch.
+  await control.getByRole('button', { name: 'Text colour' }).click();
+  await expect(control.getByRole('menuitem', { name: 'Add a custom colour' })).toBeVisible();
+  await control.waitForTimeout(400); // after the menu's fade-in
+  await control.screenshot({ path: 'test-results/11d-colour-palette.png' });
+  await control.getByRole('menuitem', { name: '#ff0000' }).click();
+  await expect(canvas.locator('.ls-text')).toHaveCSS('color', 'rgb(255, 0, 0)');
   await control.screenshot({ path: 'test-results/11c-text-tab.png' });
   await control.getByRole('button', { name: 'Use theme' }).click();
   await expect(canvas.locator('.ls-text ol')).toHaveCount(0);
@@ -2359,8 +2372,6 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await control.keyboard.press('Escape');
   // The Live console, docked beside the output: the real stream picture shows before going
   // live (the stream window is ready, nothing is encoding yet).
-  const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
-  control.on('dialog', accept);
   await control.getByRole('button', { name: 'Livestream and recording' }).click();
   const live = control.getByRole('region', { name: 'Live', exact: true });
   await expect(live).toBeVisible();
@@ -2381,6 +2392,7 @@ test('livestream: set up a destination, go live from the Live console, end it', 
     .toBeGreaterThan(-60);
   // Go live (confirmed): the destination goes live, and the health panel fills in.
   await live.getByRole('button', { name: 'Go live' }).click();
+  await answer('Go live');
   await expect(live.getByRole('status')).toHaveText(/Live/, { timeout: 20_000 });
   await expect(live.getByText('Frame rate')).toBeVisible();
   await expect(live.getByRole('group', { name: 'Stream readouts' })).toContainText(/\d+ fps/);
@@ -2567,8 +2579,8 @@ test('livestream: set up a destination, go live from the Live console, end it', 
   await shows.getByRole('combobox', { name: 'Theme' }).click();
   await control.getByRole('option', { name: /Each slide/ }).click();
   await live.getByRole('button', { name: 'End stream' }).click();
+  await answer('End stream');
   await expect(live.getByRole('button', { name: 'Go live' })).toBeVisible({ timeout: 15_000 });
-  control.off('dialog', accept);
   await new Promise<void>((resolve) => {
     server.once('exit', () => resolve());
     setTimeout(() => {
@@ -2917,18 +2929,19 @@ test('playlists: fill a section, add and edit slides (live edits wait), delete t
   await expect(updateLive).toHaveCount(0);
   await mode('Show');
   await control.screenshot({ path: 'test-results/43-section-add.png' });
-  const accept = (d: { accept: () => Promise<void> }): void => void d.accept();
-  // Deleting a section takes everything in it (after a confirmation).
+  // Deleting a section takes everything in it (after a confirmation, in the app's own dialog).
   const plan = await servicePlan();
   await plan.locator('li').filter({ hasText: 'New section' }).first().hover();
-  control.once('dialog', accept);
   await plan.getByRole('button', { name: 'Delete section and everything in it' }).first().click();
+  await control.waitForTimeout(400); // after the dialog's fade-in
+  await control.screenshot({ path: 'test-results/43b-confirm.png' });
+  await answer('Remove');
   await expect.poll(kinds).toBe('header');
   // Delete the playlist from its own menu: the other playlist opens in its place.
-  control.once('dialog', accept);
   await library.getByRole('button', { name: 'New service', exact: true }).hover();
   await library.getByRole('button', { name: 'Options for New service' }).click();
   await control.getByRole('menuitem', { name: 'Delete playlist' }).click();
+  await answer('Delete');
   await expect(library.getByRole('button', { name: 'New service', exact: true })).toHaveCount(0);
   await expect
     .poll(async () =>

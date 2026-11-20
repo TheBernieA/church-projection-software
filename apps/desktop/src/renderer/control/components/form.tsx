@@ -58,37 +58,7 @@ export function Field({
 
 type InputRest = Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>;
 
-const HEX = /^#[0-9a-f]{6}$/i;
-
-/**
- * Colour well. The native picker only takes #rrggbb, so other values (rgba, names) show
- * `fallback` until a colour is picked. `swatch` is a small well for inline use.
- */
-export function ColorInput({
-  value,
-  onChange,
-  fallback = '#ffffff',
-  variant = 'field',
-  className = '',
-  ...rest
-}: InputRest & {
-  value: string;
-  onChange: (hex: string) => void;
-  fallback?: string;
-  variant?: 'field' | 'swatch';
-}) {
-  const hex = HEX.test(value) ? value : HEX.test(value.slice(0, 7)) ? value.slice(0, 7) : fallback;
-  return (
-    <input
-      type="color"
-      title={rest['aria-label']}
-      value={hex}
-      onChange={(e) => onChange(e.target.value)}
-      className={`cursor-pointer ${variant === 'swatch' ? 'h-6 w-8 rounded border-0 bg-transparent p-0' : 'field !p-1'} ${className}`}
-      {...rest}
-    />
-  );
-}
+export { ColorInput } from './ColorInput';
 
 /**
  * Number box that only reports real numbers. While typing, the box may be empty or half-typed

@@ -14,7 +14,7 @@ import {
 } from '../stream/pictureWindow';
 import type { NdiWorkerIn, NdiWorkerOut } from './ndiWorker';
 
-export interface NdiDeps extends PictureSources {
+interface NdiDeps extends PictureSources {
   onStatus: (s: NdiStatus) => void;
 }
 
@@ -126,7 +126,7 @@ export class NdiController {
       }
     }
     if (this.ready) for (const w of wanted) if (!this.feeds.has(w.id)) this.openFeed(w);
-    if (!wanted.length && this.worker) this.stopWorker();
+    if (!wanted.length && this.worker) void this.stopWorker();
   }
 
   private startWorker(): void {
@@ -153,18 +153,33 @@ export class NdiController {
       // Let it go, so the next settings change can start a fresh one.
       if (this.worker === worker) {
         for (const id of [...this.feeds.keys()]) this.closeFeed(id);
-        this.stopWorker();
+        void this.stopWorker(true);
       }
       this.setStatus({ error: 'loadFailed' });
     });
     this.worker = worker;
   }
 
-  private stopWorker(): void {
-    void this.worker?.terminate();
+  /**
+   * Stop NDI. The worker is asked to destroy its senders and NDI itself first (NDI's own
+   * threads live in this process, so a source would otherwise stay advertised on the network);
+   * it's ended by force if it hasn't gone within a second. `crashed`: no asking, it's gone.
+   */
+  private stopWorker(crashed = false): Promise<void> {
+    const worker = this.worker;
     this.worker = null;
     this.ready = false;
     this.setStatus({ connections: {} });
+    if (!worker) return Promise.resolve();
+    if (crashed) return worker.terminate().then(() => undefined);
+    return new Promise((resolve) => {
+      const force = setTimeout(() => void worker.terminate(), 1000);
+      worker.once('exit', () => {
+        clearTimeout(force);
+        resolve();
+      });
+      worker.postMessage({ type: 'shutdown' } satisfies NdiWorkerIn);
+    });
   }
 
   private openFeed(feed: NdiFeed): void {
@@ -258,8 +273,8 @@ export class NdiController {
   }
 
   /** Close every feed (the app is quitting). */
-  shutdown(): void {
+  shutdown(): Promise<void> {
     for (const id of [...this.feeds.keys()]) this.closeFeed(id);
-    this.stopWorker();
+    return this.stopWorker();
   }
 }

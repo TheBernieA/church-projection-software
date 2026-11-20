@@ -96,7 +96,7 @@ export function defaultMixer(): Mixer {
  * already on the room's speakers through the desk; playing it there again from the computer
  * would echo or howl, while a stream with no sound is the mistake nobody notices until later.
  */
-export function inputChannel(deviceId: string, name: string, id = `in-${deviceId.slice(0, 40)}`) {
+function inputChannel(deviceId: string, name: string, id = `in-${deviceId.slice(0, 40)}`) {
   return channel({
     id,
     kind: 'input',

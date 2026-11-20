@@ -19,5 +19,8 @@ api.onInfo((info) => {
   // Fitted to its screen like the audience outputs (keystone, flips, colour).
   applyScreenAdjust(host, info.adjust);
 });
-api.onLiveState((state) => view.update(state));
+// The stage display shows no sound: a fader drag changes nothing here.
+api.onLiveState((state) => {
+  if (!state.soundOnly) view.update(state);
+});
 void fontsReady().then(() => api.ready());

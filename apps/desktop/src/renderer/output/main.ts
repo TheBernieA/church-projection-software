@@ -5,11 +5,10 @@ import {
   withKindThemes,
   withWordsTheme,
   type KeyFeedMode,
-  type LiveState,
   type ResolvedKindThemes,
 } from '@lampstand/core';
 import { buildTestPattern, RoomAudio, SceneRenderer } from '@lampstand/renderer';
-import type { OutputInfo } from '@lampstand/ipc-contract';
+import type { LiveDelivery, OutputInfo } from '@lampstand/ipc-contract';
 import { fitScreen } from './screenFit';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
@@ -34,17 +33,24 @@ let outputId = new URLSearchParams(location.search).get('id') ?? '';
 let info = { label: 'Output', width: 1920, height: 1080, audio: false };
 let role: 'main' | 'secondary' | 'stage' | 'none' = 'main';
 let pattern: HTMLElement | null = null;
-let latest: LiveState | null = null;
+let latest: LiveDelivery | null = null;
 let themes: ResolvedKindThemes = {};
 let key: KeyFeedMode = 'off';
 let ready = false;
 /** Room audio plays from the main output only. */
 let audio: RoomAudio | null = null;
 
-function draw(state: LiveState): void {
-  latest = state;
+/** The renderer has drawn the current picture (a new renderer hasn't, yet). */
+let pictured: SceneRenderer | null = null;
+
+function draw(state: LiveDelivery): void {
+  // Kept without the flag, so a later redraw (new renderer, new info) draws it in full.
+  latest = state.soundOnly ? { ...state, soundOnly: false } : state;
   audio?.sync(state.audio, state.mixer);
   if (!ready || !renderer) return;
+  // Only the sound moved (a fader): the picture stays exactly as it is.
+  if (state.soundOnly && pictured === renderer) return;
+  pictured = renderer;
   // The active Look decides which layers this kind of screen shows.
   const layers = lookLayersFor(state.look, role);
   // The main output carries the room's sound: if its Look hides media while a video plays,

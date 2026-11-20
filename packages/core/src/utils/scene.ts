@@ -78,7 +78,7 @@ export type ThemeKind = 'scripture' | 'lyrics' | 'text';
 export type ResolvedKindThemes = Partial<Record<ThemeKind, Theme>>;
 
 /** Which theme choice a slide falls under (countdowns and the rest count as text). */
-export const themeKindOf = (kind: string): ThemeKind =>
+const themeKindOf = (kind: string): ThemeKind =>
   kind === 'scripture' || kind === 'lyrics' ? kind : 'text';
 
 /** An output's chosen theme for each kind of slide, looked up by id (missing ones left out). */

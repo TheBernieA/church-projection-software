@@ -30,7 +30,7 @@ const SERIF_TAG = {
 };
 
 /** The name-card looks offered in Settings → Logo. */
-export const LOGO_LOOKS: Record<LogoStyle, LogoLook> = {
+const LOGO_LOOKS: Record<LogoStyle, LogoLook> = {
   halo: {
     motion: { preset: 'halo', colors: ['#E9C77B', '#33417F', '#070A16'], speed: 1 },
     font: 'Plus Jakarta Sans',

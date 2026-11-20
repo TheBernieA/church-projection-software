@@ -22,6 +22,7 @@ import {
 import { DeferredInput } from '../DeferredControls';
 import { Button, IconButton, Typography, typographyClass } from '@lampstand/ui';
 import { SettledSlider } from '../form';
+import { ask } from '../../lib/confirm';
 
 /** What the page frame knows about the page it shows (set by the Settings window). */
 export interface PageFrame {
@@ -92,9 +93,14 @@ export function SettingsPage({
     el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
-  const reset = (): void => {
-    if (frame?.onReset && window.confirm(t('settings.resetConfirm', { page: title })))
-      frame.onReset();
+  const reset = async (): Promise<void> => {
+    if (!frame?.onReset) return;
+    const ok = await ask({
+      message: t('settings.resetConfirm', { page: title }),
+      confirm: t('settings.reset'),
+      tone: 'danger',
+    });
+    if (ok) frame.onReset();
   };
 
   return (
@@ -125,7 +131,7 @@ export function SettingsPage({
                   size="xs"
                   variant="ghost"
                   icon={<RotateCcw size={13} />}
-                  onClick={reset}
+                  onClick={() => void reset()}
                   title={t('settings.resetHelp')}
                 >
                   {t('settings.reset')}

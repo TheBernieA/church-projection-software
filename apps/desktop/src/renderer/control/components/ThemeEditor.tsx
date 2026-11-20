@@ -128,9 +128,9 @@ function ThemeEditorBody({ initial, copyOf }: { initial: Theme; copyOf: string |
               value={draft.text.align}
               onChange={(align) => setText({ align })}
               options={[
-                { value: 'left', label: 'Left' },
-                { value: 'center', label: 'Center' },
-                { value: 'right', label: 'Right' },
+                { value: 'left', label: t('theme.alignLeft') },
+                { value: 'center', label: t('theme.alignCenter') },
+                { value: 'right', label: t('theme.alignRight') },
               ]}
             />
           </Field>
@@ -142,9 +142,9 @@ function ThemeEditorBody({ initial, copyOf }: { initial: Theme; copyOf: string |
               }
               onChange={(layout) => set({ layout })}
               options={[
-                { value: 'center', label: 'Center' },
-                { value: 'top', label: 'Top' },
-                { value: 'lower-third', label: 'Lower third' },
+                { value: 'center', label: t('theme.layoutCenter') },
+                { value: 'top', label: t('theme.layoutTop') },
+                { value: 'lower-third', label: t('theme.layoutLowerThird') },
               ]}
             />
           </Field>
@@ -241,9 +241,9 @@ function ThemeEditorBody({ initial, copyOf }: { initial: Theme; copyOf: string |
               value={draft.referencePosition}
               onChange={(referencePosition) => set({ referencePosition })}
               options={[
-                { value: 'top', label: 'Top' },
-                { value: 'bottom', label: 'Bottom' },
-                { value: 'none', label: 'Hidden' },
+                { value: 'top', label: t('theme.refTop') },
+                { value: 'bottom', label: t('theme.refBottom') },
+                { value: 'none', label: t('theme.refHidden') },
               ]}
             />
           </Field>

@@ -134,6 +134,8 @@ export interface QueryResults {
   'library.import': { done: boolean; imported: number };
   'library.backupNow': { done: boolean };
   'audit.recent': { at: string; type: string; source: string; ok: boolean }[];
+  /** Notices from before the control window could show them (startup); each given once. */
+  'notices.missed': Notice[];
   'modules.list': ModuleSummary[];
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
   'slides.import': ImportedSlides;
@@ -181,10 +183,9 @@ export interface ControlApi {
   undo(): Promise<CommandResult>;
   redo(): Promise<CommandResult>;
   query<K extends QueryName>(name: K, args?: QueryArgs<K>): Promise<Result<QueryResults[K]>>;
-  onLiveState(cb: (s: LiveState) => void): () => void;
+  onLiveState(cb: (s: LiveDelivery) => void): () => void;
   onRepoChanged(cb: (kind: RepoKind) => void): () => void;
   onDisplaysChanged(cb: () => void): () => void;
-  onHistoryChanged(cb: (h: { canUndo: boolean; canRedo: boolean }) => void): () => void;
   onNotice(cb: (n: Notice) => void): () => void;
   /** Edit › Undo / Redo chosen from the application menu. */
   onMenu(cb: (action: MenuAction) => void): () => void;
@@ -386,7 +387,7 @@ export interface StreamApi {
    */
   sendVideo(data: Uint8Array, key: boolean, timestampUs: number, config?: Uint8Array): void;
   reportEncoder(r: EncoderReport): void;
-  onLiveState(cb: (s: LiveState) => void): () => void;
+  onLiveState(cb: (s: LiveDelivery) => void): () => void;
   onConfig(cb: (c: StreamConfig) => void): () => void;
   ready(): void;
   /** Interleaved stereo float32 PCM at 48 kHz. */
@@ -394,9 +395,16 @@ export interface StreamApi {
   sendMeters(m: MeterReport): void;
 }
 
+/**
+ * The live state as sent to a window. `soundOnly`: only the sound (the mixer, the audio
+ * track) changed since the last one, so a picture can stay as it is (a fader drag sends
+ * many of these a second).
+ */
+export type LiveDelivery = LiveState & { soundOnly?: boolean };
+
 /** API exposed to output and stage windows: read-only (§17.2 — outputs may only subscribe). */
 export interface OutputApi {
-  onLiveState(cb: (s: LiveState) => void): () => void;
+  onLiveState(cb: (s: LiveDelivery) => void): () => void;
   onInfo(cb: (info: OutputInfo) => void): () => void;
   ready(): void;
   /** The main output's room mix levels (only the window that plays the room sends them). */

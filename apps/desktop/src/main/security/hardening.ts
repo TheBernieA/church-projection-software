@@ -35,7 +35,7 @@ export function isSafeExternalUrl(url: string): boolean {
   }
 }
 
-export function lockDownWebContents(wc: WebContents, log: Logger): void {
+function lockDownWebContents(wc: WebContents, log: Logger): void {
   wc.on('will-navigate', (e, url) => {
     const allowedDev = process.env.ELECTRON_RENDERER_URL;
     if (allowedDev && url.startsWith(allowedDev)) return; // Vite HMR full reloads in dev

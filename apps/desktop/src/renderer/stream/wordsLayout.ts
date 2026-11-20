@@ -10,7 +10,7 @@ export interface Box {
   h: number;
 }
 
-export interface WordsOptions {
+interface WordsOptions {
   /** Fit the words to the band (long verses shrink, short lines stay readable). */
   auto: boolean;
   /** Otherwise: the size, as % of the words' full-screen size. */
@@ -30,7 +30,7 @@ const EDGE = 0.06;
 const AUTO_HEIGHT = 0.26;
 const AUTO_WIDTH = 1 - SIDE * 2;
 /** The largest a lower third's words are drawn (as a scale of full size). */
-export const AUTO_MAX_SCALE = 0.75;
+const AUTO_MAX_SCALE = 0.75;
 /** Automatic sizing never goes above or below these (as a scale of full size). */
 const AUTO_MAX = AUTO_MAX_SCALE;
 const AUTO_MIN = 0.25;

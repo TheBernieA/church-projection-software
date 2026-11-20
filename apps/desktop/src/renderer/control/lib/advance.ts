@@ -2,7 +2,7 @@ import type { ServiceItem } from '@lampstand/core';
 import { patchItem } from './store';
 
 /** How an item's slides move on by themselves while live: every `seconds`, looping or not. */
-export interface AdvanceState {
+interface AdvanceState {
   seconds: number;
   loop: boolean;
 }

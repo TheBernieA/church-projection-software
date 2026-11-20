@@ -23,7 +23,7 @@ export const KIND_ICON: Record<ServiceItem['kind'], LucideIcon> = {
 };
 
 /** Neutral tints per kind — never red/green (reserved for tally). */
-export const KIND_TINT: Record<ServiceItem['kind'], string> = {
+const KIND_TINT: Record<ServiceItem['kind'], string> = {
   song: '#8b7cf6',
   scripture: '#e8b04b',
   media: '#4cc0e8',

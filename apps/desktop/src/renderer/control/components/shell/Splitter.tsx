@@ -25,7 +25,7 @@ export function usePaneSize(key: string, fallback: number, min: number, max: num
  * Drag handle between two panes. `axis` is the direction the size grows in; `invert` for panes
  * that grow when dragged left/up (right column, bin).
  */
-export type PaneSize = ReturnType<typeof usePaneSize>;
+type PaneSize = ReturnType<typeof usePaneSize>;
 
 export function Splitter({
   axis,

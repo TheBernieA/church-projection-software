@@ -1,4 +1,4 @@
-import { unzipSync } from 'fflate';
+import { unzip, type Unzipped } from 'fflate';
 import { type ZipLimits } from '../types';
 
 export class ZipError extends Error {
@@ -19,34 +19,44 @@ export function isSafeEntryName(name: string): boolean {
 }
 
 /**
- * Unzip in memory with zip-slip and zip-bomb protection. Limits are enforced on the declared
- * sizes BEFORE inflating, then re-checked on the actual output.
+ * Unzip with zip-slip and zip-bomb protection. Limits are enforced on the declared sizes BEFORE
+ * inflating, then re-checked on the actual output. Inflating happens off the main thread, so a
+ * big import never stalls the app (or the stream's picture and sound) while it runs.
  */
-export function safeUnzip(data: Uint8Array, limits: ZipLimits): Map<string, Uint8Array> {
+export async function safeUnzip(
+  data: Uint8Array,
+  limits: ZipLimits,
+): Promise<Map<string, Uint8Array>> {
   let count = 0;
   let declared = 0;
   // Held in an object because the filter callback assigns it (keeps narrowing honest).
   const state: { failure: ZipError | null } = { failure: null };
-  let files: Record<string, Uint8Array>;
+  let files: Unzipped;
   try {
-    files = unzipSync(data, {
-      filter: (f) => {
-        if (state.failure) return false;
-        if (f.name.endsWith('/')) return false; // directories
-        if (limits.include && !limits.include(f.name)) return false;
-        if (!isSafeEntryName(f.name)) state.failure = new ZipError('zip-slip');
-        else if (limits.allowedPath && !limits.allowedPath.test(f.name))
-          state.failure = new ZipError('zip-path');
-        else if (++count > limits.maxFiles) state.failure = new ZipError('zip-too-many');
-        else if (
-          f.originalSize > limits.maxFileBytes ||
-          (declared += f.originalSize) > limits.maxTotalBytes
-        )
-          state.failure = new ZipError('zip-too-large');
-        else if (f.size > 0 && f.originalSize / f.size > limits.maxRatio)
-          state.failure = new ZipError('zip-ratio');
-        return !state.failure;
-      },
+    files = await new Promise<Unzipped>((resolve, reject) => {
+      unzip(
+        data,
+        {
+          filter: (f) => {
+            if (state.failure) return false;
+            if (f.name.endsWith('/')) return false; // directories
+            if (limits.include && !limits.include(f.name)) return false;
+            if (!isSafeEntryName(f.name)) state.failure = new ZipError('zip-slip');
+            else if (limits.allowedPath && !limits.allowedPath.test(f.name))
+              state.failure = new ZipError('zip-path');
+            else if (++count > limits.maxFiles) state.failure = new ZipError('zip-too-many');
+            else if (
+              f.originalSize > limits.maxFileBytes ||
+              (declared += f.originalSize) > limits.maxTotalBytes
+            )
+              state.failure = new ZipError('zip-too-large');
+            else if (f.size > 0 && f.originalSize / f.size > limits.maxRatio)
+              state.failure = new ZipError('zip-ratio');
+            return !state.failure;
+          },
+        },
+        (err, out) => (err ? reject(err) : resolve(out)),
+      );
     });
   } catch {
     throw new ZipError('zip-invalid');

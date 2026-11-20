@@ -31,6 +31,7 @@ import { openDialog, useStore } from '../../lib/store';
 import { DeferredInput } from '../DeferredControls';
 import { Select } from '../Select';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
+import { ask } from '../../lib/confirm';
 
 const KIND_ICON = { tracks: Music, video: Film, input: Mic } as const;
 
@@ -547,7 +548,9 @@ export function MixerPanel({ height }: { height: number }) {
           size="xs"
           aria-label={t('mixer.reset')}
           onClick={() =>
-            window.confirm(t('mixer.resetConfirm')) && void mixerCmd({ action: 'reset' })
+            void ask({ message: t('mixer.resetConfirm'), tone: 'danger' }).then(
+              (ok) => ok && void mixerCmd({ action: 'reset' }),
+            )
           }
         >
           <RotateCcw size={14} />

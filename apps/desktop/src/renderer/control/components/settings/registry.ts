@@ -55,25 +55,24 @@ export const PAGE_ORDER: SettingsPageId[] = SETTINGS_SECTIONS.flatMap((s) => s.p
  * "Reset this page": the patch that puts a page's preferences back to their defaults. Only
  * preferences: things you made (destinations, Looks, masks, clear groups) are kept.
  */
-export const PAGE_RESET: Partial<
-  Record<SettingsPageId, (s: Settings, d: Settings) => Partial<Settings>>
-> = {
-  general: (_, d) => ({ uiTheme: d.uiTheme, textScale: d.textScale }),
-  scripture: (_, d) => ({ defaultBibleVersion: d.defaultBibleVersion, scripture: d.scripture }),
-  songs: (_, d) => ({ lyrics: d.lyrics }),
-  presenting: (s, d) => ({
-    logo: { ...d.logo, text: s.logo.text },
-    offAir: d.offAir,
-    liveEditingKinds: d.liveEditingKinds,
-  }),
-  screens: (_, d) => ({ maskFor: d.maskFor }),
-  video: (_, d) => ({
-    mediaAutoplay: d.mediaAutoplay,
-    keepCameraUnderWords: d.keepCameraUnderWords,
-  }),
-  audio: (s, d) => ({ audio: { ...d.audio, roomOutput: s.audio.roomOutput } }),
-  streaming: (s, d) => ({ stream: { ...d.stream, destinations: s.stream.destinations } }),
-};
+const PAGE_RESET: Partial<Record<SettingsPageId, (s: Settings, d: Settings) => Partial<Settings>>> =
+  {
+    general: (_, d) => ({ uiTheme: d.uiTheme, textScale: d.textScale }),
+    scripture: (_, d) => ({ defaultBibleVersion: d.defaultBibleVersion, scripture: d.scripture }),
+    songs: (_, d) => ({ lyrics: d.lyrics }),
+    presenting: (s, d) => ({
+      logo: { ...d.logo, text: s.logo.text },
+      offAir: d.offAir,
+      liveEditingKinds: d.liveEditingKinds,
+    }),
+    screens: (_, d) => ({ maskFor: d.maskFor }),
+    video: (_, d) => ({
+      mediaAutoplay: d.mediaAutoplay,
+      keepCameraUnderWords: d.keepCameraUnderWords,
+    }),
+    audio: (s, d) => ({ audio: { ...d.audio, roomOutput: s.audio.roomOutput } }),
+    streaming: (s, d) => ({ stream: { ...d.stream, destinations: s.stream.destinations } }),
+  };
 
 export const resetPatch = (page: SettingsPageId, s: Settings): Partial<Settings> | null =>
   PAGE_RESET[page]?.(s, defaultSettings()) ?? null;
@@ -82,7 +81,7 @@ export const resetPatch = (page: SettingsPageId, s: Settings): Partial<Settings>
  * Settings search: each entry is a row or card title (its i18n key, exactly as the page shows
  * it, so search can scroll to it) plus extra words people might type for it.
  */
-export interface SearchEntry {
+interface SearchEntry {
   page: SettingsPageId;
   label: string;
   keywords?: string;

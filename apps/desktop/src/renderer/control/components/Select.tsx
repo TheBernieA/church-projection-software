@@ -15,7 +15,7 @@ export interface SelectOption<T extends string> {
   disabled?: boolean;
 }
 
-export interface SelectProps<T extends string> {
+interface SelectProps<T extends string> {
   value: T;
   onChange: (value: T) => void;
   options: SelectOption<T>[];

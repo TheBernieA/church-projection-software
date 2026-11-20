@@ -70,8 +70,9 @@ import { SoonFeature } from '../Soon';
 import { REVEAL } from '../cards';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
 import i18n from '../../i18n';
+import { ask } from '../../lib/confirm';
 
-export type MediaView = 'media' | 'favourites' | 'images' | 'videos' | 'audio' | 'playlist';
+type MediaView = 'media' | 'favourites' | 'images' | 'videos' | 'audio' | 'playlist';
 
 /** What the media bin lists: library pictures, videos and audio (backgrounds have their own view). */
 export const inMediaBin = (m: MediaItem): boolean => !m.isBackground;
@@ -500,8 +501,13 @@ function TileMenu({
             className={ITEM_CLASS}
             onSelect={() => {
               // The file goes too, and this can't be undone: ask first.
-              if (window.confirm(t('mediaBin.deleteConfirm', { name: m.name })))
-                void attempt(() => cmd('media.delete', { id: m.id }), 'errors.save');
+              void ask({
+                message: t('mediaBin.deleteConfirm', { name: m.name }),
+                confirm: t('confirm.delete'),
+                tone: 'danger',
+              }).then(
+                (ok) => ok && void attempt(() => cmd('media.delete', { id: m.id }), 'errors.save'),
+              );
             }}
           >
             <Trash2 size={14} />

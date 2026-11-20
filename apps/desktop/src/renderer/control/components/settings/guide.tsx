@@ -26,6 +26,7 @@ import { FEATURE_CATEGORIES, FEATURES } from '../../lib/features';
 import { openDialog, useStore } from '../../lib/store';
 import { Group, SettingsPage } from './parts';
 import { type ShortcutAction } from '../../types';
+import { DEFAULT_SHORTCUTS } from '../../constants';
 import { type SettingsPageId } from '../../types';
 
 export type { SettingsPageId } from '../../types';
@@ -82,28 +83,8 @@ function StepRow({ n, step, title, body }: { n: number; step: Step; title: strin
   );
 }
 
-/** Every shortcut, in the order an operator meets them. */
-const KEYS: ShortcutAction[] = [
-  'goLive',
-  'next',
-  'previous',
-  'quickBar',
-  'newSong',
-  'clearContent',
-  'clearMedia',
-  'clearBackground',
-  'clearOverlays',
-  'clearAll',
-  'panic',
-  'black',
-  'logo',
-  'freeze',
-  'mediaToggle',
-  'undo',
-  'redo',
-  'cheatSheet',
-  'perfHud',
-];
+/** Every shortcut, in the order of the shortcut table (so a new one is never left out here). */
+const KEYS = Object.keys(DEFAULT_SHORTCUTS) as ShortcutAction[];
 
 /** The regions of the window, left to right, for the tour. */
 const TOUR: { id: string; icon: ReactNode }[] = [
@@ -183,6 +164,9 @@ const HOWTO = [
   'arrangement',
   'tiles',
   'edit',
+  'text',
+  'lists',
+  'colours',
   'import',
   'web',
   'props',
@@ -192,7 +176,6 @@ const HOWTO = [
   'edgeBlend',
   'multiview',
   'themes',
-  'text',
   'logo',
   'announcements',
   'audio',

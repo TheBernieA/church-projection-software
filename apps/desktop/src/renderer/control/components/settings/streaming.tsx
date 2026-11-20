@@ -39,7 +39,7 @@ type Update = (patch: Partial<Settings>) => void;
 const ENCODERS = ['auto', ...STREAM_ENCODERS];
 
 /** One destination: its name, on/off, and what it needs (a key, an address). */
-export function DestinationRow({
+function DestinationRow({
   dest,
   hasKey,
   srt,

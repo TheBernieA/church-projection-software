@@ -43,14 +43,14 @@ const VERSE_WORDS = new Set([
 const RANGE_WORDS = new Set(['to', 'through', 'thru', 'till', 'til', 'until']);
 
 /** Highest verse number in any KJV chapter (Psalm 119). Anything above is not a reference. */
-export const MAX_VERSE = 176;
+const MAX_VERSE = 176;
 /** Guards against pathological input producing huge passage lists. */
 const MAX_ITEMS = 20;
 
-export function isChapterWord(w: string | undefined): boolean {
+function isChapterWord(w: string | undefined): boolean {
   return w !== undefined && CHAPTER_WORDS.has(w);
 }
-export function isVerseWord(w: string | undefined): boolean {
+function isVerseWord(w: string | undefined): boolean {
   return w !== undefined && VERSE_WORDS.has(w);
 }
 
@@ -195,7 +195,7 @@ function validVerse(v: number): boolean {
 }
 
 /** Rejects chapters beyond the book, verse 0, verses > 176 and backwards ranges. */
-export function isValidPassage(p: PassageRef): boolean {
+function isValidPassage(p: PassageRef): boolean {
   const chapters = getBook(p.start.book).chapters;
   const { start: s, end: e } = p;
   if (s.chapter < 1 || s.chapter > chapters || e.chapter < 1 || e.chapter > chapters) return false;

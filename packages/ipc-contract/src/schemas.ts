@@ -46,6 +46,7 @@ export const QuerySchemas = {
   'library.import': z.undefined(),
   'library.backupNow': z.undefined(),
   'audit.recent': z.undefined(),
+  'notices.missed': z.undefined(),
   'modules.list': z.undefined(),
   'modules.install': z.undefined(),
   'slides.import': z.undefined(),

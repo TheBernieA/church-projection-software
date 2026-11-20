@@ -336,7 +336,11 @@ api.onConfig((c) => {
   draw();
 });
 api.onLiveState((s) => {
-  latest = s;
+  // Only the sound moved: keep the picture's own objects, so its layers see nothing new.
+  latest =
+    s.soundOnly && latest
+      ? { ...s, program: latest.program, look: latest.look, lowerThird: latest.lowerThird }
+      : s;
   draw();
 });
 

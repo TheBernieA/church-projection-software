@@ -53,7 +53,7 @@ export function LayerGlyph({ behind, size = 14 }: { behind: boolean; size?: numb
  * A transition: a square going from solid to transparent (a checkerboard), as one picture gives
  * way to the next.
  */
-export function TransitionGlyph({ size = 14 }: { size?: number }) {
+function TransitionGlyph({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
       <rect

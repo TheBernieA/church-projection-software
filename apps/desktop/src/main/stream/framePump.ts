@@ -8,7 +8,7 @@
 
 import { framesDue, msToNextFrame } from '@lampstand/core';
 
-export interface PumpSink {
+interface PumpSink {
   /** Write one frame; false when the encoder's input is backed up (the frame stays owed). */
   write(): boolean;
   /** Called after each tick (top up the sound, etc.). */

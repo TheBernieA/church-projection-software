@@ -41,7 +41,7 @@ function Colour({
 }) {
   return (
     <Field label={label}>
-      <ColorInput className="!h-8" value={value} onChange={onChange} />
+      <ColorInput aria-label={label} value={value} onChange={onChange} />
     </Field>
   );
 }

@@ -18,7 +18,7 @@ const FORMATTABLE = new Set<ServiceItem['kind']>([
   'announcements',
   'countdown',
 ]);
-export const isFormattable = (item: ServiceItem | null): item is Formattable =>
+const isFormattable = (item: ServiceItem | null): item is Formattable =>
   !!item && FORMATTABLE.has(item.kind);
 
 const Divider = () => <span aria-hidden className="mx-1 h-5 w-px bg-[var(--divider)]" />;

@@ -6,7 +6,7 @@
 import { existsSync } from 'node:fs';
 import { STREAM_ENCODERS, type StreamDestination, type StreamEncoderId } from '@lampstand/core';
 
-export type DestinationKind = StreamDestination['kind'];
+type DestinationKind = StreamDestination['kind'];
 type ServiceKind = Exclude<DestinationKind, 'custom' | 'direct'>;
 
 /** Where each kind of service takes a stream (the key is appended). */
@@ -208,7 +208,7 @@ export interface EncodeOptions {
 }
 
 /** VideoToolbox, NVENC and Quick Sync work in NV12. */
-export const takesNv12 = (e: Encoder): boolean =>
+const takesNv12 = (e: Encoder): boolean =>
   e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv';
 
 /**

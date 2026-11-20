@@ -39,8 +39,8 @@ export function samplePptx(): Uint8Array {
 }
 
 describe('PowerPoint import', () => {
-  it('reads slides in presentation order with titles, body text and notes', () => {
-    const deck = parsePptx(samplePptx());
+  it('reads slides in presentation order with titles, body text and notes', async () => {
+    const deck = await parsePptx(samplePptx());
     expect(deck.slides).toEqual([
       {
         title: 'Welcome & hello',
@@ -52,7 +52,9 @@ describe('PowerPoint import', () => {
     expect(deck.slidesWithPictures).toBe(1);
   });
 
-  it('rejects files that are not presentations', () => {
-    expect(() => parsePptx(zipSync({ 'readme.txt': strToU8('hi') }))).toThrow(/not a PowerPoint/);
+  it('rejects files that are not presentations', async () => {
+    await expect(parsePptx(zipSync({ 'readme.txt': strToU8('hi') }))).rejects.toThrow(
+      /not a PowerPoint/,
+    );
   });
 });

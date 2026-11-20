@@ -6,7 +6,7 @@ import { setDuration } from './mediaDurations';
  * Listen before it goes live: one track at a time plays on this computer only (headphones or
  * the operator's speakers), never through the room. The room hears it only after "Play in room".
  */
-export interface PreviewState {
+interface PreviewState {
   mediaId: string | null;
   playing: boolean;
   position: number;

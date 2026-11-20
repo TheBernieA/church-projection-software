@@ -53,7 +53,7 @@ export const strengthOf = (s: Scrim): OverlayStrength =>
   s.strength < 0.4 ? 'light' : s.strength < 0.6 ? 'medium' : 'strong';
 
 /** Items whose slides can each have a background of their own. */
-export type SlideBackgroundItem = Extract<
+type SlideBackgroundItem = Extract<
   ServiceItem,
   { kind: 'song' | 'scripture' | 'presentation' | 'announcements' }
 >;

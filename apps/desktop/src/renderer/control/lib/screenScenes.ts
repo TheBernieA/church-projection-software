@@ -24,7 +24,7 @@ export const LT_ALIGN_KEY = 'lampstand.lowerThird.align';
 export type Align = 'left' | 'center' | 'right';
 
 /** The lower third to switch on: the theme and position used last, else the first one there is. */
-export function rememberedLowerThird(themes: Theme[]): Theme | null {
+function rememberedLowerThird(themes: Theme[]): Theme | null {
   const choices = lowerThirdThemes(themes);
   const theme = choices.find((th) => th.id === remembered(LT_THEME_KEY)) ?? choices[0];
   if (!theme) return null;

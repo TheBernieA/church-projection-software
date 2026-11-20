@@ -164,13 +164,22 @@ function SettledColor({
   label,
   value,
   onSave,
+  onReset,
 }: {
   label: string;
   value: string;
   onSave: (hex: string) => void;
+  onReset?: () => void;
 }) {
   const color = useSettledColor(onSave);
-  return <ColorInput aria-label={label} value={color.shown ?? value} onChange={color.change} />;
+  return (
+    <ColorInput
+      aria-label={label}
+      value={color.shown ?? value}
+      onChange={color.change}
+      onReset={onReset}
+    />
+  );
 }
 
 const STROKE = { width: 3, color: '#000000' };
@@ -362,6 +371,7 @@ export function TextFormatPanel({
             label={t('textBar.color')}
             value={text.color}
             onSave={(color) => onChange({ color })}
+            onReset={format.color ? () => onSet(omit(format, 'color')) : undefined}
           />
         </Typography>
       </div>

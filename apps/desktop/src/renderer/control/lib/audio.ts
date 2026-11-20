@@ -31,7 +31,7 @@ export const playAudio = (
 };
 
 /** The tracks an audio playlist plays, in order (missing files skipped). */
-export function playlistTracks(playlistId: string): string[] {
+function playlistTracks(playlistId: string): string[] {
   const s = get();
   const p = s.mediaPlaylists.find((x) => x.id === playlistId);
   const audio = new Set(s.media.filter((m) => m.kind === 'audio').map((m) => m.id));

@@ -168,7 +168,7 @@ export function blendStops(gamma: number, steps = 12): { at: number; opacity: nu
 const nameAndSize = (fp: string): string => fp.split('|').slice(0, 2).join('|');
 
 /** The key a screen's settings were saved under: its exact fingerprint, else the same display moved. */
-export function savedKeyFor(keys: readonly string[], fp: string): string | undefined {
+function savedKeyFor(keys: readonly string[], fp: string): string | undefined {
   return keys.find((k) => k === fp) ?? keys.find((k) => nameAndSize(k) === nameAndSize(fp));
 }
 

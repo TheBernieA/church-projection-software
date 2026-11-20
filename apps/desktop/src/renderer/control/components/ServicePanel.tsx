@@ -33,6 +33,7 @@ import { editItems, useStore } from '../lib/store';
 import { KindTile } from './kindIcons';
 import { urlHost } from '../lib/utils';
 import { openEditor } from '../lib/editing';
+import { ask } from '../lib/confirm';
 
 /** Secondary line under each item: what it is, at a glance. */
 function useItemSubtitle(): (item: ServiceItem) => string {
@@ -296,7 +297,7 @@ export function ServicePanel() {
                     weight="bold"
                     className="shrink-0 rounded-[5px] bg-[var(--tally-program)] px-1.5 py-0.5 tracking-wide"
                   >
-                    LIVE
+                    {t('common.live')}
                   </Typography>
                 )}
                 {isPrev && (
@@ -389,7 +390,7 @@ export function AddMenu({
             id,
             kind: 'presentation',
             title: t('service.textSlideTitle'),
-            slides: [{ id: newId(), title: '', body: 'Type your text here' }],
+            slides: [{ id: newId(), title: '', body: t('service.newTextSlide') }],
           });
           openEditor(true, { selectedItemId: id, adhoc: null });
         },
@@ -543,27 +544,28 @@ function ItemMenu({
         size="xs"
         variant="danger"
         aria-label={isSection ? t('service.removeSection') : t('service.remove')}
-        onClick={() => {
-          // A heading takes its whole section with it (Undo brings it all back).
-          const [start, end] = isSection ? sectionBounds(items, index) : [index, index + 1];
-          const gone = items.slice(start, end);
-          const inside = gone.length - 1;
-          if (
-            isSection &&
-            inside > 0 &&
-            !window.confirm(
-              t('service.confirmRemoveSection', {
-                name: item.label,
-                count: inside,
-              }),
+        onClick={() =>
+          void (async () => {
+            // A heading takes its whole section with it (Undo brings it all back).
+            const [start, end] = isSection ? sectionBounds(items, index) : [index, index + 1];
+            const gone = items.slice(start, end);
+            const inside = gone.length - 1;
+            if (
+              isSection &&
+              inside > 0 &&
+              !(await ask({
+                message: t('service.confirmRemoveSection', { name: item.label, count: inside }),
+                confirm: t('confirm.remove'),
+                tone: 'danger',
+              }))
             )
-          )
-            return;
-          const ids = new Set(gone.map((x) => x.id));
-          update((xs) => xs.filter((x) => !ids.has(x.id)));
-          const sel = useStore.getState().selectedItemId;
-          if (sel && ids.has(sel)) useStore.setState({ selectedItemId: null });
-        }}
+              return;
+            const ids = new Set(gone.map((x) => x.id));
+            update((xs) => xs.filter((x) => !ids.has(x.id)));
+            const sel = useStore.getState().selectedItemId;
+            if (sel && ids.has(sel)) useStore.setState({ selectedItemId: null });
+          })()
+        }
       >
         <Trash2 size={14} />
       </IconButton>

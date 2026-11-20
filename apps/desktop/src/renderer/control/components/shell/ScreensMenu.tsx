@@ -16,6 +16,7 @@ import { cmd } from '../../lib/api';
 import { attempt, openDialog, refresh, useStore } from '../../lib/store';
 import { EMPTY_LIST } from '../../constants';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
+import { ask } from '../../lib/confirm';
 
 /** Give a display a role (or take it away); warns before covering the operator's own screen. */
 export async function assignDisplay(
@@ -24,7 +25,7 @@ export async function assignDisplay(
   isControl: boolean,
   warn: string,
 ): Promise<void> {
-  if (isControl && role !== 'none' && !window.confirm(warn)) return;
+  if (isControl && role !== 'none' && !(await ask(warn))) return;
   await attempt(async () => {
     await cmd('display.assign', { displayId, role });
     await refresh('displays');

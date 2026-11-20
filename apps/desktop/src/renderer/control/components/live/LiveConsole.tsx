@@ -27,6 +27,7 @@ import { QuickSettings } from './QuickSettings';
 import { FooterReadings, HeaderReadings, HealthPanel, StatusPill } from './readings';
 import { SoundPanel } from './SoundPanel';
 import { ScenePreviews, SilentNotice, StreamMeterOverlay, StreamSound } from './StreamBar';
+import { ask } from '../../lib/confirm';
 
 const NO_DESTINATIONS: StreamSettings['destinations'] = [];
 const READY_KEY = 'lampstand.liveReady';
@@ -54,12 +55,22 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
     showReady && canReady,
   );
 
-  const goLive = (): void => {
+  const goLive = async (): Promise<void> => {
     const names = enabled.map((d) => d.name).join(', ');
-    if (window.confirm(t('live.confirmStart', { names }))) run('stream.start', { stream: true });
+    const ok = await ask({
+      message: t('live.confirmStart', { names }),
+      confirm: t('confirm.goLive'),
+      tone: 'live',
+    });
+    if (ok) run('stream.start', { stream: true });
   };
-  const endStream = (): void => {
-    if (window.confirm(t('live.confirmEnd'))) run('stream.stop', { stream: true, record: true });
+  const endStream = async (): Promise<void> => {
+    const ok = await ask({
+      message: t('live.confirmEnd'),
+      confirm: t('confirm.endStream'),
+      tone: 'danger',
+    });
+    if (ok) run('stream.stop', { stream: true, record: true });
   };
 
   if (!st) return null;
@@ -119,7 +130,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                   variant="live"
                   className="min-w-[140px] flex-1"
                   icon={<Square size={14} fill="currentColor" />}
-                  onClick={endStream}
+                  onClick={() => void endStream()}
                 >
                   {t('live.end')}
                 </Button>
@@ -131,7 +142,7 @@ export function LiveConsole({ mode }: { mode: 'docked' | 'window' }) {
                   icon={<Radio size={15} />}
                   disabled={!enabled.length}
                   title={enabled.length ? undefined : t('live.noDestinations')}
-                  onClick={goLive}
+                  onClick={() => void goLive()}
                 >
                   {t('live.goLive')}
                 </Button>

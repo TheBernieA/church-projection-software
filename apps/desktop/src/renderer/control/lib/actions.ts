@@ -37,7 +37,7 @@ function warnIfNoOutput(): void {
   toast(i18n.t('outputs.noneToast'), 'warning');
 }
 
-export function slideContext(): SlideContext {
+function slideContext(): SlideContext {
   const s = get();
   return {
     songs: s.songs,
@@ -109,7 +109,7 @@ function mediaAutoplay(item: ServiceItem): boolean {
 }
 
 /** Go live with the first slide of the item after `itemId` in the service (headers skipped). */
-export async function goLiveNextItem(itemId: string): Promise<void> {
+async function goLiveNextItem(itemId: string): Promise<void> {
   const items = get().service?.items ?? [];
   const at = items.findIndex((i) => i.id === itemId);
   const next = items.slice(at + 1).find((i) => i.kind !== 'header');
@@ -119,7 +119,7 @@ export async function goLiveNextItem(itemId: string): Promise<void> {
 }
 
 /** Put a slide into Preview (green). Nothing changes on screen. */
-export async function previewSlide(item: ServiceItem, index: number): Promise<void> {
+async function previewSlide(item: ServiceItem, index: number): Promise<void> {
   const slides = slidesFor(item);
   const slide = slides[index];
   if (!slide) return;
@@ -353,7 +353,7 @@ function scheduleAnnouncements(item: ServiceItem, index: number): void {
 }
 
 /** Wait until an item's slides can be built (e.g. Bible chapters loaded). */
-export async function ensureItemReady(item: ServiceItem): Promise<PresentableSlide[]> {
+async function ensureItemReady(item: ServiceItem): Promise<PresentableSlide[]> {
   for (let attempt = 0; attempt < 4; attempt++) {
     const built = buildItemSlides(item, slideContext());
     if (!built.missing.length) return built.slides;

@@ -3,7 +3,7 @@ import { mkdir, readFile, stat } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
 import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
-import type { ModuleSummary, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
+import type { ModuleSummary, Notice, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { SearchService } from '../search/searchService';
 import type { WindowManager } from '../windows/windowManager';
 import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
@@ -21,6 +21,7 @@ interface QueryDeps {
   search: SearchService;
   windows: WindowManager;
   audit: () => AuditEntry[];
+  missedNotices: () => Notice[];
   control: () => BrowserWindow | null;
   stream: StreamController;
   ndi: NdiController;
@@ -33,6 +34,7 @@ export function createQueries({
   search,
   windows,
   audit,
+  missedNotices,
   control,
   installModules,
   listModules,
@@ -62,7 +64,7 @@ export function createQueries({
       const title = basename(file, extname(file)).slice(0, 200) || 'Imported slides';
       if (extname(file).toLowerCase() === '.pdf') return { kind: 'pdf' as const, title, data };
       try {
-        return { kind: 'pptx' as const, title, ...parsePptx(data) };
+        return { kind: 'pptx' as const, title, ...(await parsePptx(data)) };
       } catch {
         throw new AppError('import-failed', 'That file could not be read as a PowerPoint deck.');
       }
@@ -164,6 +166,7 @@ export function createQueries({
       done: await dailyBackup(s.paths.library, s.paths.backups, true),
     }),
     'audit.recent': () => audit().slice(-200),
+    'notices.missed': () => missedNotices(),
     'stream.status': () => stream.getStatus(),
     'ndi.status': () => ndi.getStatus(),
     'stream.keys': async () => {

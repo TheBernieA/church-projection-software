@@ -17,7 +17,7 @@ export type WorkerIn =
   | { t: 'bitrate'; kbps: number }
   | { t: 'stop' };
 
-export interface ChunkMessage {
+interface ChunkMessage {
   data: Uint8Array;
   key: boolean;
   /** When the frame was made, in µs since encoding started. */

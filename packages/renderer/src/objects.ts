@@ -56,11 +56,7 @@ export function objectBoxStyle(o: SlideObject): StyleInit {
 }
 
 /** One slide object as DOM. Text always goes in as a text node, never HTML. */
-export function buildObject(
-  doc: Document,
-  o: SlideObject,
-  mediaUrl: (id: string) => string,
-): HTMLElement {
+function buildObject(doc: Document, o: SlideObject, mediaUrl: (id: string) => string): HTMLElement {
   const node = el(doc, 'div', `ls-object ls-object-${o.kind}`, objectBoxStyle(o));
   if (o.kind === 'text') node.textContent = o.text;
   if (o.kind === 'image') {

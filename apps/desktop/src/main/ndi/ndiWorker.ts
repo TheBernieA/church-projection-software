@@ -15,6 +15,8 @@ const koffi = require_('koffi') as Koffi;
 export type NdiWorkerIn =
   | { type: 'open'; id: string; name: string }
   | { type: 'close'; id: string }
+  /** Stop every source and NDI itself, then end (so nothing stays advertised). */
+  | { type: 'shutdown' }
   | {
       type: 'video';
       id: string;
@@ -40,6 +42,7 @@ interface Api {
   version: KoffiFunction;
   sendCreate: KoffiFunction;
   sendDestroy: KoffiFunction;
+  destroy: KoffiFunction;
   sendVideo: KoffiFunction;
   sendAudio: KoffiFunction;
   connections: KoffiFunction;
@@ -86,12 +89,13 @@ try {
     version: lib.func('NDIlib_version', 'const char *', []),
     sendCreate: lib.func('NDIlib_send_create', Instance, [koffi.pointer(SendCreate)]),
     sendDestroy: lib.func('NDIlib_send_destroy', 'void', [Instance]),
+    destroy: lib.func('NDIlib_destroy', 'void', []),
     sendVideo: lib.func('NDIlib_send_send_video_v2', 'void', [Instance, koffi.pointer(VideoFrame)]),
     sendAudio: lib.func('NDIlib_send_send_audio_v3', 'void', [Instance, koffi.pointer(AudioFrame)]),
     connections: lib.func('NDIlib_send_get_no_connections', 'int', [Instance, 'uint32_t']),
   };
-  state.api = api;
   if (!api.initialize()) throw new Error('This computer cannot run NDI (CPU not supported).');
+  state.api = api; // only once NDI is really running
   port.postMessage({ type: 'ready', version: String(api.version()) } satisfies NdiWorkerOut);
 } catch (err) {
   port.postMessage({
@@ -106,6 +110,14 @@ const FLTP = fourCC('FLTp');
 
 port.on('message', (m: NdiWorkerIn) => {
   const a = state.api;
+  if (m.type === 'shutdown') {
+    if (a) {
+      for (const s of senders.values()) a.sendDestroy(s);
+      senders.clear();
+      a.destroy();
+    }
+    process.exit(0); // ends this worker thread only
+  }
   if (!a) return;
   try {
     switch (m.type) {

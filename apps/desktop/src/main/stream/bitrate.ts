@@ -8,7 +8,7 @@
  * creeps back up towards the target. If a backlog has already built up (data waiting in the
  * network, which only reconnecting can throw away), it asks for a reconnect.
  */
-export interface BitrateSample {
+interface BitrateSample {
   /** How far behind live the stream leaves this computer (ms). */
   delayMs: number;
   /** Bitrate actually sent over the last second (video, kb/s); 0 when not known. */
@@ -17,7 +17,7 @@ export interface BitrateSample {
   at: number;
 }
 
-export type BitrateAction =
+type BitrateAction =
   { kind: 'set'; kbps: number; reason: 'congested' | 'recovered' } | { kind: 'reconnect' } | null;
 
 /** Behind by more than this: the upload isn't keeping up. */

@@ -10,7 +10,7 @@ export const RAW_AUDIO = {
 } as const;
 
 /** Ask the device for the chosen capture size (16:9), or whatever it offers. */
-export function videoConstraints(
+function videoConstraints(
   input: Pick<VideoInputLayer, 'deviceId' | 'resolution'>,
 ): MediaTrackConstraints {
   const h = input.resolution === 'auto' ? 0 : Number(input.resolution);

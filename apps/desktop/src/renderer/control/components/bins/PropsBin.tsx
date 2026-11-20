@@ -67,7 +67,7 @@ function PropCard({
             {prop.text || m?.name || prop.name}
           </Typography>
         )}
-        {on && <TallyTag tone="program">LIVE</TallyTag>}
+        {on && <TallyTag tone="program">{t('common.live')}</TallyTag>}
       </Button>
       <div className="flex items-center gap-1">
         <Typography size={12} weight="medium" truncate className="min-w-0 flex-1">

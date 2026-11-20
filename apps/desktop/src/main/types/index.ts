@@ -102,7 +102,7 @@ export type QueryHandlers = {
 };
 
 /** One slide read out of a PowerPoint file: its title, body text and speaker notes. */
-export interface ImportedSlide {
+interface ImportedSlide {
   title: string;
   body: string;
   notes: string;

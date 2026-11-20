@@ -30,7 +30,7 @@ export async function installHymnalModule(bytes: Uint8Array, root: string): Prom
   if (isZip) {
     let entries: Map<string, Uint8Array>;
     try {
-      entries = safeUnzip(bytes, MODULE_LIMITS);
+      entries = await safeUnzip(bytes, MODULE_LIMITS);
     } catch (e) {
       throw new AppError(
         'module-invalid',

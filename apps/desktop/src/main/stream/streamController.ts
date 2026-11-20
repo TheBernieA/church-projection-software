@@ -55,7 +55,7 @@ import {
   type PictureSources,
 } from './pictureWindow';
 
-export interface StreamDeps extends PictureSources {
+interface StreamDeps extends PictureSources {
   secrets: SecretStore;
   updateSettings: (patch: Partial<Settings>) => void;
   onStatus: (s: StreamStatus) => void;

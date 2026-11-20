@@ -76,7 +76,7 @@ export function handleMediaProtocol(
 }
 
 /** The request's origin, if it's one of ours (else null: no cross-origin reading). */
-export function allowedOrigin(origin: string | null): string | null {
+function allowedOrigin(origin: string | null): string | null {
   if (!origin) return null;
   if (origin === `${APP_SCHEME}://bundle`) return origin;
   const dev = process.env.ELECTRON_RENDERER_URL;

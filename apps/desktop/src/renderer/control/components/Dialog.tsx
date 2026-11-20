@@ -1,6 +1,7 @@
 import * as RD from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { closeDialog, useStore } from '../lib/store';
 import { type DialogName } from '../types';
 import { typographyClass } from '@lampstand/ui';
@@ -29,6 +30,7 @@ export function Dialog({
   /** Children own the whole surface (e.g. a two-pane settings window): fixed height, no padding. */
   bare?: boolean;
 }) {
+  const { t } = useTranslation();
   const open = useStore((s) => s.dialog === name);
   return (
     <RD.Root open={open} onOpenChange={(o) => !o && closeDialog()}>
@@ -43,7 +45,7 @@ export function Dialog({
               <RD.Title className="sr-only">{title}</RD.Title>
               <RD.Close
                 className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
-                aria-label="Close"
+                aria-label={t('common.close')}
               >
                 <X size={17} />
               </RD.Close>
@@ -59,7 +61,7 @@ export function Dialog({
                 </RD.Title>
                 <RD.Close
                   className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
-                  aria-label="Close"
+                  aria-label={t('common.close')}
                 >
                   <X size={17} />
                 </RD.Close>

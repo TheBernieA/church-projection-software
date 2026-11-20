@@ -7,7 +7,7 @@ import { type ControlState } from '../types';
  * Whether the Edit workspace has an editor for this item: a song wherever it was picked; the
  * playlist's own slides, countdowns and web pages once they're in the playlist.
  */
-export function hasEditor(item: ServiceItem | null | undefined, inService: boolean): boolean {
+function hasEditor(item: ServiceItem | null | undefined, inService: boolean): boolean {
   if (!item) return false;
   if (item.kind === 'song') return true;
   return inService && (editable(item) || item.kind === 'web');

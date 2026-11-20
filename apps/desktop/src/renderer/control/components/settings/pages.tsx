@@ -40,6 +40,7 @@ import {
 } from './parts';
 import { LIVE_KINDS } from '../../constants';
 import { clamp } from '../../lib/utils';
+import { ask } from '../../lib/confirm';
 
 type Update = (patch: Partial<Settings>) => void;
 interface PageProps {
@@ -171,7 +172,7 @@ function TextSize({ value, onCommit }: { value: number; onCommit: (v: number) =>
             weight="medium"
             className="self-start rounded-[3px] bg-[#3a6aa6] px-1.5 py-0.5"
           >
-            1 Verse 1
+            {t('settings.sampleGroup')}
           </Typography>
         </div>
       </figure>
@@ -272,7 +273,7 @@ export function SongsPage({ s, update }: PageProps) {
             id="ccli"
             type="text"
             wide
-            placeholder="e.g. 1234567"
+            placeholder={t('settings.ccliPlaceholder')}
             value={s.ccliLicenseNumber ?? ''}
             onCommit={(v) => update({ ccliLicenseNumber: v.trim() || undefined })}
           />
@@ -555,8 +556,13 @@ export function PackagesPage() {
     for (const f of r.failed) toast(`${f.file}: ${f.message}`, 'error');
     load();
   };
-  const remove = (m: ModuleSummary): void => {
-    if (!window.confirm(t('modules.confirmRemove', { name: m.name }))) return;
+  const remove = async (m: ModuleSummary): Promise<void> => {
+    const ok = await ask({
+      message: t('modules.confirmRemove', { name: m.name }),
+      confirm: t('confirm.remove'),
+      tone: 'danger',
+    });
+    if (!ok) return;
     void attempt(() => cmd('module.remove', { kind: m.kind, id: m.id })).then(load);
   };
   const groups = (['bible', 'hymnal'] as const).map((kind) => ({
@@ -610,7 +616,7 @@ export function PackagesPage() {
                     size="xs"
                     variant="danger"
                     icon={<Trash2 size={13} />}
-                    onClick={() => remove(m)}
+                    onClick={() => void remove(m)}
                   >
                     {t('modules.remove')}
                   </Button>

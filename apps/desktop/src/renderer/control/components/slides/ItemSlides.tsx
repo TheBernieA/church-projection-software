@@ -38,7 +38,7 @@ import {
   type SlideState,
 } from './SlideCards';
 
-export type SlideView = 'grid' | 'easy' | 'table';
+type SlideView = 'grid' | 'easy' | 'table';
 const VIEWS: SlideView[] = ['grid', 'easy', 'table'];
 
 /** How slides are shown (remembered like the pane sizes): view, size, by group, backdrop. */

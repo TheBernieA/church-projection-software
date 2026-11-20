@@ -11,6 +11,7 @@ import { Select } from '../Select';
 import { mixerCmd } from '../../lib/mixer';
 import { closeDialog, useStore } from '../../lib/store';
 import { Group, Row, SettingsPage, Tag } from './parts';
+import { ask } from '../../lib/confirm';
 
 const DEFAULT = 'default';
 
@@ -86,7 +87,9 @@ export function AudioPage({
             variant="ghost"
             icon={<RotateCcw size={14} />}
             onClick={() =>
-              window.confirm(t('mixer.resetConfirm')) && void mixerCmd({ action: 'reset' })
+              void ask({ message: t('mixer.resetConfirm'), tone: 'danger' }).then(
+                (ok) => ok && void mixerCmd({ action: 'reset' }),
+              )
             }
           >
             {t('settings.reset')}

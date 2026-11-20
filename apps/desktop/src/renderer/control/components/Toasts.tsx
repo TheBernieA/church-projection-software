@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { CircleAlert, Info, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../lib/api';
+import { type Notice } from '@lampstand/ipc-contract';
+import { api, q } from '../lib/api';
 import { toast, useStore } from '../lib/store';
 import { Typography } from '@lampstand/ui';
 
@@ -16,7 +17,16 @@ const TONE = {
 export function Toasts() {
   const { t } = useTranslation();
   const toasts = useStore((s) => s.toasts);
-  useEffect(() => api.onNotice((n) => toast(t(`notice.${n.key}`, n.params ?? {}), n.level)), [t]);
+  useEffect(() => {
+    const show = (n: Notice): void => toast(t(`notice.${n.key}`, n.params ?? {}), n.level);
+    const off = api.onNotice(show);
+    // Anything found while starting up (before this window could listen), e.g. a damaged file.
+    void q('notices.missed').then(
+      (missed) => missed.forEach(show),
+      () => undefined,
+    );
+    return off;
+  }, [t]);
   return (
     <div
       aria-live="polite"

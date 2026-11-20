@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 
 /** One process's CPU (% of one core) and memory (MB). */
-export interface ProcessUsage {
+interface ProcessUsage {
   cpu: number;
   memMB: number;
 }

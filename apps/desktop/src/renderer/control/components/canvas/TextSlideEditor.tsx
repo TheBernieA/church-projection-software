@@ -143,7 +143,7 @@ export function TextSlideEditor({ item }: { item: TextItem }) {
         <>
           {liveAt === index && (
             <TallyTag tone="program" className="!static">
-              LIVE
+              {t('common.live')}
             </TallyTag>
           )}
           <LoopToggle item={item} />

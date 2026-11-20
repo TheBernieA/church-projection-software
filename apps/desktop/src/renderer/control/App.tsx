@@ -24,6 +24,7 @@ import { Toolbar } from './components/shell/Toolbar';
 import { Toasts } from './components/Toasts';
 import { installMediaWatch } from './lib/actions';
 import { installAudioWatch, installCueMix, installLocalAudio } from './lib/audio';
+import { ConfirmHost } from './components/ConfirmHost';
 
 // Opened on demand: loaded the first time they're needed, not at startup.
 const OutputsDialog = lazyNamed(() => import('./components/OutputsDialog'), 'OutputsDialog');
@@ -143,6 +144,7 @@ export function App() {
         {dialog === 'perf' && <PerfHud />}
       </Suspense>
       <Toasts />
+      <ConfirmHost />
     </div>
   );
 }

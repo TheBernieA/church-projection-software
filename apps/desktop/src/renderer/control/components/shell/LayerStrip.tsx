@@ -10,7 +10,7 @@ import i18n from '../../i18n';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../menu';
 
 /** The layers the strip can hold, top to bottom as stacked on screen by default. */
-export const STRIP_LAYERS = [
+const STRIP_LAYERS = [
   'messages',
   'props',
   'announcements',
@@ -18,7 +18,7 @@ export const STRIP_LAYERS = [
   'media',
   'background',
 ] as const;
-export type StripLayerId = (typeof STRIP_LAYERS)[number];
+type StripLayerId = (typeof STRIP_LAYERS)[number];
 
 /** One layer's clear button, as the strip (or the "…" menu) shows it. */
 export interface StripLayer {

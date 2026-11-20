@@ -1,3 +1,4 @@
+import { ColorSchema } from './common';
 import { z } from 'zod';
 import { MediaTransitionSchema, TransitionSpecSchema } from './theme';
 import { StageLayoutSchema } from './stage';
@@ -147,6 +148,8 @@ export const SettingsSchema = z
     uiTheme: z.enum(['dark', 'light']).default('dark'),
     /** Size of the control window's text (1 = 100%); icons and layout keep their size. */
     textScale: z.number().min(0.85).max(1.4).default(1),
+    /** Colours the operator saved in the colour picker (newest first). */
+    customColors: z.array(ColorSchema).max(20).default([]),
     language: z.string().max(35).default('en'),
     libraryPath: z.string().max(1000).optional(),
     displays: z.array(DisplayAssignmentSchema).max(16).default([]),

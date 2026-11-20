@@ -247,7 +247,7 @@ export function SlideList({
             {s.overlay}
             {s.live && (
               <TallyTag tone="program" className="!left-1.5 !right-auto">
-                LIVE
+                {t('common.live')}
               </TallyTag>
             )}
             {s.badge}

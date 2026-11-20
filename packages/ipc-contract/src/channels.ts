@@ -26,6 +26,7 @@ export const QUERY_NAMES = [
   'library.import',
   'library.backupNow',
   'audit.recent',
+  'notices.missed',
   'modules.list',
   'modules.install',
   'slides.import',
@@ -84,7 +85,6 @@ export const Channels = {
   evLive: 'ev:live',
   evRepo: 'ev:repo',
   evDisplays: 'ev:displays',
-  evHistory: 'ev:history',
   evNotice: 'ev:notice',
   evOutputInfo: 'ev:output-info',
   /** Application menu items (Edit › Undo / Redo) for the control window. */

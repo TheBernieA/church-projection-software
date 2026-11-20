@@ -121,7 +121,7 @@ const IMPORT_PATH =
  */
 export async function importLibraryZip(zipFile: string, library: string): Promise<number> {
   const data = new Uint8Array(await readFile(zipFile));
-  const entries = safeUnzip(data, {
+  const entries = await safeUnzip(data, {
     maxFiles: 50000,
     maxTotalBytes: 1024 * 1024 * 1024,
     maxFileBytes: 900 * 1024 * 1024,

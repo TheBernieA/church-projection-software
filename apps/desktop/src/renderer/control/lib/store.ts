@@ -48,7 +48,6 @@ export const useStore = create<ControlState>(() => ({
   playbackItemId: null,
   editingThemeId: null,
   editingThemeCopy: false,
-  history: { canUndo: false, canRedo: false },
   toasts: [],
   saving: false,
   sidebarView: 'playlist',
@@ -81,7 +80,7 @@ export function toast(text: string, level: Toast['level'] = 'info'): void {
 }
 
 /** User-facing text for an error: the command's own (safe) message, else a translated fallback. */
-export function errorText(e: unknown, fallbackKey = 'errors.generic'): string {
+function errorText(e: unknown, fallbackKey = 'errors.generic'): string {
   return e instanceof Error && e.message ? e.message : i18n.t(fallbackKey);
 }
 
@@ -134,7 +133,7 @@ export function loadChapter(versionId: string, book: BookId, chapter: number): P
   return p;
 }
 
-export async function loadVerseCounts(versionId: string): Promise<void> {
+async function loadVerseCounts(versionId: string): Promise<void> {
   if (get().verseCounts[versionId]) return;
   const [counts, names] = await Promise.all([
     q('bible.verseCounts', { versionId }),
@@ -375,13 +374,11 @@ export function connect(opts: { only?: readonly RepoKind[] } = {}): void {
     if (!opts.only || opts.only.includes(kind)) void refresh(kind);
   });
   api.onDisplaysChanged(() => void refresh('displays'));
-  api.onHistoryChanged((history) => patch({ history }));
   api.onStream((stream) => patch({ stream }));
   api.onNdi((ndi) => patch({ ndi }));
   // The console's own window opened, or closed (the console docks back in the main window).
   api.onLiveConsole((open) => patch({ liveConsole: open ? 'window' : 'docked' }));
   api.onMeters(publishMeters);
-  void q('history.state').then((history) => patch({ history }));
   void q('stream.status').then((stream) => patch({ stream }));
   void q('ndi.status').then((ndi) => patch({ ndi }));
   void q('live.get').then((live) => patch({ live }));

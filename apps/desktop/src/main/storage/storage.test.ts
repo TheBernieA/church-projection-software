@@ -73,6 +73,22 @@ describe('JsonFileRepository', () => {
     expect(quarantined.sort()).toEqual(['bad.song.json', 'wrong.song.json']);
     expect(await readdir(join(dir, 'quarantine'))).toHaveLength(2);
   });
+  it('reads only the files that changed; its own saves change nothing', async () => {
+    const repo = jsonRepo();
+    const a = await repo.upsert(song('A'));
+    const seen: string[] = [];
+    repo.watch((c) => seen.push(c.type));
+    const file = join(dir, `${a.id}.song.json`);
+    await repo.refreshFiles([file]); // our own save, coming back from the watcher
+    expect(seen).toEqual([]);
+    await writeJsonAtomic(file, { ...a, title: 'Edited elsewhere' });
+    await repo.refreshFiles([file]);
+    expect((await repo.get(a.id))?.title).toBe('Edited elsewhere');
+    await rm(file);
+    await repo.refreshFiles([file]);
+    expect(await repo.get(a.id)).toBeNull();
+    expect(seen).toEqual(['upsert', 'remove']);
+  });
   it('rejects unsafe ids (no path traversal)', async () => {
     await expect(jsonRepo().remove('../../etc/passwd')).rejects.toThrow();
   });

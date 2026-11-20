@@ -29,7 +29,7 @@ function sameContent(a: EntityMeta, b: EntityMeta): boolean {
   return JSON.stringify({ ...a, updatedAt: 0 }) === JSON.stringify({ ...b, updatedAt: 0 });
 }
 
-export function registerEntityCommands<T extends EntityMeta>(o: EntityCommandsOptions<T>): void {
+function registerEntityCommands<T extends EntityMeta>(o: EntityCommandsOptions<T>): void {
   const saveType = `${o.name}.save`;
   const deleteType = `${o.name}.delete`;
 

@@ -182,7 +182,7 @@ function QuickBarBody() {
           aria-describedby={undefined}
           className="fixed left-1/2 top-[12vh] z-50 w-[min(720px,92vw)] -translate-x-1/2 overflow-hidden rounded-[16px] bg-[var(--surface-1)] shadow-[var(--shadow-3)]"
         >
-          <RD.Title className="sr-only">Quick bar</RD.Title>
+          <RD.Title className="sr-only">{t('quick.title')}</RD.Title>
           <Search
             size={20}
             aria-hidden

@@ -1,5 +1,5 @@
 /** A font bundled with the app (OFL), with the weights shipped for it. */
-export interface BundledFont {
+interface BundledFont {
   family: string;
   category: 'sans' | 'serif' | 'display';
   weights: number[];

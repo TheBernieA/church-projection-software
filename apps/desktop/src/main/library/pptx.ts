@@ -76,8 +76,8 @@ const NOT_CONTENT = new Set(['sldNum', 'dt', 'ftr', 'hdr', 'sldImg']);
  * placeholder, everything else as body text, plus speaker notes. Pictures are counted, not
  * imported. Bounded XML scanning (no external parser) over an unzip with zip-bomb guards.
  */
-export function parsePptx(data: Uint8Array): ImportedDeck {
-  const files = safeUnzip(data, PPTX_LIMITS);
+export async function parsePptx(data: Uint8Array): Promise<ImportedDeck> {
+  const files = await safeUnzip(data, PPTX_LIMITS);
   const text = (name: string): string | undefined => {
     const f = files.get(name);
     return f ? new TextDecoder().decode(f) : undefined;

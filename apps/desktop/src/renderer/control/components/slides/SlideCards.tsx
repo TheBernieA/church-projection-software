@@ -64,7 +64,7 @@ function Tags({ state, inline = false }: { state: SlideState; inline?: boolean }
   if (state === 'live')
     return (
       <TallyTag tone="program" className={cls}>
-        LIVE
+        {t('common.live')}
       </TallyTag>
     );
   if (state === 'preview')

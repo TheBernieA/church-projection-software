@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Check, Download, Plus, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import {
   DEFAULT_THEME_IDS,
   makeScene,
@@ -51,7 +52,7 @@ export function themeCopy(t: Theme): Theme {
   return {
     ...t,
     id: newId(),
-    name: `${t.name} copy`,
+    name: i18n.t('theme.copyName', { name: t.name }),
     builtIn: false,
     createdAt: now,
     updatedAt: now,

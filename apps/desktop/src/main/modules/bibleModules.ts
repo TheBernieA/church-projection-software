@@ -32,7 +32,7 @@ export async function installBibleModule(
     throw new AppError('module-checksum', 'Module checksum does not match.');
   let entries: Map<string, Uint8Array>;
   try {
-    entries = safeUnzip(zip, MODULE_LIMITS);
+    entries = await safeUnzip(zip, MODULE_LIMITS);
   } catch (e) {
     throw new AppError(
       'module-invalid',

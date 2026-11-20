@@ -16,6 +16,7 @@ import {
 import { useStreamPreview } from './lib/streamPreview';
 import { useStandby, useUiTheme } from './lib/hooks';
 import { useStore } from './lib/store';
+import { ConfirmHost } from './components/ConfirmHost';
 
 type Tally = 'program' | 'preview' | 'none';
 
@@ -162,6 +163,7 @@ export function MultiviewWindow() {
         ))}
       </div>
       <Toasts />
+      <ConfirmHost />
     </main>
   );
 }

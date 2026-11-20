@@ -14,7 +14,12 @@ import {
   resolveStageLayout,
   screenAdjustFor,
 } from '@lampstand/core';
-import { Channels, type DisplayInfo, type OutputInfo } from '@lampstand/ipc-contract';
+import {
+  Channels,
+  type DisplayInfo,
+  type LiveDelivery,
+  type OutputInfo,
+} from '@lampstand/ipc-contract';
 import { rendererUrl } from '../security/protocols';
 import { secureWebPreferences } from '../security/hardening';
 import { fingerprint, resolveRoles } from './displays';
@@ -384,13 +389,14 @@ export class WindowManager {
         o.win.webContents.send(Channels.evOutputInfo, this.outputInfo(o));
   }
 
-  broadcastLive(state: LiveState): void {
+  broadcastLive(state: LiveState, soundOnly = false): void {
+    const delivery: LiveDelivery = soundOnly ? { ...state, soundOnly } : state;
     for (const o of this.outputs.values())
-      if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, state);
-    this.sendToControl(Channels.evLive, state);
+      if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, delivery);
+    this.sendToControl(Channels.evLive, delivery);
     for (const f of this.followers)
-      if (!f.isDestroyed()) f.webContents.send(Channels.evLive, state);
-    this.syncWeb(state);
+      if (!f.isDestroyed()) f.webContents.send(Channels.evLive, delivery);
+    if (!soundOnly) this.syncWeb(state);
   }
 
   /** A live web page goes over the audience outputs (never the stage); masks take it down. */

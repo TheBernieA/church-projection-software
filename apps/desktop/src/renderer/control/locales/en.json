@@ -56,7 +56,8 @@
     "addSlideOf": "Add a slide to {{name}}",
     "removeSection": "Delete section and everything in it",
     "confirmRemoveSection_one": "Delete the section “{{name}}” and the {{count}} item in it? Undo brings them back.",
-    "confirmRemoveSection_other": "Delete the section “{{name}}” and the {{count}} items in it? Undo brings them back."
+    "confirmRemoveSection_other": "Delete the section “{{name}}” and the {{count}} items in it? Undo brings them back.",
+    "newTextSlide": "Type your text here"
   },
   "library": {
     "tabs": {},
@@ -249,7 +250,8 @@
     "songs": "Songs & hymns",
     "verses": "Verses containing",
     "commands": "Commands",
-    "hint": "Enter to preview · ⇧Enter to show now · ⌥Enter to add to service"
+    "hint": "Enter to preview · ⇧Enter to show now · ⌥Enter to add to service",
+    "title": "Quick bar"
   },
   "song": {
     "titleNew": "New song",
@@ -456,7 +458,17 @@
       "display": "Display · titles"
     },
     "editBuiltInHint": "Built-in themes stay as they are: editing makes a copy of your own",
-    "editingCopy": "“{{name}}” is built in, so your changes are saved as a new theme of your own (the original stays as it is). Click it in Themes afterwards to use it."
+    "editingCopy": "“{{name}}” is built in, so your changes are saved as a new theme of your own (the original stays as it is). Click it in Themes afterwards to use it.",
+    "alignLeft": "Left",
+    "alignCenter": "Center",
+    "alignRight": "Right",
+    "layoutCenter": "Center",
+    "layoutTop": "Top",
+    "layoutLowerThird": "Lower third",
+    "refTop": "Top",
+    "refBottom": "Bottom",
+    "refHidden": "Hidden",
+    "copyName": "{{name}} copy"
   },
   "outputs": {
     "title": "Outputs",
@@ -676,7 +688,9 @@
     "mediaAutoplayHelp": "Play it straight away, or show its first frame and wait until you press Play.",
     "autoplayPlay": "Play straight away",
     "autoplayWait": "Wait for Play",
-    "videoPlayback": "Playback"
+    "videoPlayback": "Playback",
+    "sampleGroup": "1 Verse 1",
+    "ccliPlaceholder": "e.g. 1234567"
   },
   "shortcuts": {
     "title": "Keyboard shortcuts",
@@ -953,7 +967,7 @@
       "items": {
         "song": {
           "q": "Add a new song",
-          "a": "1. Click + next to LIBRARY and choose New song (or press {{newSong}}).\n2. Name it, pick its theme and, if you like, the playlist it goes in. Click Create.\n3. It opens in Edit on its first slide, ready to type. Press ⇧⌘N for the next slide, or ⌥↩ to break a slide where the caret is. Double-click a slide to change its words.\n4. Right-click a slide in the list on the left and choose Group to make it the Chorus, Verse 2 and so on. Slides after it in the same group come too.\n5. It saves as you type. The Song tab on the right holds the title, authors, copyright, CCLI number and theme.\nTo paste a whole song at once, press Reflow: [Verse 1] and [Chorus] on their own lines start groups, and a blank line starts a slide."
+          "a": "1. Click + next to LIBRARY and choose New song (or press {{newSong}}).\n2. Name it, pick its theme and, if you like, the playlist it goes in. Click Create.\n3. It opens in Edit, expanded to the whole window, on its first slide and ready to type. Press ⇧⌘N (or Slide in the toolbar) for the next slide, or ⌥↩ to break a slide where the caret is. Double-click a slide to change its words; Esc stops typing.\n4. Group in the toolbar (or right-click a slide in the list and choose Group) makes it the Chorus, Verse 2 and so on. Slides after it in the same group come too. Split breaks a slide that’s too long to fit.\n5. It saves as you type. The Song tab on the right holds the title, authors, copyright, CCLI number and theme; the Text tab formats its words.\nTo paste a whole song at once, press Reflow: [Verse 1] and [Chorus] on their own lines start groups, and a blank line starts a slide."
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
@@ -984,8 +998,8 @@
           "a": "1. Each song, verse or set of slides starts with a Background tile: the picture behind all of its slides. Click it to put it on the screens behind the words; its button at the top left changes it.\n2. The slides after it show only their words, over a checkerboard, because they sit on that background. A slide with a background of its own shows it.\n3. To give one slide its own background, hover it and click the picture button at its top left. Pick “The same as the other slides” to undo it.\n4. A letter at a slide's top left is its section's key: C for the Chorus, A, S, D for Verses 1–3, B for the Bridge, T for the Tag, P for the Pre-chorus. Press it to go to that section of the selected song (a chorus sung again goes to the next one).\n5. Black, Logo, Freeze, play/pause and the switcher's Cut and Auto now take Shift: ⇧B, ⇧L, ⇧F, ⇧P, ⇧C, ⇧T.\n6. A picture or video item shows two squares at its top left: the front one filled means it plays over everything, the back one filled means behind the words. Click to switch (if it's on screen, it moves at once).\n7. At the bottom left, the orange button sets how slides change for everything (Cut, Fade, Dissolve…, or each theme's own) and the purple one how pictures and videos change (Cut or Dissolve, and how long). The shuffle button in an item's header gives just that item its own slide transition. Every song, verse and slide set has two more header buttons: the film strip moves its slides on by themselves (pick the seconds, and whether it loops back to the first), and the target plays it on the announcements layer (green while it's there).\n8. At the bottom right: Grid, Easy (the words, large) or Table (a small picture, the words and the notes). “…” sets Slides by group (each section on its own row) and what shows through transparent thumbnails."
         },
         "edit": {
-          "q": "Make your own slides",
-          "a": "1. Add Slides from the + menu.\n2. Click the pencil on a slide card (or open the Edit workspace).\n3. Click the words on the canvas and type. Add text boxes, shapes, lines and pictures from the toolbar.\n4. Drag to move things; pull the corners to resize.\n5. Click the + card after the last slide to add another.\nYou can edit a slide while it’s live: the screen keeps the old version until you press Update live.\nSomething new opens in Edit expanded to the whole window; editing something that’s already there opens it beside the playlist and output. The expand button at the top right switches between the two."
+          "q": "Make your own slides, and find your way round the editor",
+          "a": "1. Add Slides from the + menu. It opens in Edit, expanded to the whole window.\n2. The toolbar along the top is the same for everything you edit. Text types the slide’s words and Slide adds a slide. Songs also have Group and Split; slides also have Text box, Rectangle, Ellipse, Line and Picture, then Forward, Back and Delete for the one selected.\n3. Click the words on the slide and type. ⌥↩ breaks the slide at the caret; ⇧⌘N starts a new one; Esc stops typing.\n4. Hover the words to see the text box. Drag a corner or side handle to resize it, or its edge to move it. Shapes and pictures move and resize the same way; the arrow keys nudge them.\n5. The slides run down the left (along the bottom in the small view). Drag one to move it; its … menu duplicates, groups or deletes it; the + at the end adds one.\n6. Page Up and Page Down move between slides. In Edit, the arrow keys, Space and Enter never change what the room sees.\nYou can edit a slide while it’s live: the screen keeps the old version until you press Update live.\nEditing something that’s already in the playlist opens a smaller editor beside the playlist and output. The expand button at the top right switches between the two. Expanded, the panel on the right (Slide or Song, and Text) is always open."
         },
         "import": {
           "q": "Bring in PowerPoint or PDF",
@@ -1012,8 +1026,8 @@
           "a": "1. Click Theme in the toolbar.\n2. Choose the kind of slide (Scripture, Lyrics, Text) and the layout (Full screen or Lower third).\n3. Click a theme and choose where to use it: all outputs, or only the main screens, the alternate HDMI output or the stream.\nThe strip at the top shows what each output uses; “Follow main” puts an output back with the main screens. Click Edit on a theme to change its fonts, colours, effects (such as Dim, to darken the background behind the words) and background; a built-in theme is saved as a new theme of your own, and the original stays as it is. Import theme and the export button move themes between computers."
         },
         "text": {
-          "q": "Change one song’s font or colour",
-          "a": "1. Select the item in the playlist.\n2. Click Text in the toolbar.\n3. Pick a font, size, bold or italic, colour and alignment.\nOnly that item changes, on top of its theme. Use theme puts it back."
+          "q": "Format the words: font, colour, capitals, lists",
+          "a": "1. Open the item in Edit and pick the Text tab on the right (for a quick change during the service, select the item and click Text in the toolbar instead).\n2. Choose the font and size, then B, I, U and S for bold, italic, underline and strikethrough. Alignment sets left, centre or right, and top, middle or bottom.\n3. The row of icons under them switches options on and off: AB for all capitals, the arrows for shrink to fit, the wrap for joining the lines into one, bullets or numbers for a list, and the clock or calendar to show the time or the date instead of the words. Hover an icon to see its name.\n4. Below: Stroke and Shadow, Lines only (a bar behind each line) and Scrolling (a ticker across the screen).\n5. Copy style takes this formatting to Paste style onto another song or item.\nA song’s formatting stays with the song, so it looks the same in every playlist; a slide item’s stays with the item. Use theme puts everything back the way the theme has it."
         },
         "logo": {
           "q": "Set the logo and off-air screen",
@@ -1025,7 +1039,7 @@
         },
         "undo": {
           "q": "Undo a mistake",
-          "a": "1. Press {{undo}} (or Edit › Undo in the menu bar) to undo a change to playlists, songs or slides.\n2. Press {{redo}} to redo it."
+          "a": "1. Press {{undo}} (or Edit › Undo in the menu bar) to undo a change to playlists, songs or slides.\n2. Press {{redo}} to redo it.\nThings that can’t be undone (deleting media from the library, removing a package, going live on a stream) ask first."
         },
         "announcements": {
           "q": "Loop announcements before the service",
@@ -1046,6 +1060,14 @@
         "multiview": {
           "q": "See every screen and camera at once (multi-view)",
           "a": "1. Open Outputs (from the Audience or Stage light) › More output types › Open multi-view.\n2. A window opens with Program, Preview, the next slide, the stage display, the alternate output, the stream and every camera. Move it to a spare monitor.\nRed marks what's on air, green what's waiting. It only watches: nothing in it changes the screens."
+        },
+        "lists": {
+          "q": "Make a bulleted or numbered list",
+          "a": "1. Open the slides in Edit and type each point on its own line.\n2. In the Text tab on the right, click the bullets icon or the numbers icon.\nEach line becomes a point. A slide’s heading stays a heading: only the lines under it are numbered. Click the same icon again to go back to plain lines."
+        },
+        "colours": {
+          "q": "Pick a colour, or save your own",
+          "a": "1. Click any colour swatch (the text colour in the Text tab, a shape’s fill, a theme’s colours).\n2. Pick from the palette: greys along the top, strong colours under them, then lighter and darker shades.\n3. For any other colour, click + under Custom: choose it in the system picker, and it’s saved there for next time. The dropper picks a colour from anywhere on the screen.\nYour custom colours are shared by every colour swatch in Lampstand and kept in your backups. Reset (where it shows) goes back to the theme’s colour."
         }
       }
     },
@@ -1215,10 +1237,398 @@
     "next": "Next"
   },
   "features": {
-    "intro": "{{available}} features ready to use today, {{soon}} more on the way.",
-    "filter": "Show",
-    "all": "All",
-    "available": "Available"
+    "slide-groups": {
+      "name": "Colour-coded slide groups",
+      "description": "Verse, chorus, bridge… each group gets its own colour in the slide grid, so you can find your place at a glance."
+    },
+    "reflow": {
+      "name": "Reflow editor",
+      "description": "Edit a whole song or presentation as one block of text; blank lines split slides and [Verse 1] headers start groups."
+    },
+    "quick-edit": {
+      "name": "Quick Edit",
+      "description": "Right-click any slide to fix a typo without leaving the show."
+    },
+    "themes": {
+      "name": "Themes",
+      "description": "Reusable text and background styling; change a theme and every slide using it updates."
+    },
+    "transitions": {
+      "name": "Slide transitions",
+      "description": "Cut, fade and other transitions between slides: a default for all, or per item or theme."
+    },
+    "live-editing": {
+      "name": "Live editing",
+      "description": "Edit slides and media before or during the service without interrupting the screen."
+    },
+    "arrangements": {
+      "name": "Arrangements",
+      "description": "Reorder or repeat verse and chorus groups to build different song arrangements."
+    },
+    "objects": {
+      "name": "Custom objects & shapes",
+      "description": "Place shapes, text boxes, media and live video anywhere on a slide."
+    },
+    "effects": {
+      "name": "Text & background effects",
+      "description": "Blur, glow, colour filters and fills on text and backgrounds."
+    },
+    "chords": {
+      "name": "Chord charts",
+      "description": "Keep chords with lyrics, transpose them, and show them to the band on the stage display."
+    },
+    "import-slides": {
+      "name": "PowerPoint & PDF import",
+      "description": "Bring PowerPoint decks in as editable text slides, or PDFs as one picture per page. From Keynote, export to PDF or PowerPoint first."
+    },
+    "library": {
+      "name": "Library",
+      "description": "Songs, hymns, presentations and media in one searchable library."
+    },
+    "playlists": {
+      "name": "Playlists",
+      "description": "Order everything for a service into a playlist, with section headers."
+    },
+    "templates": {
+      "name": "Playlist templates",
+      "description": "Start each week from a saved service template."
+    },
+    "quick-search": {
+      "name": "Quick Search",
+      "description": "Press ⌘K to find any song, verse or item and send it to preview or the screen."
+    },
+    "calendar": {
+      "name": "Calendar scheduling",
+      "description": "Schedule looping or lobby content ahead of time."
+    },
+    "cloud": {
+      "name": "Cloud sync",
+      "description": "Share one library across your team and computers."
+    },
+    "bible-lookup": {
+      "name": "Scripture lookup",
+      "description": "Type \"jn 3 16\" anywhere to find and show a passage."
+    },
+    "bible-mode": {
+      "name": "Bible workspace",
+      "description": "Browse books, chapters and verses full size and send them to the playlist or the screen."
+    },
+    "bible-packages": {
+      "name": "Installable translations",
+      "description": "Add Bible translations from package files."
+    },
+    "bible-parallel": {
+      "name": "Parallel translations",
+      "description": "Show up to four translations side by side."
+    },
+    "media-bin": {
+      "name": "Media bin",
+      "description": "Images and videos ready to show full screen or as backgrounds."
+    },
+    "video-transport": {
+      "name": "Video controls",
+      "description": "Play, pause, scrub, loop, mute and volume, in sync on every screen."
+    },
+    "freeze": {
+      "name": "Freeze",
+      "description": "Hold the current frame on screen while you change things."
+    },
+    "video-input": {
+      "name": "Video inputs & cameras",
+      "description": "Put any camera or capture card the computer sees on screen, live: media bin › Video input. (NDI is listed separately.)"
+    },
+    "stock-media": {
+      "name": "Stock media library",
+      "description": "Ready-made motion backgrounds by occasion and countdowns, drawn by Lampstand itself (offline, licence-free): media bin › Stock media."
+    },
+    "masks": {
+      "name": "Custom masks",
+      "description": "Hide parts of the screen or shape the output for creative stages."
+    },
+    "audio-video": {
+      "name": "Video sound",
+      "description": "Per-video mute and volume; sound plays from exactly one place."
+    },
+    "audio-bin": {
+      "name": "Audio bin & playlists",
+      "description": "Walk-in music and sound cues, with playlists and fades."
+    },
+    "audio-input": {
+      "name": "Audio inputs",
+      "description": "Route a microphone or mixer feed alongside video."
+    },
+    "mixer": {
+      "name": "Mixer",
+      "description": "A sound desk: faders, mute, solo to headphones, EQ, compressor, room and stream mixes."
+    },
+    "clear-groups": {
+      "name": "Clear layers",
+      "description": "Clear slide, media, background, messages or props on their own, or everything at once."
+    },
+    "props": {
+      "name": "Props",
+      "description": "Overlay a logo, image, video or text on top of everything with one click."
+    },
+    "logo": {
+      "name": "Logo screen",
+      "description": "Cover the screen with your church name, image or video."
+    },
+    "off-air": {
+      "name": "Off-air screen",
+      "description": "What the projector shows when nothing is live."
+    },
+    "announcements-layer": {
+      "name": "Announcements layer",
+      "description": "Run looping announcements on their own layer alongside the main presentation: the megaphone on an announcements or slides item; Looks can send it to lobby screens only."
+    },
+    "text-format": {
+      "name": "Text formatting",
+      "description": "Change the font, size, bold/italic, colour and alignment of a playlist item’s slides from the toolbar’s Text button, on top of its theme."
+    },
+    "looks": {
+      "name": "Looks",
+      "description": "Choose which layers appear on each screen, and switch between saved combinations: Looks in the toolbar, made in Settings › Screens."
+    },
+    "multi-screen": {
+      "name": "Multiple screens",
+      "description": "Projectors, TVs and stage monitors, each assigned a role."
+    },
+    "window-mode": {
+      "name": "Window mode",
+      "description": "Outputs as windows for rehearsal or window capture."
+    },
+    "hot-plug": {
+      "name": "Hot-plug displays",
+      "description": "Screens are remembered and re-assigned when plugged back in."
+    },
+    "test-pattern": {
+      "name": "Test pattern",
+      "description": "Line up projectors with a built-in test pattern."
+    },
+    "edge-blend": {
+      "name": "Edge blending",
+      "description": "Blend several projectors into one wide canvas, the overlaps faded so no seam shows (Settings › Screens)."
+    },
+    "ndi": {
+      "name": "NDI output",
+      "description": "Send the program, or the words alone over transparency, to vMix, OBS and other NDI gear (Settings › NDI; needs NDI Tools)."
+    },
+    "sdi": {
+      "name": "SDI output",
+      "description": "Output to broadcast switchers through Blackmagic DeckLink cards (needs the card and Desktop Video)."
+    },
+    "alpha-key": {
+      "name": "Key feed for a video mixer",
+      "description": "The alternate HDMI output sends the words alone over green, blue or black, in their own themes, for a mixer to key over cameras (Outputs)."
+    },
+    "multiview": {
+      "name": "Operator multi-view",
+      "description": "See every screen, the stream and each camera on one screen, in a window of its own (Outputs)."
+    },
+    "stage-current-next": {
+      "name": "Current & next",
+      "description": "Shows the team what is on screen and what comes next."
+    },
+    "stage-clock": {
+      "name": "Clock & timers on stage",
+      "description": "Time of day and running timers on the stage display."
+    },
+    "stage-messages": {
+      "name": "Stage messages",
+      "description": "Messages only the team on stage can see."
+    },
+    "stage-layouts": {
+      "name": "Custom stage layouts",
+      "description": "Design your own stage screens and switch between them."
+    },
+    "countdown-slides": {
+      "name": "Countdown slides",
+      "description": "A countdown to service start, right in the playlist."
+    },
+    "timers": {
+      "name": "Timers",
+      "description": "Countdowns, countdown-to-time and elapsed timers you can start, stop and reset."
+    },
+    "video-countdowns": {
+      "name": "Video countdowns",
+      "description": "Countdown videos synced to the start time."
+    },
+    "audience-messages": {
+      "name": "Audience messages",
+      "description": "Reusable messages with fill-in fields, like \"Parent of {number}\", shown as a ticker or lower third."
+    },
+    "lower-thirds": {
+      "name": "Lower thirds & ticker",
+      "description": "Speaker names and scrolling notices over everything else."
+    },
+    "shortcuts": {
+      "name": "Keyboard shortcuts",
+      "description": "Every live action on the keyboard, and you can change them."
+    },
+    "undo": {
+      "name": "Undo & redo",
+      "description": "Step back through playlist and slide edits."
+    },
+    "macros": {
+      "name": "Macros",
+      "description": "One click runs several actions: clear, change background, start a timer…"
+    },
+    "slide-actions": {
+      "name": "Slide actions",
+      "description": "Attach actions to a slide, like starting a video or switching a stage layout."
+    },
+    "timeline": {
+      "name": "Timeline",
+      "description": "Record slide timings against audio and play them back automatically."
+    },
+    "midi-osc": {
+      "name": "MIDI & OSC control",
+      "description": "Run slides, cameras, the T-bar and the mixer from a sound desk or controller, and send cues back to the desk."
+    },
+    "dmx": {
+      "name": "DMX lighting",
+      "description": "Trigger lighting scenes with the slides."
+    },
+    "stream-deck": {
+      "name": "Stream Deck",
+      "description": "Run the show from physical buttons."
+    },
+    "api": {
+      "name": "Control API",
+      "description": "Control Lampstand from other software on the network."
+    },
+    "network-link": {
+      "name": "Network link",
+      "description": "Keep several computers in step for more outputs and backup."
+    },
+    "record": {
+      "name": "Record",
+      "description": "Record the service (picture and sound) to a video file."
+    },
+    "stream": {
+      "name": "Stream",
+      "description": "Stream the output straight to YouTube, Facebook, Resi or any RTMP service."
+    },
+    "direct-link": {
+      "name": "Direct link (SRT, UDP)",
+      "description": "Send the stream straight to OBS, vMix, VLC or a decoder in another room, with well under a second of delay."
+    },
+    "lower-third-mode": {
+      "name": "Lower third on screens and stream",
+      "description": "Show the words along the bottom in a lower-third theme, on the projector, the stream or both, with automatic sizing."
+    },
+    "live-console": {
+      "name": "Live console",
+      "description": "The outgoing picture, destinations, sound and health readings in one panel, docked or in its own window."
+    },
+    "ccli": {
+      "name": "CCLI licence on slides",
+      "description": "Your licence number on song credits."
+    },
+    "remote": {
+      "name": "Remote control app",
+      "description": "Run slides from a phone or tablet anywhere in the room."
+    },
+    "songselect": {
+      "name": "SongSelect & CCLI reporting",
+      "description": "Import songs from SongSelect and report usage automatically."
+    },
+    "planning-center": {
+      "name": "Planning Center",
+      "description": "Sync playlists with your Planning Center service plan."
+    },
+    "live-previews": {
+      "name": "Live screen previews",
+      "description": "See exactly what each screen is showing, right in the control window."
+    },
+    "speaker-notes": {
+      "name": "Speaker notes on stage",
+      "description": "Notes on a slide show on the stage display, never to the room."
+    },
+    "bilingual": {
+      "name": "Bilingual lyrics",
+      "description": "Show a song in two languages at once, line by line."
+    },
+    "web-content": {
+      "name": "Web pages on slides",
+      "description": "Show a live web page, like a giving page or a feed, on a slide."
+    },
+    "song-import": {
+      "name": "Song file import",
+      "description": "Bring songs in from OpenLyrics, ProPresenter, EasyWorship and plain-text files."
+    },
+    "group-hotkeys": {
+      "name": "Group hotkeys",
+      "description": "Jump straight to the chorus or bridge with a single key, wherever you are in the song."
+    },
+    "media-cues": {
+      "name": "Media playback options",
+      "description": "Start and end points, fades, what happens when a video ends (stop, loop or go to the next item), and whether it plays as soon as it goes live: “Playback options” on a video in the playlist."
+    },
+    "media-recent": {
+      "name": "Recently used",
+      "description": "The pictures, videos and audio you showed lately, at the top of the media sidebar."
+    },
+    "media-multiselect": {
+      "name": "Select several",
+      "description": "Pick many tiles at once to add them to a playlist, star them or delete them together."
+    },
+    "media-tags": {
+      "name": "Tags & smart collections",
+      "description": "Label media (Christmas, youth, walk-in) and keep collections that fill themselves by tag."
+    },
+    "media-relink": {
+      "name": "Replace or relink file",
+      "description": "Swap a clip for a new version everywhere it is used, or find a file that moved."
+    },
+    "media-optimise": {
+      "name": "Optimise for playback",
+      "description": "Convert heavy or unusual videos to a smooth, projector-friendly format in the background."
+    },
+    "playlist-folders": {
+      "name": "Playlist folders",
+      "description": "Group media playlists into folders (per series, season or ministry)."
+    },
+    "media-favourites": {
+      "name": "Favourites",
+      "description": "Star pictures, videos and audio and find them all in the Favourites view of the media bin."
+    },
+    "media-playlists": {
+      "name": "Media playlists",
+      "description": "Group pictures and videos into your own playlists in the media bin: drag media onto a playlist, reorder it, and import straight into it."
+    },
+    "message-tokens": {
+      "name": "Live clocks in messages",
+      "description": "Put a running timer or the time of day inside a message, e.g. \"Service starts in {timer}\"."
+    },
+    "custom-clear-groups": {
+      "name": "Custom clear groups",
+      "description": "One button that clears exactly the layers you choose, e.g. slide and props but not the background: Settings › Presenting › Clear groups, used from the “…” beside the monitor."
+    },
+    "syphon": {
+      "name": "Syphon output",
+      "description": "Share outputs with other apps on the same Mac, like OBS (needs the Syphon framework)."
+    },
+    "output-adjust": {
+      "name": "Screen adjustments",
+      "description": "Keystone, corner pinning, scaling, flips and colour correction for each screen (Settings › Screens)."
+    },
+    "timecode": {
+      "name": "Timecode",
+      "description": "Follow timecode from audio or video gear to fire slides on time."
+    },
+    "playback-markers": {
+      "name": "Playback markers",
+      "description": "Markers on a video that trigger actions or stage messages at set moments."
+    },
+    "multitracks": {
+      "name": "MultiTracks",
+      "description": "Import lyrics, chord charts and cues from MultiTracks."
+    },
+    "stage-app": {
+      "name": "Stage app",
+      "description": "Show the stage display on a phone or tablet for musicians."
+    }
   },
   "connections": {
     "control": "Control from other devices",
@@ -2498,5 +2908,44 @@
     "streaming": "Live",
     "recording": "Recording",
     "streamOff": "Not streaming"
+  },
+  "color": {
+    "reset": "Reset",
+    "palette": "Colours",
+    "custom": "Custom",
+    "add": "Add a custom colour",
+    "fromScreen": "Pick a colour from the screen"
+  },
+  "confirm": {
+    "title": "Are you sure?",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "delete": "Delete",
+    "goLive": "Go live",
+    "endStream": "End stream"
+  },
+  "featureCategories": {
+    "presentations": "Presentations & editing",
+    "library": "Library & playlists",
+    "bible": "Bible",
+    "media": "Media",
+    "audio": "Audio",
+    "layers": "Layers, props & looks",
+    "screens": "Screens & outputs",
+    "stage": "Stage display",
+    "timers": "Timers & clocks",
+    "messages": "Messages",
+    "automation": "Automation & control",
+    "capture": "Capture & streaming",
+    "integrations": "Remote & integrations"
+  },
+  "common": {
+    "live": "LIVE",
+    "close": "Close"
+  },
+  "services": {
+    "newName": "New service",
+    "templateSuffix": " (template)"
   }
 }

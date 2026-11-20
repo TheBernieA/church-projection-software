@@ -37,7 +37,7 @@ import { previewSource, switcherSource, take, tbar, tbarRelease } from './switch
 
 // ---------- What the settings page shows (ports, activity, learning) ----------
 
-export interface SurfacePorts {
+interface SurfacePorts {
   /** MIDI is available on this computer (and allowed). */
   midi: 'off' | 'starting' | 'ready' | 'unavailable';
   inputs: string[];

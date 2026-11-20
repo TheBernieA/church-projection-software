@@ -28,7 +28,7 @@ import type {
 /** Types shared across the control window. */
 
 /** A service item of one kind, e.g. `ItemOf<'song'>`. */
-export type ItemOf<K extends ServiceItem['kind']> = Extract<ServiceItem, { kind: K }>;
+type ItemOf<K extends ServiceItem['kind']> = Extract<ServiceItem, { kind: K }>;
 export type SongItem = ItemOf<'song'>;
 export type PresentationItem = ItemOf<'presentation'>;
 /** Items made of text slides (presentations and announcements). */
@@ -59,7 +59,7 @@ export type SettingsPageId =
   | 'guide';
 
 /** Left-sidebar library source. */
-export type LibraryTab = 'songs' | 'hymns';
+type LibraryTab = 'songs' | 'hymns';
 
 /** The workspace in the centre pane (toolbar mode tabs). */
 export type Mode = 'show' | 'edit' | 'reflow' | 'bible' | 'themes' | 'stage';
@@ -167,7 +167,6 @@ export interface ControlState {
   editingThemeId: string | null;
   /** The theme being edited is built in: the editor works on a copy, saved as a new theme. */
   editingThemeCopy: boolean;
-  history: { canUndo: boolean; canRedo: boolean };
   toasts: Toast[];
   /** A service edit is waiting to be saved (status bar shows "Saving…"). */
   saving: boolean;
@@ -181,7 +180,7 @@ export interface EditOptions {
   typing?: boolean;
 }
 
-export type SlideAction =
+type SlideAction =
   | { kind: 'content'; content: ContentLayer; background: BackgroundLayer | null }
   | { kind: 'media'; media: MediaLayer }
   | { kind: 'background'; background: BackgroundLayer }

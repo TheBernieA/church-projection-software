@@ -31,7 +31,7 @@ export interface TextField {
 }
 
 /** What typing in the box can ask for besides words. */
-export interface TextBoxActions {
+interface TextBoxActions {
   /** Typing stopped (Esc, ⌘↩, a click away): the fields as they are. */
   onDone: (values: Record<string, string>) => void;
   /** ⌥↩ in the last field: what's before the caret stays, the rest goes on a new slide. */

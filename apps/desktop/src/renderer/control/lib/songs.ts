@@ -9,7 +9,7 @@ import { openEditor } from './editing';
 import { displayCombo, effectiveShortcuts } from './shortcuts';
 
 /** A song as picked from the library (shown on its own, not part of the playlist). */
-export const libraryItem = (song: Song): SongItem => ({
+const libraryItem = (song: Song): SongItem => ({
   id: `adhoc-${song.id}`,
   kind: 'song',
   songId: song.id,

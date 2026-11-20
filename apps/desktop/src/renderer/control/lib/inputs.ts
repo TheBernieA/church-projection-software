@@ -168,7 +168,7 @@ const NO_CAMERAS: Record<string, CameraSettings> = {};
 const allCameras = (): Record<string, CameraSettings> =>
   useStore.getState().settings?.cameras ?? NO_CAMERAS;
 
-export const cameraSettings = (deviceId: string): CameraSettings => ({
+const cameraSettings = (deviceId: string): CameraSettings => ({
   ...DEFAULT_CAMERA,
   ...allCameras()[deviceId],
 });
@@ -176,7 +176,7 @@ export const cameraSettings = (deviceId: string): CameraSettings => ({
 /**
  * Change a camera's settings: shown at once, then saved. Back to the defaults removes its entry.
  */
-export function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
+function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
   const next = { ...cameraSettings(deviceId), ...patch };
   const isDefault = JSON.stringify(next) === JSON.stringify(DEFAULT_CAMERA);
   const cameras = Object.fromEntries(

@@ -268,7 +268,7 @@ export const layersClearedBy = (layer: Layer): readonly RestorableLayer[] => CLE
  * Remember what a clear is about to remove. Only layers that have something are remembered, so
  * clearing an already-empty layer never forgets what could still be brought back.
  */
-export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): ClearedLayers {
+function rememberCleared(s: LiveState, layer: Layer, nowMs: number): ClearedLayers {
   const p = s.program;
   // A fresh copy: the previous live state must never change under its readers.
   const out: ClearedLayers = { ...withoutOff(s.cleared) };
@@ -310,7 +310,7 @@ export function rememberCleared(s: LiveState, layer: Layer, nowMs: number): Clea
 }
 
 /** The cleared layers without the Turn-off-live marker (something new is on screen). */
-export function withoutOff(c: ClearedLayers): ClearedLayers {
+function withoutOff(c: ClearedLayers): ClearedLayers {
   return c.off ? omit(c, 'off') : c;
 }
 

@@ -16,6 +16,7 @@ import {
   standbyKey,
   STARTER_THEMES,
   type AuditEntry,
+  type LiveState,
   type Song,
   type ScreenVisual,
   type KindThemes,
@@ -285,6 +286,7 @@ export class AppController {
         search: this.search,
         windows: this.windows,
         audit: () => this.auditLog,
+        missedNotices: () => this.takeMissedNotices(),
         control: () => this.windows.control,
         installModules: (files) => this.installModules(files),
         listModules: () => this.listModules(),
@@ -304,13 +306,18 @@ export class AppController {
       log,
     });
 
-    live.subscribe((state) => this.windows.broadcastLive(state));
-    bus.onHistoryChange(() =>
-      this.windows.sendToControl(Channels.evHistory, {
-        canUndo: bus.canUndo(),
-        canRedo: bus.canRedo(),
-      }),
-    );
+    // Whether only the sound changed (a fader drag): the windows then leave their pictures be.
+    let sent: LiveState | null = null;
+    live.subscribe((state) => {
+      const prev = sent;
+      sent = state;
+      const soundOnly =
+        !!prev &&
+        (Object.keys(state) as (keyof LiveState)[]).every(
+          (k) => k === 'mixer' || k === 'audio' || k === 'revision' || state[k] === prev[k],
+        );
+      this.windows.broadcastLive(state, soundOnly);
+    });
     bus.onAudit((e) => {
       this.auditLog.push(e);
       if (this.auditLog.length > 2000) this.auditLog.splice(0, 500);
@@ -711,10 +718,18 @@ export class AppController {
     this.search.setSongs(songs.map(songDoc));
   }
 
-  /** External edits / shared folders (Dropbox, OneDrive) refresh live (§6.2). */
+  /**
+   * External edits / shared folders (Dropbox, OneDrive) refresh live (§6.2): the files that
+   * changed are read again, a moment after the last change (Lampstand's own saves included;
+   * those change nothing). A burst of very many changes re-reads the folder instead.
+   */
   private watchLibrary(): void {
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
-    const map: Record<string, { reload: () => Promise<void> }> = {
+    const changed = new Map<string, Set<string>>();
+    const map: Record<
+      string,
+      { reload: () => Promise<void>; refreshFiles: (paths: string[]) => Promise<void> }
+    > = {
       songs: this.s.songs,
       services: this.s.services,
       themes: this.s.themes,
@@ -732,18 +747,38 @@ export class AppController {
     watcher.on('all', (_ev, path) => {
       const dir = Object.keys(map).find((d) => path.includes(join(this.s.paths.library, d)));
       if (!dir) return;
+      const paths = changed.get(dir) ?? new Set<string>();
+      paths.add(path);
+      changed.set(dir, paths);
       const prev = timers.get(dir);
       if (prev) clearTimeout(prev);
       timers.set(
         dir,
-        setTimeout(() => void map[dir]?.reload(), 1000),
+        setTimeout(() => {
+          const repo = map[dir];
+          const files = [...(changed.get(dir) ?? [])];
+          changed.delete(dir);
+          if (!repo) return;
+          void (files.length > 200 ? repo.reload() : repo.refreshFiles(files));
+        }, 1000),
       );
     });
     this.closeWatcher = () => watcher.close();
   }
 
+  /** Notices from before the control window was there to show them (a quarantined file). */
+  private missedNotices: Notice[] = [];
+
   private notice(n: Notice): void {
     if (this.started) this.windows.sendToControl(Channels.evNotice, n);
+    else if (this.missedNotices.length < 20) this.missedNotices.push(n);
+  }
+
+  /** The control window asks once it's listening: the startup notices, each given once. */
+  takeMissedNotices(): Notice[] {
+    const out = this.missedNotices;
+    this.missedNotices = [];
+    return out;
   }
 
   /** A second launch brings the running app's control window forward. */
@@ -779,7 +814,7 @@ export class AppController {
     if (!this.started) return;
     this.windows.setQuitting();
     await this.stream.shutdown();
-    this.ndi.shutdown();
+    await this.ndi.shutdown();
     this.osc.close();
     this.search.stop();
     await this.closeWatcher?.();
