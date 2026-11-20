@@ -6,10 +6,13 @@ export function EmptyState({
   icon,
   title,
   body,
+  action,
 }: {
   icon: ReactNode;
   title: string;
   body?: string;
+  /** A button that gets going (e.g. "New group"). */
+  action?: ReactNode;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
@@ -24,6 +27,7 @@ export function EmptyState({
           {body}
         </Typography>
       )}
+      {action}
     </div>
   );
 }

@@ -66,6 +66,7 @@ const RUN: Record<ShortcutAction, () => void> = {
     void clearLayer('panic');
   },
   quickBar: () => openDialog('quick'),
+  newSong: () => openDialog('newSong'),
   undo: () => void undo(),
   redo: () => void redo(),
   cheatSheet: () => openDialog('shortcuts'),

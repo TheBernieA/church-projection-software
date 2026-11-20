@@ -1,9 +1,27 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { BookMarked, Copy, ListMusic, MoreHorizontal, Music2, Plus, Trash2 } from 'lucide-react';
+import {
+  BookMarked,
+  ChevronRight,
+  Copy,
+  FileUp,
+  LayoutTemplate,
+  ListMusic,
+  MoreHorizontal,
+  Music2,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createService, deleteService, duplicateService } from '../../lib/services';
-import { ITEM_CLASS, MENU_CLASS } from '../menu';
+import { importSlides } from '../../lib/importSlides';
+import {
+  createService,
+  deleteService,
+  duplicateService,
+  serviceFromTemplate,
+} from '../../lib/services';
+import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
+import { ITEM_CLASS, MENU_CLASS, SEPARATOR_CLASS } from '../menu';
 import { openDialog, openService, useStore } from '../../lib/store';
 import { ServicePanel } from '../ServicePanel';
 import { SongList } from '../SongList';
@@ -11,27 +29,97 @@ import { BinNav } from './Bin';
 import { Splitter, usePaneSize } from './Splitter';
 import { Typography, IconButton, NavItem } from '@lampstand/ui';
 
-/** Small-caps outline heading with an optional "+" on the right. */
+/** Small-caps outline heading with an optional "+" (or a menu of its own) on the right. */
 function OutlineHeading({
   title,
   addLabel,
   onAdd,
+  menu,
 }: {
   title: string;
   addLabel?: string;
   onAdd?: () => void;
+  menu?: ReactNode;
 }) {
   return (
     <div className="flex h-7 items-center justify-between pl-3 pr-1.5 pt-1">
       <Typography as="h2" variant="overline">
         {title}
       </Typography>
+      {menu}
       {onAdd && (
         <IconButton size="3xs" variant="quiet" aria-label={addLabel ?? title} onClick={onAdd}>
           <Plus size={14} />
         </IconButton>
       )}
     </div>
+  );
+}
+
+/** Open a new playlist (and show it in the sidebar). */
+const newPlaylist = (from?: () => Promise<void>): void =>
+  void (from ? from() : createService()).then(() => useStore.setState({ sidebarView: 'playlist' }));
+
+/**
+ * The library's "+": a new song (⌘N), a new playlist, empty or from a template, or slides
+ * imported from a file.
+ */
+function LibraryAddMenu() {
+  const { t } = useTranslation();
+  const templates = useStore((s) => s.services).filter((p) => p.isTemplate);
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <IconButton size="3xs" variant="quiet" aria-label={t('sidebar.add')}>
+          <Plus size={14} />
+        </IconButton>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={`${MENU_CLASS} w-[240px]`}>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => openDialog('newSong')}>
+            <Music2 size={14} />
+            <span className="flex-1">{t('sidebar.newSong')}</span>
+            <Typography size={11} tone="muted">
+              {displayCombo(effectiveShortcuts().newSong)}
+            </Typography>
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => newPlaylist()}>
+            <ListMusic size={14} />
+            {t('sidebar.newPlaylist')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Sub>
+            <DropdownMenu.SubTrigger
+              className={ITEM_CLASS}
+              disabled={templates.length === 0}
+              title={templates.length ? undefined : t('sidebar.noTemplates')}
+            >
+              <LayoutTemplate size={14} />
+              <span className="flex-1">{t('sidebar.fromTemplate')}</span>
+              <ChevronRight size={13} />
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.SubContent sideOffset={4} className={`${MENU_CLASS} w-[220px]`}>
+                {templates.map((p) => (
+                  <DropdownMenu.Item
+                    key={p.id}
+                    className={ITEM_CLASS}
+                    onSelect={() => newPlaylist(() => serviceFromTemplate(p.id))}
+                  >
+                    {p.name.replace(/ \(template\)$/, '')}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.SubContent>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Sub>
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void importSlides()}>
+            <FileUp size={14} />
+            {t('import.button')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -117,11 +205,7 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
     // The whole sidebar is the "Library" region: the outline and whatever it lists below.
     <section aria-label={t('sidebar.library')} className="flex min-h-0 flex-1 flex-col">
       <div className="flex shrink-0 flex-col overflow-y-auto pb-2" style={{ height: outline.size }}>
-        <OutlineHeading
-          title={t('sidebar.library')}
-          addLabel={t('sidebar.newSong')}
-          onAdd={() => openDialog('song', { editingSongId: null })}
-        />
+        <OutlineHeading title={t('sidebar.library')} menu={<LibraryAddMenu />} />
         <OutlineRow
           icon={<Music2 size={14} />}
           label={t('sidebar.songs')}
@@ -137,9 +221,7 @@ export function LeftSidebar({ binHeight }: { binHeight: number | null }) {
         <OutlineHeading
           title={t('sidebar.playlists')}
           addLabel={t('sidebar.newPlaylist')}
-          onAdd={() =>
-            void createService().then(() => useStore.setState({ sidebarView: 'playlist' }))
-          }
+          onAdd={() => newPlaylist()}
         />
         {playlists.length === 0 && (
           <Typography as="p" variant="caption" className="px-4 py-1">

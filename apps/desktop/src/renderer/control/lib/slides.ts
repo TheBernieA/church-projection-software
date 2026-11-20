@@ -10,6 +10,7 @@ import {
   type ContentLayer,
   type Scrim,
   type ServiceItem,
+  type Song,
   type TextBlock,
   type Theme,
   type ThemeContentKind,
@@ -23,7 +24,7 @@ import {
   type VersionText,
 } from '@lampstand/scripture';
 import { chapterKey } from './store';
-import { type ItemSlides, type PresentableSlide, type SlideContext } from '../types';
+import { type ItemSlides, type PresentableSlide, type SlideContext, type SongItem } from '../types';
 import { GROUP_COLORS } from '../constants';
 
 /** Muted band colours for playlist sections (Pre-service, Worship, Word…), picked by name. */
@@ -40,7 +41,11 @@ export function groupColor(label?: string): string | undefined {
   return GROUP_COLORS.find(([re]) => re.test(l))?.[1] ?? '#7c8499';
 }
 
-export function themeFor(ctx: SlideContext, kind: ThemeContentKind, themeId?: string): Theme {
+export function themeFor(
+  ctx: Pick<SlideContext, 'themes' | 'settings'>,
+  kind: ThemeContentKind,
+  themeId?: string,
+): Theme {
   const settingsKey = kind === 'lower-third' ? 'text' : kind;
   const fallback =
     kind === 'scripture'
@@ -94,6 +99,34 @@ function slideBackground(
   return ref
     ? { background: themeBackground(theme, ref, item.backgroundOverlay), own: true }
     : { background: itemBackground, own: false };
+}
+
+/** How a song's slides look: its theme (with the item's text format) and its background. */
+export function songLook(
+  song: Song,
+  item: Omit<SongItem, 'id' | 'kind' | 'songId'>,
+  ctx: Pick<SlideContext, 'themes' | 'settings'>,
+): { theme: Theme; background: BackgroundLayer | null } {
+  const theme = withTextFormat(
+    themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
+    item.textFormat,
+  );
+  return { theme, background: themeBackground(theme, behindWords(item), item.backgroundOverlay) };
+}
+
+/** The credit line on a song's first slide, or '' when the song's credits are hidden. */
+export function songCredit(song: Song, ctx: Pick<SlideContext, 'settings'>): string {
+  if (song.showCredits === false) return '';
+  return [
+    song.title,
+    song.authors.join(', '),
+    song.copyright,
+    song.ccliNumber && ctx.settings?.ccliLicenseNumber
+      ? `CCLI #${ctx.settings.ccliLicenseNumber}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** The slide, marked when its background is its own. */
@@ -158,26 +191,13 @@ export function buildItemSlides(item: ServiceItem, ctx: SlideContext): ItemSlide
     case 'song': {
       const song = ctx.songs.find((s) => s.id === item.songId);
       if (!song) return none;
-      const theme = withTextFormat(
-        themeFor(ctx, 'lyrics', item.themeId ?? song.themeId),
-        item.textFormat,
-      );
-      const background = themeBackground(theme, behindWords(item), item.backgroundOverlay);
+      const { theme, background } = songLook(song, item, ctx);
       const lyricSlides = buildSongSlides(song, {
         arrangementId: item.arrangementId,
         translationLang: item.translationLang,
         maxLines: ctx.settings?.lyrics.maxLinesPerSlide ?? 4,
       });
-      const credit = [
-        song.title,
-        song.authors.join(', '),
-        song.copyright,
-        song.ccliNumber && ctx.settings?.ccliLicenseNumber
-          ? `CCLI #${ctx.settings.ccliLicenseNumber}`
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' · ');
+      const credit = songCredit(song, ctx);
       return {
         missing: [],
         slides: lyricSlides.map((ls, i) => {

@@ -5,6 +5,7 @@ import { Button, IconButton, Segmented, Switch, Typography, typographyClass } fr
 import { useInService, useSelectedItem } from '../lib/hooks';
 import { deleteSlide, duplicateSlide, moveSlide } from '../lib/textSlides';
 import { updateItem, useStore } from '../lib/store';
+import { InspectorShell } from './canvas/editorParts';
 import { ObjectInspector } from './canvas/ObjectInspector';
 import { Field, NumberInput } from './form';
 import { type CountdownItem, type TextItem } from '../types';
@@ -29,15 +30,15 @@ export function SlideInspector() {
   if (!item || !inService) return null;
   if (item.kind === 'countdown')
     return (
-      <Shell>
+      <InspectorShell>
         <CountdownInspector item={item} />
-      </Shell>
+      </InspectorShell>
     );
   if (item.kind === 'presentation' || item.kind === 'announcements')
     return (
-      <Shell>
+      <InspectorShell>
         <TextOrObjectInspector item={item} />
-      </Shell>
+      </InspectorShell>
     );
   return null;
 }
@@ -53,16 +54,6 @@ function TextOrObjectInspector({ item }: { item: TextItem }) {
     <ObjectInspector item={item} index={index} object={object} />
   ) : (
     <TextInspector item={item} />
-  );
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    // Beside the slide; in a narrow workspace it floats over the right of it instead, under the
-    // header (whose button closes it).
-    <aside className="flex w-[300px] max-w-[85%] shrink-0 flex-col overflow-y-auto bg-[var(--surface-0)]/35 shadow-[-1px_0_0_var(--hairline)] @max-[720px]:absolute @max-[720px]:top-12 @max-[720px]:bottom-0 @max-[720px]:right-0 @max-[720px]:z-20 @max-[720px]:bg-[var(--surface-1)] @max-[720px]:shadow-[-1px_0_0_var(--hairline),-16px_0_40px_rgba(0,0,0,0.45)]">
-      {children}
-    </aside>
   );
 }
 

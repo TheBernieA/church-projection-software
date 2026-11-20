@@ -35,6 +35,8 @@ export const SongSchema = EntityMetaSchema.extend({
   authors: z.array(z.string().max(200)).max(20).default([]),
   copyright: z.string().max(500).optional(),
   ccliNumber: z.string().max(20).optional(),
+  /** The credits (title, authors, copyright, licence) on the first slide; unset means shown. */
+  showCredits: z.boolean().optional(),
   hymnNumber: z
     .array(z.object({ hymnalId: z.string().max(64), number: z.string().max(10) }))
     .optional(),

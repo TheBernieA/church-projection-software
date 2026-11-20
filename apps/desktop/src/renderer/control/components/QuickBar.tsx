@@ -152,7 +152,7 @@ function QuickBarBody() {
         id: 'c-song',
         group: 'commands',
         title: t('library.newSong'),
-        run: () => openDialog('song', { editingSongId: null }),
+        run: () => openDialog('newSong'),
       },
     ];
     out.push(...cmds.filter((c) => c.title.toLowerCase().includes(s.toLowerCase())));

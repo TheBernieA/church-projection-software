@@ -265,16 +265,11 @@
   },
   "song": {
     "titleNew": "New song",
-    "titleEdit": "Edit song",
     "title": "Title",
     "authors": "Authors (comma separated)",
     "copyright": "Copyright",
     "ccli": "CCLI number",
-    "lyrics": "Lyrics",
-    "lyricsHelp": "Use [Verse 1], [Chorus], [Bridge] headers. A blank line forces a new slide. Chords go in brackets inside a line, like [G]Amazing [D]grace: only the stage display shows them.",
     "arrangementHelp": "e.g. V1 C V2 C B C. Leave empty to use sections in order.",
-    "preview": "Slides",
-    "save": "Save song",
     "cancel": "Cancel",
     "delete": "Delete song",
     "duplicate": "Duplicate to edit",
@@ -291,7 +286,57 @@
     "translation": "Translated words",
     "translationLang": "Language",
     "translationHelp": "Same [Section] headings as the lyrics. Pick the translation for an item in the slide grid.",
-    "translationSection": "Translation"
+    "translationSection": "Translation",
+    "create": "Create",
+    "untitled": "Untitled song",
+    "theme": "Theme",
+    "themeDefault": "Default",
+    "playlist": "Playlist",
+    "noPlaylist": "No playlist",
+    "newHelp": "The song opens in Edit, ready for its first slide. Type on the slide, or press Reflow to paste the whole song at once.",
+    "deleted": "{{title}} deleted. Undo with {{key}}."
+  },
+  "songEditor": {
+    "slides": "Song slides",
+    "canvas": "Slide being edited",
+    "inspector": "Song and slide",
+    "songTab": "Song",
+    "slideTab": "Slide",
+    "details": "Details",
+    "key": "Key",
+    "copyrightPlaceholder": "© 2024 Publisher",
+    "showCredits": "Show credits on screen",
+    "creditsHint": "The title, authors, copyright and your CCLI licence (Settings › Songs) show small on the first slide.",
+    "editTheme": "Edit {{name}}",
+    "themeHint": "The theme sets the font, size, colours and background of every slide, so the whole song looks the same.",
+    "translationFirst": "Type the language first (es, fr…)",
+    "removeTranslation": "Remove translation",
+    "slide": "Slide",
+    "slideN": "Slide {{n}}",
+    "words": "Words",
+    "wordsPlaceholder": "Type the words for this slide…",
+    "typingHint": "Saves as you type. {{split}} breaks the slide at the caret, {{next}} starts a new slide. Esc or ⌘↩ to close.",
+    "hint": "Double-click the slide (or press Enter) to type. Right-click a slide in the list to group it.",
+    "typeNew": "Type the new slide’s words on the slide",
+    "newSlide": "New slide",
+    "newGroup": "New group",
+    "duplicate": "Duplicate",
+    "delete": "Delete slide",
+    "group": "Group",
+    "groupAs": "Name it",
+    "groupName": "Group",
+    "groupMenu": "Options for {{name}}",
+    "slideMenu": "Options for slide {{n}}",
+    "customGroup": "Other name…",
+    "groupFromHere": "Start a new group here",
+    "rename": "Rename",
+    "ungroup": "Ungroup (join the group above)",
+    "deleteGroup": "Delete group and its slides",
+    "split": "Split",
+    "long": "Long",
+    "longHint": "More than {{max}} lines: it shows as more than one slide. Split it to choose where it breaks.",
+    "empty": "This song has no words yet.",
+    "missing": "This song isn’t in the library any more."
   },
   "theme": {
     "outputs": {
@@ -640,6 +685,7 @@
       "freeze": "Freeze output",
       "panic": "Panic (clear all but background)",
       "quickBar": "Quick bar",
+      "newSong": "New song",
       "undo": "Undo",
       "redo": "Redo",
       "cheatSheet": "Show shortcuts",
@@ -894,7 +940,7 @@
       "items": {
         "song": {
           "q": "Add a new song",
-          "a": "1. Click + next to LIBRARY.\n2. Type the words. Put section headers such as [Verse 1] and [Chorus] on their own lines; a blank line starts a new slide.\n3. Click Save.\n4. Drag the song onto the playlist, or use its Add to service button."
+          "a": "1. Click + next to LIBRARY and choose New song (or press {{newSong}}).\n2. Name it, pick its theme and, if you like, the playlist it goes in. Click Create.\n3. It opens in Edit on its first slide, ready to type. Press ⇧⌘N for the next slide, or ⌥↩ to break a slide where the caret is. Double-click a slide to change its words.\n4. Right-click a slide in the list on the left and choose Group to make it the Chorus, Verse 2 and so on. Slides after it in the same group come too.\n5. It saves as you type. The Song tab on the right holds the title, authors, copyright, CCLI number and theme.\nTo paste a whole song at once, press Reflow: [Verse 1] and [Chorus] on their own lines start groups, and a blank line starts a slide."
         },
         "playlist": {
           "q": "Build a playlist for Sunday",
@@ -918,7 +964,7 @@
         },
         "arrangement": {
           "q": "Change a song’s order, key or language",
-          "a": "1. Open the song in the song editor to write arrangements (a short version, say) and translations.\n2. On the Show page, pick the arrangement in the song’s header.\n3. Transpose the chords there for the stage display, or turn on the translation to show it under each line."
+          "a": "1. Open the song in Edit. The Song tab on the right holds its arrangements (a short version, say) and a translation.\n2. On the Show page, pick the arrangement in the song’s header.\n3. Transpose the chords there for the stage display, or turn on the translation to show it under each line."
         },
         "tiles": {
           "q": "Read the slide tiles, and jump to the chorus",
@@ -1289,6 +1335,9 @@
     "hymns": "Hymns",
     "newSong": "New song",
     "newPlaylist": "New playlist",
+    "add": "Add to the library",
+    "fromTemplate": "New playlist from template",
+    "noTemplates": "No templates yet: save a playlist as a template in Playlists.",
     "items_one": "{{count}} item",
     "items_other": "{{count}} items",
     "noPlaylists": "No playlists yet",

@@ -11,10 +11,9 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { nowIso, type ServiceItem, type Song } from '@lampstand/core';
+import { type ServiceItem, type Song } from '@lampstand/core';
 import { parseSongText, songSectionsToText } from '@lampstand/lyrics';
 import { Button, Kbd, Typography, typographyClass } from '@lampstand/ui';
-import { cmd } from '../../lib/api';
 import { useInService, useSelectedItem, useSlideContext } from '../../lib/hooks';
 import {
   blockAt,
@@ -26,7 +25,7 @@ import {
   tidyReflow,
 } from '../../lib/reflow';
 import { buildItemSlides, groupColor } from '../../lib/slides';
-import { attempt, toast, updateItem, useStore } from '../../lib/store';
+import { editSong, toast, updateItem, useStore } from '../../lib/store';
 import { EmptyState } from '../EmptyState';
 import { SceneView } from '../SceneView';
 import { thumbScene } from '../../lib/slideThumbs';
@@ -356,10 +355,6 @@ function SongReflow({ song, item }: { song: Song; item: ServiceItem }) {
   const ctx = useSlideContext();
   const maxLines = ctx.settings?.lyrics.maxLinesPerSlide ?? 4;
   const initial = useMemo(() => songSectionsToText(song.sections), [song.sections]);
-  const toSong = (text: string): Song => ({
-    ...song,
-    sections: parseSongText(text, song.sections).sections,
-  });
   const build = useMemo(
     () =>
       (text: string): Built => {
@@ -385,12 +380,10 @@ function SongReflow({ song, item }: { song: Song; item: ServiceItem }) {
       song
       maxLines={maxLines}
       readOnly={song.origin === 'hymnal'}
-      onSave={async (text) => {
-        const saved = await attempt(
-          () => cmd('song.save', { entity: { ...toSong(text), updatedAt: nowIso() } }),
-          'errors.save',
-        );
-        if (saved !== undefined) toast(t('song.saved', { title: song.title }));
+      onSave={(text) => {
+        // Through the song's own autosave, so an edit still waiting from the editor goes first.
+        editSong(song.id, (s) => ({ ...s, sections: parseSongText(text, s.sections).sections }));
+        toast(t('song.saved', { title: song.title }));
       }}
     />
   );

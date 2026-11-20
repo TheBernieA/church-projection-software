@@ -1,6 +1,7 @@
 import { publishMeters } from './meters';
 import { create } from 'zustand';
-import type { BookId, ServiceItem, ServicePlan } from '@lampstand/core';
+import type { BookId, ServiceItem, ServicePlan, Song } from '@lampstand/core';
+import { DebouncedSave } from './debouncedSave';
 import { api, cmd, q } from './api';
 import i18n from '../i18n';
 import { type ControlState, type DialogName, type Toast } from '../types';
@@ -42,7 +43,6 @@ export const useStore = create<ControlState>((set) => ({
   textBarOpen: false,
   settingsPage: 'general',
   dialog: null,
-  editingSongId: null,
   playbackItemId: null,
   editingThemeId: null,
   editingThemeCopy: false,
@@ -141,7 +141,8 @@ export async function refresh(kind: RepoKind | 'all'): Promise<void> {
   const tasks: Promise<void>[] = [];
   if (all || kind === 'settings')
     tasks.push(q('settings.get').then((settings) => patch({ settings })));
-  if (all || kind === 'songs') tasks.push(q('songs.list').then((songs) => patch({ songs })));
+  if (all || kind === 'songs')
+    tasks.push(q('songs.list').then((songs) => patch({ songs: withUnsavedSongs(songs) })));
   if (all || kind === 'themes') tasks.push(q('themes.list').then((themes) => patch({ themes })));
   if (all || kind === 'media') tasks.push(q('media.list').then((media) => patch({ media })));
   if (all || kind === 'mediaPlaylists')
@@ -160,12 +161,12 @@ export async function refresh(kind: RepoKind | 'all'): Promise<void> {
       q('services.list').then(async (services) => {
         patch({ services });
         const current = get().service?.id ?? get().settings?.lastServiceId ?? services[0]?.id;
-        if (current && !pendingSave) {
+        if (current && !serviceSave.isPending()) {
           const service = await q('services.get', { id: current });
           // While that was read, another playlist may have been opened, or this one edited:
           // then what was read is stale, and showing it would undo what the user just did.
           const open = get().service?.id;
-          if ((open === undefined || open === current) && !hasPendingSave())
+          if ((open === undefined || open === current) && !serviceSave.isPending())
             patch({ service: service ?? null });
         }
       }),
@@ -174,9 +175,13 @@ export async function refresh(kind: RepoKind | 'all'): Promise<void> {
 }
 
 // ---------- Service editing with debounced autosave (§6.2: 500 ms) ----------
-let pendingSave: ReturnType<typeof setTimeout> | null = null;
-/** Read at call time (it can change while a save is awaited). */
-const hasPendingSave = (): boolean => pendingSave !== null;
+const serviceSave = new DebouncedSave(async () => {
+  const s = get().service;
+  if (!s) return;
+  await attempt(() => cmd('service.save', { entity: s }), 'errors.saveService');
+  // An edit made while this save was in flight schedules another save; stay "Saving…" for it.
+  if (!serviceSave.isPending()) patch({ saving: false });
+});
 
 /**
  * Edit the current service (autosaved, undoable). Each discrete action becomes exactly one undo
@@ -186,12 +191,11 @@ const hasPendingSave = (): boolean => pendingSave !== null;
 export function editService(mutate: (s: ServicePlan) => ServicePlan, opts: EditOptions = {}): void {
   if (!get().service) return;
   // Commit pending typing as its own step before a discrete action (reads the pre-edit state).
-  if (!opts.typing && pendingSave) void flushServiceSave();
+  if (!opts.typing && serviceSave.isPending()) void serviceSave.flush();
   const current = get().service;
   if (!current) return;
   patch({ service: mutate(current), saving: true });
-  if (pendingSave) clearTimeout(pendingSave);
-  pendingSave = setTimeout(() => void flushServiceSave(), opts.typing ? 500 : 0);
+  serviceSave.schedule(!!opts.typing);
 }
 
 /** Edit the current service's item list (autosaved, undoable). */
@@ -232,17 +236,56 @@ export function addItemToService(item: ServiceItem): void {
   patch({ adhoc: null, selectedItemId: item.id });
 }
 
-export async function flushServiceSave(): Promise<void> {
-  // Nothing pending → nothing to save. Saving anyway would push a no-op step onto the undo
-  // history, so Undo would "undo" that instead of the operator's real change.
-  if (!pendingSave) return;
-  clearTimeout(pendingSave);
-  pendingSave = null;
-  const s = get().service;
-  if (!s) return;
-  await attempt(() => cmd('service.save', { entity: s }), 'errors.saveService');
-  // An edit made while this save was in flight schedules another save; stay "Saving…" for it.
-  if (!hasPendingSave()) patch({ saving: false });
+/** Save the service now if an edit is waiting (nothing waiting: no save, no empty undo step). */
+export function flushServiceSave(): Promise<void> {
+  return serviceSave.flush();
+}
+
+// ---------- Song editing, autosaved the same way ----------
+/** Each edited song's save (kept per song, so two songs' typing never merge into one save). */
+const songSaves = new Map<string, DebouncedSave>();
+
+function songSave(id: string): DebouncedSave {
+  let save = songSaves.get(id);
+  if (!save) {
+    save = new DebouncedSave(async () => {
+      const song = get().songs.find((s) => s.id === id);
+      if (song) await attempt(() => cmd('song.save', { entity: song }), 'errors.save');
+    });
+    songSaves.set(id, save);
+  }
+  return save;
+}
+
+/** The library as read, but with any song whose edits aren't saved yet as it is here. */
+function withUnsavedSongs(songs: Song[]): Song[] {
+  const local = get().songs;
+  return songs.map((s) =>
+    songSaves.get(s.id)?.isPending() ? (local.find((l) => l.id === s.id) ?? s) : s,
+  );
+}
+
+/**
+ * Edit a library song (shown at once, autosaved, undoable). As with the service, typing is
+ * saved after a pause and each other change is its own undo step.
+ */
+export function editSong(id: string, mutate: (s: Song) => Song, opts: EditOptions = {}): void {
+  const save = songSave(id);
+  if (!opts.typing && save.isPending()) void save.flush();
+  const current = get().songs.find((s) => s.id === id);
+  if (!current || current.origin === 'hymnal') return;
+  patch({ songs: get().songs.map((s) => (s === current ? mutate(s) : s)) });
+  save.schedule(!!opts.typing);
+}
+
+/** Save every song edit still waiting. */
+export async function flushSongSaves(): Promise<void> {
+  await Promise.all([...songSaves.values()].map((s) => s.flush()));
+}
+
+/** Save everything still waiting (service and songs), e.g. before an undo. */
+function flushAll(): Promise<unknown> {
+  return Promise.all([serviceSave.flush(), flushSongSaves()]);
 }
 
 export async function openService(id: string): Promise<void> {
@@ -258,12 +301,12 @@ export async function openService(id: string): Promise<void> {
 }
 
 export async function undo(): Promise<void> {
-  await flushServiceSave();
+  await flushAll();
   const r = await api.undo();
   if (!r.ok) toast(r.error.message, 'error');
 }
 export async function redo(): Promise<void> {
-  await flushServiceSave();
+  await flushAll();
   const r = await api.redo();
   if (!r.ok) toast(r.error.message, 'error');
 }

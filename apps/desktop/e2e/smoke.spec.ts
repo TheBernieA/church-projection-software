@@ -299,20 +299,48 @@ test('quick bar: jn 3 16 → preview → go live → output shows the verse', as
   await previewFirst(false);
 });
 
-test('create a song in the editor → add to service → go live → output shows the lyric', async () => {
-  await control
-    .getByRole('region', { name: 'Library' })
-    .getByRole('button', { name: 'Songs', exact: true })
-    .click();
-  await control.getByRole('button', { name: 'New song' }).click();
-  await control.getByLabel('Title').fill('Test Song');
-  await control
-    .getByLabel('Lyrics')
-    .fill('[Verse 1]\nHallelujah test line\n\n[Chorus]\nChorus test line');
+test('new song: name it, type on its slides, group them, add to service → output shows it', async () => {
+  const library = control.getByRole('region', { name: 'Library' });
+  await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  await library.getByRole('button', { name: 'Add to the library' }).click();
+  await control.getByRole('menuitem', { name: /New song/ }).click();
+  const dialog = control.getByRole('dialog', { name: 'New song' });
+  await dialog.getByLabel('Title').fill('Test Song');
+  await expect(dialog.getByRole('combobox', { name: 'Playlist' })).toHaveText('No playlist');
+  await dialog.getByRole('button', { name: 'Create' }).click();
+  // It opens in Edit on its first (empty) slide, ready to type.
+  const words = control.getByRole('textbox', { name: 'Words', exact: true });
+  await words.fill('Hallelujah test line');
+  // ⇧⌘N: a new slide after it, typed straight away.
+  await words.press('ControlOrMeta+Shift+N');
+  await expect(words).toHaveValue('');
+  // Key by key: the slide joins the song on the first key, and typing carries on unbroken.
+  await words.pressSequentially('Chorus test line');
+  await expect(words).toHaveValue('Chorus test line');
+  await words.press('Escape');
+  await expect(words).toHaveCount(0);
+  const list = control.getByRole('navigation', { name: 'Song slides' });
+  await expect(list.getByRole('button', { name: /^Slide \d of 2$/ })).toHaveCount(2);
+  // Right-click the second slide: group it as the chorus.
+  await list.getByRole('button', { name: 'Slide 2 of 2' }).click({ button: 'right' });
+  await control.getByRole('menuitem', { name: 'Group' }).click();
+  await control.getByRole('menuitem', { name: 'Chorus', exact: true }).click();
+  await expect(list.getByText('Chorus', { exact: true })).toBeVisible();
   await control.screenshot({ path: 'test-results/05-song-editor.png' });
-  await control.getByRole('button', { name: 'Save song' }).click();
-  const row = control.getByRole('button', { name: /Test Song/ });
-  await row.dblclick(); // double-click adds to service
+  // ⌥↩ breaks a slide at the caret; a slide emptied when typing stops goes.
+  await control.getByTestId('song-canvas').dblclick();
+  await words.press('End');
+  await words.pressSequentially(' extra');
+  for (let i = 0; i < 6; i++) await words.press('ArrowLeft');
+  await words.press('Alt+Enter');
+  await expect(words).toHaveValue('extra');
+  await expect(list.getByRole('button', { name: /^Slide \d of 3$/ })).toHaveCount(3);
+  await words.fill('');
+  await words.press('Escape');
+  await expect(list.getByRole('button', { name: /^Slide \d of 2$/ })).toHaveCount(2);
+  // Into the service from the library (double-click), then show it.
+  await mode('Show');
+  await library.getByRole('button', { name: /Test Song/ }).dblclick();
   await expect(control.locator('ol').getByText('Test Song').first()).toBeVisible();
   await control
     .getByRole('button', { name: /Verse 1/ })
@@ -330,19 +358,27 @@ test('create a song in the editor → add to service → go live → output show
 
 test('songs: build arrangements and a translation, then pick them per item', async () => {
   const out = await outputPage();
-  await mode('Edit'); // Test Song (just added to the service) opens in the inline editor
+  await mode('Edit'); // Test Song (just added to the service) opens in the song editor
   // Chords go in brackets inside lines; only the stage display shows them.
-  await control
-    .getByLabel('Lyrics', { exact: true })
-    .fill('[Verse 1]\n[G]Hallelujah test line\n\n[Chorus]\n[C]Chorus test line');
-  await control.getByRole('button', { name: '+ Add arrangement' }).click();
+  const canvas = control.getByTestId('song-canvas');
+  const words = control.getByRole('textbox', { name: 'Words', exact: true });
+  const list = control.getByRole('navigation', { name: 'Song slides' });
+  await list.getByRole('button', { name: 'Slide 1 of 2' }).click();
+  await canvas.dblclick();
+  await words.fill('[G]Hallelujah test line');
+  await words.press('Escape');
+  await list.getByRole('button', { name: 'Slide 2 of 2' }).click();
+  await canvas.dblclick();
+  await words.fill('[C]Chorus test line');
+  await words.press('Escape');
+  await control.getByRole('button', { name: 'Add arrangement' }).click();
+  await expect(control.getByLabel('Arrangement name')).toHaveCount(2); // the new row is there
   await control.getByLabel('Arrangement name').last().fill('Short');
   await control.getByLabel('Order for Short').fill('C V1');
   await control.getByLabel('Language', { exact: true }).fill('es');
   await control
     .getByLabel('Translated words')
     .fill('[Verse 1]\nLinea de prueba\n\n[Chorus]\nCoro de prueba');
-  await control.getByRole('button', { name: 'Save song' }).click();
   await mode('Show');
   const slides = control.getByRole('list', { name: 'Slide list' });
   await control.getByRole('combobox', { name: 'Arrangement' }).click();
@@ -375,7 +411,7 @@ test('songs: build arrangements and a translation, then pick them per item', asy
   await control.getByRole('combobox', { name: 'Translation' }).click();
   await control.getByRole('option', { name: 'No translation' }).click();
   await control.getByRole('combobox', { name: 'Arrangement' }).click();
-  await control.getByRole('option').first().click();
+  await control.getByRole('option', { name: 'Default' }).click();
   await expect(slides.locator('li').first()).toContainText('Verse 1');
 });
 

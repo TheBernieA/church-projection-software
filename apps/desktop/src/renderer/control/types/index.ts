@@ -84,7 +84,7 @@ export type DialogName =
   | 'outputs'
   | 'settings'
   | 'shortcuts'
-  | 'song'
+  | 'newSong'
   | 'theme'
   | 'services'
   | 'perf'
@@ -157,7 +157,6 @@ export interface ControlState {
   /** Open page of the Settings window (remembered between openings). */
   settingsPage: SettingsPageId;
   dialog: DialogName;
-  editingSongId: string | null;
   /** The media cue whose playback options are open. */
   playbackItemId: string | null;
   editingThemeId: string | null;
@@ -262,6 +261,7 @@ export type ShortcutAction =
   | 'freeze'
   | 'panic'
   | 'quickBar'
+  | 'newSong'
   | 'undo'
   | 'redo'
   | 'cheatSheet'

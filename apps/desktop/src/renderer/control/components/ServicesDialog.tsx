@@ -1,10 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { SoonList } from './Soon';
 import { Button, Typography } from '@lampstand/ui';
-import { q } from '../lib/api';
 import { closeDialog, editService, openService, useStore } from '../lib/store';
 import { Dialog } from './Dialog';
-import { createService } from '../lib/services';
+import { createService, serviceFromTemplate } from '../lib/services';
 
 /** Open/create services and templates ("Sunday morning"). */
 export function ServicesDialog() {
@@ -76,12 +75,7 @@ export function ServicesDialog() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() =>
-                        void q('services.get', { id: s.id }).then(async (plan) => {
-                          if (plan) await createService(plan);
-                          close();
-                        })
-                      }
+                      onClick={() => void serviceFromTemplate(s.id).then(close)}
                     >
                       {t('service.new')}
                     </Button>

@@ -88,6 +88,7 @@ const KEYS: ShortcutAction[] = [
   'next',
   'previous',
   'quickBar',
+  'newSong',
   'clearContent',
   'clearMedia',
   'clearBackground',

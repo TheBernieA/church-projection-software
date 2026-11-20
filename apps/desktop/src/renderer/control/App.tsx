@@ -30,7 +30,7 @@ const ServicesDialog = lazyNamed(() => import('./components/ServicesDialog'), 'S
 const PlaybackDialog = lazyNamed(() => import('./components/PlaybackDialog'), 'PlaybackDialog');
 const SettingsDialog = lazyNamed(() => import('./components/SettingsDialog'), 'SettingsDialog');
 const ShortcutsDialog = lazyNamed(() => import('./components/ShortcutsDialog'), 'ShortcutsDialog');
-const SongEditor = lazyNamed(() => import('./components/SongEditor'), 'SongEditor');
+const NewSongDialog = lazyNamed(() => import('./components/song/NewSongDialog'), 'NewSongDialog');
 const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEditor');
 
 /**
@@ -127,7 +127,7 @@ export function App() {
       )}
       <QuickBar />
       <Suspense fallback={null}>
-        {dialog === 'song' && <SongEditor />}
+        {dialog === 'newSong' && <NewSongDialog />}
         {dialog === 'theme' && <ThemeEditor />}
         {dialog === 'outputs' && <OutputsDialog />}
         {dialog === 'settings' && <SettingsDialog />}

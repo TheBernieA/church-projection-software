@@ -46,6 +46,7 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, string> = {
   freeze: 'Shift+F',
   panic: 'Escape',
   quickBar: 'Mod+K',
+  newSong: 'Mod+N',
   undo: 'Mod+Z',
   redo: 'Mod+Shift+Z',
   cheatSheet: '?',

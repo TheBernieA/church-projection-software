@@ -19,7 +19,7 @@ another screen as **Stage display**.
 - [ ] F1 clears text and keeps the background. B → black, B again → back. L → logo. Esc → panic (background stays).
 - [ ] Stage display shows the current and next slide, a clock, the elapsed time, notes and a booth message with flash.
 - [ ] Ticker "Parent of child #42…" scrolls on the projector; Hide removes it.
-- [ ] New song: type sections in the editor; the slide preview updates as you type; arrangement "V1 C V2 C" is followed.
+- [ ] New song (Library + › New song, ⌘N): name, theme, playlist → it opens in Edit; type on the slide, ⇧⌘N for the next, right-click › Group to name groups; arrangement "V1 C V2 C" is followed.
 - [ ] Edit, delete, then ⌘/Ctrl+Z restores the song; ⌘/Ctrl+Shift+Z redoes.
 - [ ] Media → Add media (image + MP4). Thumbnails appear. The video plays on the projector with sound from the main
       output only.

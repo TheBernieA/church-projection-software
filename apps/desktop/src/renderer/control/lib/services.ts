@@ -51,10 +51,20 @@ export async function deleteService(id: string, name: string): Promise<void> {
   });
 }
 
+/** A saved playlist, read in full (anything unsaved is saved first). */
+async function planOf(id: string): Promise<ServicePlan | null> {
+  await flushServiceSave();
+  return (await attempt(() => q('services.get', { id }))) ?? null;
+}
+
 /** A copy of a playlist, opened. */
 export async function duplicateService(id: string): Promise<void> {
-  await flushServiceSave();
-  const plan = await attempt(() => q('services.get', { id }));
-  if (!plan) return;
-  await createService({ ...plan, name: i18n.t('sidebar.copyOf', { name: plan.name }) });
+  const plan = await planOf(id);
+  if (plan) await createService({ ...plan, name: i18n.t('sidebar.copyOf', { name: plan.name }) });
+}
+
+/** A new playlist from a template, opened. */
+export async function serviceFromTemplate(id: string): Promise<void> {
+  const plan = await planOf(id);
+  if (plan) await createService(plan);
 }
