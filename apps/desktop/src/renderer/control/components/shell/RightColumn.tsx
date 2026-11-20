@@ -51,6 +51,7 @@ import {
 import { lowerThirdThemes } from '../../lib/slides';
 import { LT_ALIGN_KEY, LT_THEME_KEY, type Align } from '../../lib/screenScenes';
 import { remember, remembered } from '../../lib/prefs';
+import { LiveStepper } from './LiveStepper';
 import { ScreenScenes } from './ScreenScenes';
 import {
   useAudienceScene,
@@ -525,6 +526,7 @@ export function RightColumn() {
                   </>
                 )}
               </div>
+              <LiveStepper />
               {!clickGoesLive && (
                 <>
                   <MonitorCard

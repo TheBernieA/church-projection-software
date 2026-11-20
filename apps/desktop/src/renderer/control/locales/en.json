@@ -242,7 +242,14 @@
     "takeover": "Send to stream",
     "takeoverOn": "On stream · Undo",
     "takeoverHelp": "Put what the screens show on the stream (it shows something else now). Click again to put the stream back as it was.",
-    "takeoverOnHelp": "The stream shows the screens. Click to put it back as it was."
+    "takeoverOnHelp": "The stream shows the screens. Click to put it back as it was.",
+    "stepper": "Previous and next slide",
+    "prevSlide": "Previous slide",
+    "nextSlideStep": "Next slide",
+    "showSlide": "Show {{label}}",
+    "position": "{{n}} / {{total}}",
+    "upNext": "Next: {{label}}",
+    "before": "Before: {{label}}"
   },
   "quick": {
     "placeholder": "Type a verse (jn 3 16), hymn number (#23), song title or words…",
@@ -888,7 +895,7 @@
       },
       "output": {
         "title": "Output",
-        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third. While a video plays behind the words, the speaker on the monitor turns its sound on or off."
+        "body": "The monitor shows exactly what the room sees; Room / Next above it switches to the next slide (only on the monitor, never the screens). Under it, ◀ and ▶ step to the previous or next slide, with both shown small beside them: hover one to read it large, click it to show it. The strip beside it clears one layer at a time (messages, props, slide, media, background); the red power button turns everything off. Below: Scenes for the screens with Black (⇧B), Logo (⇧L) and Freeze (⇧F) on the same row, then the lower third. While a video plays behind the words, the speaker on the monitor turns its sound on or off."
       },
       "controls": {
         "title": "Show controls",
@@ -1068,6 +1075,10 @@
         "colours": {
           "q": "Pick a colour, or save your own",
           "a": "1. Click any colour swatch (the text colour in the Text tab, a shape’s fill, a theme’s colours).\n2. Pick from the palette: greys along the top, strong colours under them, then lighter and darker shades.\n3. For any other colour, click + under Custom: choose it in the system picker, and it’s saved there for next time. The dropper picks a colour from anywhere on the screen.\nYour custom colours are shared by every colour swatch in Lampstand and kept in your backups. Reset (where it shows) goes back to the theme’s colour."
+        },
+        "step": {
+          "q": "Step through the slides from the monitor",
+          "a": "1. Put a slide from a song, verse or slide set on the screens.\n2. Under the live monitor, click ▶ for the next slide or ◀ for the previous one (or press {{next}} / {{previous}}).\n3. The slides either side show small next to the buttons. Hover one to see it large enough to read; click it to put it straight on the screens.\nThe stream shows the same as the screens, so it changes with them. If the stream is showing something else, Send to stream on the monitor puts the screens on it."
         }
       }
     },

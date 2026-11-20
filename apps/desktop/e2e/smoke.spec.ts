@@ -373,6 +373,20 @@ test('new song: name it, type on its slides, group them, add to service → outp
   await expect(out.locator('.ls-text').last()).toContainText('Chorus test line', {
     timeout: 10_000,
   });
+  // Under the monitor: ◀ / ▶ step the screens, with the slides either side small beside them;
+  // hovering one shows it large enough to read.
+  const stepper = control.getByTestId('live-stepper');
+  await expect(stepper).toContainText('2 / 2');
+  await expect(stepper.getByRole('button', { name: /^Next slide/ })).toBeDisabled();
+  await stepper.getByRole('button', { name: /^Show / }).hover();
+  await expect(control.getByTestId('live-stepper-zoom')).toContainText('Before: ');
+  await control.waitForTimeout(300);
+  await control.screenshot({ path: 'test-results/03b-live-stepper.png' });
+  await stepper.getByRole('button', { name: /^Previous slide/ }).click();
+  await expect(out.locator('.ls-text').last()).toContainText('Hallelujah test line');
+  await expect(stepper).toContainText('1 / 2');
+  await stepper.getByRole('button', { name: /^Show / }).click(); // the next one, small
+  await expect(out.locator('.ls-text').last()).toContainText('Chorus test line');
 });
 
 test('songs: build arrangements and a translation, then pick them per item', async () => {

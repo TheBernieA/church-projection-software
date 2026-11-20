@@ -159,6 +159,7 @@ const HOWTO = [
   'playlist',
   'verse',
   'preview',
+  'step',
   'clear',
   'backgrounds',
   'arrangement',
