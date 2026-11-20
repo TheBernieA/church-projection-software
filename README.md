@@ -34,9 +34,10 @@ notarizing and building on GitHub are covered in [docs/packaging.md](docs/packag
    ```sh
    corepack enable
    ```
-3. Get the project (it's a private repository, so sign in to GitHub when asked):
+3. Get the project (it's a private repository, so sign in to GitHub when asked), on the branch
+   you want to build (`git clone` alone gives the default branch, `develop`):
    ```sh
-   git clone https://github.com/TheBernieA/church-projection-software.git
+   git clone --branch redesign/show-workspace https://github.com/TheBernieA/church-projection-software.git
    cd church-projection-software
    ```
 
@@ -104,9 +105,11 @@ Each takes about 1–3 minutes. The installers appear in `apps/desktop/release/<
 4. Get the project:
    ```powershell
    cd $HOME\Documents
-   git clone https://github.com/TheBernieA/church-projection-software.git
+   git clone --branch redesign/show-workspace https://github.com/TheBernieA/church-projection-software.git
    cd church-projection-software
    ```
+   `--branch` picks the branch to build; without it you get the default branch (`develop`),
+   which may not have the latest work. Already cloned? `git checkout <branch>` then `git pull`.
    Or copy the project folder over from a Mac (leave out `node_modules` and
    `apps\desktop\release`).
 
@@ -119,7 +122,11 @@ pnpm install
 #### 3. ffmpeg (streaming and recording) comes along
 
 Nothing to do: `pnpm install` downloads the Windows ffmpeg, and `pnpm dist:win` puts it inside
-the installer.
+the installer. You'll see `ffmpeg: packaged from ffmpeg-static` as the build starts; if the
+download is missing, the build stops and says to run `pnpm install` again.
+
+To check an installed copy has it, this file should exist:
+`C:\Users\<you>\AppData\Local\Programs\Lampstand\resources\resources\ffmpeg\ffmpeg.exe`.
 
 #### 4. Build
 

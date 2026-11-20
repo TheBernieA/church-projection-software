@@ -40,7 +40,15 @@ if (here === os && arch === process.arch) {
     console.log(`ffmpeg: packaged from ffmpeg-static → resources/ffmpeg/${os}-${arch}/`);
     process.exit(0);
   }
-  console.warn('ffmpeg: ffmpeg-static has no binary here (run `pnpm install`).');
+  // Building for this very computer, ffmpeg should always be there: stop, rather than make an
+  // installer that can't stream or record. (A copy placed in the folder by hand still counts.)
+  if (!existsSync(target)) {
+    console.error(
+      '\n✖ ffmpeg: the ffmpeg-static download is missing, so this installer could not stream or\n' +
+        '  record. Run `pnpm install` again (it downloads ffmpeg), then build again.\n',
+    );
+    process.exit(1);
+  }
 }
 
 if (existsSync(target)) {
