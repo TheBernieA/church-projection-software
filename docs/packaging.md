@@ -45,7 +45,15 @@ warning. Never commit these values; keep them in your shell or in CI secrets.
 
 ## Windows
 
-On a Windows PC (Node 22 and pnpm installed):
+**From your Mac:** `pnpm-workspace.yaml` also installs the Windows native libraries, so a Mac
+can build the Windows installer too. Its NSIS tool is an Intel program, so an Apple-silicon Mac
+needs Rosetta once (`softwareupdate --install-rosetta --agree-to-license`), then:
+
+```sh
+pnpm dist:win
+```
+
+**Or on a Windows PC** (Node 22 and pnpm installed):
 
 ```sh
 pnpm install

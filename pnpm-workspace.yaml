@@ -9,3 +9,7 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - prettier@3.10.1
   - electron@45.3.1
+# Also install the Windows (x64) native binaries, so the Windows installer can be built on a Mac.
+supportedArchitectures:
+  os: [current, win32]
+  cpu: [current, x64]
