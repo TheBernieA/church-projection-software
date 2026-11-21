@@ -992,14 +992,20 @@ test('songs: import song files (picked or dropped), add to a chosen playlist, de
   );
   const chordpro = join(dir, 'here.cho');
   writeFileSync(chordpro, '{title: Here I Am Test}\n{c: Verse 1}\n[D]Here I am to [A]worship\n');
+  // OpenLyrics with the words in Twi and English: the English comes in as the translation.
+  const bilingual = join(dir, 'Oguamba.xml');
+  writeFileSync(
+    bilingual,
+    '<?xml version="1.0" encoding="UTF-8"?><song xmlns="http://openlyrics.info/namespace/2009/song" version="0.9"><properties><titles><title>Oguamba Test</title></titles></properties><lyrics><verse name="v1" lang="ak"><lines>Oguamba s\u025b ayeyi</lines></verse><verse name="v1" lang="en"><lines>The Lamb of God is worthy of praise</lines></verse></lyrics></song>',
+  );
   await app.evaluate(
     ({ dialog }, files) => {
       dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: files });
     },
-    [songselect, chordpro],
+    [songselect, chordpro, bilingual],
   );
   await library.getByRole('button', { name: 'Import file' }).click();
-  await expect(control.getByText('Imported 2 songs')).toBeVisible();
+  await expect(control.getByText('Imported 3 songs')).toBeVisible();
   const row = (title: string) => library.getByRole('button', { name: title, exact: false });
   await expect(row('My Chains Are Gone Test')).toBeVisible();
   await expect(row('Here I Am Test')).toBeVisible();
@@ -1011,6 +1017,11 @@ test('songs: import song files (picked or dropped), add to a chosen playlist, de
   expect(chains?.ccliNumber).toBe('4768151');
   expect(chains?.authors).toEqual(['Chris Tomlin', 'John Newton']);
   const here = songs.value.find((x) => x.title === 'Here I Am Test');
+  // The translation shows under the words on the song's slides, without choosing it.
+  await row('Oguamba Test').click();
+  const slidesPane = control.getByRole('region', { name: 'Slides' });
+  await expect(slidesPane.getByText('Oguamba s\u025b ayeyi').first()).toBeVisible();
+  await expect(slidesPane.getByText('The Lamb of God is worthy of praise').first()).toBeVisible();
 
   // A second playlist (not the open one) to add to.
   const second = await control.evaluate(async () => {
