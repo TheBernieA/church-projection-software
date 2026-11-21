@@ -38,8 +38,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
 
-      # ffmpeg (livestream and recording) comes with `pnpm install` (ffmpeg-static) and the dist
-      # scripts copy it into the app: each runner gets its own platform's.
+      # ffmpeg (livestream and recording): on Windows it comes with `pnpm install` (ffmpeg-static);
+      # on a Mac the dist scripts build Lampstand's own (secure streaming), which needs these
+      # tools, and is cached between runs.
+      - name: Tools for the Mac ffmpeg build
+        if: matrix.target == 'mac'
+        run: brew install nasm pkgconf
+      - name: Cache the Mac ffmpeg build
+        if: matrix.target == 'mac'
+        uses: actions/cache@v4
+        with:
+          path: resources/ffmpeg/mac-*
+          key: ffmpeg-${{ matrix.name }}-${{ hashFiles('apps/desktop/scripts/buildFfmpegMac.sh') }}
       - name: Build (Mac, signed and notarized)
         if: matrix.target == 'mac' && env.HAS_MAC_SIGNING == 'true'
         run: pnpm dist:mac

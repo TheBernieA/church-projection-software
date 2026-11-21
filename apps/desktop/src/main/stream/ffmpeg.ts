@@ -1,13 +1,31 @@
 import { execFile, execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { delimiter, join } from 'node:path';
 import { app } from 'electron';
+import type { TlsOptions } from './ffmpegArgs';
 
 const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
 
-/** Whether each ffmpeg checked can stream securely (asked once per file). */
-const tlsChecked = new Map<string, boolean>();
+/** Each ffmpeg's build configuration (asked once per file; empty when it can't be asked). */
+const confs = new Map<string, string>();
+
+function buildConf(ffmpeg: string): string {
+  let conf = confs.get(ffmpeg);
+  if (conf === undefined) {
+    try {
+      conf = execFileSync(ffmpeg, ['-hide_banner', '-buildconf'], {
+        encoding: 'utf8',
+        timeout: 5_000,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    } catch {
+      conf = '';
+    }
+    confs.set(ffmpeg, conf);
+  }
+  return conf;
+}
 
 /**
  * Can this ffmpeg stream over a secure connection (RTMPS: YouTube's and Facebook's usual
@@ -17,21 +35,43 @@ const tlsChecked = new Map<string, boolean>();
  */
 export function hasGoodTls(ffmpeg: string): boolean {
   if (process.platform !== 'darwin') return true;
-  const known = tlsChecked.get(ffmpeg);
-  if (known !== undefined) return known;
-  let good = false;
+  return /--enable-(openssl|gnutls|mbedtls|libtls)\b/.test(buildConf(ffmpeg));
+}
+
+/** The Mac's trusted root certificates, written out for ffmpeg (once per run). */
+let roots: string | null | undefined;
+
+function macRoots(): string | null {
+  if (roots !== undefined) return roots;
+  roots = null;
   try {
-    const conf = execFileSync(ffmpeg, ['-hide_banner', '-buildconf'], {
-      encoding: 'utf8',
-      timeout: 5_000,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    good = /--enable-(openssl|gnutls|mbedtls|libtls)\b/.test(conf);
+    const pem = execFileSync(
+      '/usr/bin/security',
+      ['find-certificate', '-a', '-p', '/System/Library/Keychains/SystemRootCertificates.keychain'],
+      { encoding: 'utf8', timeout: 5_000, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 8 << 20 },
+    );
+    if (pem.includes('BEGIN CERTIFICATE')) {
+      const file = join(app.getPath('userData'), 'stream-roots.pem');
+      writeFileSync(file, pem);
+      roots = file;
+    }
   } catch {
-    /* can't tell: treat as the weaker kind */
+    /* can't read them: stream without checking (see tlsOptionsFor) */
   }
-  tlsChecked.set(ffmpeg, good);
-  return good;
+  return roots;
+}
+
+/**
+ * How this ffmpeg checks a secure server's certificate. Lampstand's Mac build uses mbedTLS,
+ * which has no trust store of its own: it's given the Mac's trusted roots (kept current by
+ * macOS updates). If those can't be read, it streams without checking, as ffmpeg used to by
+ * default, rather than not at all. Other builds use their TLS library's own trust store.
+ */
+export function tlsOptionsFor(ffmpeg: string): TlsOptions | undefined {
+  if (process.platform !== 'darwin' || !/--enable-mbedtls\b/.test(buildConf(ffmpeg)))
+    return undefined;
+  const caFile = macRoots();
+  return caFile ? { caFile } : { verify: false };
 }
 
 /**

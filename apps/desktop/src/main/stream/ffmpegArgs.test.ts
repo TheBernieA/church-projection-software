@@ -55,6 +55,24 @@ describe('stream encoder arguments', () => {
     );
   });
 
+  it('secure destinations get the certificate options; plain ones and direct links don’t', () => {
+    const out =
+      buildArgs({
+        ...base,
+        streams: ['rtmps://b:443/rtmp/k2', 'rtmp://a/live2/k1', 'srt://h:9000'],
+        tls: { caFile: '/Users/x/App Support/a:b].pem' },
+      }).at(-1) ?? '';
+    const [secure, plain, direct] = out.split(/(?<!\\)\|/);
+    // The path's ":" and "]" survive both tee unescapes: \\: and \\\]
+    expect(secure).toContain(
+      ':tcp_nodelay=1:ca_file=/Users/x/App Support/a\\\\:b\\\\\\].pem]rtmps://b',
+    );
+    expect(plain).not.toContain('ca_file');
+    expect(direct).not.toContain('ca_file');
+    const off = buildArgs({ ...base, streams: ['rtmps://b/k'], tls: { verify: false } }).at(-1);
+    expect(off).toContain(':tls_verify=0]rtmps://b/k');
+  });
+
   it('uses Apple’s AAC encoder when ffmpeg has it', () => {
     expect(buildArgs({ ...base, audioEncoder: 'aac_at' }).join(' ')).toContain(
       '-c:a aac_at -aac_at_mode cbr',
@@ -103,6 +121,7 @@ describe('stream encoder arguments', () => {
 
   it('escapes tee specials', () => {
     expect(teeEscape('a|b[c]\\d')).toBe('a\\|b\\[c\\]\\\\d');
+    expect(teeEscape("it's")).toBe("it\\'s");
   });
 });
 

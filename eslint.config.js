@@ -15,6 +15,7 @@ export default tseslint.config(
       '**/test-results/**',
       'scripts/**',
       'apps/desktop/scripts/**',
+      'resources/ffmpeg/**',
       '**/*.worklet.js',
       '**/*.config.*',
       'eslint.config.js',

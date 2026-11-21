@@ -7,18 +7,28 @@ a Mac (or let GitHub do all three, below).
 
 ## Before the first build
 
-1. **ffmpeg** (livestream and recording) is automatic: `pnpm install` downloads it for the
-   computer you're on (`ffmpeg-static`), and every `dist:*` script copies it into
-   `resources/ffmpeg/<os>-<arch>/` first (`apps/desktop/scripts/prepareFfmpeg.mjs`). Building for
-   another platform (the Windows installer on a Mac, the Intel one on Apple silicon), put that
-   platform's binary and `LICENSE.txt` there by hand; otherwise the build warns and that
-   installer can't stream or record. These ffmpeg builds are GPL: shipping them means offering
-   their source (a link to the ffmpeg source for that version is enough).
-   **Mac:** the `ffmpeg-static` Mac builds have no OpenSSL, so they can't stream securely
-   (RTMPS stalls after a few frames). The app then uses YouTube's standard RTMP address on its
-   own, but Facebook (secure only) won't work, and the build warns. For a full Mac build, put an
-   ffmpeg built with OpenSSL (and its LICENSE.txt) in `resources/ffmpeg/mac-arm64/` (or
-   `mac-x64/`): the build keeps it. On a Mac with Homebrew's ffmpeg, the app prefers that one.
+1. **ffmpeg** (livestream and recording) is automatic: every `dist:*` script puts it in
+   `resources/ffmpeg/<os>-<arch>/` first (`apps/desktop/scripts/prepareFfmpeg.mjs`).
+   - **Mac:** Lampstand's own build (`apps/desktop/scripts/buildFfmpegMac.sh`), made the first
+     time and kept: ffmpeg 9 with mbedTLS (secure streaming), VideoToolbox and AudioToolbox (GPU
+     encoding) and libx264 (the fallback), from pinned, checksum-verified sources, statically
+     linked so it runs on any Mac from macOS 12. Either kind of Mac builds both kinds (the
+     other is cross-compiled). Needs `xcode-select --install` and `brew install nasm pkgconf`;
+     without them the build falls back on `ffmpeg-static`, whose Mac builds can't stream
+     securely (RTMPS stalls after a few frames: YouTube then uses its standard RTMP address,
+     and Facebook, secure only, won't work), with a warning. mbedTLS has no trust store of its
+     own: at stream time the app gives ffmpeg the Mac's trusted root certificates
+     (`tlsOptionsFor` in `main/stream/ffmpeg.ts`), so servers are still verified.
+   - **Windows:** the `ffmpeg-static` download from `pnpm install`. Building the Windows
+     installer on a Mac, put `ffmpeg.exe` and its `LICENSE.txt` in `resources/ffmpeg/win-x64/`
+     by hand; otherwise the build warns and that installer can't stream or record.
+
+   These ffmpeg builds are GPL v3: shipping them means offering their source. The Mac build's
+   `SOURCES.txt` (packaged next to it) lists the exact source archives and checksums.
+   *Why build it rather than download one:* the ready-made static Mac builds either lack a TLS
+   library (`ffmpeg-static`) or would be unpinned third-party binaries fetched on every build;
+   building gives a known feature set, a known licence, and reproducible inputs, in about two
+   minutes per Mac kind.
 2. **Icon**: put a 1024×1024 PNG at `apps/desktop/build/icon.png`. electron-builder makes the
    Mac and Windows icons from it. Without it the installers use Electron's default icon.
 3. Set `version` in `apps/desktop/package.json`: it names the installers

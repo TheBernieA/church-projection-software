@@ -25,7 +25,14 @@ import {
 } from '@lampstand/ipc-contract';
 import { isTrustedFrameUrl } from '../ipc/router';
 import type { SecretStore } from '../secrets/secretStore';
-import { findFfmpeg, hasGoodTls, probeAacEncoder, probeEncoders, probeProtocols } from './ffmpeg';
+import {
+  findFfmpeg,
+  hasGoodTls,
+  probeAacEncoder,
+  probeEncoders,
+  probeProtocols,
+  tlsOptionsFor,
+} from './ffmpeg';
 import {
   buildArgs,
   destinationFailure,
@@ -921,6 +928,7 @@ export class StreamController {
     }
     const { width, height } = sizeOf(profile);
     this.pipeline = gpu ? 'gpu' : 'cpu';
+    const tls = tlsOptionsFor(ffmpeg);
     const args = buildArgs({
       input: gpu ? 'flv' : 'raw',
       width,
@@ -933,6 +941,7 @@ export class StreamController {
       encoder,
       streams: urls,
       record,
+      tls,
     });
     this.slaves = [...streamIds, ...(record ? ['record'] : [])];
     this.ffmpegDropped = 0;
@@ -977,6 +986,7 @@ export class StreamController {
       // Which ffmpeg, and whether it can stream securely (a Mac build without OpenSSL can't).
       ffmpeg,
       secure: hasGoodTls(ffmpeg),
+      certificates: tls ? (tls.caFile ? 'mac roots' : 'unchecked') : 'default',
     });
     this.setStatus(
       {

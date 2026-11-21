@@ -181,8 +181,8 @@ export function pickEncoder(available: readonly string[], wanted: string = 'auto
   return ENCODER_PREFERENCE.find((e) => available.includes(e)) ?? 'libx264';
 }
 
-/** Escape a tee slave's target: `\`, `|`, `[` and `]` are special to the tee muxer. */
-export const teeEscape = (s: string): string => s.replace(/[\\|[\]]/g, (c) => `\\${c}`);
+/** Escape a tee slave's target: `\`, `|`, `[`, `]` and `'` are special to the tee muxer. */
+export const teeEscape = (s: string): string => s.replace(/[\\|[\]']/g, (c) => `\\${c}`);
 
 export interface EncodeOptions {
   width: number;
@@ -197,6 +197,8 @@ export interface EncodeOptions {
    * (no re-encoding).
    */
   input?: 'raw' | 'flv';
+  /** Certificate checking for secure destinations (see TlsOptions); ffmpeg's own default if unset. */
+  tls?: TlsOptions;
   /** The AAC encoder: Apple's where this ffmpeg has it (better sound), else ffmpeg's own. */
   audioEncoder?: 'aac' | 'aac_at';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
@@ -324,10 +326,36 @@ export function videoCodecArgs(
  * has no reason to wait). Each may fail on its own.
  */
 const STREAM_OPTIONS = {
-  flv: '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]',
+  flv: 'f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1',
   // pes_payload_size=0: each sound frame goes out on its own (not gathered for up to 50 ms).
-  ts: '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb]',
+  ts: 'f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb',
 } as const;
+
+/**
+ * How a secure (rtmps) destination checks the server's certificate, for an ffmpeg whose TLS
+ * library has no trust store of its own (mbedTLS, in Lampstand's Mac build): the trusted root
+ * certificates' file, or not checking at all.
+ */
+export interface TlsOptions {
+  caFile?: string;
+  verify?: boolean;
+}
+
+/** A tee slave option's value: escaped for the option parser, then for the tee itself. */
+const teeOptionValue = (s: string): string => s.replace(/[\\:'=\]]/g, (c) => `\\${c}`);
+
+/** The tee options for one destination. */
+function streamOptions(url: string, tls: TlsOptions | undefined): string {
+  if (protocolOf(url) !== 'rtmp') return STREAM_OPTIONS.ts;
+  const extra =
+    tls && /^rtmps:/i.test(url)
+      ? [
+          ...(tls.caFile ? [`ca_file=${teeOptionValue(tls.caFile)}`] : []),
+          ...(tls.verify === false ? ['tls_verify=0'] : []),
+        ]
+      : [];
+  return [STREAM_OPTIONS.flv, ...extra].join(':');
+}
 
 /**
  * ffmpeg's arguments: raw BGRA frames on stdin (pipe:0), sent at a steady frame rate (the last
@@ -339,9 +367,7 @@ export function buildArgs(o: EncodeOptions): string[] {
   const gpu = o.input === 'flv';
   const outputs = [
     // Each packet goes out at once: no batching in the muxer, none in the network stack.
-    ...o.streams.map(
-      (u) => `${STREAM_OPTIONS[protocolOf(u) === 'rtmp' ? 'flv' : 'ts']}${teeEscape(u)}`,
-    ),
+    ...o.streams.map((u) => `[${teeEscape(streamOptions(u, o.tls))}]${teeEscape(u)}`),
     // The recording writes through its own queue: a slow disk never holds up the live outputs
     // (the queue waits rather than drops, so the file stays whole).
     ...(o.record

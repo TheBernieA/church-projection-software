@@ -3,12 +3,14 @@
 //
 //   node scripts/prepareFfmpeg.mjs <mac|win> [arm64|x64]     (arch defaults to this computer's)
 //
-// The copy comes from the ffmpeg-static package, which `pnpm install` downloads for this
-// computer. A build for another platform (the Windows installer made on a Mac, say) can't use
-// it: then an ffmpeg already placed in the folder by hand is used, or the build goes ahead
-// without one, with a warning (the app works, but can't stream or record).
-import { execFileSync } from 'node:child_process';
-import { chmodSync, copyFileSync, existsSync, mkdirSync } from 'node:fs';
+// Mac: Lampstand's own ffmpeg build (scripts/buildFfmpegMac.sh: secure streaming through
+// mbedTLS, GPU encoding), built here the first time (a few minutes) and kept for later builds.
+// Windows, or if the Mac build can't be made: the ffmpeg-static package, which `pnpm install`
+// downloads for this computer. A build for another platform (the Windows installer made on a
+// Mac, say) can't use it: then an ffmpeg already placed in the folder by hand is used, or the
+// build goes ahead without one, with a warning (the app works, but can't stream or record).
+import { execFileSync, spawnSync } from 'node:child_process';
+import { chmodSync, copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -35,18 +37,34 @@ function secureOnMac(ffmpeg) {
     const conf = execFileSync(ffmpeg, ['-hide_banner', '-buildconf'], { encoding: 'utf8' });
     return /--enable-(openssl|gnutls|mbedtls|libtls)\b/.test(conf);
   } catch {
-    return false;
+    // Can't run it (the Intel build on an Apple-silicon Mac without Rosetta): Lampstand's own
+    // build says how it was made in SOURCES.txt.
+    const sources = join(dirname(ffmpeg), 'SOURCES.txt');
+    return existsSync(sources) && readFileSync(sources, 'utf8').includes('--enable-mbedtls');
   }
 }
 
-const WEAK_TLS = `\n⚠ ffmpeg: this Mac build can't stream securely (no OpenSSL). YouTube will use its
-  standard RTMP address and Facebook (secure only) won't work. For a full build, put an ffmpeg
-  built with OpenSSL (and its LICENSE.txt) in resources/ffmpeg/${os}-${arch}/; it's kept.\n`;
+const WEAK_TLS = `\n⚠ ffmpeg: this Mac build can't stream securely (no OpenSSL or mbedTLS). YouTube
+  will use its standard RTMP address and Facebook (secure only) won't work. To fix it, install
+  what Lampstand's own build needs (xcode-select --install; brew install nasm pkgconf) and build
+  again: bash apps/desktop/scripts/buildFfmpegMac.sh ${arch}\n`;
 
-// A better ffmpeg placed here by hand (one that streams securely) is kept, not overwritten.
+// An ffmpeg that streams securely (Lampstand's own build, from an earlier run or placed here by
+// hand) is kept, not overwritten.
 if (existsSync(target) && os === 'mac' && secureOnMac(target)) {
   console.log(`ffmpeg: using the one in resources/ffmpeg/${os}-${arch}/ (streams securely)`);
   process.exit(0);
+}
+
+// Mac, on a Mac: make Lampstand's own build (either Mac kind builds both).
+if (os === 'mac' && here === 'mac') {
+  console.log(`ffmpeg: building Lampstand's own for mac-${arch} (first time only, a few minutes)…`);
+  const script = join(dirname(fileURLToPath(import.meta.url)), 'buildFfmpegMac.sh');
+  const built = spawnSync('bash', [script, arch], { stdio: 'inherit' });
+  if (built.status === 0 && existsSync(target) && secureOnMac(target)) process.exit(0);
+  console.warn(
+    "\n⚠ ffmpeg: Lampstand's own build failed (see above); falling back on ffmpeg-static.",
+  );
 }
 
 if (here === os && arch === process.arch) {

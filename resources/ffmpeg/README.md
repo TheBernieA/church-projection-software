@@ -1,23 +1,21 @@
 # ffmpeg for packaged builds
 
 Lampstand's livestream and recording use ffmpeg as a separate program (see `docs/streaming.md`).
-It's packaged automatically: `pnpm install` downloads ffmpeg for this computer (the
-`ffmpeg-static` package), and each `dist:*` script copies it here first
-(`apps/desktop/scripts/prepareFfmpeg.mjs`), into a folder named after the platform and
-architecture:
+Each `dist:*` script puts it here first (`apps/desktop/scripts/prepareFfmpeg.mjs`), in a folder
+named after the platform and architecture:
 
 ```
-resources/ffmpeg/mac-arm64/ffmpeg
-resources/ffmpeg/mac-x64/ffmpeg
-resources/ffmpeg/win-x64/ffmpeg.exe
-resources/ffmpeg/*/LICENSE.txt
+resources/ffmpeg/mac-arm64/ffmpeg     Lampstand's own build (apps/desktop/scripts/buildFfmpegMac.sh)
+resources/ffmpeg/mac-x64/ffmpeg       ″ (cross-compiled on Apple silicon, or native on Intel)
+resources/ffmpeg/win-x64/ffmpeg.exe   from ffmpeg-static (`pnpm install` on Windows)
+resources/ffmpeg/*/LICENSE.txt        (and SOURCES.txt for the Mac builds)
+resources/ffmpeg/.build/              the Mac build's downloaded sources and work folders
 ```
 
-electron-builder copies it to `resources/ffmpeg/` inside the app. Building for another
-platform than this computer's (the Windows installer on a Mac), put that platform's binary and
-licence in its folder by hand. These folders are not committed. In development, Lampstand uses
-`LAMPSTAND_FFMPEG`, the `ffmpeg-static` package, or a system install (e.g. `brew install ffmpeg`).
+electron-builder copies the platform's folder to `resources/ffmpeg/` inside the app. None of
+this is committed. In development, Lampstand uses `LAMPSTAND_FFMPEG`, a system install (e.g.
+`brew install ffmpeg`) or the `ffmpeg-static` package, preferring one that can stream securely.
 
-On a Mac, an ffmpeg built without OpenSSL (the `ffmpeg-static` builds) can't stream securely:
-RTMPS stalls. Lampstand prefers an ffmpeg that can (Homebrew's, or one placed here by hand,
-which the build keeps), and with only the weak kind sends YouTube to its standard RTMP address.
+Why the Mac has its own build: `ffmpeg-static`'s Mac builds have no TLS library, so ffmpeg falls
+back on Apple's SecureTransport, whose RTMPS uploads stall after a few frames. Lampstand's build
+uses mbedTLS; the app hands it the Mac's trusted root certificates when it streams.
