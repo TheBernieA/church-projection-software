@@ -16,6 +16,8 @@ import {
   plausibleKey,
   recordingName,
   teeEscape,
+  encoderFailed,
+  sendBufferBytes,
   type EncodeOptions,
 } from './ffmpegArgs';
 
@@ -51,7 +53,7 @@ describe('stream encoder arguments', () => {
     const out = a.at(-1) ?? '';
     expect(out.split('|')).toHaveLength(3);
     expect(out).toContain(
-      '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]rtmp://a/live2/k1',
+      '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1:rw_timeout=5000000:send_buffer_size=',
     );
   });
 
@@ -65,7 +67,7 @@ describe('stream encoder arguments', () => {
     const [secure, plain, direct] = out.split(/(?<!\\)\|/);
     // The path's ":" and "]" survive both tee unescapes: \\: and \\\]
     expect(secure).toContain(
-      ':tcp_nodelay=1:ca_file=/Users/x/App Support/a\\\\:b\\\\\\].pem]rtmps://b',
+      ':send_buffer_size=457500:ca_file=/Users/x/App Support/a\\\\:b\\\\\\].pem]rtmps://b',
     );
     expect(plain).not.toContain('ca_file');
     expect(direct).not.toContain('ca_file');
@@ -80,6 +82,16 @@ describe('stream encoder arguments', () => {
     expect(a).toContain('-bf 0');
     expect(a).toContain('format=nv12');
     expect(a).toContain(`-g ${base.fps * 2}`);
+  });
+
+  it('a silent drop fails the destination within seconds: a write limit and about a second of buffer', () => {
+    const out = buildArgs({ ...base, videoKbps: 6000, audioKbps: 160, streams: ['rtmp://a/k'] }).at(
+      -1,
+    );
+    expect(out).toContain(':rw_timeout=5000000:send_buffer_size=770000]rtmp://a/k');
+    expect(sendBufferBytes(500)).toBe(128 * 1024); // never tiny
+    // Direct links (SRT/UDP) don't block: no limits there.
+    expect(buildArgs({ ...base, streams: ['srt://h:9000'] }).at(-1)).not.toContain('rw_timeout');
   });
 
   it('uses Apple’s AAC encoder when ffmpeg has it', () => {
@@ -131,6 +143,35 @@ describe('stream encoder arguments', () => {
   it('escapes tee specials', () => {
     expect(teeEscape('a|b[c]\\d')).toBe('a\\|b\\[c\\]\\\\d');
     expect(teeEscape("it's")).toBe("it\\'s");
+  });
+});
+
+describe('encoderFailed (a hardware encoder that can’t start, not a stream that can’t connect)', () => {
+  it('a refused connection names the encoder but isn’t its failure', () => {
+    const refused = [
+      '  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (h264_videotoolbox))',
+      '[h264_videotoolbox @ 0x1] Color range not set for nv12. Using MPEG range.',
+      '[tcp @ 0x2] Connection to tcp://127.0.0.1:19399?tcp_nodelay=0 failed: Connection refused',
+      '[tee @ 0x3] All tee outputs failed.',
+    ];
+    expect(encoderFailed(refused, 'h264_videotoolbox')).toBe(false);
+  });
+  it('the encoder’s own errors, and ffmpeg failing to open it, are', () => {
+    expect(
+      encoderFailed(
+        ['[h264_nvenc @ 0x1] OpenEncodeSessionEx failed: unsupported device (2)'],
+        'h264_nvenc',
+      ),
+    ).toBe(true);
+    expect(
+      encoderFailed(
+        ['[vost#0:0/h264_qsv @ 0x1] Error while opening encoder - maybe incorrect parameters'],
+        'h264_qsv',
+      ),
+    ).toBe(true);
+    expect(encoderFailed(['[h264_amf @ 0x1] DLL amfrt64.dll failed to open'], 'h264_amf')).toBe(
+      true,
+    );
   });
 });
 

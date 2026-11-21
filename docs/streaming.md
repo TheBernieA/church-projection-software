@@ -121,7 +121,20 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   10 minutes the destinations that couldn't come back are marked failed and left; a recording or
   another destination carries on (with nothing left, the stream ends with the reason). A wrong
   address or key at the first start still fails at once.
-  (`reachability.ts`; tested end to end in `e2e/reconnect.spec.ts`.)
+  **Silent drops** (a pulled cable, Wi-Fi gone, the router down) close nothing: the connection
+  just stops moving, and ffmpeg alone would wait minutes for the system to give up, the stream
+  frozen for viewers and the console still saying Live. Each RTMP(S) destination therefore has
+  a write limit (`rw_timeout`, 5 s) and a send buffer of about one second of its bitrate
+  (`send_buffer_size`), so a dead connection fills it quickly and fails like any other: the
+  recording and other destinations go on, and it reconnects as above. Expect it to be noticed
+  within roughly 10–25 s (sooner with motion, later on a still slide's low bitrate); the
+  recording may skip frames in that time, as the stalled destination holds the others up until
+  it fails. When the GPU pipeline falls behind and wants to reconnect to throw the backlog away,
+  it first checks that the servers answer; if they don't, it waits for that failure instead of
+  splitting the recording for nothing.
+  (`reachability.ts`, `sendBufferBytes`/`STALLED_WRITE_US` in `ffmpegArgs.ts`; tested end to end
+  in `e2e/reconnect.spec.ts`, including a silent drop on both pipelines through a proxy that
+  freezes the connection and refuses new ones.)
   A stream page that crashes is reopened and the encoder restarted with it. A recording folder
   that can't be made falls back to the usual one, else the stream carries on without recording. Quitting the app finishes the recording first.
 

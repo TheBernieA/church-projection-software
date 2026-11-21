@@ -365,17 +365,53 @@ export interface TlsOptions {
 /** A tee slave option's value: escaped for the option parser, then for the tee itself. */
 const teeOptionValue = (s: string): string => s.replace(/[\\:'=\]]/g, (c) => `\\${c}`);
 
+/**
+ * A silent network drop (a pulled cable, Wi-Fi gone, the router down): the connection just stops
+ * moving and nothing says so, so ffmpeg would wait minutes for the system to give up, the
+ * stream frozen for viewers and the console still saying Live. Two limits make it a destination
+ * failure within seconds (handled like any other: reconnecting quietly, the recording going on):
+ * a write that waits this long fails, and the system may hold only about a second of the stream
+ * (its send buffer), so a dead connection fills it quickly. A second is plenty for any upload
+ * that can carry the stream at all (round trips of up to a second).
+ */
+export const STALLED_WRITE_US = 5_000_000;
+export const sendBufferBytes = (kbps: number): number =>
+  Math.max(128 * 1024, Math.round((kbps * 1000) / 8));
+
 /** The tee options for one destination. */
-function streamOptions(url: string, tls: TlsOptions | undefined): string {
+function streamOptions(
+  url: string,
+  o: Pick<EncodeOptions, 'tls' | 'videoKbps' | 'audioKbps'>,
+): string {
   if (protocolOf(url) !== 'rtmp') return STREAM_OPTIONS.ts;
-  const extra =
-    tls && /^rtmps:/i.test(url)
+  const extra = [
+    `rw_timeout=${STALLED_WRITE_US}`,
+    `send_buffer_size=${sendBufferBytes(o.videoKbps + o.audioKbps)}`,
+    ...(o.tls && /^rtmps:/i.test(url)
       ? [
-          ...(tls.caFile ? [`ca_file=${teeOptionValue(tls.caFile)}`] : []),
-          ...(tls.verify === false ? ['tls_verify=0'] : []),
+          ...(o.tls.caFile ? [`ca_file=${teeOptionValue(o.tls.caFile)}`] : []),
+          ...(o.tls.verify === false ? ['tls_verify=0'] : []),
         ]
-      : [];
+      : []),
+  ];
   return [STREAM_OPTIONS.flv, ...extra].join(':');
+}
+
+/**
+ * Did this encoder fail (not the stream)? Only what the encoder itself reports as an error, or
+ * ffmpeg saying it couldn't open it, counts. Its name alone isn't enough: ffmpeg names it on
+ * every start ("Stream #0:0 -> #0:0 (… -> h264 (h264_qsv))"), so a destination that refuses
+ * the connection would otherwise get a working hardware encoder dropped for the session.
+ */
+export function encoderFailed(lines: readonly string[], encoder: string): boolean {
+  return lines.some(
+    (l) =>
+      /error while opening encoder|error initializing output stream/i.test(l) ||
+      (l.includes(`${encoder} @`) &&
+        /error|fail|unsupported|cannot|could not|not (available|supported|found)|no device/i.test(
+          l,
+        )),
+  );
 }
 
 /**
@@ -388,7 +424,7 @@ export function buildArgs(o: EncodeOptions): string[] {
   const gpu = o.input === 'flv';
   const outputs = [
     // Each packet goes out at once: no batching in the muxer, none in the network stack.
-    ...o.streams.map((u) => `[${teeEscape(streamOptions(u, o.tls))}]${teeEscape(u)}`),
+    ...o.streams.map((u) => `[${teeEscape(streamOptions(u, o))}]${teeEscape(u)}`),
     // The recording writes through its own queue: a slow disk never holds up the live outputs
     // (the queue waits rather than drops, so the file stays whole).
     ...(o.record

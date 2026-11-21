@@ -36,6 +36,7 @@ import {
 import {
   buildArgs,
   destinationFailure,
+  encoderFailed,
   freeName,
   hasFallbackIngest,
   redactKeys,
@@ -1088,7 +1089,7 @@ export class StreamController {
         kbps: this.abr.current,
       });
       this.abr.reconnected(at);
-      void this.restartEncoder(this.want.record);
+      void this.catchUp();
       return;
     }
     this.d.log.info('bitrate', {
@@ -1100,6 +1101,27 @@ export class StreamController {
     this.win?.webContents.send(Channels.evEncode, { bitrate: action.kbps });
     const full = this.winProfile?.videoKbps ?? action.kbps;
     this.setStatus({ adaptedKbps: action.kbps < full ? action.kbps : null }, true);
+  }
+
+  /**
+   * Fallen behind: reconnect to throw the backlog away, if the servers answer. If they don't,
+   * the network is down, not slow: restarting would only split the recording, so the stalled
+   * destination is left to fail on its own (within seconds, see STALLED_WRITE_US) and reconnect
+   * once the network is back.
+   */
+  private async catchUp(): Promise<void> {
+    const ff = this.ff;
+    const live = this.status.destinations
+      .filter((x) => x.id !== 'record' && !this.down.has(x.id))
+      .map((x) => this.endpoints.get(x.id))
+      .filter((e): e is Endpoint => !!e);
+    const reachable = await anyReachable(live);
+    if (this.ff !== ff || !this.want.stream) return; // stopped or restarted meanwhile
+    if (!reachable) {
+      this.d.log.warn('stream fell behind and its servers do not answer; waiting for the network');
+      return;
+    }
+    await this.restartEncoder(this.want.record);
   }
 
   /** The upload has held the bitrate far under the target: Light would look sharper. */
@@ -1465,7 +1487,7 @@ export class StreamController {
     // dropped for libx264), with backoff, a limited number of times.
     const quick = Date.now() - this.spawnedAt < QUICK_EXIT_MS;
     this.d.log.warn('encoder stopped', { code, tail: this.lastStderr.slice(-20) });
-    if (quick && encoder !== 'libx264' && this.lastStderr.some((l) => l.includes(encoder))) {
+    if (quick && encoder !== 'libx264' && encoderFailed(this.lastStderr, encoder)) {
       this.brokenEncoders.add(encoder);
       void this.spawnEncoder();
       return;
