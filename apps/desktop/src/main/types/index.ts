@@ -24,6 +24,7 @@ import type {
 import type { QueryName, QueryResults } from '@lampstand/ipc-contract';
 import type { MediaLibrary } from '../library/mediaLibrary';
 import type { BibleStore } from '../modules/bibleModules';
+import type { OnlineBibles } from '../modules/onlineBibles/onlineBibles';
 import type { JsonFileRepository } from '../storage/jsonFileRepository';
 import type { SettingsStore } from '../storage/settingsStore';
 
@@ -65,6 +66,7 @@ export interface Services {
   media: JsonFileRepository<MediaItem>;
   mediaLibrary: MediaLibrary;
   bibles: BibleStore;
+  onlineBibles: OnlineBibles;
   hymnSongs: Song[];
   hymnals: InstalledHymnal[];
 }

@@ -1,4 +1,4 @@
-import { app } from 'electron';
+import { app, net } from 'electron';
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { watch } from 'chokidar';
@@ -17,6 +17,10 @@ import {
   STARTER_THEMES,
   type AuditEntry,
   type BibleVersionInfo,
+  type OnlineBible,
+  OnlineBibleSchema,
+  newId,
+  type Settings,
   type LiveState,
   type Song,
   type ScreenVisual,
@@ -49,6 +53,8 @@ import { MediaLibrary } from '../library/mediaLibrary';
 import { BibleStore, installBibleModule } from '../modules/bibleModules';
 import { installHymnalModule, removeInstalled } from '../modules/hymnalModules';
 import { packageKind } from '../modules/packageKind';
+import { keyName as onlineKeyName, OnlineBibles } from '../modules/onlineBibles/onlineBibles';
+import { fillTemplate, isAllowedApiUrl } from '../modules/onlineBibles/parse';
 import { sha256 } from '../modules/packageIo';
 import { MODULE_LIMITS } from '../constants';
 import { SearchService } from '../search/searchService';
@@ -205,6 +211,17 @@ export class AppController {
       repos.media,
       log.child('media'),
     );
+    // Stream keys and Bible API keys, encrypted on this computer (never in settings).
+    this.secrets = new SecretStore(join(paths.userData, 'secrets.json'));
+    // Bibles read from APIs as they're used (Settings › Bibles & hymnals › Online Bibles).
+    const onlineBibles = new OnlineBibles({
+      dir: join(paths.userData, 'online-bibles'),
+      keys: this.secrets,
+      fetch: (url, init) => net.fetch(url, init),
+      log: log.child('online-bibles'),
+      kjvCounts: () => bibles.verseCounts('kjv').catch(() => ({})),
+    });
+    onlineBibles.setSources(settings.get().onlineBibles);
     this.s = {
       paths,
       log,
@@ -214,6 +231,7 @@ export class AppController {
       ...repos,
       mediaLibrary,
       bibles,
+      onlineBibles,
       hymnSongs,
       hymnals,
     };
@@ -243,8 +261,7 @@ export class AppController {
       onLiveConsoleClosed: () => this.windows.sendToControl(Channels.evLiveConsole, false),
     });
 
-    // Livestream and recording; stream keys encrypted on this computer (never in settings).
-    this.secrets = new SecretStore(join(paths.userData, 'secrets.json'));
+    // Livestream and recording use the secret store created above.
     // What every stream picture (the livestream, each NDI feed) is drawn from.
     const pictures = (mod: string): PictureSources => ({
       log: log.child(mod),
@@ -379,7 +396,14 @@ export class AppController {
         x.wordsAlign,
       ]);
     let maskKey = outputInfoOf(settings.get());
+    let onlineKey = JSON.stringify(settings.get().onlineBibles);
     settings.onChange((next) => {
+      const online = JSON.stringify(next.onlineBibles);
+      if (online !== onlineKey) {
+        onlineKey = online;
+        this.s.onlineBibles.setSources(next.onlineBibles);
+        this.windows.sendToControl(Channels.evRepo, 'bibles');
+      }
       const masks = outputInfoOf(next);
       if (masks !== maskKey) {
         maskKey = masks;
@@ -580,6 +604,99 @@ export class AppController {
         if (!d) throw new AppError('display-not-found', 'That display is no longer connected.');
         settings.update({ displays: upsertAssignment(settings.get().displays, d, role) });
         return { result: null };
+      },
+    });
+    // ---------- Online Bibles: read from an API as they're used ----------
+    const onlineList = (): OnlineBible[] => settings.get().onlineBibles;
+    const checkCustom = (src: Omit<OnlineBible, 'id'>): void => {
+      if (src.provider !== 'custom') return;
+      const url = src.custom
+        ? fillTemplate(src.custom.urlTemplate, {
+            book: 'JHN',
+            bookNumber: 43,
+            bookName: 'John',
+            chapter: 3,
+            key: 'k',
+          })
+        : '';
+      if (!isAllowedApiUrl(url))
+        throw new AppError(
+          'online-bible-url',
+          'The API address must start with https:// (http:// only for this computer).',
+        );
+    };
+    const setKey = async (id: string, key: string | null | undefined): Promise<void> => {
+      if (key === undefined) return;
+      if (key === null || !key.trim()) await this.secrets.delete(onlineKeyName(id));
+      else await this.secrets.set(onlineKeyName(id), key.trim());
+    };
+    bus.register({
+      type: 'onlineBible.add',
+      // The key goes into the encrypted store, never into settings or back to a window.
+      schema: z.object({
+        source: OnlineBibleSchema.omit({ id: true }),
+        key: z.string().max(300).nullable().default(null),
+      }),
+      undoable: false,
+      handle: async ({ source, key }) => {
+        checkCustom(source);
+        if (onlineList().length >= 20)
+          throw new AppError('limit', 'There are already 20 online Bibles.');
+        const id = `ol-${newId()
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .slice(-8)}`;
+        await setKey(id, key);
+        settings.update({ onlineBibles: [...onlineList(), { ...source, id }] });
+        return { result: id };
+      },
+    });
+    bus.register({
+      type: 'onlineBible.update',
+      schema: z.object({
+        id: z.string().max(40),
+        patch: OnlineBibleSchema.omit({ id: true, provider: true }).partial().optional(),
+        key: z.string().max(300).nullable().optional(),
+      }),
+      undoable: false,
+      handle: async ({ id, patch, key }) => {
+        const current = onlineList().find((b) => b.id === id);
+        if (!current) throw new AppError('not-found', 'That online Bible is gone.');
+        const next = { ...current, ...patch };
+        checkCustom(next);
+        await setKey(id, key);
+        settings.update({ onlineBibles: onlineList().map((b) => (b.id === id ? next : b)) });
+        // A new key or address: chapters fetched with the old one may differ.
+        if (key !== undefined || patch?.custom || patch?.remoteId)
+          await this.s.onlineBibles.clearSaved(id).catch(() => undefined);
+        return { result: true };
+      },
+    });
+    bus.register({
+      type: 'onlineBible.remove',
+      schema: z.object({ id: z.string().max(40) }),
+      undoable: false,
+      handle: async ({ id }) => {
+        await this.s.onlineBibles.remove(id);
+        const left = onlineList().filter((b) => b.id !== id);
+        const patch: Partial<Settings> = { onlineBibles: left };
+        // The default version gone: back to KJV, or the first still there.
+        if (settings.get().defaultBibleVersion === id) {
+          const versions = [...this.s.bibles.list(), ...left];
+          const next = versions.find((v) => v.id === 'kjv') ?? versions[0];
+          if (next) patch.defaultBibleVersion = next.id;
+        }
+        settings.update(patch);
+        return { result: true };
+      },
+    });
+    bus.register({
+      type: 'onlineBible.clearSaved',
+      schema: z.object({ id: z.string().max(40) }),
+      undoable: false,
+      handle: async ({ id }) => {
+        await this.s.onlineBibles.clearSaved(id);
+        return { result: true };
       },
     });
     bus.register({
@@ -852,6 +969,7 @@ export class AppController {
   async shutdown(): Promise<void> {
     if (!this.started) return;
     this.windows.setQuitting();
+    await this.s.onlineBibles.flush().catch(() => undefined);
     await this.stream.shutdown();
     await this.ndi.shutdown();
     this.osc.close();

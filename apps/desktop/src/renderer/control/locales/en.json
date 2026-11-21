@@ -780,7 +780,8 @@
       "bundled": "Bundled",
       "downloaded": "Downloaded",
       "imported": "Installed",
-      "installed": "Installed"
+      "installed": "Installed",
+      "online": "Online"
     },
     "groups": {
       "bible": "Bible versions",
@@ -1012,6 +1013,10 @@
         "bibles": {
           "q": "Add a Bible version or hymnal",
           "a": "1. Open Settings › Bibles & hymnals and choose Install package….\n2. Pick one or more .lsbible (Bible) or .lshymnal (hymnal) files. Lampstand checks each one and tells you if a file is damaged or isn’t a package.\n3. The new version appears in the Bible workspace’s version list and in search. To make it the one verses use first, choose it as the Default Bible version in Settings › Scripture.\nInstalling a newer copy of a version you already have replaces it, even one of the included Bibles. Remove brings an included Bible back; the included Bibles themselves can’t be removed.\nBible packages come from whoever holds the translation’s rights: Lampstand can’t open other Bible software’s files or online Bibles directly."
+        },
+        "onlineBible": {
+          "q": "Use the ESV or another online Bible",
+          "a": "1. Open Settings › Bibles & hymnals and choose Add online Bible.\n2. Choose where it comes from: ESV (Crossway’s ESV API), API.Bible, bible-api.com, getBible, or Custom for any other Bible API.\n3. For the ESV and API.Bible, use Get a free key, paste your church’s key, and (API.Bible) choose Find versions to pick one. Choose Try it, then Add.\n4. It appears with the other versions in the Bible workspace and in playlists.\nChapters you open are saved on this computer, so a service prepared with internet still works without it, within each provider’s limits (the ESV allows 500 verses, never more than half of a book). Anything else needs an internet connection. Online versions aren’t included in word search; references (jn 3 16) work as usual."
         },
         "preview": {
           "q": "Check slides before the room sees them",
@@ -3025,5 +3030,78 @@
     "songselectImport": "Import SongSelect download…",
     "songselectHelp": "On SongSelect, download a song as Lyrics or ChordPro, then import the file here (or drop it on the song list). Its CCLI number, writers and copyright come with it.",
     "dropHere": "Drop song files to import them"
+  },
+  "onlineBibles": {
+    "title": "Online Bibles",
+    "description": "Versions read from a Bible API as you use them: chapters you open are saved for use without internet, within each provider’s terms. Everything else needs an internet connection.",
+    "add": "Add online Bible",
+    "empty": "No online Bibles yet. Add the ESV, versions from API.Bible, or any other Bible API.",
+    "saved": "{{n}} of {{max}} verses saved for offline use",
+    "noKey": "Needs a key",
+    "addKey": "Add key",
+    "changeKey": "Change key",
+    "key": "API key",
+    "keyPlaceholder": "Paste the key",
+    "keyHint": "Kept encrypted on this computer, never shown again or shared.",
+    "saveKey": "Save key",
+    "keySaved": "Key saved for {{name}}.",
+    "clear": "Clear saved",
+    "clearHint": "Forget the chapters saved on this computer (they are fetched again when used).",
+    "confirmRemove": "Remove {{name}}? Its saved chapters and its key are deleted. Service items that use it show nothing until a version is chosen again.",
+    "providerLabel": "Where it comes from",
+    "getKey": "Get a free key",
+    "openSite": "Open the website",
+    "findVersions": "Find versions",
+    "version": "Version",
+    "pickVersion": "Choose a version",
+    "noVersions": "This key has no versions",
+    "translation": "Translation code",
+    "name": "Name",
+    "abbreviation": "Abbreviation",
+    "language": "Language",
+    "try": "Try it",
+    "tried": "It works. John 3:16:",
+    "addButton": "Add",
+    "added": "Added {{name}}.",
+    "provider": {
+      "esv": "ESV API",
+      "apibible": "API.Bible",
+      "bibleapi": "bible-api.com",
+      "getbible": "getBible",
+      "custom": "Custom API"
+    },
+    "short": {
+      "esv": "ESV",
+      "apibible": "API.Bible",
+      "bibleapi": "bible-api.com",
+      "getbible": "getBible",
+      "custom": "Custom"
+    },
+    "about": {
+      "esv": "Crossway’s ESV API: free for churches and other non-commercial use. Create an application on api.esv.org to get your church’s own key (don’t share it). At most 500 verses, and never more than half of a book, are saved on this computer; “ESV” shows with every reference. Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved. www.esv.org",
+      "apibible": "API.Bible (American Bible Society): many versions and languages, free for non-commercial use (5,000 requests a month). Paste your key and choose Find versions. Each version’s copyright is shown with its verses, and use is reported to API.Bible’s Fair Use system as its terms ask (no personal details). At most 500 verses are saved on this computer.",
+      "bibleapi": "bible-api.com: about 40 public-domain and open versions in many languages, no key needed. A free hobby service: it may be slow or down at times, and allows 15 requests every 30 seconds.",
+      "getbible": "getBible: open versions as plain data, no key needed. Saved chapters are checked again each week, as it asks.",
+      "custom": "Any other Bible API that sends JSON or plain text. Give the chapter’s address with placeholders, where the key goes, and where the verses are in its reply, then Try it. At most 500 verses are saved on this computer. Use only APIs whose terms allow showing their text in church."
+    },
+    "translationHint": {
+      "bibleapi": "e.g. web, kjv, bbe, cuv (Chinese), swahili, tagalog. The list is on bible-api.com.",
+      "getbible": "e.g. kjv, web, akjv. The list is on getbible.net."
+    },
+    "custom": {
+      "url": "Chapter address",
+      "urlHint": "Placeholders: {book} (JHN), {bookNumber} (43), {bookName} (John), {chapter} (3), {key}. https only (http for this computer).",
+      "header": "Key header",
+      "headerHint": "The header the key goes in, if any.",
+      "prefix": "Before the key",
+      "format": "The reply holds",
+      "formatVerses": "A list of verses",
+      "formatText": "Text with [1] [2] numbers",
+      "versesPath": "Path to the list",
+      "textField": "Text field",
+      "numberField": "Verse-number field",
+      "textPath": "Path to the text",
+      "textPathHint": "e.g. passages.0 or data.content; empty if the reply is the text itself."
+    }
   }
 }

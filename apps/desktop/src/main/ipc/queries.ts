@@ -2,7 +2,7 @@ import type { NdiController } from '../ndi/ndiController';
 import { mkdir, readFile, stat } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
-import { AppError, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
+import { AppError, OnlineBibleSchema, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
 import type { ModuleSummary, Notice, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { SearchService } from '../search/searchService';
 import type { WindowManager } from '../windows/windowManager';
@@ -117,12 +117,26 @@ export function createQueries({
     'themes.list': async () => [...STARTER_THEMES, ...(await s.themes.list())],
     'media.list': () => s.media.list(),
     'mediaPlaylists.list': () => s.mediaPlaylists.list(),
-    'bible.versions': () => s.bibles.list(),
+    // Installed Bibles, then those read from APIs as they're used.
+    'bible.versions': () => [...s.bibles.list(), ...s.onlineBibles.infos()],
     'bible.chapter': async (a: QueryArgs<'bible.chapter'>) => ({
-      verses: await s.bibles.chapter(a.versionId, a.book, a.chapter),
+      verses: s.onlineBibles.has(a.versionId)
+        ? await s.onlineBibles.chapter(a.versionId, a.book, a.chapter)
+        : await s.bibles.chapter(a.versionId, a.book, a.chapter),
     }),
-    'bible.verseCounts': (a: QueryArgs<'bible.verseCounts'>) => s.bibles.verseCounts(a.versionId),
-    'bible.bookNames': (a: QueryArgs<'bible.bookNames'>) => s.bibles.bookNames(a.versionId),
+    'bible.verseCounts': (a: QueryArgs<'bible.verseCounts'>) =>
+      s.onlineBibles.has(a.versionId)
+        ? s.onlineBibles.verseCounts(a.versionId)
+        : s.bibles.verseCounts(a.versionId),
+    'bible.bookNames': (a: QueryArgs<'bible.bookNames'>) =>
+      s.onlineBibles.has(a.versionId)
+        ? s.onlineBibles.bookNames(a.versionId)
+        : s.bibles.bookNames(a.versionId),
+    'onlineBible.status': () => s.onlineBibles.status(),
+    'onlineBible.probe': (a: QueryArgs<'onlineBible.probe'>) =>
+      s.onlineBibles.probe(OnlineBibleSchema.parse({ ...a.source, id: 'ol-probe' }), a.key ?? ''),
+    'onlineBible.catalog': (a: QueryArgs<'onlineBible.catalog'>) =>
+      s.onlineBibles.apiBibleCatalog(a.key),
     'search.query': (a: QueryArgs<'search.query'>) =>
       search.query(a.text, a.limit ?? 30, a.versionId),
     'displays.list': () => windows.listDisplays(),
