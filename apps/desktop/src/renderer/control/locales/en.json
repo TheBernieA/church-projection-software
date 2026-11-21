@@ -2428,6 +2428,7 @@
       "h264_nvenc": "NVIDIA hardware",
       "h264_qsv": "Intel hardware",
       "h264_amf": "AMD hardware",
+      "h264_mf": "Windows hardware (Media Foundation)",
       "libx264": "Software (x264)"
     },
     "recording": "Recording",

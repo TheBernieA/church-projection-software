@@ -73,6 +73,15 @@ describe('stream encoder arguments', () => {
     expect(off).toContain(':tls_verify=0]rtmps://b/k');
   });
 
+  it('Media Foundation: hardware only, constant bitrate and frame rate, High profile, NV12', () => {
+    const a = buildArgs({ ...base, encoder: 'h264_mf' }).join(' ');
+    expect(a).toContain('-c:v h264_mf -hw_encoding 1 -rate_control cbr -scenario camera_record');
+    expect(a).toContain('-profile:v 100');
+    expect(a).toContain('-bf 0');
+    expect(a).toContain('format=nv12');
+    expect(a).toContain(`-g ${base.fps * 2}`);
+  });
+
   it('uses Apple’s AAC encoder when ffmpeg has it', () => {
     expect(buildArgs({ ...base, audioEncoder: 'aac_at' }).join(' ')).toContain(
       '-c:a aac_at -aac_at_mode cbr',

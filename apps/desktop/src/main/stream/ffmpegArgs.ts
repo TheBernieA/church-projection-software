@@ -209,9 +209,9 @@ export interface EncodeOptions {
   record: string | null;
 }
 
-/** VideoToolbox, NVENC and Quick Sync work in NV12. */
+/** VideoToolbox, NVENC, Quick Sync and Media Foundation work in NV12. */
 const takesNv12 = (e: Encoder): boolean =>
-  e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv';
+  e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv' || e === 'h264_mf';
 
 /**
  * BGRA frames to the encoder's YUV, as HD colour (BT.709, limited range: what players and
@@ -297,6 +297,27 @@ export function videoCodecArgs(
         'cbr',
         '-profile:v',
         'high',
+        '-bf',
+        '0',
+        ...rate,
+        ...gop,
+      ];
+    case 'h264_mf':
+      // Windows' Media Foundation: whatever hardware encoder the graphics driver provides (Intel,
+      // AMD, NVIDIA, Qualcomm), where ffmpeg's own route to it doesn't work. Hardware only
+      // (Windows' software one is poor); constant frame rate (camera_record) so it doesn't drop
+      // frames; High profile by number (its own default is Baseline).
+      return [
+        '-c:v',
+        'h264_mf',
+        '-hw_encoding',
+        '1',
+        '-rate_control',
+        'cbr',
+        '-scenario',
+        'camera_record',
+        '-profile:v',
+        '100',
         '-bf',
         '0',
         ...rate,

@@ -920,6 +920,7 @@ export class StreamController {
       this.winGpu &&
       this.gpuPossible(wanted.width, wanted.height, profile.fps) &&
       (await this.gpuCapsFor(wanted.width, wanted.height, profile.fps));
+    const tls = await tlsOptionsFor(ffmpeg);
     if (this.overtaken(run) || this.ff) return;
     if (this.winGpu && !gpu) {
       this.closeWindow();
@@ -928,7 +929,6 @@ export class StreamController {
     }
     const { width, height } = sizeOf(profile);
     this.pipeline = gpu ? 'gpu' : 'cpu';
-    const tls = tlsOptionsFor(ffmpeg);
     const args = buildArgs({
       input: gpu ? 'flv' : 'raw',
       width,
