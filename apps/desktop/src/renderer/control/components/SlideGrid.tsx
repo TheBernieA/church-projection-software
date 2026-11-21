@@ -1,3 +1,4 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { ListPlus, MousePointerClick, Pencil, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { newId, type ServiceItem } from '@lampstand/core';
@@ -6,7 +7,7 @@ import { Button, Typography, typographyClass } from '@lampstand/ui';
 import { goLiveSlide, triggerSlide } from '../lib/actions';
 import { useInService, useItemSlides, useSelectedItem } from '../lib/hooks';
 import { itemTitle } from '../lib/slides';
-import { addItemToService, updateItem, useStore } from '../lib/store';
+import { updateItem, useStore } from '../lib/store';
 import { AddCard } from './cards';
 import { KindTile } from './kindIcons';
 import { EmptyState } from './EmptyState';
@@ -18,6 +19,8 @@ import { ItemBackground } from './ItemBackground';
 import { takesBackground } from '../lib/itemBackground';
 import { type PresentableSlide } from '../types';
 import { openEditor } from '../lib/editing';
+import { addToPlaylist } from '../lib/songs';
+import { CONTENT, PlaylistItems } from './song/SongRowMenus';
 
 /**
  * The selected item's slides as a grid of thumbnails, each with a group-coloured label strip.
@@ -99,14 +102,32 @@ export function SlideGrid({ purpose = 'show' }: { purpose?: 'show' | 'edit' }) {
             </Button>
           )}
           {isAdhoc && (
-            <Button
-              size="sm"
-              variant="primary"
-              icon={<ListPlus size={15} />}
-              onClick={() => addItemToService({ ...item, id: newId() })}
-            >
-              {t('slides.addToService')}
-            </Button>
+            // Which playlist: the open one first, or any other.
+            <DropdownMenu.Root modal={false}>
+              <DropdownMenu.Trigger asChild>
+                <Button size="sm" variant="primary" icon={<ListPlus size={15} />}>
+                  {t('slides.addToService')}
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  align="end"
+                  sideOffset={4}
+                  collisionPadding={8}
+                  className={CONTENT}
+                >
+                  <PlaylistItems
+                    onPick={(id) =>
+                      void addToPlaylist(
+                        { ...item, id: newId() },
+                        itemTitle(item, { songs, media, bookNames }),
+                        id,
+                      )
+                    }
+                  />
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
           )}
         </div>
       </div>

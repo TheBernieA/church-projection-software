@@ -72,3 +72,13 @@ export async function safeUnzip(
   }
   return out;
 }
+
+/** What's wrong with a package whose zip couldn't be opened, in words for the person installing it. */
+export function zipProblem(e: unknown, what: 'Bible' | 'hymnal'): string {
+  const code = e instanceof ZipError ? e.code : 'zip-invalid';
+  if (code === 'zip-slip' || code === 'zip-path')
+    return `This ${what} package was rejected: it contains unsafe file names (${code}).`;
+  if (code === 'zip-too-large' || code === 'zip-ratio' || code === 'zip-too-many')
+    return `This ${what} package was rejected: it unpacks too large or has too many files (${code}).`;
+  return `This ${what} package is damaged or isn’t a zip file.`;
+}

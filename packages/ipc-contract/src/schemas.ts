@@ -50,6 +50,8 @@ export const QuerySchemas = {
   'modules.list': z.undefined(),
   'modules.install': z.undefined(),
   'slides.import': z.undefined(),
+  /** Pick song files (SongSelect, ChordPro, OpenLyrics, OpenSong, text); their text comes back. */
+  'songs.importFiles': z.undefined(),
   /** Store generated image bytes (e.g. rendered PDF pages) as a library picture. */
   'media.importBytes': z.object({
     name: z.string().min(1).max(200),

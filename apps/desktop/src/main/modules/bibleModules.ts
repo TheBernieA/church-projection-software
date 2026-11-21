@@ -12,7 +12,7 @@ import {
 } from '@lampstand/core';
 import { listDir, readJson, writeFileAtomic, writeJsonAtomic } from '../storage/atomic';
 import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
-import { safeUnzip, ZipError } from './zip';
+import { safeUnzip, zipProblem } from './zip';
 import { type InstallOptions } from '../types';
 import { MODULE_LIMITS } from '../constants';
 
@@ -26,40 +26,45 @@ export async function installBibleModule(
   o: InstallOptions,
 ): Promise<BibleVersionInfo> {
   if (zip.byteLength > MODULE_LIMITS.maxTotalBytes)
-    throw new AppError('module-too-large', 'Module is too large.');
+    throw new AppError('module-too-large', 'This Bible package is too large (64 MB at most).');
   const moduleSum = sha256(zip);
   if (o.expectedSha256 && o.expectedSha256 !== moduleSum)
-    throw new AppError('module-checksum', 'Module checksum does not match.');
+    throw new AppError(
+      'module-checksum',
+      'This Bible package’s checksum does not match: it may be damaged or incomplete.',
+    );
   let entries: Map<string, Uint8Array>;
   try {
     entries = await safeUnzip(zip, MODULE_LIMITS);
   } catch (e) {
-    throw new AppError(
-      'module-invalid',
-      e instanceof ZipError ? `Module archive rejected (${e.code}).` : 'Module archive is invalid.',
-    );
+    throw new AppError('module-invalid', zipProblem(e, 'Bible'));
   }
   const manifestBytes = entries.get('manifest.json');
-  if (!manifestBytes) throw new AppError('module-invalid', 'Module has no manifest.');
+  if (!manifestBytes)
+    throw new AppError('module-invalid', 'This Bible package has no manifest.json.');
   const manifestParsed = BibleModuleManifestSchema.safeParse(parseJsonBytes(manifestBytes));
-  if (!manifestParsed.success) throw new AppError('module-invalid', 'Module manifest is invalid.');
+  if (!manifestParsed.success)
+    throw new AppError('module-invalid', 'This Bible package’s manifest.json is invalid.');
   const manifest = manifestParsed.data;
 
   const verseCounts: Partial<Record<BookId, number[]>> = {};
   for (const f of manifest.files) {
     const bytes = entries.get(f.path);
     if (!bytes || bytes.byteLength !== f.size || sha256(bytes) !== f.sha256) {
-      throw new AppError('module-tampered', 'Module contents do not match its manifest.');
+      throw new AppError(
+        'module-tampered',
+        'This Bible package is damaged or was changed: its files do not match its manifest.',
+      );
     }
     if (f.path.startsWith('books/')) {
       const book = BibleBookFileSchema.safeParse(parseJsonBytes(bytes));
       if (!book.success || `books/${book.data.book}.json` !== f.path)
-        throw new AppError('module-invalid', 'A book file in the module is invalid.');
+        throw new AppError('module-invalid', 'A book file in this Bible package is invalid.');
       verseCounts[book.data.book] = book.data.chapters.map((c) => c.length);
     }
   }
   if (Object.keys(verseCounts).length === 0)
-    throw new AppError('module-invalid', 'Module contains no books.');
+    throw new AppError('module-invalid', 'This Bible package contains no books.');
 
   const info: BibleVersionInfo = {
     ...manifest.version,
@@ -149,7 +154,12 @@ export class BibleStore {
   async book(versionId: string, book: BookId): Promise<BibleBookFile | null> {
     const key = `${versionId}/${book}`;
     const hit = this.books.get(key);
-    if (hit) return hit;
+    if (hit) {
+      // Most recently used goes last, so the one dropped is the one unused longest.
+      this.books.delete(key);
+      this.books.set(key, hit);
+      return hit;
+    }
     if (!this.versions.has(versionId)) return null;
     const res = await readJson(
       join(this.root, versionId, 'books', `${book}.json`),

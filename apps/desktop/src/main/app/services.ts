@@ -22,7 +22,7 @@ import { JsonFileRepository } from '../storage/jsonFileRepository';
 import { BibleStore, installBibleModule } from '../modules/bibleModules';
 import { readHymnals } from '../modules/hymnalModules';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
-import { sha256 } from '../modules/packageIo';
+import { clearInstallLeftovers, sha256 } from '../modules/packageIo';
 import { type AppPaths, type InstalledHymnal, type Logger } from '../types';
 import { errorMessage } from '../utils';
 
@@ -101,29 +101,45 @@ export async function installBundledBibles(
   store: BibleStore,
   log: Logger,
 ): Promise<void> {
+  await clearInstallLeftovers(paths.bibles);
+  await clearInstallLeftovers(paths.hymnals);
   await store.refresh();
   const files = (await listDir(join(paths.resources, 'bibles')))
     .filter((e) => e.isFile() && e.name.endsWith('.lsbible'))
     .map((e) => e.name);
   if (!files.length) log.warn('no bundled bibles found');
-  for (const f of files) {
+  // Read and checked side by side; only a changed or missing one is installed (one at a time).
+  const read = await Promise.all(
+    files.map(async (f) => {
+      try {
+        const bytes = new Uint8Array(await readFile(join(paths.resources, 'bibles', f)));
+        return { f, bytes, sum: sha256(bytes) };
+      } catch (e) {
+        log.error('bundled bible unreadable', { file: f, err: errorMessage(e) });
+        return null;
+      }
+    }),
+  );
+  const installed = store.list();
+  for (const r of read) {
+    if (!r || installed.some((v) => v.checksumSha256 === r.sum)) continue;
     try {
-      const bytes = new Uint8Array(await readFile(join(paths.resources, 'bibles', f)));
-      const sum = sha256(bytes);
-      const installed = store.list().find((v) => v.checksumSha256 === sum);
-      if (installed) continue;
+      // A copy of this version the user installed themselves (a newer edition, say) stays:
+      // the bundled one comes back only if they remove theirs.
+      const id = bundledId(r.f);
+      if (installed.some((v) => v.id === id && v.source !== 'bundled')) continue;
       await mkdir(paths.bibles, { recursive: true });
-      const info = await installBibleModule(bytes, { root: paths.bibles, source: 'bundled' });
+      const info = await installBibleModule(r.bytes, { root: paths.bibles, source: 'bundled' });
       log.info('installed bundled bible', { id: info.id });
     } catch (e) {
-      log.error('bundled bible install failed', {
-        file: f,
-        err: errorMessage(e),
-      });
+      log.error('bundled bible install failed', { file: r.f, err: errorMessage(e) });
     }
   }
   await store.refresh();
 }
+
+/** A bundled package's version id: its file name ("kjv.lsbible" → "kjv"), as the build names them. */
+const bundledId = (file: string): string => file.replace(/\.lsbible$/, '');
 
 /** Load bundled + user-installed hymnals as read-only songs (§9.2). Installed copies win. */
 export async function loadHymnals(

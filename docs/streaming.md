@@ -48,12 +48,19 @@ CPU. The console's preview draws the same GPU frames into a canvas at 30 fps.
 **CPU (the fallback).** Main reads each painted frame into memory and writes raw BGRA to ffmpeg on
 a frame clock; ffmpeg converts and encodes. The preview is small JPEGs.
 
-Measured at 1080p60 on an M-series Mac (30 s, a playing video plus a camera PiP):
+Measured at 1080p60 on an M-series Mac (30 s, a playing video plus a camera PiP; re-measured
+21 Nov 2026 with `LAMPSTAND_PERF=1 LAMPSTAND_PERF_CUSTOM=1080x60`):
 
-|     | ffmpeg CPU | fps  | dropped | A/V drift |
-| --- | ---------- | ---- | ------- | --------- |
-| GPU | 0.4 %      | 59.7 | 0       | −32 ms    |
-| CPU | 35.6 %     | 60.3 | 0       | −66 ms    |
+|     | ffmpeg CPU | Lampstand CPU | fps  | dropped | A/V drift |
+| --- | ---------- | ------------- | ---- | ------- | --------- |
+| GPU | 0.5 %      | 7.6 %         | 60.0 | 0       | +2 ms     |
+| CPU | 33.1 %     | 9.9 %         | 61.6 | 45      | −24 ms    |
+
+(CPU is % of one core.) On the GPU pipeline Lampstand's share splits: GPU process 2.9 %, the
+control window (the whole operator UI, its 30 fps preview included) 2.1 %, the stream page 1.1 %,
+main 0.8 %, the rest 0.9 % (`cpuByProcess` in the perf result). The CPU pipeline's cost is
+moving raw frames (about 500 MB/s at 1080p60) and converting them; handing VideoToolbox BGRA to
+convert itself was measured and is no cheaper, so the conversion stays in ffmpeg.
 
 At 720p30: GPU 0.3 % (0 dropped, −90 ms); CPU 10 %.
 

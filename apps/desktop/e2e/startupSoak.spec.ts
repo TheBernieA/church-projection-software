@@ -2,6 +2,7 @@ import { _electron as electron, test } from '@playwright/test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { controlWindow } from './controlWindow';
 
 // Diagnostic soak (on demand): SOAK_RUNS=20 pnpm e2e -- startupSoak
 // Launches with a fresh profile N times; on failure dumps main-process output.
@@ -23,7 +24,7 @@ test('startup soak', async () => {
     app.process().stderr?.on('data', (d: Buffer) => out.push('ERR ' + d.toString()));
     const pageErrors: string[] = [];
     try {
-      const page = await app.firstWindow();
+      const page = await controlWindow(app);
       page.on('pageerror', (e) => pageErrors.push(e.message));
       page.on('console', (m) => m.type() === 'error' && pageErrors.push('console: ' + m.text()));
       await page.waitForSelector('text=Sample Sunday service', { timeout: 15_000 });

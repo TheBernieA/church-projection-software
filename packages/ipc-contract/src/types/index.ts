@@ -105,6 +105,8 @@ export interface ModuleSummary {
   detail: string;
   source: 'bundled' | 'downloaded' | 'imported' | 'installed';
   removable: boolean;
+  /** After an install: new, a replacement for an installed copy, or the same as installed. */
+  change?: 'new' | 'updated' | 'unchanged';
 }
 
 export interface AppInfo {
@@ -142,6 +144,7 @@ export interface QueryResults {
   'modules.list': ModuleSummary[];
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
   'slides.import': ImportedSlides;
+  'songs.importFiles': { files: { name: string; text: string }[]; skipped: string[] };
   'media.importBytes': MediaItem | null;
   'devices.access': { status: DeviceAccess };
   'stream.status': StreamStatus;
