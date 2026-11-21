@@ -38,9 +38,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
 
-      # ffmpeg (livestream and recording): on Windows it comes with `pnpm install` (ffmpeg-static);
-      # on a Mac the dist scripts build Lampstand's own (secure streaming), which needs these
-      # tools, and is cached between runs.
+      # ffmpeg (livestream and recording): on Windows the dist script downloads a pinned,
+      # checksum-checked ffmpeg 9; on a Mac it builds Lampstand's own (secure streaming), which
+      # needs these tools, and is cached between runs.
       - name: Tools for the Mac ffmpeg build
         if: matrix.target == 'mac'
         run: brew install nasm pkgconf

@@ -108,7 +108,7 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   the app writes the Mac's trusted roots (Apple's and any an administrator added) to a file,
   keeping only kinds mbedTLS reads (one it can't read makes ffmpeg refuse the whole file),
   checks offline that ffmpeg accepts it, and passes it as `ca_file`. Failing that, it streams
-  without checking certificates, as older ffmpeg versions (6.0, used on Windows) do by default.
+  without checking certificates, as older ffmpeg versions (6.0 among them) did by default.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries; the count starts again after a steady minute live); a recording carries on as "part 2".
 - **Network drops.** Once a destination has been live, a lost connection doesn't end the stream:

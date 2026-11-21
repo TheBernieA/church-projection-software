@@ -19,9 +19,15 @@ a Mac (or let GitHub do all three, below).
      and Facebook, secure only, won't work), with a warning. mbedTLS has no trust store of its
      own: at stream time the app gives ffmpeg the Mac's trusted root certificates
      (`tlsOptionsFor` in `main/stream/ffmpeg.ts`), so servers are still verified.
-   - **Windows:** the `ffmpeg-static` download from `pnpm install`. Building the Windows
-     installer on a Mac, put `ffmpeg.exe` and its `LICENSE.txt` in `resources/ffmpeg/win-x64/`
-     by hand; otherwise the build warns and that installer can't stream or record.
+   - **Windows:** ffmpeg 9.0.2, Gyan's "essentials" build (the Windows build ffmpeg.org links
+     to: x264, NVENC, Quick Sync, AMF, Media Foundation, SRT, GnuTLS), downloaded once from its
+     pinned GitHub release, checked against its SHA-256 and kept (`WIN` in `prepareFfmpeg.mjs`
+     says which). That works on any computer, so a Windows installer made on a Mac gets it too.
+     Without internet the first time, the build falls back on `ffmpeg-static` (ffmpeg 6.0) on a
+     PC, or none on a Mac, with a warning. ffmpeg 9 checks secure servers' certificates (6.0
+     didn't); on Windows it uses the Windows certificate store, as browsers do.
+     *To move to a newer release:* change `WIN` (version, URL, folder and the SHA-256 GitHub
+     shows for the asset); the next build downloads it.
 
    These ffmpeg builds are GPL v3: shipping them means offering their source. The Mac build's
    `SOURCES.txt` (packaged next to it) lists the exact source archives and checksums.

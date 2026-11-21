@@ -134,9 +134,11 @@ pnpm install
 
 #### 3. ffmpeg (streaming and recording) comes along
 
-Nothing to do: `pnpm install` downloads the Windows ffmpeg, and `pnpm dist:win` puts it inside
-the installer. You'll see `ffmpeg: packaged from ffmpeg-static` as the build starts; if the
-download is missing, the build stops and says to run `pnpm install` again.
+Nothing to do: the first `pnpm dist:win` downloads ffmpeg 9 for Windows (about 110 MB, a
+pinned release of the build ffmpeg.org links to, checked against its checksum) and puts it
+inside the installer; later builds reuse it. You'll see `ffmpeg: ffmpeg 9.0.2 →
+resources/ffmpeg/win-x64/` (or `using ffmpeg 9.0.2…`) as the build starts. Without internet
+the first time, it falls back on the older ffmpeg that `pnpm install` brought, with a warning.
 
 To check an installed copy has it, this file should exist:
 `C:\Users\<you>\AppData\Local\Programs\Lampstand\resources\resources\ffmpeg\ffmpeg.exe`.
@@ -168,11 +170,7 @@ Security › For developers**) and build again. Running PowerShell as administra
    ```sh
    sudo softwareupdate --install-rosetta --agree-to-license
    ```
-2. Put a Windows `ffmpeg.exe` (and its licence as `LICENSE.txt`) in
-   `resources/ffmpeg/win-x64/`. On a Mac, `pnpm install` only downloads the Mac ffmpeg, so take
-   the `.exe` from a Windows PC (`node_modules\ffmpeg-static\` after `pnpm install` there) or
-   the ffmpeg website. Without it, the build warns and the app can't stream or record.
-3. Build:
+2. Build (the Windows ffmpeg is downloaded on the Mac too, the first time):
    ```sh
    pnpm dist:win
    ```

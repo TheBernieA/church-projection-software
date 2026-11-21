@@ -8,6 +8,9 @@ import { caFileLoads, usableRoots } from './certificates';
 import { colourFilter, videoCodecArgs, type Encoder, type TlsOptions } from './ffmpegArgs';
 
 const exe = process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+/** resources/ffmpeg/<this>-<arch>: the folder names the build scripts use. */
+const PLATFORM_DIR =
+  process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'mac' : 'linux';
 
 /**
  * Each ffmpeg's build configuration, asked once per file. Empty when it can't be asked; that
@@ -104,7 +107,7 @@ export async function tlsOptionsFor(ffmpeg: string): Promise<TlsOptions | undefi
 
 /**
  * Where ffmpeg is: LAMPSTAND_FFMPEG if set; else, of the copy shipped with the app
- * (resources/ffmpeg), a system install (Homebrew, /usr/local, PATH) and the `ffmpeg-static`
+ * (resources/ffmpeg; from the source, the one a build prepared there), a system install (Homebrew, /usr/local, PATH) and the `ffmpeg-static`
  * package (development), the first that can stream securely (see hasGoodTls), else the first
  * there is. Null: none, so no streaming or recording.
  */
@@ -116,6 +119,20 @@ export function findFfmpeg(): string | null {
   const own = process.env.LAMPSTAND_FFMPEG;
   const candidates: string[] = [];
   if (app.isPackaged) candidates.push(join(process.resourcesPath, 'resources', 'ffmpeg', exe));
+  // Running from the source: the ffmpeg the installers ship, once a build has prepared it
+  // (scripts/prepareFfmpeg.mjs), so what's tested is what ships.
+  else
+    candidates.push(
+      join(
+        app.getAppPath(),
+        '..',
+        '..',
+        'resources',
+        'ffmpeg',
+        `${PLATFORM_DIR}-${process.arch}`,
+        exe,
+      ),
+    );
   candidates.push(
     '/opt/homebrew/bin/ffmpeg',
     '/usr/local/bin/ffmpeg',
