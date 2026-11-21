@@ -7,6 +7,7 @@ import {
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { controlWindow } from './controlWindow';
 
 /**
  * Shared set-up for the livestream measurements (perf, latency, glass-to-glass): a throwaway
@@ -136,7 +137,7 @@ export async function launch(
   delete env.ELECTRON_RUN_AS_NODE;
   delete env.ELECTRON_RENDERER_URL;
   const app = await electron.launch({ args: ['.', ...args], cwd: join(__dirname, '..'), env });
-  const control = await app.firstWindow();
+  const control = await controlWindow(app);
   await control.waitForLoadState('domcontentloaded');
   await expect
     .poll(async () => (await control.evaluate(() => window.lampstand.query('settings.get'))).ok)

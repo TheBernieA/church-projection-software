@@ -35,6 +35,7 @@ import { stripChords } from '@lampstand/lyrics';
 import { OscServer } from '../surfaces/oscServer';
 import { registerIpc } from '../ipc/router';
 import { installAppMenu } from './menu';
+import { showSplash } from '../windows/splash';
 import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
 import { keyName, StreamController } from '../stream/streamController';
@@ -154,6 +155,7 @@ export class AppController {
     const log = this.log;
     installGlobalGuards(log);
     installDevCsp();
+    const splash = showSplash();
     const settings = new SettingsStore(
       bootPaths.settingsFile,
       bootPaths.userData,
@@ -387,7 +389,7 @@ export class AppController {
       settings.update({ lastServiceId: plan.id });
     }
 
-    this.windows.createControlWindow();
+    splash.closeWhenShown(this.windows.createControlWindow());
     installAppMenu((action) => this.windows.sendToControl(Channels.evMenu, action));
     this.windows.start();
     void dailyBackup(paths.library, paths.backups).catch((e: unknown) =>

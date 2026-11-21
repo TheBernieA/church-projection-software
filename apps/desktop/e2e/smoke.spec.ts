@@ -21,6 +21,7 @@ import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { createSocket } from 'node:dgram';
 import { decodeOsc, encodeOsc } from '@lampstand/core';
+import { controlWindow } from './controlWindow';
 
 /**
  * Core Sunday flow (§19.2): quick bar → preview → go live → verify the output window DOM,
@@ -141,7 +142,7 @@ test.beforeAll(async () => {
   const mainOutput: string[] = [];
   app.process().stdout?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
   app.process().stderr?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
-  control = await app.firstWindow();
+  control = await controlWindow(app);
   const pageErrors: string[] = [];
   control.on('pageerror', (e) => pageErrors.push(e.message));
   try {
