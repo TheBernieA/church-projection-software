@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BookIdSchema, OutputRoleSchema } from '@lampstand/core';
+import { BookIdSchema, OnlineBibleSchema, OutputRoleSchema } from '@lampstand/core';
 import type { QueryName } from './channels';
 
 /**
@@ -52,6 +52,14 @@ export const QuerySchemas = {
   'slides.import': z.undefined(),
   /** Pick song files (SongSelect, ChordPro, OpenLyrics, OpenSong, text); their text comes back. */
   'songs.importFiles': z.undefined(),
+  'onlineBible.status': z.undefined(),
+  /** Try a Bible API before adding it (its key, if any, isn't kept by this). */
+  'onlineBible.probe': z.object({
+    source: OnlineBibleSchema.omit({ id: true }),
+    key: z.string().max(300).default(''),
+  }),
+  /** The Bibles an API.Bible key may read. */
+  'onlineBible.catalog': z.object({ key: z.string().min(1).max(300) }),
   /** Store generated image bytes (e.g. rendered PDF pages) as a library picture. */
   'media.importBytes': z.object({
     name: z.string().min(1).max(200),

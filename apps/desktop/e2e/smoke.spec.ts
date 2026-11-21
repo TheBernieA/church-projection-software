@@ -21,6 +21,7 @@ import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { createSocket } from 'node:dgram';
 import { createHash } from 'node:crypto';
+import { createServer as createHttpServer } from 'node:http';
 import { decodeOsc, encodeOsc } from '@lampstand/core';
 import { controlWindow } from './controlWindow';
 
@@ -695,6 +696,80 @@ test('Bible packages: install one, the same again, a file that isn’t one, then
   const settings = control.getByRole('dialog', { name: 'Settings' });
   await settings.getByRole('button', { name: 'Close', exact: true }).click();
   await expect(settings).toHaveCount(0);
+});
+
+test('online Bibles: a custom API, tried, added, read once then from what is saved, removed', async () => {
+  // A stand-in Bible API on this computer (made-up text): /JHN/3 → 16 verses.
+  const hits: string[] = [];
+  const server = createHttpServer((req, res) => {
+    hits.push(req.url ?? '');
+    const m = /^\/([A-Z0-9]{3})\/(\d+)$/.exec(req.url ?? '');
+    if (!m) {
+      res.writeHead(404).end();
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        verses: Array.from({ length: 16 }, (_, i) => ({
+          verse: i + 1,
+          text: `Online ${m[1]} ${m[2]}:${i + 1} sample`,
+        })),
+      }),
+    );
+  });
+  await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+  const port = (server.address() as { port: number }).port;
+  try {
+    await control.getByTitle('Settings').click();
+    const nav = control.getByRole('navigation', { name: 'Settings' });
+    await nav.getByRole('button', { name: 'Bibles & hymnals' }).click();
+    await control.getByRole('button', { name: 'Add online Bible' }).click();
+    await control.getByRole('radio', { name: 'Custom' }).click();
+    await control.getByLabel('Chapter address').fill(`http://127.0.0.1:${port}/{book}/{chapter}`);
+    await control.getByLabel('Name', { exact: true }).fill('Online Test Bible');
+    await control.getByLabel('Abbreviation').fill('OTB');
+    await control.getByRole('button', { name: 'Try it' }).click();
+    await expect(control.getByText('Online JHN 3:16 sample')).toBeVisible();
+    await control.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(control.getByText('Added Online Test Bible.')).toBeVisible();
+    await expect(control.getByText(/OTB · Custom API · 0 of 500 verses saved/)).toBeVisible();
+    await control.screenshot({ path: 'test-results/online-bibles.png' });
+    // It is a version like the others; a chapter is fetched once, then read from what's saved.
+    const versions = (await control.evaluate(() => window.lampstand.query('bible.versions'))) as {
+      ok: true;
+      value: { id: string; abbreviation: string; source: string }[];
+    };
+    const otb = versions.value.find((v) => v.abbreviation === 'OTB');
+    expect(otb?.source).toBe('online');
+    const read = () =>
+      control.evaluate(
+        (id) =>
+          window.lampstand.query('bible.chapter', { versionId: id, book: 'PSA', chapter: 23 }),
+        otb!.id,
+      );
+    expect(JSON.stringify(await read())).toContain('Online PSA 23:1 sample');
+    await read();
+    expect(hits.filter((h) => h === '/PSA/23')).toHaveLength(1);
+    await expect(control.getByText(/OTB · Custom API · 16 of 500 verses saved/)).toBeVisible();
+    // Removed: gone from the versions.
+    const row = control
+      .getByText('Online Test Bible', { exact: true })
+      .locator('xpath=ancestor::div[contains(@class,"px-4")][1]');
+    await row.getByRole('button', { name: 'Remove' }).click();
+    await control
+      .getByRole('dialog')
+      .filter({ hasText: 'Remove Online Test Bible?' })
+      .getByRole('button', { name: 'Remove', exact: true })
+      .click();
+    await expect(control.getByText('Online Test Bible', { exact: true })).toHaveCount(0);
+    await nav.getByRole('button', { name: 'General' }).click();
+    const settings = control.getByRole('dialog', { name: 'Settings' });
+    await settings.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(settings).toHaveCount(0);
+  } finally {
+    server.close();
+  }
 });
 
 test('settings: category pages, installed Bible packages', async () => {

@@ -5,6 +5,7 @@ import { StageLayoutSchema } from './stage';
 import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
 import { SurfacesSettingsSchema } from './surfaces';
+import { OnlineBibleSchema } from './scripture';
 import { TimerDefSchema } from './timers';
 import { CameraSettingsSchema, InputTransitionSchema, PropPositionSchema } from './scene';
 
@@ -169,6 +170,8 @@ export const SettingsSchema = z
       })
       .default({}),
     defaultBibleVersion: z.string().max(32).default('kjv'),
+    /** Bibles read from an API as they're used (keys are kept encrypted, not here). */
+    onlineBibles: z.array(OnlineBibleSchema).max(20).default([]),
     scripture: z
       .object({
         versesPerSlide: z.enum(['one', 'fit']).default('fit'),

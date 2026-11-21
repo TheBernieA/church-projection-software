@@ -28,6 +28,7 @@ import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 import { IconTile } from '../kindIcons';
 import { LogoLooks } from './LogoLooks';
+import { OnlineBiblesGroup } from './onlineBibles';
 import {
   Group,
   LayerChips,
@@ -636,6 +637,7 @@ export function PackagesPage() {
           )}
         </Group>
       ))}
+      <OnlineBiblesGroup />
     </SettingsPage>
   );
 }

@@ -159,6 +159,7 @@ const HOWTO = [
   'playlist',
   'verse',
   'bibles',
+  'onlineBible',
   'preview',
   'step',
   'clear',

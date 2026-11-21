@@ -98,12 +98,22 @@ export interface ServiceSummary {
 }
 
 /** An installed Bible or hymnal package (§8.3, §9.2). */
+/** An online Bible's state (Settings › Bibles & hymnals › Online Bibles). */
+export interface OnlineBibleStatus {
+  id: string;
+  hasKey: boolean;
+  /** Verses saved on this computer, and the most the provider's terms allow. */
+  savedVerses: number;
+  maxVerses: number;
+  lastError?: string;
+}
+
 export interface ModuleSummary {
   kind: 'bible' | 'hymnal';
   id: string;
   name: string;
   detail: string;
-  source: 'bundled' | 'downloaded' | 'imported' | 'installed';
+  source: 'bundled' | 'downloaded' | 'imported' | 'installed' | 'online';
   removable: boolean;
   /** After an install: new, a replacement for an installed copy, or the same as installed. */
   change?: 'new' | 'updated' | 'unchanged';
@@ -145,6 +155,15 @@ export interface QueryResults {
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
   'slides.import': ImportedSlides;
   'songs.importFiles': { files: { name: string; text: string }[]; skipped: string[] };
+  'onlineBible.status': OnlineBibleStatus[];
+  'onlineBible.probe': { sample: string; copyright?: string; bookName?: string };
+  'onlineBible.catalog': {
+    id: string;
+    name: string;
+    abbreviation: string;
+    language: string;
+    direction: 'ltr' | 'rtl';
+  }[];
   'media.importBytes': MediaItem | null;
   'devices.access': { status: DeviceAccess };
   'stream.status': StreamStatus;
