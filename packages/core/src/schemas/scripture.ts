@@ -101,7 +101,8 @@ export const BibleVersionInfoSchema = z.object({
     url: z.url().optional(),
   }),
   copyrightLine: z.string().max(500).optional(),
-  source: z.enum(['bundled', 'downloaded', 'imported']),
+  /** 'online': read from a Bible API as it's used (Settings › Bibles & hymnals › Online). */
+  source: z.enum(['bundled', 'downloaded', 'imported', 'online']),
   checksumSha256: z
     .string()
     .regex(/^[a-f0-9]{64}$/)
@@ -112,6 +113,58 @@ export const BibleVersionInfoSchema = z.object({
     .optional(),
 });
 export type BibleVersionInfo = z.infer<typeof BibleVersionInfoSchema>;
+
+/** The Bible APIs Lampstand reads from (docs/online-bibles.md). */
+export const ONLINE_BIBLE_PROVIDERS = [
+  'esv',
+  'apibible',
+  'bibleapi',
+  'getbible',
+  'custom',
+] as const;
+export type OnlineBibleProvider = (typeof ONLINE_BIBLE_PROVIDERS)[number];
+
+/** Any other Bible API: where a chapter is, and where its verses are in the reply. */
+export const CustomBibleApiSchema = z.object({
+  /**
+   * The chapter's address, with {book} (USFM: JHN), {bookNumber} (43), {bookName} (John),
+   * {chapter} (3) and {key} (the API key, for APIs that take it in the address).
+   * https only (http for this computer: localhost, 127.0.0.1).
+   */
+  urlTemplate: z.string().min(8).max(500),
+  /** The header the key goes in (e.g. "Authorization", "api-key"); none: no header. */
+  keyHeader: z.string().max(60).default(''),
+  /** Put before the key in that header (e.g. "Token ", "Bearer "). */
+  keyPrefix: z.string().max(30).default(''),
+  /**
+   * 'verses': a list of verses (versesPath to it, textField/numberField in each);
+   * 'text': one text with [1] [2] verse numbers in it (textPath to it).
+   */
+  format: z.enum(['verses', 'text']).default('verses'),
+  /** Dot path in the JSON reply ("verses", "data.content", "passages.0"); empty: the reply. */
+  versesPath: z.string().max(100).default('verses'),
+  textField: z.string().max(60).default('text'),
+  numberField: z.string().max(60).default('verse'),
+  textPath: z.string().max(100).default(''),
+});
+export type CustomBibleApi = z.infer<typeof CustomBibleApiSchema>;
+
+/** A Bible read from an API as it's used. Its key (if any) is kept encrypted, never here. */
+export const OnlineBibleSchema = z.object({
+  /** The version id slides and playlists use ("ol-…"). */
+  id: z.string().regex(/^ol-[a-z0-9]{4,20}$/),
+  provider: z.enum(ONLINE_BIBLE_PROVIDERS),
+  name: z.string().min(1).max(200),
+  abbreviation: z.string().min(1).max(20),
+  language: z.string().min(2).max(35).default('en'),
+  direction: z.enum(['ltr', 'rtl']).default('ltr'),
+  /** The provider's id for it: API.Bible's Bible id, bible-api.com / getbible's translation. */
+  remoteId: z.string().max(100).default(''),
+  /** Credit shown with its verses on slides (API.Bible gives one per Bible). */
+  copyrightLine: z.string().max(500).optional(),
+  custom: CustomBibleApiSchema.optional(),
+});
+export type OnlineBible = z.infer<typeof OnlineBibleSchema>;
 
 /** `manifest.json` inside a `.lsbible` module. See docs/module-format.md. */
 export const BibleModuleManifestSchema = z.object({
