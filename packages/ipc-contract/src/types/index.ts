@@ -142,6 +142,7 @@ export interface QueryResults {
   'modules.list': ModuleSummary[];
   'modules.install': { installed: ModuleSummary[]; failed: { file: string; message: string }[] };
   'slides.import': ImportedSlides;
+  'songs.importFiles': { files: { name: string; text: string }[]; skipped: string[] };
   'media.importBytes': MediaItem | null;
   'devices.access': { status: DeviceAccess };
   'stream.status': StreamStatus;

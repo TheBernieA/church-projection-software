@@ -12,7 +12,8 @@ import { type QueryHandlers, type Services } from '../types';
 import type { SecretStore } from '../secrets/secretStore';
 import { isWithin } from '../security/safePath';
 import { keyName, recordingsFolder, type StreamController } from '../stream/streamController';
-import { MAX_DECK_BYTES } from '../constants';
+import { MAX_DECK_BYTES, MAX_SONG_FILE_BYTES } from '../constants';
+import { decodeTextFile, SONG_FILE_EXTENSIONS } from '@lampstand/lyrics';
 
 interface QueryDeps {
   installModules: (files: string[]) => Promise<QueryResults['modules.install']>;
@@ -50,6 +51,28 @@ export function createQueries({
   };
 
   return {
+    'songs.importFiles': async () => {
+      const paths = await openDialog({
+        title: 'Import songs',
+        properties: ['openFile', 'multiSelections'],
+        filters: [
+          { name: 'Song files', extensions: [...SONG_FILE_EXTENSIONS] },
+          { name: 'All files', extensions: ['*'] },
+        ],
+      });
+      const files: { name: string; text: string }[] = [];
+      const skipped: string[] = [];
+      for (const path of paths.slice(0, 500)) {
+        const name = basename(path).slice(0, 200);
+        try {
+          if ((await stat(path)).size > MAX_SONG_FILE_BYTES) skipped.push(name);
+          else files.push({ name, text: decodeTextFile(await readFile(path)) });
+        } catch {
+          skipped.push(name);
+        }
+      }
+      return { files, skipped };
+    },
     'slides.import': async () => {
       const [file] = await openDialog({
         title: 'Import slides',

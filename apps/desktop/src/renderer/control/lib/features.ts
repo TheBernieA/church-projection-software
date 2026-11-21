@@ -122,7 +122,7 @@ export const FEATURES: Feature[] = [
   f('speaker-notes', 'stage'),
   f('bilingual', 'presentations'),
   f('web-content', 'presentations'),
-  f('song-import', 'library', 'soon'),
+  f('song-import', 'library'),
   f('group-hotkeys', 'automation', 'available'),
   f('media-cues', 'media'),
   f('media-recent', 'media', 'soon'),

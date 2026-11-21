@@ -1,8 +1,17 @@
-import { newId, nowIso, type Song } from '@lampstand/core';
+import { newId, nowIso, type ServiceItem, type Song } from '@lampstand/core';
 import { buildSongSlides, createEmptySong, editorSlides } from '@lampstand/lyrics';
 import { openAdhoc } from './actions';
 import { cmd } from './api';
-import { addItemToService, attempt, flushSongSaves, openService, toast, useStore } from './store';
+import {
+  addItemToService,
+  attempt,
+  flushSongSaves,
+  openService,
+  refresh,
+  toast,
+  useStore,
+} from './store';
+import { q } from './api';
 import i18n from '../i18n';
 import { type SongItem } from '../types';
 import { openEditor } from './editing';
@@ -56,13 +65,23 @@ export async function copySong(song: Song): Promise<void> {
   openEditor(true);
 }
 
-/** Delete a song (Undo brings it back), leaving Edit. */
-export async function deleteSong(song: Song): Promise<void> {
+/**
+ * Delete a song (Undo brings it back). From its editor (`leaveEdit`) that leaves Edit; from the
+ * library it leaves Edit only if that song was the one open there.
+ */
+export async function deleteSong(song: Song, leaveEdit = true): Promise<void> {
   // Typing still waiting to be saved goes first, so a late save can't bring the song back.
   await flushSongSaves();
   if ((await attempt(() => cmd('song.delete', { id: song.id }), 'errors.save')) === undefined)
     return;
-  useStore.setState({ mode: 'show' });
+  const { adhoc, songs, mode } = useStore.getState();
+  const wasOpen = adhoc?.kind === 'song' && adhoc.songId === song.id;
+  // Gone from the list at once; the library's own refresh follows.
+  useStore.setState({
+    songs: songs.filter((s) => s.id !== song.id),
+    ...(wasOpen ? { adhoc: null } : {}),
+    ...(leaveEdit || (wasOpen && mode === 'edit') ? { mode: 'show' as const } : {}),
+  });
   toast(
     i18n.t('song.deleted', {
       title: song.title,
@@ -84,4 +103,29 @@ export function editorStart(song: Song, item: SongItem, maxLines: number): numbe
     0,
     editorSlides(song).findIndex((s) => s.sectionId === sectionId),
   );
+}
+
+/**
+ * Add an item (a song, a verse, media…) to the end of a playlist: the open one directly (undoable like any edit), or
+ * another one saved as it is, without opening it.
+ */
+export async function addToPlaylist(
+  item: ServiceItem,
+  title: string,
+  playlistId: string,
+): Promise<void> {
+  const { service } = useStore.getState();
+  if (service?.id === playlistId) {
+    if (addItemToService(item)) toast(i18n.t('library.addedTo', { title, playlist: service.name }));
+    return;
+  }
+  const plan = await attempt(() => q('services.get', { id: playlistId }), 'errors.save');
+  if (!plan) return;
+  const next = { ...plan, items: [...plan.items, item] };
+  if (
+    (await attempt(() => cmd('service.save', { entity: next }), 'errors.saveService')) === undefined
+  )
+    return;
+  void refresh('services');
+  toast(i18n.t('library.addedTo', { title, playlist: plan.name }));
 }

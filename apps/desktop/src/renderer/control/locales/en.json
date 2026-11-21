@@ -61,13 +61,21 @@
   },
   "library": {
     "tabs": {},
-    "addToService": "Add to service",
+    "addToService": "Add to playlist",
     "filter": "Filter…",
     "newSong": "New song",
     "edit": "Edit",
     "noResults": "Nothing found.",
     "noHymnals": "No hymnal installed. Add one in Settings → Bibles & hymnals → Install package.",
-    "importFile": "Import file"
+    "importFile": "Import file",
+    "addedTo": "Added “{{title}}” to {{playlist}}",
+    "songMenu": "Song options",
+    "open": "Open",
+    "duplicate": "Duplicate",
+    "delete": "Delete song",
+    "noPlaylists": "No playlists yet",
+    "openPlaylist": "open",
+    "importHint": "Import song files, or drop them here"
   },
   "bible": {
     "version": "Version",
@@ -129,7 +137,7 @@
   "slides": {
     "empty": "Pick a song from the library, or an item from the service plan.",
     "loading": "Loading…",
-    "addToService": "Add to service",
+    "addToService": "Add to playlist",
     "noSlides": "This item has no slides.",
     "title": "Slides",
     "count_one": "{{count}} slide",
@@ -1561,7 +1569,7 @@
     },
     "songselect": {
       "name": "SongSelect & CCLI reporting",
-      "description": "Import songs from SongSelect and report usage automatically."
+      "description": "Search SongSelect from inside Lampstand and report song use to CCLI automatically. (SongSelect downloads can already be imported from the song list.)"
     },
     "planning-center": {
       "name": "Planning Center",
@@ -1585,7 +1593,7 @@
     },
     "song-import": {
       "name": "Song file import",
-      "description": "Bring songs in from OpenLyrics, ProPresenter, EasyWorship and plain-text files."
+      "description": "Bring songs in from SongSelect downloads (lyrics, .usr, ChordPro), ChordPro, OpenLyrics, OpenSong and plain-text files: pick them, or drop them on the song list."
     },
     "group-hotkeys": {
       "name": "Group hotkeys",
@@ -2995,5 +3003,16 @@
   "services": {
     "newName": "New service",
     "templateSuffix": " (template)"
+  },
+  "songImport": {
+    "importedOne": "Imported “{{title}}”",
+    "imported": "Imported {{count}} songs",
+    "unread_one": "Couldn’t read {{names}} as a song",
+    "unread_other": "Couldn’t read {{count}} files as songs: {{names}}",
+    "songselect": "SongSelect",
+    "songselectOpen": "Open SongSelect website",
+    "songselectImport": "Import SongSelect download…",
+    "songselectHelp": "On SongSelect, download a song as Lyrics or ChordPro, then import the file here (or drop it on the song list). Its CCLI number, writers and copyright come with it.",
+    "dropHere": "Drop song files to import them"
   }
 }

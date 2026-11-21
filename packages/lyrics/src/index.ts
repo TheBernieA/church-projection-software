@@ -4,3 +4,4 @@ export * from './hymnal';
 export * from './chords';
 export * from './types';
 export * from './songEdit';
+export * from './songImport';

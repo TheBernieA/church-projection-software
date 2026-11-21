@@ -900,6 +900,90 @@ function deckPptx(): Uint8Array {
   });
 }
 
+test('songs: import song files (picked or dropped), add to a chosen playlist, delete', async () => {
+  const library = control.getByRole('region', { name: 'Library' });
+  await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  // A SongSelect lyrics download and a ChordPro chart, picked together.
+  const songselect = join(dir, 'MyChains.txt');
+  writeFileSync(
+    songselect,
+    'My Chains Are Gone Test\n\nVerse 1\nAmazing grace test line\n\nChorus\nMy chains are gone test\n\nCCLI Song # 4768151\nChris Tomlin | John Newton\n© 2006 sixsteps Music\nFor use solely with the SongSelect® Terms of Use. All rights reserved. www.ccli.com\nCCLI License # 1234567\n',
+  );
+  const chordpro = join(dir, 'here.cho');
+  writeFileSync(chordpro, '{title: Here I Am Test}\n{c: Verse 1}\n[D]Here I am to [A]worship\n');
+  await app.evaluate(
+    ({ dialog }, files) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: files });
+    },
+    [songselect, chordpro],
+  );
+  await library.getByRole('button', { name: 'Import file' }).click();
+  await expect(control.getByText('Imported 2 songs')).toBeVisible();
+  const row = (title: string) => library.getByRole('button', { name: title, exact: false });
+  await expect(row('My Chains Are Gone Test')).toBeVisible();
+  await expect(row('Here I Am Test')).toBeVisible();
+  const songs = (await control.evaluate(() => window.lampstand.query('songs.list'))) as {
+    ok: true;
+    value: { id: string; title: string; ccliNumber?: string; authors: string[] }[];
+  };
+  const chains = songs.value.find((x) => x.title === 'My Chains Are Gone Test');
+  expect(chains?.ccliNumber).toBe('4768151');
+  expect(chains?.authors).toEqual(['Chris Tomlin', 'John Newton']);
+  const here = songs.value.find((x) => x.title === 'Here I Am Test');
+
+  // A second playlist (not the open one) to add to.
+  const second = await control.evaluate(async () => {
+    const now = new Date().toISOString();
+    const entity = {
+      id: '01J0000000000000000PLAYLST2',
+      schemaVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      name: 'Evening playlist',
+      items: [],
+    };
+    await window.lampstand.command({ type: 'service.save', payload: { entity }, source: 'ui' });
+    return entity.id;
+  });
+  // Add to playlist: the button asks which playlist.
+  await row('Here I Am Test').hover();
+  const hereRow = row('Here I Am Test').locator('..');
+  await hereRow.getByRole('button', { name: 'Add to playlist' }).click();
+  await control.getByRole('menuitem', { name: /Evening playlist/ }).click();
+  await expect(control.getByText('Added “Here I Am Test” to Evening playlist')).toBeVisible();
+  const plan = (await control.evaluate(
+    (id) => window.lampstand.query('services.get', { id }),
+    second,
+  )) as { ok: true; value: { items: { songId?: string }[] } };
+  expect(plan.value.items.map((i) => i.songId)).toEqual([here?.id]);
+
+  // Right-click: the song's menu; Delete takes it out of the library, Undo brings it back.
+  await row('Here I Am Test').click({ button: 'right' });
+  await control.getByRole('menuitem', { name: 'Delete song' }).click();
+  await expect(row('Here I Am Test')).toHaveCount(0);
+  await control.keyboard.press('ControlOrMeta+Z');
+  await expect(row('Here I Am Test')).toBeVisible();
+
+  // Files dropped on the song list are imported too.
+  const list = row('My Chains Are Gone Test').locator(
+    'xpath=ancestor::div[contains(@class,"overflow-y-auto")][1]',
+  );
+  const drop = await control.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(
+      new File(['Dropped Song Test\n\nVerse 1\nDropped words here'], 'Dropped.txt', {
+        type: 'text/plain',
+      }),
+    );
+    return dt;
+  });
+  await list.dispatchEvent('dragover', { dataTransfer: drop });
+  await list.dispatchEvent('drop', { dataTransfer: drop });
+  await expect(control.getByText('Imported “Dropped Song Test”')).toBeVisible();
+  await expect(row('Dropped Song Test')).toBeVisible();
+  await control.screenshot({ path: 'test-results/song-import.png' });
+});
+
 /** A two-page PDF (pdf.js rebuilds the cross-reference table it leaves out). */
 const HANDOUT_PDF =
   '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n2 0 obj<</Type/Pages/Kids[3 0 R 4 0 R]/Count 2>>endobj\n3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\n4 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 320 180]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n';
