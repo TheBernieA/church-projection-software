@@ -20,6 +20,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { createSocket } from 'node:dgram';
+import { createHash } from 'node:crypto';
 import { decodeOsc, encodeOsc } from '@lampstand/core';
 import { controlWindow } from './controlWindow';
 
@@ -614,6 +615,86 @@ test('text bar: formatting the selected song reaches the output; Use theme remov
   await expect.poll(style).not.toBe('left italic');
   await bar.getByRole('button', { name: 'Close text bar' }).click();
   await expect(bar).toBeHidden();
+});
+
+test('Bible packages: install one, the same again, a file that isn’t one, then remove it', async () => {
+  // A small, valid .lsbible: one book, checksummed like the real ones.
+  const book = strToU8(
+    JSON.stringify({ book: 'JHN', name: 'John', chapters: [['E2E package verse one']] }),
+  );
+  const manifest = {
+    format: 'lampstand-bible',
+    formatVersion: 1,
+    version: {
+      id: 'e2e-test',
+      name: 'E2E Test Bible',
+      abbreviation: 'ETB',
+      language: 'en',
+      direction: 'ltr',
+      versification: 'kjv',
+      license: { kind: 'public-domain', text: 'PD' },
+      source: 'imported',
+      checksumSha256: '',
+      moduleVersion: '1',
+    },
+    files: [
+      {
+        path: 'books/JHN.json',
+        sha256: createHash('sha256').update(book).digest('hex'),
+        size: book.byteLength,
+      },
+    ],
+  };
+  const bible = join(dir, 'E2E.lsbible');
+  writeFileSync(
+    bible,
+    zipSync({ 'manifest.json': strToU8(JSON.stringify(manifest)), 'books/JHN.json': book }),
+  );
+  const notPackage = join(dir, 'notes.lsbible');
+  writeFileSync(notPackage, 'just some notes');
+  const pick = (files: string[]) =>
+    app.evaluate(({ dialog }, f) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: f });
+    }, files);
+
+  await control.getByTitle('Settings').click();
+  const nav = control.getByRole('navigation', { name: 'Settings' });
+  await nav.getByRole('button', { name: 'Bibles & hymnals' }).click();
+  await pick([bible, notPackage]);
+  await control.getByRole('button', { name: 'Install package…' }).click();
+  await expect(control.getByText('Installed E2E Test Bible.')).toBeVisible();
+  // Not a package, though named like one: its error says what's wrong with it.
+  await expect(
+    control.getByText('notes.lsbible: This Bible package is damaged or isn’t a zip file.'),
+  ).toBeVisible();
+  const row = control
+    .getByText('E2E Test Bible', { exact: true })
+    .locator('xpath=ancestor::div[contains(@class,"px-4")][1]');
+  await expect(row).toBeVisible();
+  // Its verses are there to show.
+  const verses = await control.evaluate(() =>
+    window.lampstand.query('bible.chapter', { versionId: 'e2e-test', book: 'JHN', chapter: 1 }),
+  );
+  expect(JSON.stringify(verses)).toContain('E2E package verse one');
+  // The same file again: nothing to do.
+  await pick([bible]);
+  await control.getByRole('button', { name: 'Install package…' }).click();
+  await expect(control.getByText('E2E Test Bible is already installed.')).toBeVisible();
+  // Remove it.
+  await row.getByRole('button', { name: 'Remove' }).click();
+  // The confirmation opens over Settings (itself a dialog).
+  await control
+    .getByRole('dialog')
+    .filter({ hasText: 'Remove E2E Test Bible?' })
+    .getByRole('button', { name: 'Remove', exact: true })
+    .click();
+  await expect(control.getByText('E2E Test Bible', { exact: true })).toHaveCount(0);
+  await expect(control.getByText('King James Version')).toBeVisible();
+  // Settings opens where it was left: back to General, as the next test expects.
+  await nav.getByRole('button', { name: 'General' }).click();
+  const settings = control.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(settings).toHaveCount(0);
 });
 
 test('settings: category pages, installed Bible packages', async () => {

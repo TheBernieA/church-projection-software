@@ -105,6 +105,8 @@ export interface ModuleSummary {
   detail: string;
   source: 'bundled' | 'downloaded' | 'imported' | 'installed';
   removable: boolean;
+  /** After an install: new, a replacement for an installed copy, or the same as installed. */
+  change?: 'new' | 'updated' | 'unchanged';
 }
 
 export interface AppInfo {

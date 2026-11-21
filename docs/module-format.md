@@ -10,9 +10,9 @@ A zip archive:
 ```
 manifest.json        required
 books/GEN.json …     one file per book (USFM 3-letter code), only books present in the version
-headings.json        optional section headings
-footnotes.json       optional
-signature.sig        optional — Ed25519 over the exact bytes of manifest.json (catalog downloads)
+headings.json        optional section headings (kept, not shown yet)
+footnotes.json       optional (kept, not shown yet)
+signature.sig        reserved — Ed25519 over manifest.json, for a future catalog (not checked yet)
 ```
 
 ### `manifest.json`
@@ -97,17 +97,29 @@ app; operators use "Duplicate to edit". Only distribute hymnals whose words you 
 
 ## Install pipeline (both formats)
 
-1. Size limit (64 MB package) and file-type check (zip magic bytes).
-2. Optional catalog checksum (SHA-256) and, for catalog downloads, Ed25519 signature with the key compiled into the app.
+1. Size limit (64 MB package). What the file is comes from its contents, not its name: a zip
+   (`PK\x03\x04`) whose `manifest.json` says `lampstand-bible` or `lampstand-hymnal-module`, or a
+   plain hymnal JSON (`"format": "lampstand-hymnal"`). Anything else is refused as "not a
+   Lampstand package". (A damaged file falls back to its extension, so its error says what's wrong.)
+2. Optional checksum (SHA-256) when the caller knows one. Ed25519 signatures for a download
+   catalog are planned, not implemented.
 3. In-memory extraction with **zip-slip** protection (no absolute paths, `..`, backslashes, drive letters; path allow-list)
    and **zip-bomb** limits (≤ 300 files, ≤ 8 MB per file, ≤ 64 MB total, ≤ 200:1 compression ratio).
 4. Per-file SHA-256 and size checked against the manifest (tampered packages are rejected).
 5. Every JSON validated with Zod.
-6. Written to a staging directory, then atomically renamed into `userData/bibles/<id>/` or `userData/hymnals/<id>/`.
+6. Written to a staging directory and swapped into `userData/bibles/<id>/` or `userData/hymnals/<id>/`: the
+   installed copy is renamed aside first and deleted only once the new one is in place, so a crash leaves one
+   or the other, never neither. Leftovers of an interrupted install are cleared at the next start.
 7. The search index is rebuilt in the SearchWorker; the UI refreshes.
 
+Installing a package whose bytes match an installed version does nothing ("already installed"). One with the
+same `id` but different contents replaces it ("Updated"), including an included (bundled) Bible: the user's
+copy then stays across restarts, and removing it brings the bundled one back. Removing the default Bible
+version moves the default to KJV, or else the first version still installed.
+
 Bundled packages: any valid `.lsbible` in `resources/bibles/` (or hymnal `.json` in `resources/hymns/`) ships with the
-app and installs on first run — adding one is a content change, not a code change. `scripts/buildBibleModules.mjs`
+app and installs on first run (and again when an app update changes it; the file name must be the version id,
+`<id>.lsbible`) — adding one is a content change, not a code change. `scripts/buildBibleModules.mjs`
 builds the bundled Bibles from eBible.org's public-domain USFM and records provenance in each manifest:
 KJV, ASV, WEB, YLT, Darby, BBE and Webster (English), Diodati and Riveduta (Italian), Reina-Valera 1909
 (Spanish), Louis Segond 1910 (French) and Luther 1912 (German). Add one by adding a row to its `VERSIONS`

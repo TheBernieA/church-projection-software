@@ -771,10 +771,10 @@
   },
   "modules": {
     "install": "Install package…",
-    "help": "Add Bible versions (.lsbible) and hymnals (.lshymnal or .json) from files. Packages are checked and validated before they are installed.",
+    "help": "Add Bible versions (.lsbible) and hymnals (.lshymnal or hymnal .json) from files: choose Install package… and pick one or more. Each package is checked and validated before it’s installed. Installing a newer copy of an installed version replaces it.",
     "installed": "Installed {{name}}.",
     "remove": "Remove",
-    "confirmRemove": "Remove {{name}}? Service items that use it will show nothing until it is installed again.",
+    "confirmRemove": "Remove {{name}}? If it replaced an included version, the included one comes back. Otherwise, service items that use it show nothing until it is installed again.",
     "source": {
       "bundled": "Bundled",
       "downloaded": "Downloaded",
@@ -788,7 +788,9 @@
     "empty": {
       "bible": "No Bible versions installed.",
       "hymnal": "No hymnals installed yet. Install a .lshymnal or .json package to add one."
-    }
+    },
+    "updated": "Updated {{name}}.",
+    "unchanged": "{{name}} is already installed."
   },
   "inspector": {
     "tabs": "Slide or text",
@@ -852,7 +854,7 @@
       },
       "packages": {
         "title": "Add Bibles and hymnals",
-        "body": "Twelve public-domain Bibles are included: KJV, ASV, WEB, YLT, Darby, BBE and Webster in English, Diodati and Riveduta in Italian, Reina-Valera 1909 in Spanish, Louis Segond 1910 in French and Luther 1912 in German. Install other Bible versions (.lsbible) and hymnals (.lshymnal) from files you have been given."
+        "body": "Twelve public-domain Bibles are included: KJV, ASV, WEB, YLT, Darby, BBE and Webster in English, Diodati and Riveduta in Italian, Reina-Valera 1909 in Spanish, Louis Segond 1910 in French and Luther 1912 in German. To add another Bible version (.lsbible) or a hymnal (.lshymnal), open Settings › Bibles & hymnals and choose Install package…."
       },
       "service": {
         "title": "Build your service",
@@ -1006,6 +1008,10 @@
           "q": "Put a Bible verse on screen",
           "a": "1. Press {{quick}}.\n2. Type a reference such as jn 3 16 or Romans 8:28-39.\n3. Press Enter to load it on Preview, or Shift+Enter to put it straight on screen.\nIn the Bible workspace, clicking a verse opens it in the slides without touching the screen, so it never interrupts a presentation. Click the slide to show it, or double-click the verse to show it at once. Turn on “Click shows it now” there if you want a click to go straight on screen."
         },
+        "bibles": {
+          "q": "Add a Bible version or hymnal",
+          "a": "1. Open Settings › Bibles & hymnals and choose Install package….\n2. Pick one or more .lsbible (Bible) or .lshymnal (hymnal) files. Lampstand checks each one and tells you if a file is damaged or isn’t a package.\n3. The new version appears in the Bible workspace’s version list and in search. To make it the one verses use first, choose it as the Default Bible version in Settings › Scripture.\nInstalling a newer copy of a version you already have replaces it, even one of the included Bibles. Remove brings an included Bible back; the included Bibles themselves can’t be removed.\nBible packages come from whoever holds the translation’s rights: Lampstand can’t open other Bible software’s files or online Bibles directly."
+        },
         "preview": {
           "q": "Check slides before the room sees them",
           "a": "1. Turn on Preview first in the toolbar.\n2. Click a slide: it loads on the Preview monitor only.\n3. Press {{goLive}} (or Go live) to send it to the screens."
@@ -1033,6 +1039,10 @@
         "import": {
           "q": "Bring in PowerPoint or PDF",
           "a": "1. Choose Import in the + menu.\n2. Pick a PowerPoint or PDF file.\nPowerPoint comes in as editable text slides; PDF brings each page in as a picture. From Keynote, export to PowerPoint or PDF first."
+        },
+        "songImport": {
+          "q": "Import songs from SongSelect or other software",
+          "a": "1. In the Library’s Songs, click Import file (or drag song files onto the song list).\n2. Pick one or more files: SongSelect downloads (lyrics .txt, .usr or ChordPro), ChordPro, OpenLyrics (OpenLP), OpenSong, or plain text.\n3. Each becomes a song in your library, with its sections, chords, CCLI number, writers and copyright where the file has them. One song opens straight away so you can check it.\nSongSelect › Open SongSelect website takes you there to download a song. Undo takes an imported song back out."
         },
         "web": {
           "q": "Show a web page",

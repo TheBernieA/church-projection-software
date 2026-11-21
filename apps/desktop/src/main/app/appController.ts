@@ -16,6 +16,7 @@ import {
   standbyKey,
   STARTER_THEMES,
   type AuditEntry,
+  type BibleVersionInfo,
   type LiveState,
   type Song,
   type ScreenVisual,
@@ -47,6 +48,9 @@ import { dailyBackup } from '../library/backup';
 import { MediaLibrary } from '../library/mediaLibrary';
 import { BibleStore, installBibleModule } from '../modules/bibleModules';
 import { installHymnalModule, removeInstalled } from '../modules/hymnalModules';
+import { packageKind } from '../modules/packageKind';
+import { sha256 } from '../modules/packageIo';
+import { MODULE_LIMITS } from '../constants';
 import { SearchService } from '../search/searchService';
 import { handleAppProtocol, handleMediaProtocol, rendererRootDir } from '../security/protocols';
 import {
@@ -81,6 +85,18 @@ function songDoc(s: Song): SongDoc {
     hymn: hymn ? `h${hymn}` : '',
     tags: s.tags.join(' '),
     isHymn: s.origin === 'hymnal',
+  };
+}
+
+/** How an installed Bible is listed in Settings › Bibles & hymnals. */
+function bibleSummary(v: BibleVersionInfo): ModuleSummary {
+  return {
+    kind: 'bible',
+    id: v.id,
+    name: v.name,
+    detail: v.abbreviation,
+    source: v.source,
+    removable: v.source !== 'bundled',
   };
 }
 
@@ -574,8 +590,18 @@ export class AppController {
         const mod = this.listModules().find((m) => m.kind === kind && m.id === id);
         if (!mod?.removable) throw new AppError('read-only', 'Bundled packages cannot be removed.');
         await removeInstalled(kind === 'bible' ? this.s.paths.bibles : this.s.paths.hymnals, id);
-        if (kind === 'bible') await this.reloadBibles();
-        else await this.reloadHymnals();
+        if (kind === 'bible') {
+          // A bundled version this one replaced comes back.
+          await installBundledBibles(this.s.paths, this.s.bibles, this.log.child('bibles'));
+          // Removing the default version: the default moves to one that's still installed.
+          const left = this.s.bibles.list();
+          const current = this.s.settings.get().defaultBibleVersion;
+          if (!left.some((v) => v.id === current)) {
+            const next = left.find((v) => v.id === 'kjv') ?? left[0];
+            if (next) this.s.settings.update({ defaultBibleVersion: next.id });
+          }
+          await this.reloadBibles();
+        } else await this.reloadHymnals();
         return { result: true };
       },
     });
@@ -625,25 +651,40 @@ export class AppController {
       const name = basename(file);
       try {
         const st = await stat(file);
-        if (st.size > 64 * 1024 * 1024)
-          throw new AppError('module-too-large', 'Package is too large.');
+        if (st.size > MODULE_LIMITS.maxTotalBytes)
+          throw new AppError('module-too-large', 'This package is too large (64 MB at most).');
         const bytes = new Uint8Array(await readFile(file));
-        if (file.toLowerCase().endsWith('.lsbible')) {
+        // What it is comes from its contents; the name decides only for a damaged file (so
+        // its error says what is wrong with it).
+        const lower = file.toLowerCase();
+        const kind =
+          (await packageKind(bytes)) ??
+          (lower.endsWith('.lsbible') ? 'bible' : lower.endsWith('.lshymnal') ? 'hymnal' : null);
+        if (!kind)
+          throw new AppError(
+            'module-invalid',
+            'This isn’t a Lampstand Bible or hymnal package (.lsbible, .lshymnal or hymnal .json).',
+          );
+        if (kind === 'bible') {
+          const sum = sha256(bytes);
+          const before = this.s.bibles.list();
+          const same = before.find((v) => v.checksumSha256 === sum);
+          if (same) {
+            installed.push({ ...bibleSummary(same), change: 'unchanged' });
+            continue;
+          }
           await mkdir(this.s.paths.bibles, { recursive: true });
           const v = await installBibleModule(bytes, {
             root: this.s.paths.bibles,
             source: 'imported',
           });
           installed.push({
-            kind: 'bible',
-            id: v.id,
-            name: v.name,
-            detail: v.abbreviation,
-            source: 'imported',
-            removable: true,
+            ...bibleSummary(v),
+            change: before.some((b) => b.id === v.id) ? 'updated' : 'new',
           });
           bibles = true;
         } else {
+          const had = new Set(this.s.hymnals.map((h) => h.id));
           await mkdir(this.s.paths.hymnals, { recursive: true });
           const h = await installHymnalModule(bytes, this.s.paths.hymnals);
           installed.push({
@@ -653,6 +694,7 @@ export class AppController {
             detail: `${h.hymns.length} hymns`,
             source: 'installed',
             removable: true,
+            change: had.has(h.id) ? 'updated' : 'new',
           });
           hymns = true;
         }
@@ -670,14 +712,7 @@ export class AppController {
   }
 
   private listModules(): ModuleSummary[] {
-    const bibles: ModuleSummary[] = this.s.bibles.list().map((v) => ({
-      kind: 'bible',
-      id: v.id,
-      name: v.name,
-      detail: v.abbreviation,
-      source: v.source,
-      removable: v.source !== 'bundled',
-    }));
+    const bibles: ModuleSummary[] = this.s.bibles.list().map(bibleSummary);
     const hymnals: ModuleSummary[] = this.s.hymnals.map((h) => ({
       kind: 'hymnal',
       id: h.id,

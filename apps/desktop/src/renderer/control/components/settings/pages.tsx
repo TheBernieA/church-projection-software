@@ -552,7 +552,17 @@ export function PackagesPage() {
   const install = async (): Promise<void> => {
     const r = await attempt(() => q('modules.install'), 'errors.install');
     if (!r) return;
-    for (const m of r.installed) toast(t('modules.installed', { name: m.name }));
+    for (const m of r.installed)
+      toast(
+        t(
+          m.change === 'updated'
+            ? 'modules.updated'
+            : m.change === 'unchanged'
+              ? 'modules.unchanged'
+              : 'modules.installed',
+          { name: m.name },
+        ),
+      );
     for (const f of r.failed) toast(`${f.file}: ${f.message}`, 'error');
     load();
   };

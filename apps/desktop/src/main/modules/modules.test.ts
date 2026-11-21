@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
@@ -8,6 +8,10 @@ import { BibleStore, installBibleModule } from './bibleModules';
 import { installHymnalModule, readHymnals } from './hymnalModules';
 import { isSafeEntryName, safeUnzip, ZipError } from './zip';
 import { MODULE_LIMITS } from '../constants';
+import { clearInstallLeftovers, installIntoPlace } from './packageIo';
+import { packageKind } from './packageKind';
+import { installBundledBibles } from '../app/services';
+import type { AppPaths, Logger } from '../types';
 
 let dir: string;
 beforeEach(async () => {
@@ -19,12 +23,14 @@ afterEach(async () => {
 
 const sha = (b: Uint8Array): string => createHash('sha256').update(b).digest('hex');
 
-function bibleZip(opts: { tamper?: boolean; extra?: Record<string, Uint8Array> } = {}): Uint8Array {
+function bibleZip(
+  opts: { tamper?: boolean; extra?: Record<string, Uint8Array>; verse?: string } = {},
+): Uint8Array {
   const book = strToU8(
     JSON.stringify({
       book: 'JHN',
       name: 'John',
-      chapters: [['In the beginning was the Word'], ['v1', 'v2']],
+      chapters: [[opts.verse ?? 'In the beginning was the Word'], ['v1', 'v2']],
     }),
   );
   const manifest = {
@@ -100,6 +106,11 @@ describe('Bible module install pipeline', () => {
       }),
     ).rejects.toThrow(/checksum/);
   });
+  it('says a file that isn’t a zip is damaged, not unsafe', async () => {
+    await expect(
+      installBibleModule(strToU8('just some notes'), { root: dir, source: 'imported' }),
+    ).rejects.toThrow(/damaged or isn’t a zip file/);
+  });
   it('rejects zip-slip inside a module', async () => {
     await expect(
       installBibleModule(bibleZip({ extra: { '../../escape.json': strToU8('{}') } }), {
@@ -150,5 +161,69 @@ describe('hymnal packages', () => {
     await expect(installHymnalModule(strToU8('{"format":"nope"}'), dir)).rejects.toThrow(
       /not a valid/,
     );
+  });
+});
+
+describe('what a package is', () => {
+  it('reads the kind from the contents, not the name', async () => {
+    expect(await packageKind(bibleZip())).toBe('bible');
+    const json = strToU8(JSON.stringify({ format: 'lampstand-hymnal', id: 'x' }));
+    expect(await packageKind(json)).toBe('hymnal');
+    const manifest = strToU8(JSON.stringify({ format: 'lampstand-hymnal-module' }));
+    expect(await packageKind(zipSync({ 'manifest.json': manifest }))).toBe('hymnal');
+    expect(await packageKind(zipSync({ 'GEN.usfm': strToU8('\\id GEN') }))).toBeNull();
+    expect(await packageKind(strToU8('not a package'))).toBeNull();
+  });
+});
+
+describe('installing into place', () => {
+  it('replaces an installed copy and leaves nothing behind', async () => {
+    await installIntoPlace(dir, 'v', (d) => writeFile(join(d, 'a.txt'), 'one'));
+    await installIntoPlace(dir, 'v', (d) => writeFile(join(d, 'a.txt'), 'two'));
+    expect(await readFile(join(dir, 'v', 'a.txt'), 'utf8')).toBe('two');
+    expect(await readdir(dir)).toEqual(['v']);
+  });
+  it('keeps the installed copy when writing the new one fails', async () => {
+    await installIntoPlace(dir, 'v', (d) => writeFile(join(d, 'a.txt'), 'one'));
+    await expect(
+      installIntoPlace(dir, 'v', () => Promise.reject(new Error('disk full'))),
+    ).rejects.toThrow('disk full');
+    expect(await readFile(join(dir, 'v', 'a.txt'), 'utf8')).toBe('one');
+    expect(await readdir(dir)).toEqual(['v']);
+  });
+  it('clears what an interrupted install left', async () => {
+    await mkdir(join(dir, '.staging-v-1'));
+    await mkdir(join(dir, '.old-v-2'));
+    await mkdir(join(dir, 'v'));
+    await clearInstallLeftovers(dir);
+    expect(await readdir(dir)).toEqual(['v']);
+  });
+});
+
+describe('bundled Bibles', () => {
+  const log = { info: () => {}, warn: () => {}, error: () => {} } as unknown as Logger;
+  it('keep a copy the user installed, and come back when it is removed', async () => {
+    const paths = {
+      resources: join(dir, 'res'),
+      bibles: join(dir, 'bibles'),
+      hymnals: join(dir, 'hymnals'),
+    } as AppPaths;
+    await mkdir(join(paths.resources, 'bibles'), { recursive: true });
+    await writeFile(join(paths.resources, 'bibles', 'test.lsbible'), bibleZip());
+    const store = new BibleStore(paths.bibles);
+    await installBundledBibles(paths, store, log);
+    expect(store.list().map((v) => v.source)).toEqual(['bundled']);
+    // The user installs their own edition of the same version: it survives a restart.
+    await installBibleModule(bibleZip({ verse: 'Their edition' }), {
+      root: paths.bibles,
+      source: 'imported',
+    });
+    await installBundledBibles(paths, store, log);
+    expect(store.list().map((v) => v.source)).toEqual(['imported']);
+    expect(await store.chapter('test', 'JHN', 1)).toEqual(['Their edition']);
+    // Removed: the bundled one is back.
+    await rm(join(paths.bibles, 'test'), { recursive: true });
+    await installBundledBibles(paths, store, log);
+    expect(store.list().map((v) => v.source)).toEqual(['bundled']);
   });
 });
