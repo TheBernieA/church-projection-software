@@ -27,7 +27,12 @@ export function splitSection(lines: string[], maxLinesWanted: number): string[][
 /** Build the ordered slide list for a song + arrangement (§9.1). */
 export function buildSongSlides(
   song: Song,
-  opts: { arrangementId?: string; maxLines: number; translationLang?: string },
+  opts: {
+    arrangementId?: string;
+    maxLines: number;
+    /** The translation to show under the words; '' for none; unset: the song's default. */
+    translationLang?: string;
+  },
 ): LyricSlide[] {
   const arrangement =
     song.arrangements.find((a) => a.id === opts.arrangementId) ??
@@ -36,7 +41,12 @@ export function buildSongSlides(
   const order = arrangement?.sectionOrder.length
     ? arrangement.sectionOrder
     : song.sections.map((s) => s.id);
-  const translated = opts.translationLang ? song.translations?.[opts.translationLang] : undefined;
+  // An item's own choice wins ('' = none); with none made, the song's default translation.
+  const lang =
+    opts.translationLang === undefined
+      ? song.defaultTranslation
+      : opts.translationLang || undefined;
+  const translated = lang ? song.translations?.[lang] : undefined;
   const occurrences = new Map<string, number>();
   const slides: LyricSlide[] = [];
   for (const sectionId of order) {

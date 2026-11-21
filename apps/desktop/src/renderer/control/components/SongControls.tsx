@@ -107,10 +107,12 @@ export function SongControls({ item, song }: { item: SongItem; song: Song }) {
           <Select
             size="sm"
             aria-label={t('slides.translation')}
-            value={item.translationLang ?? NO_TRANSLATION}
+            // Unset follows the song's default; '' is an explicit "none" over that default.
+            value={(item.translationLang ?? song.defaultTranslation) || NO_TRANSLATION}
             onChange={(v) =>
               patchItem<SongItem>(item, {
-                translationLang: v === NO_TRANSLATION ? undefined : v,
+                translationLang:
+                  v === NO_TRANSLATION ? (song.defaultTranslation ? '' : undefined) : v,
               })
             }
             options={[

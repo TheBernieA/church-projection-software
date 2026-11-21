@@ -323,10 +323,15 @@ function Translation({ ed }: { ed: SongEditorState }) {
   const langDraft = useFocusDraft(lang);
   const wordsDraft = useFocusDraft(words);
   const setTranslation = (code: string, text: string): void =>
-    void ed.patch(
-      (s) => ({ ...s, translations: { [code]: parseSongText(text, s.sections).sections } }),
-      true,
-    );
+    void ed.patch((s) => {
+      const next: Song = {
+        ...s,
+        translations: { [code]: parseSongText(text, s.sections).sections },
+      };
+      // Shown by default under its old code: still shown under its new one.
+      if (s.defaultTranslation) next.defaultTranslation = code;
+      return next;
+    }, true);
   return (
     <>
       <Field label={t('song.translationLang')} htmlFor="song-tlang">
@@ -362,6 +367,20 @@ function Translation({ ed }: { ed: SongEditorState }) {
           spellCheck
         />
       </Field>
+      {lang && (
+        <div className="flex items-center justify-between gap-3">
+          <Typography variant="label">{t('songEditor.showTranslation')}</Typography>
+          <Switch
+            label={t('songEditor.showTranslation')}
+            checked={song.defaultTranslation === lang}
+            onChange={(on) =>
+              ed.patch((s) =>
+                on ? { ...s, defaultTranslation: lang } : omit(s, 'defaultTranslation'),
+              )
+            }
+          />
+        </div>
+      )}
       <Typography as="p" variant="caption" leading="snug">
         {t('song.translationHelp')}
       </Typography>
@@ -370,7 +389,7 @@ function Translation({ ed }: { ed: SongEditorState }) {
           size="xs"
           variant="ghost"
           icon={<Trash2 size={13} />}
-          onClick={() => ed.patch((s) => omit(s, 'translations'))}
+          onClick={() => ed.patch((s) => omit(s, 'translations', 'defaultTranslation'))}
         >
           {t('songEditor.removeTranslation')}
         </Button>

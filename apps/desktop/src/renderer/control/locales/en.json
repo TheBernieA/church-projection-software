@@ -302,7 +302,7 @@
     "addArrangement": "Add arrangement",
     "translation": "Translated words",
     "translationLang": "Language",
-    "translationHelp": "Same [Section] headings as the lyrics. Pick the translation for an item in the slide grid.",
+    "translationHelp": "Same [Section] headings as the lyrics, and the same line breaks, so each slide’s translation lines up with its words. “Show under the words” shows it everywhere the song is used; any playlist item can still pick another translation, or none, in the slide grid.",
     "translationSection": "Translation",
     "create": "Create",
     "untitled": "Untitled song",
@@ -382,7 +382,8 @@
     "long": "Long",
     "longHint": "More than {{max}} lines: it shows as more than one slide. Split it to choose where it breaks.",
     "empty": "This song has no words yet.",
-    "missing": "This song isn’t in the library any more."
+    "missing": "This song isn’t in the library any more.",
+    "showTranslation": "Show under the words"
   },
   "theme": {
     "outputs": {
@@ -1042,7 +1043,7 @@
         },
         "songImport": {
           "q": "Import songs from SongSelect or other software",
-          "a": "1. In the Library’s Songs, click Import file (or drag song files onto the song list).\n2. Pick one or more files: SongSelect downloads (lyrics .txt, .usr or ChordPro), ChordPro, OpenLyrics (OpenLP), OpenSong, or plain text.\n3. Each becomes a song in your library, with its sections, chords, CCLI number, writers and copyright where the file has them. One song opens straight away so you can check it.\nSongSelect › Open SongSelect website takes you there to download a song. Undo takes an imported song back out."
+          "a": "1. In the Library’s Songs, click Import file (or drag song files onto the song list).\n2. Pick one or more files: SongSelect downloads (lyrics .txt, .usr or ChordPro), ChordPro, OpenLyrics (OpenLP), OpenSong, or plain text.\n3. Each becomes a song in your library, with its sections, chords, CCLI number, writers and copyright where the file has them. One song opens straight away so you can check it.\nAn OpenLyrics file with the words in two languages (OpenLP exports them this way) brings the second in as a translation, shown smaller under the words on every slide. Turn that off for the song in Edit › Song › Translation (Show under the words), or for one playlist item in the slide grid’s translation menu.\nSongSelect › Open SongSelect website takes you there to download a song. Undo takes an imported song back out."
         },
         "web": {
           "q": "Show a web page",
@@ -1603,7 +1604,7 @@
     },
     "song-import": {
       "name": "Song file import",
-      "description": "Bring songs in from SongSelect downloads (lyrics, .usr, ChordPro), ChordPro, OpenLyrics, OpenSong and plain-text files: pick them, or drop them on the song list."
+      "description": "Bring songs in from SongSelect downloads (lyrics, .usr, ChordPro), ChordPro, OpenLyrics (with its translations), OpenSong and plain-text files: pick them, or drop them on the song list."
     },
     "group-hotkeys": {
       "name": "Group hotkeys",

@@ -52,6 +52,11 @@ export const SongSchema = EntityMetaSchema.extend({
   textFormat: TextFormatSchema.optional(),
   language: z.string().max(35).optional(),
   translations: z.record(z.string(), z.array(SongSectionSchema)).optional(),
+  /**
+   * The translation (a key of `translations`) shown under the words unless a playlist item
+   * chooses otherwise; unset: none.
+   */
+  defaultTranslation: z.string().max(35).optional(),
   /** Origin: user-created, imported, or from a bundled/downloaded hymnal (read-only). */
   origin: z.enum(['user', 'imported', 'hymnal']).default('user'),
 });
