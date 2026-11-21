@@ -30,6 +30,7 @@ export const QUERY_NAMES = [
   'modules.list',
   'modules.install',
   'slides.import',
+  'songs.importFiles',
   'media.importBytes',
   'devices.access',
   'stream.status',

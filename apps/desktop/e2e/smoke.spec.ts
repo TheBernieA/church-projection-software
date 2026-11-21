@@ -20,7 +20,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { strToU8, zipSync } from 'fflate';
 import { createSocket } from 'node:dgram';
+import { createHash } from 'node:crypto';
 import { decodeOsc, encodeOsc } from '@lampstand/core';
+import { controlWindow } from './controlWindow';
 
 /**
  * Core Sunday flow (§19.2): quick bar → preview → go live → verify the output window DOM,
@@ -141,7 +143,7 @@ test.beforeAll(async () => {
   const mainOutput: string[] = [];
   app.process().stdout?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
   app.process().stderr?.on('data', (d: Buffer) => mainOutput.push(d.toString()));
-  control = await app.firstWindow();
+  control = await controlWindow(app);
   const pageErrors: string[] = [];
   control.on('pageerror', (e) => pageErrors.push(e.message));
   try {
@@ -615,6 +617,86 @@ test('text bar: formatting the selected song reaches the output; Use theme remov
   await expect(bar).toBeHidden();
 });
 
+test('Bible packages: install one, the same again, a file that isn’t one, then remove it', async () => {
+  // A small, valid .lsbible: one book, checksummed like the real ones.
+  const book = strToU8(
+    JSON.stringify({ book: 'JHN', name: 'John', chapters: [['E2E package verse one']] }),
+  );
+  const manifest = {
+    format: 'lampstand-bible',
+    formatVersion: 1,
+    version: {
+      id: 'e2e-test',
+      name: 'E2E Test Bible',
+      abbreviation: 'ETB',
+      language: 'en',
+      direction: 'ltr',
+      versification: 'kjv',
+      license: { kind: 'public-domain', text: 'PD' },
+      source: 'imported',
+      checksumSha256: '',
+      moduleVersion: '1',
+    },
+    files: [
+      {
+        path: 'books/JHN.json',
+        sha256: createHash('sha256').update(book).digest('hex'),
+        size: book.byteLength,
+      },
+    ],
+  };
+  const bible = join(dir, 'E2E.lsbible');
+  writeFileSync(
+    bible,
+    zipSync({ 'manifest.json': strToU8(JSON.stringify(manifest)), 'books/JHN.json': book }),
+  );
+  const notPackage = join(dir, 'notes.lsbible');
+  writeFileSync(notPackage, 'just some notes');
+  const pick = (files: string[]) =>
+    app.evaluate(({ dialog }, f) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: f });
+    }, files);
+
+  await control.getByTitle('Settings').click();
+  const nav = control.getByRole('navigation', { name: 'Settings' });
+  await nav.getByRole('button', { name: 'Bibles & hymnals' }).click();
+  await pick([bible, notPackage]);
+  await control.getByRole('button', { name: 'Install package…' }).click();
+  await expect(control.getByText('Installed E2E Test Bible.')).toBeVisible();
+  // Not a package, though named like one: its error says what's wrong with it.
+  await expect(
+    control.getByText('notes.lsbible: This Bible package is damaged or isn’t a zip file.'),
+  ).toBeVisible();
+  const row = control
+    .getByText('E2E Test Bible', { exact: true })
+    .locator('xpath=ancestor::div[contains(@class,"px-4")][1]');
+  await expect(row).toBeVisible();
+  // Its verses are there to show.
+  const verses = await control.evaluate(() =>
+    window.lampstand.query('bible.chapter', { versionId: 'e2e-test', book: 'JHN', chapter: 1 }),
+  );
+  expect(JSON.stringify(verses)).toContain('E2E package verse one');
+  // The same file again: nothing to do.
+  await pick([bible]);
+  await control.getByRole('button', { name: 'Install package…' }).click();
+  await expect(control.getByText('E2E Test Bible is already installed.')).toBeVisible();
+  // Remove it.
+  await row.getByRole('button', { name: 'Remove' }).click();
+  // The confirmation opens over Settings (itself a dialog).
+  await control
+    .getByRole('dialog')
+    .filter({ hasText: 'Remove E2E Test Bible?' })
+    .getByRole('button', { name: 'Remove', exact: true })
+    .click();
+  await expect(control.getByText('E2E Test Bible', { exact: true })).toHaveCount(0);
+  await expect(control.getByText('King James Version')).toBeVisible();
+  // Settings opens where it was left: back to General, as the next test expects.
+  await nav.getByRole('button', { name: 'General' }).click();
+  const settings = control.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(settings).toHaveCount(0);
+});
+
 test('settings: category pages, installed Bible packages', async () => {
   await control.getByTitle('Settings').click();
   const nav = control.getByRole('navigation', { name: 'Settings' });
@@ -898,6 +980,90 @@ function deckPptx(): Uint8Array {
     ),
   });
 }
+
+test('songs: import song files (picked or dropped), add to a chosen playlist, delete', async () => {
+  const library = control.getByRole('region', { name: 'Library' });
+  await library.getByRole('button', { name: 'Songs', exact: true }).click();
+  // A SongSelect lyrics download and a ChordPro chart, picked together.
+  const songselect = join(dir, 'MyChains.txt');
+  writeFileSync(
+    songselect,
+    'My Chains Are Gone Test\n\nVerse 1\nAmazing grace test line\n\nChorus\nMy chains are gone test\n\nCCLI Song # 4768151\nChris Tomlin | John Newton\n© 2006 sixsteps Music\nFor use solely with the SongSelect® Terms of Use. All rights reserved. www.ccli.com\nCCLI License # 1234567\n',
+  );
+  const chordpro = join(dir, 'here.cho');
+  writeFileSync(chordpro, '{title: Here I Am Test}\n{c: Verse 1}\n[D]Here I am to [A]worship\n');
+  await app.evaluate(
+    ({ dialog }, files) => {
+      dialog.showOpenDialog = () => Promise.resolve({ canceled: false, filePaths: files });
+    },
+    [songselect, chordpro],
+  );
+  await library.getByRole('button', { name: 'Import file' }).click();
+  await expect(control.getByText('Imported 2 songs')).toBeVisible();
+  const row = (title: string) => library.getByRole('button', { name: title, exact: false });
+  await expect(row('My Chains Are Gone Test')).toBeVisible();
+  await expect(row('Here I Am Test')).toBeVisible();
+  const songs = (await control.evaluate(() => window.lampstand.query('songs.list'))) as {
+    ok: true;
+    value: { id: string; title: string; ccliNumber?: string; authors: string[] }[];
+  };
+  const chains = songs.value.find((x) => x.title === 'My Chains Are Gone Test');
+  expect(chains?.ccliNumber).toBe('4768151');
+  expect(chains?.authors).toEqual(['Chris Tomlin', 'John Newton']);
+  const here = songs.value.find((x) => x.title === 'Here I Am Test');
+
+  // A second playlist (not the open one) to add to.
+  const second = await control.evaluate(async () => {
+    const now = new Date().toISOString();
+    const entity = {
+      id: '01J0000000000000000PLAYLST2',
+      schemaVersion: 1,
+      createdAt: now,
+      updatedAt: now,
+      name: 'Evening playlist',
+      items: [],
+    };
+    await window.lampstand.command({ type: 'service.save', payload: { entity }, source: 'ui' });
+    return entity.id;
+  });
+  // Add to playlist: the button asks which playlist.
+  await row('Here I Am Test').hover();
+  const hereRow = row('Here I Am Test').locator('..');
+  await hereRow.getByRole('button', { name: 'Add to playlist' }).click();
+  await control.getByRole('menuitem', { name: /Evening playlist/ }).click();
+  await expect(control.getByText('Added “Here I Am Test” to Evening playlist')).toBeVisible();
+  const plan = (await control.evaluate(
+    (id) => window.lampstand.query('services.get', { id }),
+    second,
+  )) as { ok: true; value: { items: { songId?: string }[] } };
+  expect(plan.value.items.map((i) => i.songId)).toEqual([here?.id]);
+
+  // Right-click: the song's menu; Delete takes it out of the library, Undo brings it back.
+  await row('Here I Am Test').click({ button: 'right' });
+  await control.getByRole('menuitem', { name: 'Delete song' }).click();
+  await expect(row('Here I Am Test')).toHaveCount(0);
+  await control.keyboard.press('ControlOrMeta+Z');
+  await expect(row('Here I Am Test')).toBeVisible();
+
+  // Files dropped on the song list are imported too.
+  const list = row('My Chains Are Gone Test').locator(
+    'xpath=ancestor::div[contains(@class,"overflow-y-auto")][1]',
+  );
+  const drop = await control.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.items.add(
+      new File(['Dropped Song Test\n\nVerse 1\nDropped words here'], 'Dropped.txt', {
+        type: 'text/plain',
+      }),
+    );
+    return dt;
+  });
+  await list.dispatchEvent('dragover', { dataTransfer: drop });
+  await list.dispatchEvent('drop', { dataTransfer: drop });
+  await expect(control.getByText('Imported “Dropped Song Test”')).toBeVisible();
+  await expect(row('Dropped Song Test')).toBeVisible();
+  await control.screenshot({ path: 'test-results/song-import.png' });
+});
 
 /** A two-page PDF (pdf.js rebuilds the cross-reference table it leaves out). */
 const HANDOUT_PDF =

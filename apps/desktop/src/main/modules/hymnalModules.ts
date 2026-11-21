@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { AppError, HymnalFileSchema, type HymnalFile } from '@lampstand/core';
 import { listDir, writeJsonAtomic } from '../storage/atomic';
-import { installIntoPlace, parseJsonBytes, sha256 } from './packageIo';
-import { safeUnzip, ZipError } from './zip';
+import { installIntoPlace, isZip, parseJsonBytes, sha256 } from './packageIo';
+import { safeUnzip, zipProblem } from './zip';
 import { MODULE_LIMITS } from '../constants';
 
 /** `manifest.json` inside a `.lshymnal` zip. See docs/module-format.md. */
@@ -24,20 +24,14 @@ const HymnalManifestSchema = z.object({
  */
 export async function installHymnalModule(bytes: Uint8Array, root: string): Promise<HymnalFile> {
   if (bytes.byteLength > MODULE_LIMITS.maxTotalBytes)
-    throw new AppError('module-too-large', 'Hymnal package is too large.');
+    throw new AppError('module-too-large', 'This hymnal package is too large (64 MB at most).');
   let hymnalBytes: Uint8Array;
-  const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
-  if (isZip) {
+  if (isZip(bytes)) {
     let entries: Map<string, Uint8Array>;
     try {
       entries = await safeUnzip(bytes, MODULE_LIMITS);
     } catch (e) {
-      throw new AppError(
-        'module-invalid',
-        e instanceof ZipError
-          ? `Hymnal archive rejected (${e.code}).`
-          : 'Hymnal archive is invalid.',
-      );
+      throw new AppError('module-invalid', zipProblem(e, 'hymnal'));
     }
     const manifest = HymnalManifestSchema.safeParse(
       parseJsonBytes(entries.get('manifest.json') ?? new Uint8Array()),
@@ -46,7 +40,10 @@ export async function installHymnalModule(bytes: Uint8Array, root: string): Prom
     if (!manifest.success || !file)
       throw new AppError('module-invalid', 'Hymnal package manifest is missing or invalid.');
     if (file.byteLength !== manifest.data.file.size || sha256(file) !== manifest.data.file.sha256) {
-      throw new AppError('module-tampered', 'Hymnal contents do not match its manifest.');
+      throw new AppError(
+        'module-tampered',
+        'This hymnal package is damaged or was changed: its contents do not match its manifest.',
+      );
     }
     hymnalBytes = file;
   } else hymnalBytes = bytes;

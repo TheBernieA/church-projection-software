@@ -24,6 +24,8 @@ export const MAX_VIDEO_BYTES = 16 * 1024 * 1024 * 1024;
 // Slide import
 /** Slide decks bigger than this are refused before reading (PDFs are rendered in memory). */
 export const MAX_DECK_BYTES = 200 * 1024 * 1024;
+/** A song file is words: anything bigger isn't one. */
+export const MAX_SONG_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_IMPORT_SLIDES = 500;
 
 /** Only the XML parts are unpacked; pictures and media inside the deck are skipped. */

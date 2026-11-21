@@ -69,6 +69,7 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
     fps: number;
     speed: number;
   }[] = [];
+  const byKind = new Map<string, number[]>();
   const end = Date.now() + SECONDS * 1000;
   while (Date.now() < end) {
     await control.waitForTimeout(2000);
@@ -76,9 +77,22 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
       .split('\n')
       .find((l) => /\/ffmpeg\s/.test(l) && /pipe:0/.test(l));
     const [, cpu, rss] = ps?.trim().split(/\s+/) ?? [];
-    const metrics = await app.evaluate(({ app: a }) =>
-      a.getAppMetrics().map((m) => ({ cpu: m.cpu.percentCPUUsage, mem: m.memory.workingSetSize })),
-    );
+    const metrics = await app.evaluate(({ app: a, webContents }) => {
+      // Which window each renderer is (control, output, stream…), to see where the time goes.
+      const pages = new Map(
+        webContents.getAllWebContents().map((w) => [w.getOSProcessId(), w.getURL()]),
+      );
+      return a.getAppMetrics().map((m) => {
+        const url = pages.get(m.pid) ?? '';
+        const page = /\/(control|output|stream|multiview|live|stage)\//.exec(url)?.[1];
+        return {
+          cpu: m.cpu.percentCPUUsage,
+          mem: m.memory.workingSetSize,
+          kind: page ? `renderer:${page}` : m.type,
+        };
+      });
+    });
+    for (const m of metrics) byKind.set(m.kind, [...(byKind.get(m.kind) ?? []), m.cpu]);
     const s = await status();
     samples.push({
       ffCpu: Number(cpu ?? 0),
@@ -153,6 +167,13 @@ test('livestream performance: 720p30 recording of a video with a camera', async 
     videoSeconds: dur('v'),
     audioSeconds: dur('a'),
     avDriftMs: Math.round((dur('a') - dur('v')) * 1000),
+    // Average CPU per kind of process (several of one kind are added up per sample).
+    cpuByProcess: Object.fromEntries(
+      [...byKind].map(([k, v]) => [
+        k,
+        Math.round((v.reduce((a, x) => a + x, 0) / samples.length) * 10) / 10,
+      ]),
+    ),
   };
   console.log('PERF', JSON.stringify(result));
   writeFileSync(

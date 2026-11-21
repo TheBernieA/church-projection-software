@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, rename, rm } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 
 /** Hex SHA-256 of some bytes. Used for package checksums and per-file manifest checks. */
@@ -25,15 +25,52 @@ export async function installIntoPlace(
   id: string,
   write: (dir: string) => Promise<void>,
 ): Promise<void> {
-  const staging = join(root, `.staging-${id}-${Date.now()}`);
+  const stamp = Date.now();
+  const staging = join(root, `.staging-${id}-${stamp}`);
+  const old = join(root, `.old-${id}-${stamp}`);
   const target = join(root, id);
   await mkdir(staging, { recursive: true });
   try {
     await write(staging);
-    await rm(target, { recursive: true, force: true });
-    await rename(staging, target);
   } catch (e) {
     await rm(staging, { recursive: true, force: true });
     throw e;
   }
+  // The installed copy steps aside first and is deleted only once the new one is in place, so
+  // there's never a moment with neither (a crash leaves the old copy, or the new one).
+  let movedOld = false;
+  try {
+    await rename(target, old);
+    movedOld = true;
+  } catch {
+    /* nothing installed yet */
+  }
+  try {
+    await rename(staging, target);
+  } catch (e) {
+    if (movedOld) await rename(old, target).catch(() => undefined);
+    await rm(staging, { recursive: true, force: true });
+    throw e;
+  }
+  if (movedOld) await rm(old, { recursive: true, force: true });
+}
+
+/** Leftovers of an install a crash interrupted (`.staging-…`, `.old-…`), cleared at start-up. */
+export async function clearInstallLeftovers(root: string): Promise<void> {
+  let names: string[];
+  try {
+    names = await readdir(root);
+  } catch {
+    return;
+  }
+  await Promise.all(
+    names
+      .filter((n) => n.startsWith('.staging-') || n.startsWith('.old-'))
+      .map((n) => rm(join(root, n), { recursive: true, force: true }).catch(() => undefined)),
+  );
+}
+
+/** Does it start with a zip's local-file signature ("PK\x03\x04")? */
+export function isZip(bytes: Uint8Array): boolean {
+  return bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
 }

@@ -1,15 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
-import { ListPlus, Search } from 'lucide-react';
+import { useMemo, useRef, useState, type DragEvent } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { ExternalLink, FileUp, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { newId, type Song } from '@lampstand/core';
 import { stripChords } from '@lampstand/lyrics';
-import { IconButton, Typography, typographyClass, Button } from '@lampstand/ui';
+import { Typography, typographyClass, Button } from '@lampstand/ui';
 import { openAdhoc } from '../lib/actions';
 import { libraryDragSource } from '../lib/libraryDrag';
+import { deleteSong } from '../lib/songs';
+import { importDroppedSongFiles, importSongFiles } from '../lib/songImport';
 import { addItemToService, useStore } from '../lib/store';
 import { SoonFeature } from './Soon';
-import { REVEAL } from './cards';
+import { ITEM_CLASS, MENU_CLASS } from './menu';
+import { AddToPlaylistMenu, SongMenu } from './song/SongRowMenus';
+
+const SONGSELECT_URL = 'https://songselect.ccli.com/';
+const CHIP = `!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`;
+
+/** Files (not text or a library item) being dragged in. */
+const hasFiles = (e: DragEvent): boolean => e.dataTransfer.types.includes('Files');
 
 function haystack(s: Song): string {
   return [
@@ -33,6 +43,29 @@ export function SongList({ hymns }: { hymns: boolean }) {
   const [filter, setFilter] = useState('');
   const parent = useRef<HTMLDivElement>(null);
   const addToService = addItemToService;
+  /** The row whose ⋯ menu is open (a right-click on a row opens it). */
+  const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [dropping, setDropping] = useState(false);
+  // Song files dropped anywhere on the list are imported (not the hymns: those are read-only).
+  const drop = hymns
+    ? {}
+    : {
+        onDragOver: (e: DragEvent) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          setDropping(true);
+        },
+        onDragLeave: (e: DragEvent) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropping(false);
+        },
+        onDrop: (e: DragEvent) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          setDropping(false);
+          void importDroppedSongFiles([...e.dataTransfer.files]);
+        },
+      };
 
   // Sorted, with each song's searchable text, once per library change (not per keystroke).
   const sorted = useMemo(() => {
@@ -80,23 +113,49 @@ export function SongList({ hymns }: { hymns: boolean }) {
         </div>
       </div>
       {!hymns && (
-        // Ways to bring songs in, coming soon.
+        // Ways to bring songs in.
         <div className="flex flex-wrap items-center gap-1 px-3 pb-2">
-          <SoonFeature
-            id="song-import"
-            label={t('library.importFile')}
-            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
-          />
-          <SoonFeature
-            id="songselect"
-            label="SongSelect"
-            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
-          />
-          <SoonFeature
-            id="multitracks"
-            label="MultiTracks"
-            className={`!h-6 !px-1.5 ${typographyClass({ size: 11, important: true })}`}
-          />
+          <Button
+            size="xs"
+            variant="ghost"
+            className={CHIP}
+            icon={<FileUp size={12} />}
+            title={t('library.importHint')}
+            onClick={() => void importSongFiles()}
+          >
+            {t('library.importFile')}
+          </Button>
+          <DropdownMenu.Root modal={false}>
+            <DropdownMenu.Trigger asChild>
+              <Button size="xs" variant="ghost" className={CHIP}>
+                {t('songImport.songselect')}
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                align="start"
+                sideOffset={4}
+                collisionPadding={8}
+                className={`${MENU_CLASS} max-w-[300px]`}
+              >
+                <DropdownMenu.Item
+                  className={ITEM_CLASS}
+                  onSelect={() => window.open(SONGSELECT_URL)}
+                >
+                  <ExternalLink size={13} />
+                  {t('songImport.songselectOpen')}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void importSongFiles()}>
+                  <FileUp size={13} />
+                  {t('songImport.songselectImport')}
+                </DropdownMenu.Item>
+                <Typography as="p" variant="caption" leading="snug" className="px-2.5 pb-1.5 pt-1">
+                  {t('songImport.songselectHelp')}
+                </Typography>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+          <SoonFeature id="multitracks" label="MultiTracks" className={CHIP} />
         </div>
       )}
       {rows.length === 0 && (
@@ -104,7 +163,20 @@ export function SongList({ hymns }: { hymns: boolean }) {
           {hymns && !filter ? t('library.noHymnals') : t('library.noResults')}
         </Typography>
       )}
-      <div ref={parent} className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div
+        ref={parent}
+        className={`relative min-h-0 flex-1 overflow-y-auto px-2 pb-2 ${dropping ? 'rounded-[8px] outline-dashed outline-2 -outline-offset-4 outline-[var(--accent)]' : ''}`}
+        {...drop}
+      >
+        {dropping && (
+          <Typography
+            size={13}
+            weight="semibold"
+            className="pointer-events-none sticky top-2 z-10 mx-auto block w-fit rounded-full bg-[var(--surface-3)] px-3 py-1 text-[var(--accent)]"
+          >
+            {t('songImport.dropHere')}
+          </Typography>
+        )}
         <div style={{ height: v.getTotalSize(), position: 'relative' }}>
           {v.getVirtualItems().map((row) => {
             const s = rows[row.index];
@@ -123,6 +195,16 @@ export function SongList({ hymns }: { hymns: boolean }) {
                   className={`flex h-[46px] min-w-0 flex-1 items-center gap-3 rounded-[8px] px-2.5 text-left transition-colors ${active ? 'bg-[var(--surface-3)]' : 'hover:bg-[var(--surface-2)]'}`}
                   onClick={() => void openAdhoc(item, 'select')}
                   onDoubleClick={() => addToService({ ...item, id: newId() })}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setMenuFor(s.id);
+                  }}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Delete' || e.key === 'Backspace') && s.origin !== 'hymnal') {
+                      e.preventDefault();
+                      void deleteSong(s, false);
+                    }
+                  }}
                   {...libraryDragSource(() => item)}
                 >
                   {s.hymnNumber?.[0] && (
@@ -144,14 +226,12 @@ export function SongList({ hymns }: { hymns: boolean }) {
                     </Typography>
                   </Typography>
                 </Button>
-                <IconButton
-                  size="xs"
-                  className={REVEAL}
-                  aria-label={t('library.addToService')}
-                  onClick={() => addToService({ ...item, id: newId() })}
-                >
-                  <ListPlus size={15} />
-                </IconButton>
+                <AddToPlaylistMenu song={s} />
+                <SongMenu
+                  song={s}
+                  open={menuFor === s.id}
+                  onOpenChange={(o) => setMenuFor(o ? s.id : null)}
+                />
               </div>
             );
           })}

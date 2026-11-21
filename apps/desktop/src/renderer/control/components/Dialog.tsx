@@ -43,8 +43,9 @@ export function Dialog({
           {bare ? (
             <>
               <RD.Title className="sr-only">{title}</RD.Title>
+              {/* Above the pages' sticky headers (z-10), which would otherwise cover it. */}
               <RD.Close
-                className="absolute right-3 top-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
+                className="absolute right-3 top-3 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-[var(--radius-control)] text-[var(--text-3)] transition-colors hover:bg-[var(--surface-3)] hover:text-[var(--text-1)]"
                 aria-label={t('common.close')}
               >
                 <X size={17} />

@@ -3,9 +3,9 @@ import { join } from 'node:path';
 import { devCsp } from './csp';
 import { type Logger } from '../types';
 
-/** Hardened webPreferences applied to EVERY window (§17.1). */
+/** Hardened webPreferences applied to EVERY window (§17.1). null: no preload (the splash). */
 export function secureWebPreferences(
-  preload: 'control' | 'output' | 'stream',
+  preload: 'control' | 'output' | 'stream' | null,
   extra: Partial<WebPreferences> = {},
 ): WebPreferences {
   return {
@@ -20,7 +20,7 @@ export function secureWebPreferences(
     spellcheck: false,
     webviewTag: false,
     navigateOnDragDrop: false,
-    preload: join(__dirname, `../preload/${preload}.js`),
+    ...(preload ? { preload: join(__dirname, `../preload/${preload}.js`) } : {}),
     ...extra,
   };
 }
