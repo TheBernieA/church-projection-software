@@ -95,10 +95,20 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   the recording (fragmented MP4: playable even after a crash), which writes through its own queue
   (`use_fifo`) so a slow disk never holds up the live outputs. AAC is Apple's (`aac_at`) where
   ffmpeg has it, else ffmpeg's own.
-- **Encoder.** The best available is chosen: `h264_videotoolbox` (macOS), `h264_nvenc`,
-  `h264_qsv`, `h264_amf`, else `libx264` (veryfast, zerolatency). Hardware encoders run with no
-  B-frames and no frame queueing (NVENC `zerolatency`, Quick Sync `async_depth 1`). A hardware
-  encoder that fails at start is dropped for the rest of the session.
+- **Encoder.** The best that works on this computer is chosen: `h264_videotoolbox` (macOS),
+  `h264_nvenc`, `h264_qsv`, `h264_amf`, `h264_mf` (Windows' Media Foundation: whatever hardware
+  encoder the graphics driver offers, hardware only), else `libx264` (veryfast, zerolatency).
+  ffmpeg lists every encoder it was built with (the Windows build has all four hardware ones on
+  any PC), so each is tried once at start-up with a few test frames and the stream's own
+  settings (`probeEncoders`); that also tells Auto whether the computer really has a hardware
+  encoder (no: Light on a 4-core machine). Hardware encoders run with no B-frames and no frame
+  queueing (NVENC `zerolatency`, Quick Sync `async_depth 1`). A hardware encoder that still fails
+  at start is dropped for the rest of the session.
+- **Secure destinations (Mac).** Lampstand's Mac ffmpeg uses mbedTLS, which has no trust store:
+  the app writes the Mac's trusted roots (Apple's and any an administrator added) to a file,
+  keeping only kinds mbedTLS reads (one it can't read makes ffmpeg refuse the whole file),
+  checks offline that ffmpeg accepts it, and passes it as `ca_file`. Failing that, it streams
+  without checking certificates, as older ffmpeg versions (6.0 among them) did by default.
 - **Recovery.** If ffmpeg stops on its own, it restarts after 2, 5, 10, 20… seconds (up to 10
   tries; the count starts again after a steady minute live); a recording carries on as "part 2".
 - **Network drops.** Once a destination has been live, a lost connection doesn't end the stream:
@@ -111,7 +121,20 @@ control window ──commands──▶ main: StreamController ──frames (BGRA
   10 minutes the destinations that couldn't come back are marked failed and left; a recording or
   another destination carries on (with nothing left, the stream ends with the reason). A wrong
   address or key at the first start still fails at once.
-  (`reachability.ts`; tested end to end in `e2e/reconnect.spec.ts`.)
+  **Silent drops** (a pulled cable, Wi-Fi gone, the router down) close nothing: the connection
+  just stops moving, and ffmpeg alone would wait minutes for the system to give up, the stream
+  frozen for viewers and the console still saying Live. Each RTMP(S) destination therefore has
+  a write limit (`rw_timeout`, 5 s) and a send buffer of about one second of its bitrate
+  (`send_buffer_size`), so a dead connection fills it quickly and fails like any other: the
+  recording and other destinations go on, and it reconnects as above. Expect it to be noticed
+  within roughly 10–25 s (sooner with motion, later on a still slide's low bitrate); the
+  recording may skip frames in that time, as the stalled destination holds the others up until
+  it fails. When the GPU pipeline falls behind and wants to reconnect to throw the backlog away,
+  it first checks that the servers answer; if they don't, it waits for that failure instead of
+  splitting the recording for nothing.
+  (`reachability.ts`, `sendBufferBytes`/`STALLED_WRITE_US` in `ffmpegArgs.ts`; tested end to end
+  in `e2e/reconnect.spec.ts`, including a silent drop on both pipelines through a proxy that
+  freezes the connection and refuses new ones.)
   A stream page that crashes is reopened and the encoder restarted with it. A recording folder
   that can't be made falls back to the usual one, else the stream carries on without recording. Quitting the app finishes the recording first.
 

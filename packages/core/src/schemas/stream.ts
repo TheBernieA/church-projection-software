@@ -10,6 +10,7 @@ export const STREAM_ENCODERS = [
   'h264_nvenc',
   'h264_qsv',
   'h264_amf',
+  'h264_mf',
   'libx264',
 ] as const;
 export type StreamEncoderId = (typeof STREAM_ENCODERS)[number];
@@ -20,6 +21,7 @@ export const ENCODER_SHORT_NAMES: Record<StreamEncoderId | 'webcodecs', string> 
   h264_nvenc: 'NVENC',
   h264_qsv: 'Quick Sync',
   h264_amf: 'AMF',
+  h264_mf: 'Media Foundation',
   libx264: 'x264',
   webcodecs: 'GPU · hardware encoder',
 };
