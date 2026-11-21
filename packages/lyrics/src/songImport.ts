@@ -26,6 +26,10 @@ export interface ImportedSong {
   sections: SongSection[];
   /** The order the sections are sung in, as section ids (empty: as written). */
   order: string[];
+  /** The words' language (BCP-47), when the file says. */
+  language?: string;
+  /** Translations by language: each section's lines, under the same id as the section. */
+  translations?: Record<string, SongSection[]>;
 }
 
 /** File extensions the importer reads (for the open dialog). */
@@ -412,9 +416,15 @@ function parseOpenLyrics(xml: string, fileTitle: string): ImportedSong {
   );
   const sections: SongSection[] = [];
   const byName = new Map<string, string>();
+  // A verse may come in several languages (`lang="en"`): the first verse's language is the
+  // words; the others are translations, matched to the words by the verse's name.
+  let mainLang: string | undefined;
+  const others: { name: string; lang: string; lines: string[] }[] = [];
   for (const v of xml.matchAll(/<verse\s+([^>]*)>([\s\S]*?)<\/verse>/gi)) {
     const attrs = v[1] ?? '';
     const name = /name\s*=\s*"([^"]*)"/i.exec(attrs)?.[1] ?? `v${sections.length + 1}`;
+    const lang = /\blang\s*=\s*"([^"]{1,35})"/i.exec(attrs)?.[1]?.trim();
+    if (/\btranslit\s*=/i.test(attrs)) continue; // the same words in another script
     const lines: string[] = [];
     // eslint-disable-next-line security/detect-unsafe-regex -- linear: [^>]* stops at '>'
     for (const l of (v[2] ?? '').matchAll(/<lines(?:\s[^>]*)?>([\s\S]*?)<\/lines>/gi)) {
@@ -432,11 +442,24 @@ function parseOpenLyrics(xml: string, fileTitle: string): ImportedSong {
           .map((x) => x.trim()),
       );
     }
+    if (sections.length === 0 && others.length === 0) mainLang = lang;
+    if (lang && lang !== mainLang) {
+      others.push({ name: name.toLowerCase(), lang, lines });
+      continue;
+    }
     const s = section(expandSectionName(name), lines);
     if (!byName.has(name.toLowerCase())) byName.set(name.toLowerCase(), s.id);
     sections.push(s);
   }
   const kept = nonEmpty(sections);
+  const translations: Record<string, SongSection[]> = {};
+  for (const o of others) {
+    const main = kept.find((k) => k.id === byName.get(o.name));
+    if (!main) continue;
+    const lines = section(main.label, o.lines).lines;
+    if (!lines.some((l) => l.trim())) continue;
+    (translations[o.lang] ??= []).push({ ...main, lines });
+  }
   const orderText = tag(xml, 'verseOrder') ?? '';
   const order = orderText
     .split(/\s+/)
@@ -448,6 +471,8 @@ function parseOpenLyrics(xml: string, fileTitle: string): ImportedSong {
   const copyright = tag(xml, 'copyright');
   return {
     format: 'openlyrics',
+    ...(mainLang ? { language: mainLang } : {}),
+    ...(Object.keys(translations).length ? { translations } : {}),
     title: tag(xml, 'title') || fileTitle,
     authors: authors.filter(Boolean).slice(0, 20),
     ...(copyright ? { copyright: copyright.slice(0, 500) } : {}),
@@ -585,6 +610,15 @@ export function songFromImport(imp: ImportedSong, now: string): Song {
     arrangements: [{ id: arrangementId, name: 'Default', sectionOrder: imp.order.slice(0, 200) }],
     defaultArrangementId: arrangementId,
     tags: [],
+    ...(imp.language ? { language: imp.language.slice(0, 35) } : {}),
+    // Translations that came with the words are shown under them (a playlist item can still
+    // choose another, or none).
+    ...(imp.translations && Object.keys(imp.translations).length
+      ? {
+          translations: imp.translations,
+          defaultTranslation: Object.keys(imp.translations)[0],
+        }
+      : {}),
     origin: 'imported',
   };
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SongSchema } from '@lampstand/core';
 import { decodeTextFile, mergeChordLine, parseSongFile, songFromImport } from './songImport';
+import { buildSongSlides } from './slides';
 
 const labels = (s: { sections: { label: string }[] } | null) => s?.sections.map((x) => x.label);
 
@@ -195,5 +196,52 @@ describe('decodeTextFile', () => {
     expect(decodeTextFile(new Uint8Array([0xfe, 0xff, 0x00, 0x41]))).toBe('A');
     // 0x92 is a curly apostrophe in Windows-1252, and not valid UTF-8 by itself.
     expect(decodeTextFile(new Uint8Array([0x49, 0x92, 0x6d]))).toBe('I\u2019m');
+  });
+});
+
+describe('translations', () => {
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<song xmlns="http://openlyrics.info/namespace/2009/song" version="0.9">
+  <properties><titles><title>Oguamba Se Ayeyi</title></titles></properties>
+  <lyrics>
+    <verse name="v1" lang="ak"><lines>Oguamba s\u025b ayeyi<br/>Oguamba s\u025b ndaase</lines><lines>\u0186no na \u0254se ayeyi</lines></verse>
+    <verse name="v1" lang="en"><lines>The Lamb of God is worthy of praise<br/>The Lamb of God is worthy of thanksgiving</lines><lines>He is worthy of praise</lines></verse>
+    <verse name="c" lang="ak"><lines>Halleluyah</lines></verse>
+    <verse name="c" lang="ak" translit="en"><lines>Ignored</lines></verse>
+  </lyrics>
+</song>`;
+  it('reads other-language verses as translations, slide for slide', () => {
+    const imp = parseSongFile('oguamba.xml', xml);
+    expect(imp?.language).toBe('ak');
+    expect(imp?.sections.map((x) => x.label)).toEqual(['Verse 1', 'Chorus']);
+    const en = imp?.translations?.en;
+    expect(en?.length).toBe(1);
+    expect(en?.[0]?.id).toBe(imp?.sections[0]?.id);
+    expect(en?.[0]?.lines).toEqual([
+      'The Lamb of God is worthy of praise',
+      'The Lamb of God is worthy of thanksgiving',
+      '',
+      'He is worthy of praise',
+    ]);
+    expect(JSON.stringify(imp)).not.toContain('Ignored');
+  });
+
+  it('shows an imported translation by default; an item can pick none', () => {
+    const imp = parseSongFile('oguamba.xml', xml);
+    const song = songFromImport(imp!, '2026-11-21T00:00:00.000Z');
+    expect(SongSchema.safeParse(song).success).toBe(true);
+    expect(song.defaultTranslation).toBe('en');
+    const shown = buildSongSlides(song, { maxLines: 4 });
+    expect(shown.map((x) => x.translation)).toEqual([
+      ['The Lamb of God is worthy of praise', 'The Lamb of God is worthy of thanksgiving'],
+      ['He is worthy of praise'],
+      undefined,
+    ]);
+    expect(buildSongSlides(song, { maxLines: 4, translationLang: '' })[0]?.translation).toBe(
+      undefined,
+    );
+    expect(buildSongSlides(song, { maxLines: 4, translationLang: 'fr' })[0]?.translation).toBe(
+      undefined,
+    );
   });
 });
