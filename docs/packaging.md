@@ -7,13 +7,34 @@ a Mac (or let GitHub do all three, below).
 
 ## Before the first build
 
-1. **ffmpeg** (livestream and recording) is automatic: `pnpm install` downloads it for the
-   computer you're on (`ffmpeg-static`), and every `dist:*` script copies it into
-   `resources/ffmpeg/<os>-<arch>/` first (`apps/desktop/scripts/prepareFfmpeg.mjs`). Building for
-   another platform (the Windows installer on a Mac, the Intel one on Apple silicon), put that
-   platform's binary and `LICENSE.txt` there by hand; otherwise the build warns and that
-   installer can't stream or record. These ffmpeg builds are GPL: shipping them means offering
-   their source (a link to the ffmpeg source for that version is enough).
+1. **ffmpeg** (livestream and recording) is automatic: every `dist:*` script puts it in
+   `resources/ffmpeg/<os>-<arch>/` first (`apps/desktop/scripts/prepareFfmpeg.mjs`).
+   - **Mac:** Lampstand's own build (`apps/desktop/scripts/buildFfmpegMac.sh`), made the first
+     time and kept: ffmpeg 9 with mbedTLS (secure streaming), VideoToolbox and AudioToolbox (GPU
+     encoding) and libx264 (the fallback), from pinned, checksum-verified sources, statically
+     linked so it runs on any Mac from macOS 12. Either kind of Mac builds both kinds (the
+     other is cross-compiled). Needs `xcode-select --install` and `brew install nasm pkgconf`;
+     without them the build falls back on `ffmpeg-static`, whose Mac builds can't stream
+     securely (RTMPS stalls after a few frames: YouTube then uses its standard RTMP address,
+     and Facebook, secure only, won't work), with a warning. mbedTLS has no trust store of its
+     own: at stream time the app gives ffmpeg the Mac's trusted root certificates
+     (`tlsOptionsFor` in `main/stream/ffmpeg.ts`), so servers are still verified.
+   - **Windows:** ffmpeg 9.0.2, Gyan's "essentials" build (the Windows build ffmpeg.org links
+     to: x264, NVENC, Quick Sync, AMF, Media Foundation, SRT, GnuTLS), downloaded once from its
+     pinned GitHub release, checked against its SHA-256 and kept (`WIN` in `prepareFfmpeg.mjs`
+     says which). That works on any computer, so a Windows installer made on a Mac gets it too.
+     Without internet the first time, the build falls back on `ffmpeg-static` (ffmpeg 6.0) on a
+     PC, or none on a Mac, with a warning. ffmpeg 9 checks secure servers' certificates (6.0
+     didn't); on Windows it uses the Windows certificate store, as browsers do.
+     *To move to a newer release:* change `WIN` (version, URL, folder and the SHA-256 GitHub
+     shows for the asset); the next build downloads it.
+
+   These ffmpeg builds are GPL v3: shipping them means offering their source. The Mac build's
+   `SOURCES.txt` (packaged next to it) lists the exact source archives and checksums.
+   *Why build it rather than download one:* the ready-made static Mac builds either lack a TLS
+   library (`ffmpeg-static`) or would be unpinned third-party binaries fetched on every build;
+   building gives a known feature set, a known licence, and reproducible inputs, in about two
+   minutes per Mac kind.
 2. **Icon**: put a 1024×1024 PNG at `apps/desktop/build/icon.png`. electron-builder makes the
    Mac and Windows icons from it. Without it the installers use Electron's default icon.
 3. Set `version` in `apps/desktop/package.json`: it names the installers

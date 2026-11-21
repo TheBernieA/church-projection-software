@@ -34,7 +34,13 @@ notarizing and building on GitHub are covered in [docs/packaging.md](docs/packag
    ```sh
    corepack enable
    ```
-3. Get the project (it's a private repository, so sign in to GitHub when asked), on the branch
+3. Install the tools for Lampstand's own ffmpeg (step 3 below): Apple's command-line tools, then
+   [Homebrew](https://brew.sh) and two small programs:
+   ```sh
+   xcode-select --install
+   brew install nasm pkgconf
+   ```
+4. Get the project (it's a private repository, so sign in to GitHub when asked), on the branch
    you want to build (`git clone` alone gives the default branch, `develop`):
    ```sh
    git clone --branch redesign/show-workspace https://github.com/TheBernieA/church-projection-software.git
@@ -51,13 +57,20 @@ pnpm install
 
 Run this again whenever you pull new changes.
 
-#### 3. ffmpeg (streaming and recording) comes along
+#### 3. ffmpeg (streaming and recording) is built for you
 
-Nothing to do: `pnpm install` downloads ffmpeg for this Mac, and the build commands below put
-it inside the app (you'll see `ffmpeg: packaged from ffmpeg-static` as they start). The one
-exception: building the **Intel** installer on an Apple-silicon Mac. Its ffmpeg has to be an
-Intel one, so put it (and its `LICENSE.txt`) in `resources/ffmpeg/mac-x64/` first, or build
-that one on an Intel Mac. Without it, the build warns and the app can't stream or record.
+The Mac installers carry Lampstand's own ffmpeg, built from source so it can stream securely
+(the ready-made Mac downloads can't: YouTube's secure address stalls, and Facebook won't work).
+The first `pnpm dist:mac…` builds it (`ffmpeg: building Lampstand's own…`, a few minutes per Mac
+kind); later builds reuse it (`ffmpeg: using the one in resources/ffmpeg/mac-arm64/`). Either
+kind of Mac builds both the Apple-silicon and the Intel one. To build it on its own:
+
+```sh
+bash apps/desktop/scripts/buildFfmpegMac.sh        # both kinds (or: arm64, x64)
+```
+
+If the build can't run (the tools from step 1 missing), the installer falls back on the
+ready-made ffmpeg with a warning: everything works except secure streaming.
 
 #### 4. Optional: app icon and version
 
@@ -121,9 +134,11 @@ pnpm install
 
 #### 3. ffmpeg (streaming and recording) comes along
 
-Nothing to do: `pnpm install` downloads the Windows ffmpeg, and `pnpm dist:win` puts it inside
-the installer. You'll see `ffmpeg: packaged from ffmpeg-static` as the build starts; if the
-download is missing, the build stops and says to run `pnpm install` again.
+Nothing to do: the first `pnpm dist:win` downloads ffmpeg 9 for Windows (about 110 MB, a
+pinned release of the build ffmpeg.org links to, checked against its checksum) and puts it
+inside the installer; later builds reuse it. You'll see `ffmpeg: ffmpeg 9.0.2 →
+resources/ffmpeg/win-x64/` (or `using ffmpeg 9.0.2…`) as the build starts. Without internet
+the first time, it falls back on the older ffmpeg that `pnpm install` brought, with a warning.
 
 To check an installed copy has it, this file should exist:
 `C:\Users\<you>\AppData\Local\Programs\Lampstand\resources\resources\ffmpeg\ffmpeg.exe`.
@@ -155,11 +170,7 @@ Security › For developers**) and build again. Running PowerShell as administra
    ```sh
    sudo softwareupdate --install-rosetta --agree-to-license
    ```
-2. Put a Windows `ffmpeg.exe` (and its licence as `LICENSE.txt`) in
-   `resources/ffmpeg/win-x64/`. On a Mac, `pnpm install` only downloads the Mac ffmpeg, so take
-   the `.exe` from a Windows PC (`node_modules\ffmpeg-static\` after `pnpm install` there) or
-   the ffmpeg website. Without it, the build warns and the app can't stream or record.
-3. Build:
+2. Build (the Windows ffmpeg is downloaded on the Mac too, the first time):
    ```sh
    pnpm dist:win
    ```
@@ -169,7 +180,8 @@ Security › For developers**) and build again. Running PowerShell as administra
 - **No install warnings:** sign with an Apple Developer ID and notarize (Mac, $99 a year), and
   use a code-signing certificate (Windows). See [docs/packaging.md](docs/packaging.md).
 - **ffmpeg is GPL-licensed:** when sharing the app, keep its `LICENSE.txt` (the build copies it
-  in) and point people to the ffmpeg source.
+  in) and point people to the source: the Mac build's `SOURCES.txt`, next to it, lists exactly
+  which sources it was built from.
 - **New versions:** for each release, change `version` in `apps/desktop/package.json` and build
   again.
 

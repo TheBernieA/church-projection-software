@@ -18,7 +18,7 @@ extraResources:
   # ffmpeg binary here before packaging (signed with the app on macOS).
   - from: ../../resources/ffmpeg/${os}-${arch}
     to: resources/ffmpeg
-    filter: ['ffmpeg', 'ffmpeg.exe', 'LICENSE*']
+    filter: ['ffmpeg', 'ffmpeg.exe', 'LICENSE*', 'SOURCES*']
 asar: true
 # koffi (NDI) loads a native module, which can't run from inside the asar.
 asarUnpack:

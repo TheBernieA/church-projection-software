@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { existsSync, readdirSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
+import { connect, createServer as createNetServer, type Socket } from 'node:net';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { launch, setStream, tempLibrary, waitLive, type Launched } from './streamHarness';
@@ -44,7 +45,7 @@ function standInServer(dir: string): { stop: () => void } {
   };
 }
 
-let l: Launched;
+let l: Launched | undefined;
 let server: { stop: () => void } | null = null;
 
 /** The stand-in server comes up (any previous one is taken down first: one per port). */
@@ -68,7 +69,7 @@ const recordings = (): string[] => {
 
 test.afterAll(async () => {
   server?.stop();
-  await l.app.close().catch(() => undefined);
+  await l?.app.close().catch(() => undefined);
   rmSync(lib.dir, { recursive: true, force: true });
 });
 
@@ -298,3 +299,142 @@ test('after the reconnect window: the stream stops and says why; a recording car
     rmSync(lib2.dir, { recursive: true, force: true });
   }
 });
+
+/**
+ * A silent drop (a pulled cable, Wi-Fi gone): unlike a server that closes the connection, the
+ * connection just stops moving and nothing says so. A proxy in front of the stand-in server
+ * freezes the open connection and refuses new ones (the network is down), then lets them
+ * through again (it's back).
+ */
+const PROXY_PORT = 19363;
+
+function freezingProxy(target: number): {
+  freeze: () => void;
+  restore: () => void;
+  close: () => void;
+} {
+  const live = new Set<Socket>();
+  /** The stand-in takes one connection at a time and restarts between them: wait for it, as a
+   *  real (always-on) server would just answer. */
+  const dial = (client: Socket, tries = 30): void => {
+    const up = connect(target, '127.0.0.1');
+    up.once('error', () => {
+      up.destroy();
+      if (tries > 0 && !client.destroyed) setTimeout(() => dial(client, tries - 1), 100);
+      else client.destroy();
+    });
+    up.once('connect', () => {
+      client.pipe(up);
+      up.pipe(client);
+      client.resume();
+      for (const s of [client, up]) {
+        live.add(s);
+        s.on('error', () => undefined);
+        s.on('close', () => live.delete(s));
+      }
+    });
+  };
+  const server = createNetServer((client) => {
+    client.pause();
+    client.on('error', () => undefined);
+    dial(client);
+  });
+  server.listen(PROXY_PORT, '127.0.0.1');
+  return {
+    // The network goes: the open connection stops moving (nothing is closed, no one hears about
+    // it) and new connections are refused.
+    freeze: () => {
+      server.close();
+      for (const s of live) {
+        s.unpipe();
+        s.pause();
+      }
+    },
+    // It's back: the frozen connection is long dead (the server gave up on it).
+    restore: () => {
+      for (const s of live) s.destroy();
+      live.clear();
+      server.listen(PROXY_PORT, '127.0.0.1');
+    },
+    close: () => {
+      for (const s of live) s.destroy();
+      server.close();
+    },
+  };
+}
+
+for (const pipeline of ['gpu', 'cpu'] as const) {
+  test(`a silent drop (${pipeline} pipeline): noticed, waited out, live again; the recording goes on`, async () => {
+    test.setTimeout(180_000);
+    const lib3 = tempLibrary(`silent-${pipeline}`);
+    const app3 = await launch(
+      lib3,
+      [],
+      pipeline === 'cpu' ? { LAMPSTAND_STREAM_PIPELINE: 'cpu' } : {},
+    );
+    const proxy = freezingProxy(PORT);
+    try {
+      serverUp();
+      await setStream(app3.control, {
+        mode: 'light',
+        recordWhileStreaming: true,
+        destinations: [
+          {
+            id: 'local',
+            kind: 'custom',
+            name: 'Stand-in',
+            url: `rtmp://127.0.0.1:${PROXY_PORT}/live/test`,
+            enabled: true,
+          },
+        ],
+      });
+      await app3.cmd('stream.start', { stream: true });
+      await waitLive(app3);
+      await expect
+        .poll(async () => (await app3.status())?.destinations[0]?.state, { timeout: 20_000 })
+        .toBe('ok');
+      const recordingBytes = (): number => {
+        const folder = join(lib3.dir, 'recordings');
+        if (!existsSync(folder)) return 0;
+        return readdirSync(folder)
+          .filter((f) => f.endsWith('.mp4'))
+          .reduce((n, f) => n + statSync(join(folder, f)).size, 0);
+      };
+      await new Promise((r) => setTimeout(r, 3_000));
+      proxy.freeze();
+      const frozenAt = Date.now();
+      // Noticed within a short while, and it stays on (reconnecting, not ended).
+      await expect
+        .poll(async () => (await app3.status())?.error, { timeout: 90_000, intervals: [500] })
+        .toBe('reconnecting');
+      console.log(`[${pipeline}] noticed after ${Math.round((Date.now() - frozenAt) / 1000)} s`);
+      const before = recordingBytes();
+      await new Promise((r) => setTimeout(r, 8_000));
+      const s = await app3.status();
+      expect(s?.state).not.toBe('idle');
+      expect(s?.streaming).toBe(true);
+      expect(s?.recording).toBe(true);
+      // The recording kept going while the network was down.
+      expect(recordingBytes()).toBeGreaterThan(before);
+      // The network is back: live again by itself.
+      proxy.restore();
+      await expect
+        .poll(
+          async () => {
+            const x = await app3.status();
+            return x ? `${x.state} ${x.destinations[0]?.state} ${x.error ?? ''}` : '';
+          },
+          { timeout: 60_000, intervals: [1_000] },
+        )
+        .toBe('live ok ');
+      await app3.cmd('stream.stop', { stream: true, record: true });
+      await expect.poll(async () => (await app3.status())?.state, { timeout: 15_000 }).toBe('idle');
+    } finally {
+      proxy.close();
+      serverDown();
+      await app3.app.close().catch(() => undefined);
+      if (process.env.KEEP_LOG) console.log(`[log] ${lib3.dir}`);
+      else rmSync(lib3.dir, { recursive: true, force: true });
+    }
+  });
+}

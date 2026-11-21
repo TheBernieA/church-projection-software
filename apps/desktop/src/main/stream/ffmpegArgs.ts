@@ -181,8 +181,8 @@ export function pickEncoder(available: readonly string[], wanted: string = 'auto
   return ENCODER_PREFERENCE.find((e) => available.includes(e)) ?? 'libx264';
 }
 
-/** Escape a tee slave's target: `\`, `|`, `[` and `]` are special to the tee muxer. */
-export const teeEscape = (s: string): string => s.replace(/[\\|[\]]/g, (c) => `\\${c}`);
+/** Escape a tee slave's target: `\`, `|`, `[`, `]` and `'` are special to the tee muxer. */
+export const teeEscape = (s: string): string => s.replace(/[\\|[\]']/g, (c) => `\\${c}`);
 
 export interface EncodeOptions {
   width: number;
@@ -197,6 +197,8 @@ export interface EncodeOptions {
    * (no re-encoding).
    */
   input?: 'raw' | 'flv';
+  /** Certificate checking for secure destinations (see TlsOptions); ffmpeg's own default if unset. */
+  tls?: TlsOptions;
   /** The AAC encoder: Apple's where this ffmpeg has it (better sound), else ffmpeg's own. */
   audioEncoder?: 'aac' | 'aac_at';
   /** libx264's speed preset (from the performance mode). Hardware encoders ignore it. */
@@ -207,9 +209,9 @@ export interface EncodeOptions {
   record: string | null;
 }
 
-/** VideoToolbox, NVENC and Quick Sync work in NV12. */
+/** VideoToolbox, NVENC, Quick Sync and Media Foundation work in NV12. */
 const takesNv12 = (e: Encoder): boolean =>
-  e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv';
+  e === 'h264_videotoolbox' || e === 'h264_nvenc' || e === 'h264_qsv' || e === 'h264_mf';
 
 /**
  * BGRA frames to the encoder's YUV, as HD colour (BT.709, limited range: what players and
@@ -300,6 +302,27 @@ export function videoCodecArgs(
         ...rate,
         ...gop,
       ];
+    case 'h264_mf':
+      // Windows' Media Foundation: whatever hardware encoder the graphics driver provides (Intel,
+      // AMD, NVIDIA, Qualcomm), where ffmpeg's own route to it doesn't work. Hardware only
+      // (Windows' software one is poor); constant frame rate (camera_record) so it doesn't drop
+      // frames; High profile by number (its own default is Baseline).
+      return [
+        '-c:v',
+        'h264_mf',
+        '-hw_encoding',
+        '1',
+        '-rate_control',
+        'cbr',
+        '-scenario',
+        'camera_record',
+        '-profile:v',
+        '100',
+        '-bf',
+        '0',
+        ...rate,
+        ...gop,
+      ];
     case 'libx264':
       return [
         '-c:v',
@@ -324,10 +347,72 @@ export function videoCodecArgs(
  * has no reason to wait). Each may fail on its own.
  */
 const STREAM_OPTIONS = {
-  flv: '[f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1]',
+  flv: 'f=flv:onfail=ignore:flvflags=no_duration_filesize:flush_packets=1:tcp_nodelay=1',
   // pes_payload_size=0: each sound frame goes out on its own (not gathered for up to 50 ms).
-  ts: '[f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb]',
+  ts: 'f=mpegts:onfail=ignore:flush_packets=1:max_delay=100000:pes_payload_size=0:bsfs/v=h264_mp4toannexb',
 } as const;
+
+/**
+ * How a secure (rtmps) destination checks the server's certificate, for an ffmpeg whose TLS
+ * library has no trust store of its own (mbedTLS, in Lampstand's Mac build): the trusted root
+ * certificates' file, or not checking at all.
+ */
+export interface TlsOptions {
+  caFile?: string;
+  verify?: boolean;
+}
+
+/** A tee slave option's value: escaped for the option parser, then for the tee itself. */
+const teeOptionValue = (s: string): string => s.replace(/[\\:'=\]]/g, (c) => `\\${c}`);
+
+/**
+ * A silent network drop (a pulled cable, Wi-Fi gone, the router down): the connection just stops
+ * moving and nothing says so, so ffmpeg would wait minutes for the system to give up, the
+ * stream frozen for viewers and the console still saying Live. Two limits make it a destination
+ * failure within seconds (handled like any other: reconnecting quietly, the recording going on):
+ * a write that waits this long fails, and the system may hold only about a second of the stream
+ * (its send buffer), so a dead connection fills it quickly. A second is plenty for any upload
+ * that can carry the stream at all (round trips of up to a second).
+ */
+export const STALLED_WRITE_US = 5_000_000;
+export const sendBufferBytes = (kbps: number): number =>
+  Math.max(128 * 1024, Math.round((kbps * 1000) / 8));
+
+/** The tee options for one destination. */
+function streamOptions(
+  url: string,
+  o: Pick<EncodeOptions, 'tls' | 'videoKbps' | 'audioKbps'>,
+): string {
+  if (protocolOf(url) !== 'rtmp') return STREAM_OPTIONS.ts;
+  const extra = [
+    `rw_timeout=${STALLED_WRITE_US}`,
+    `send_buffer_size=${sendBufferBytes(o.videoKbps + o.audioKbps)}`,
+    ...(o.tls && /^rtmps:/i.test(url)
+      ? [
+          ...(o.tls.caFile ? [`ca_file=${teeOptionValue(o.tls.caFile)}`] : []),
+          ...(o.tls.verify === false ? ['tls_verify=0'] : []),
+        ]
+      : []),
+  ];
+  return [STREAM_OPTIONS.flv, ...extra].join(':');
+}
+
+/**
+ * Did this encoder fail (not the stream)? Only what the encoder itself reports as an error, or
+ * ffmpeg saying it couldn't open it, counts. Its name alone isn't enough: ffmpeg names it on
+ * every start ("Stream #0:0 -> #0:0 (… -> h264 (h264_qsv))"), so a destination that refuses
+ * the connection would otherwise get a working hardware encoder dropped for the session.
+ */
+export function encoderFailed(lines: readonly string[], encoder: string): boolean {
+  return lines.some(
+    (l) =>
+      /error while opening encoder|error initializing output stream/i.test(l) ||
+      (l.includes(`${encoder} @`) &&
+        /error|fail|unsupported|cannot|could not|not (available|supported|found)|no device/i.test(
+          l,
+        )),
+  );
+}
 
 /**
  * ffmpeg's arguments: raw BGRA frames on stdin (pipe:0), sent at a steady frame rate (the last
@@ -339,9 +424,7 @@ export function buildArgs(o: EncodeOptions): string[] {
   const gpu = o.input === 'flv';
   const outputs = [
     // Each packet goes out at once: no batching in the muxer, none in the network stack.
-    ...o.streams.map(
-      (u) => `${STREAM_OPTIONS[protocolOf(u) === 'rtmp' ? 'flv' : 'ts']}${teeEscape(u)}`,
-    ),
+    ...o.streams.map((u) => `[${teeEscape(streamOptions(u, o))}]${teeEscape(u)}`),
     // The recording writes through its own queue: a slow disk never holds up the live outputs
     // (the queue waits rather than drops, so the file stays whole).
     ...(o.record
