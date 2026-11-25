@@ -53,11 +53,14 @@ let pictured: SceneRenderer | null = null;
 
 function draw(state: LiveDelivery): void {
   // Kept without the flag, so a later redraw (new renderer, new info) draws it in full.
-  latest = state.soundOnly ? { ...state, soundOnly: false } : state;
+  latest =
+    state.soundOnly || state.viewsOnly ? { ...state, soundOnly: false, viewsOnly: false } : state;
   audio?.sync(state.audio, state.mixer);
   if (!ready || !renderer) return;
-  // Only the sound moved (a fader): the picture stays exactly as it is.
-  if (state.soundOnly && pictured === renderer) return;
+  // The cameras' digital shots: moved in place (following someone sends many a second).
+  renderer.setCameraViews(state.cameraViews);
+  // Only the sound moved (a fader), or only a camera's shot: nothing else to redraw.
+  if ((state.soundOnly || state.viewsOnly) && pictured === renderer) return;
   pictured = renderer;
   // The active Look decides which layers this kind of screen shows.
   const layers = lookLayersFor(state.look, role);

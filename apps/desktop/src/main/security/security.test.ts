@@ -97,9 +97,11 @@ describe('display mapping (§7.3 hot-plug)', () => {
 });
 
 describe('CSP', () => {
-  it('matches the spec: no remote or inline scripts', () => {
+  it('matches the spec: no remote or inline scripts, no eval', () => {
     expect(PROD_CSP).toContain("script-src 'self'");
-    expect(PROD_CSP).not.toMatch(/unsafe-eval|script-src[^;]*unsafe-inline|https?:/);
+    // WebAssembly may be compiled (ADR 0007); JavaScript eval may not.
+    expect(PROD_CSP).not.toMatch(/(?<!wasm-)unsafe-eval|script-src[^;]*unsafe-inline|https?:/);
+    expect(PROD_CSP).toContain("script-src 'self' 'wasm-unsafe-eval';");
     expect(PROD_CSP).toContain("object-src 'none'");
   });
 });

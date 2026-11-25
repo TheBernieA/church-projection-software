@@ -1,3 +1,5 @@
+import { FollowOverlay } from './FollowOverlay';
+import { useCameraControl } from '../../lib/cameraControl';
 import { useRef, useState, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EMPTY_SCENE, type InputTransition, type Scene } from '@lampstand/core';
@@ -36,7 +38,10 @@ function BusMonitor({
   name,
   empty,
   height,
+  clickToFollow = false,
 }: {
+  /** In camera mode, a click on the picture follows the person there (Preview). */
+  clickToFollow?: boolean;
   scene: Scene;
   tone: 'preview' | 'program';
   label: string;
@@ -59,6 +64,11 @@ function BusMonitor({
         style={{ boxShadow: `0 0 0 2px ${color}` }}
       >
         <SceneView scene={scene} label={`${label}: ${name ?? '—'}`} />
+        <FollowOverlay
+          deviceId={scene.input?.deviceId ?? null}
+          mirror={scene.input?.mirror ?? false}
+          clickToFollow={clickToFollow && !!scene.input}
+        />
         <Typography
           size={10}
           weight="bold"
@@ -172,6 +182,7 @@ export function SwitcherBar({
   const input = useStore((s) => s.live?.program.input ?? null);
   const inputNext = useStore((s) => s.live?.program.inputNext ?? null);
   const pip = useStore((s) => s.live?.program.pip ?? null);
+  const cameraMode = useCameraControl((s) => s.open);
   // Subscribed, so the key hints follow a shortcut remapped in Settings.
   useStore((s) => s.settings?.shortcuts);
   if (!settings) return null;
@@ -220,6 +231,7 @@ export function SwitcherBar({
           name={preview?.label ?? null}
           empty={t('switcher.previewEmpty')}
           height={monitorHeight}
+          clickToFollow={cameraMode && !!preview && preview.deviceId !== input?.deviceId}
         />
         <div
           className="flex w-[124px] shrink-0 gap-2"

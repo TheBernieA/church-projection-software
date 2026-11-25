@@ -22,6 +22,7 @@ import { omit } from './utils/object';
 import { applyMixerAction, defaultMixer, MixerActionSchema, MixerSchema } from './schemas/mixer';
 import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
 import { applySwitcherAction, SwitcherActionSchema } from './switcher';
+import { applyCameraAction, CameraActionSchema, CameraViewSchema } from './schemas/camera';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
 export type DetectionMode = z.infer<typeof DetectionModeSchema>;
@@ -130,6 +131,12 @@ export const LiveStateSchema = z.object({
   audio: AudioCueSchema.nullable().default(null),
   /** The video switcher: the camera waiting on Preview (Cut / Auto take it to Program). */
   switcher: z.object({ preview: VideoInputLayerSchema.nullable() }).default({ preview: null }),
+  /**
+   * Each camera's digital shot (a crop and zoom inside its picture), by device; a camera with no
+   * entry shows its whole picture. Changes often while following someone, so windows apply it
+   * without redrawing (a delivery marked `viewsOnly`).
+   */
+  cameraViews: z.record(z.string().max(300), CameraViewSchema).default({}),
   /** The sound desk: every channel's level, EQ and routing, live in every window. */
   mixer: MixerSchema.default(() => defaultMixer()),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
@@ -157,6 +164,7 @@ export function initialLiveState(): LiveState {
     cleared: {},
     audio: null,
     switcher: { preview: null },
+    cameraViews: {},
     mixer: defaultMixer(),
     look: null,
     lowerThird: null,
@@ -586,6 +594,16 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => applySwitcherAction(s, p));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.camera',
+    schema: CameraActionSchema,
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, cameraViews: applyCameraAction(s.cameraViews, p) }));
       return { result: null };
     },
   });

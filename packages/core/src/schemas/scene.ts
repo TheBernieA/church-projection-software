@@ -6,6 +6,7 @@ import {
   ThemeSchema,
   TransitionSpecSchema,
 } from './theme';
+import { CameraShotSchema, PtzConnectionSchema } from './camera';
 import { ColorSchema, IdSchema } from './common';
 
 /**
@@ -215,6 +216,10 @@ export const CameraSettingsSchema = z.object({
   resolution: z.enum(['auto', '720', '1080', '2160']).default('auto'),
   /** Left out of Media › Video input (e.g. a virtual camera nobody uses). */
   hidden: z.boolean().default(false),
+  /** A PTZ camera's network address (VISCA); null: a camera without remote control. */
+  ptz: PtzConnectionSchema.nullable().default(null),
+  /** Shots saved for this camera (Media › Video input › Camera), in button order. */
+  shots: z.array(CameraShotSchema).max(40).default([]),
 });
 export type CameraSettings = z.infer<typeof CameraSettingsSchema>;
 

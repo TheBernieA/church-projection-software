@@ -62,6 +62,8 @@ export const MIME_TYPES: Record<string, string> = {
   '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.json': 'application/json',
+  '.wasm': 'application/wasm',
+  '.task': 'application/octet-stream',
   '.woff2': 'font/woff2',
   '.woff': 'font/woff',
   '.svg': 'image/svg+xml',

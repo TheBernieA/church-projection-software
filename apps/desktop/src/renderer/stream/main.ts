@@ -366,6 +366,12 @@ api.onConfig((c) => {
   draw();
 });
 api.onLiveState((s) => {
+  // The cameras' digital shots move the camera pictures in place; nothing else is redrawn.
+  back.setCameraViews(s.cameraViews);
+  if (s.viewsOnly && latest) {
+    latest = { ...latest, cameraViews: s.cameraViews };
+    return;
+  }
   // Only the sound moved: keep the picture's own objects, so its layers see nothing new.
   latest =
     s.soundOnly && latest

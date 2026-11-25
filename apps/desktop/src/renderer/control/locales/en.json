@@ -843,7 +843,8 @@
     "input": "Could not use that input.",
     "stream": "Couldn’t start or stop the stream.",
     "benchmark": "The computer check couldn't run.",
-    "noService": "Open a playlist first, then add to it."
+    "noService": "Open a playlist first, then add to it.",
+    "camera": "The camera could not do that. Check it is on and reachable."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -3157,5 +3158,82 @@
       "textPath": "Path to the text",
       "textPathHint": "e.g. passages.0 or data.content; empty if the reply is the text itself."
     }
+  },
+  "camera": {
+    "title": "Camera control",
+    "mode": "Camera",
+    "modeHelp": "Camera mode: drive the camera on Preview with a joystick, save shots, and follow a person",
+    "noPreview": "Put a camera on Preview to control it.",
+    "onPreview": "Preview",
+    "onProgram": "On Program",
+    "ptzKind": "PTZ camera: moves on its motors.",
+    "digitalKind": "Digital: moves a shot inside the picture (a PTZ address in Settings › Video moves the camera itself).",
+    "lockedOnProgram": "It’s on Program, so moving it by hand is off. Follow keeps going.",
+    "shots": "Shots",
+    "saveShot": "Save shot",
+    "shotName": "Shot {{n}}",
+    "shotHelp": "Go to this shot (double-click to rename)",
+    "renameShot": "Shot name",
+    "deleteShot": "Delete {{name}}",
+    "deleteShotConfirm": "Delete the shot “{{name}}”?",
+    "joystick": "Pan and tilt: drag from the middle, further for faster",
+    "zoom": "Zoom: drag up to zoom in, down to zoom out",
+    "speed": "Joystick and zoom speed",
+    "speedHelp": "How fast the joystick and zoom move",
+    "speedValue": "{{v}}×",
+    "home": "Home",
+    "wholePicture": "Whole picture",
+    "follow": "Follow",
+    "startFollow": "Follow",
+    "followHelp": "Keep the person nearest the middle framed (or click a person on Preview)",
+    "stopFollow": "Stop following",
+    "stopOther": "Stop following on the other camera",
+    "clickToFollow": "Click a person on Preview to follow them.",
+    "size": "Shot size",
+    "sizes": {
+      "close": "Close",
+      "waist": "Waist",
+      "full": "Full"
+    },
+    "status": {
+      "starting": "Starting…",
+      "following": "Following",
+      "lost": "Lost them, looking",
+      "failed": "Can’t follow: no camera picture"
+    },
+    "badgeFollowing": "Following",
+    "badgeLost": "Looking",
+    "image": "Focus and exposure",
+    "focusNow": "Focus now",
+    "autoFocus": "Auto focus",
+    "exposure": "Exposure",
+    "exposureAuto": "Auto",
+    "exposureManual": "Manual",
+    "gain": "Gain",
+    "shutter": "Shutter",
+    "iris": "Iris",
+    "less": "Less {{what}}",
+    "more": "More {{what}}",
+    "whiteBalance": "White balance",
+    "wb": {
+      "auto": "Auto white",
+      "indoor": "Indoor (3200 K)",
+      "outdoor": "Outdoor (5600 K)",
+      "onePush": "Measure white"
+    },
+    "measureWhite": "Measure now",
+    "ptzLabel": "Remote control",
+    "ptzProtocol": "How Lampstand moves this camera",
+    "protocols": {
+      "none": "None (digital shots)",
+      "visca-udp": "VISCA over IP (UDP)",
+      "visca-tcp": "VISCA over TCP"
+    },
+    "ptzHost": "Camera address",
+    "ptzPort": "Port",
+    "ptzHostHelp": "The camera’s IP address, from its own menu or web page.",
+    "test": "Test",
+    "testOk": "The camera answered.",
+    "testNone": "No answer. Check the address, the port, and that VISCA is on in the camera’s settings."
   }
 }

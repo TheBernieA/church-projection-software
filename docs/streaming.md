@@ -222,6 +222,33 @@ it's set (−1.5 dBFS by default, 20:1; fast peaks that slip past are clipped at
 one-channel mic is folded to both sides like a channel marked Mono (left alone, the stereo panner
 would play it 3 dB quieter).
 
+## Camera mode (PTZ, digital shots, follow)
+
+Media › Video input › **Camera** (beside Switcher) drives the camera on **Preview**: a joystick and
+spring-back zoom rocker with a speed dial, Home, saved shots, Follow (Close / Waist / Full) and, for
+PTZ cameras, focus, exposure steps and white balance. Moving by hand is off for the camera on
+Program; Follow keeps going when its camera is cut to Program. Inspired by Churchfront Video
+(Apache-2.0); its framing numbers are credited in `cameraFollow.ts`.
+
+- **PTZ cameras** (Settings › Video › Remote control: VISCA over IP, UDP 52381, or VISCA over TCP,
+  5678): `main/cameras/visca.ts` (command bytes, tested; one connection per camera, moves
+  coalesced to the newest every 50 ms, position inquiries, reconnect) and `ptzService.ts`
+  (`camera.ptz` commands; a move not renewed within 1 s is stopped, every camera stops on quit).
+  Shots keep the camera's position counts, or one of its preset slots if it won't say.
+- **Any other camera: digital shots.** `live.cameraViews` (core `schemas/camera.ts`) holds each
+  camera's crop and zoom; every window applies it to that camera's picture
+  (`SceneRenderer.setCameraViews`, a CSS transform eased over 120 ms, the camera never reopened).
+  A change to only the views is delivered `viewsOnly`, so windows move pictures and redraw
+  nothing else. Zoom is capped by the camera's capture size (`maxDigitalZoom`).
+- **Follow** (`control/lib/cameraControl.ts`): the control window opens the camera, finds people
+  ~12 times a second with MediaPipe's pose model (`lib/follow/detector.ts`, model in
+  `assets/models/`, WebAssembly allowed by ADR 0007), keeps to one (`PersonLock`), and frames them
+  (`DigitalFollow` → views, or `PtzFollow` → pan/tilt/zoom speeds). Measured on a fake camera
+  panning across a photo of three people: the shot followed one person across 0.30–0.71 of the
+  picture with the heads framed. The pose model's scores run low on real pictures, so it runs at
+  0.1 and `personFromLandmarks` drops anything not upright (shapes in a car's wheel were measured
+  coming through as "people").
+
 ## Video switcher
 
 `LiveState.switcher.preview` is the camera on Preview; `live.switcher` (core `switcher.ts`) does

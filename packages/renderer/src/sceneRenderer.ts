@@ -10,6 +10,7 @@ import {
   type InputTransition,
   type PipLayer,
   type VideoInputLayer,
+  type CameraView,
 } from '@lampstand/core';
 import {
   buildBackground,
@@ -38,6 +39,9 @@ interface InputNode {
   key: string;
   node: HTMLElement;
   dispose: () => void;
+  /** The camera it shows, and how to move its digital shot. */
+  deviceId?: string;
+  setView?: (v: CameraView | undefined) => void;
 }
 
 /** Which camera, set up how: a change here reopens it. */
@@ -70,6 +74,8 @@ export class SceneRenderer {
   /** The camera the T-bar is mixing in (over `input`). */
   private inputNext: InputNode | null = null;
   private pip: InputNode | null = null;
+  /** Each camera's digital shot (live state's `cameraViews`), applied to every camera shown. */
+  private views: Readonly<Record<string, CameraView>> = {};
   private readonly webLayer: HTMLElement;
   private readonly overlayLayer: HTMLElement;
   private readonly blackMask: HTMLElement;
@@ -280,12 +286,30 @@ export class SceneRenderer {
     st.opacity = opacity;
   }
 
+  /**
+   * The cameras' digital shots (a crop and zoom inside each picture). Cheap: it only moves the
+   * camera pictures already on screen, so it can follow someone many times a second.
+   */
+  setCameraViews(views: Readonly<Record<string, CameraView>>): void {
+    if (views === this.views) return;
+    this.views = views;
+    for (const n of [this.input, this.inputNext, this.pip])
+      if (n?.deviceId) n.setView?.(views[n.deviceId]);
+  }
+
   private buildInput(input: VideoInputLayer, key: string): InputNode {
-    const built = buildVideoInput(this.doc, input, this.opts.mode !== 'thumbnail');
+    const built = buildVideoInput(
+      this.doc,
+      input,
+      this.opts.mode !== 'thumbnail',
+      this.views[input.deviceId],
+    );
     this.inputLayer.append(built.node);
     return {
       key,
       node: built.node,
+      deviceId: input.deviceId,
+      setView: built.setView,
       dispose: () => {
         built.dispose();
         built.node.remove();
@@ -384,7 +408,12 @@ export class SceneRenderer {
         zIndex: '3',
         background: '#000',
       });
-      const built = buildVideoInput(this.doc, pip, this.opts.mode !== 'thumbnail');
+      const built = buildVideoInput(
+        this.doc,
+        pip,
+        this.opts.mode !== 'thumbnail',
+        this.views[pip.deviceId],
+      );
       box.append(built.node);
       this.inputLayer.append(box);
       void animate(
@@ -400,6 +429,8 @@ export class SceneRenderer {
       this.pip = {
         key,
         node: box,
+        deviceId: pip.deviceId,
+        setView: built.setView,
         dispose: () => {
           built.dispose();
           box.remove();
