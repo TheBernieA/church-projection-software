@@ -14,7 +14,11 @@ import type { LiveDelivery, OutputInfo } from '@lampstand/ipc-contract';
 import { fitScreen } from './screenFit';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
+import { meterReport } from '../shared/meterReport';
+import { installMixerWorklet } from '../shared/mixerWorklet';
 import '../shared/outputApi.d';
+
+installMixerWorklet();
 
 /**
  * Projector output. Deliberately dumb and resilient (§3.2): it only renders snapshots. If IPC
@@ -114,9 +118,7 @@ api.onInfo((i: OutputInfo) => {
     // The room mix lives here: video sound joins it, and its levels feed the Mixer's meters.
     audio = new RoomAudio(window, mediaUrl);
     renderer.setAudioTap(audio.tapVideo);
-    audio.mixer.startMeters((l) =>
-      api.sendMeters({ bus: 'room', channels: l.channels, level: l.bus, sides: l.sides }),
-    );
+    audio.mixer.startMeters((l) => api.sendMeters(meterReport('room', l)));
   }
   audio?.setSink(i.audioSink);
   renderer.setAudioSink(i.audioSink);

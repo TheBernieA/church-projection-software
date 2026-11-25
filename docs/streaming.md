@@ -184,9 +184,17 @@ instant.
 ## The mixer
 
 `LiveState.mixer` (core `schemas/mixer.ts`) is the sound desk: one channel per source (Audio tab
-tracks, video sound, each live input) with fader (dB), mute, solo, pan, mono, high-pass, 3-band
-EQ, compressor, and Room / Stream sends; and two buses (Room, Stream) with level, mute, limiter and
-delay. Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
+tracks, video sound, each live input) with fader (dB), mute, solo, pan, Room / Stream sends, and
+its strip: trim and polarity, mono, sync delay (0–1000 ms), noise suppression (inputs: the
+capture's `noiseSuppression`), a noise gate, a low cut at a set frequency, a semi-parametric EQ
+(low and high shelves with movable corners, a mid bell with frequency and Q; bypassable), a
+compressor (threshold, ratio, attack, release, make-up) and ducking (dips by an amount while a
+live input that "ducks others" is above a threshold; held 600 ms between words). A channel can
+be locked (core ignores every change to it but unlocking, so a control surface can't move it
+either). Presets (`PRESETS`: speech, singing, instrument, music, flat) set the processing only.
+Two buses (Room, Stream) with level, mute, a limiter with its ceiling, and delay. Every field
+added later has a default that leaves the sound as it was (the EQ's corners are the old fixed
+bands). Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
 each change; older settings are converted from `stream.sound` (`mixerFromSettings`).
 
 One WebAudio engine (`packages/renderer/src/mixer.ts`, `MixerEngine`) makes each mix where it is
@@ -194,12 +202,23 @@ heard: the **room** in the main output (or the control window with no output; `R
 **stream** in the stream window and NDI feeds, and the **cue** (solo) mix on the "Listen on"
 output in the control window. Media elements join a mix through `createMediaElementSource`
 (SceneRenderer's `audioTap`), so they never also play straight to the speakers. The room and
-stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters.
+stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters,
+with each channel's compressor gain reduction and ducking (`dyn`) and the mix's loudness.
+
+The strip's numbers come from `stripSettings` (pure, tested; a section that's off gets neutral
+values, so nothing is rewired). The gate and the loudness meter are AudioWorklet processors
+(`apps/desktop/src/renderer/shared/mixer.worklet.js`, given to the engine by `installMixerWorklet`
+in each page with a mixer; without it the engine runs with no gate and no loudness). Loudness is
+BS.1770: K-weighting (a +4 dB high shelf at 1.68 kHz and a 38 Hz high-pass, as biquads), 100 ms
+blocks of mean square from the processor, then `LoudnessMeter`: momentary (400 ms), short-term
+(3 s) and integrated (gated: −70 LUFS absolute, −10 LU relative, over a histogram so it costs the
+same after hours). The Stream strip shows short-term and integrated against −14 LUFS (YouTube,
+Facebook). Ducking reads each strip's post-fader meter every 20 ms (`DuckFollower`).
 
 Gain staging: Web Audio's `DynamicsCompressorNode` adds its own makeup gain ((1/gain at full
 scale)^0.6: about +7 dB for a −18 dB, 3:1 channel compressor). The engine takes it back out
 (`autoMakeupDb`), so the makeup knob means what it says and the bus limiter's ceiling sits where
-it's set (−1.5 dBFS, 20:1; fast peaks that slip past are clipped at the stream's sound tap). A
+it's set (−1.5 dBFS by default, 20:1; fast peaks that slip past are clipped at the stream's sound tap). A
 one-channel mic is folded to both sides like a channel marked Mono (left alone, the stereo panner
 would play it 3 dB quieter).
 

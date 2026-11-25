@@ -6,6 +6,10 @@ import { cmd } from './api';
 import { hasDuration, knownDuration, setDuration } from './mediaDurations';
 import { attempt, useStore } from './store';
 import { mediaUrl } from '../../shared/mediaUrl';
+import { meterReport } from '../../shared/meterReport';
+import { installMixerWorklet } from '../../shared/mixerWorklet';
+
+installMixerWorklet();
 
 const get = useStore.getState;
 
@@ -126,9 +130,7 @@ export function installLocalAudio(): () => void {
     last = { cue, mixer, on, sink };
     if (on && !local) {
       local = new RoomAudio(window, mediaUrl);
-      local.mixer.startMeters((l) =>
-        publishMeters({ bus: 'room', channels: l.channels, level: l.bus, sides: l.sides }),
-      );
+      local.mixer.startMeters((l) => publishMeters(meterReport('room', l)));
     }
     if (!on && local) {
       local.destroy();

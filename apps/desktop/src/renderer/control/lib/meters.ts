@@ -39,3 +39,17 @@ export function onMeters(l: () => void): () => void {
   listeners.add(l);
   return () => listeners.delete(l);
 }
+
+/** A channel's dynamics in dB: compressor gain reduction and ducking (0 when idle or stale). */
+export function readDyn(bus: Bus, channel: string): [number, number] {
+  const m = latest[bus];
+  if (!m || performance.now() - m.at > 500) return [0, 0];
+  return m.report.dyn?.[channel] ?? [0, 0];
+}
+
+/** The mix's loudness in LUFS (null: nothing measured, or stale). */
+export function readLoudness(bus: Bus): NonNullable<MeterReport['loudness']> | null {
+  const m = latest[bus];
+  if (!m || performance.now() - m.at > 1500) return null;
+  return m.report.loudness ?? null;
+}

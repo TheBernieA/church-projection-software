@@ -19,6 +19,8 @@ import {
 } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
+import { meterReport } from '../shared/meterReport';
+import { installMixerWorklet } from '../shared/mixerWorklet';
 // A real file, never inlined: the security policy doesn't run scripts from data: addresses
 // (inlined, the tap failed to load and the stream had no sound).
 import pcmTapUrl from './pcmTap.worklet.js?url&no-inline';
@@ -323,6 +325,7 @@ function silent(m: Mixer): Mixer {
 // The stream mix: the same desk as the room (Mixer), each channel sent to the stream or not,
 // with the stream bus's own level, limiter and lip-sync delay. It never plays here.
 const ctx = new AudioContext({ sampleRate: 48_000 });
+installMixerWorklet();
 const mix = new MixerEngine(window, { bus: 'stream', ctx });
 const room = new AudioPlayer(document, mediaUrl);
 mix.attach('tracks', room.element);
@@ -352,10 +355,7 @@ api.onConfig((c) => {
     }
   }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
-  if (c.meters && !config?.meters)
-    mix.startMeters((l) =>
-      api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus, sides: l.sides }),
-    );
+  if (c.meters && !config?.meters) mix.startMeters((l) => api.sendMeters(meterReport('stream', l)));
   if (!c.meters) mix.stopMeters();
   document.body.classList.toggle('transparent', c.transparent);
   config = c;
