@@ -191,7 +191,19 @@ export function InputTile({
   const video = useRef<HTMLVideoElement>(null);
   const settings = useCameraSettings(device.deviceId);
   const [renaming, setRenaming] = useState(false);
-  const live = useStore((s) => s.live?.program.input?.deviceId === device.deviceId);
+  const onScreens = useStore((s) => s.live?.program.input?.deviceId === device.deviceId);
+  // The stream's own camera, when it has one (Cameras › take to Stream).
+  const split = useStore((s) => !!s.live?.streamCut);
+  const onStream = useStore(
+    (s) => !!s.live?.streamCut && s.live.streamCut.input?.deviceId === device.deviceId,
+  );
+  const live = onScreens || onStream;
+  const liveLabel =
+    !split || (onScreens && onStream)
+      ? t('mediaBin.live')
+      : onScreens
+        ? t('switcher.screens')
+        : t('switcher.stream');
   const onPreview = useStore((s) => s.live?.switcher.preview?.deviceId === device.deviceId);
   const inPip = useStore((s) => s.live?.program.pip?.deviceId === device.deviceId);
   const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
@@ -284,7 +296,7 @@ export function InputTile({
               caps
               className={`absolute bottom-1.5 right-1.5 rounded-[3px] px-1 py-px ${live ? 'bg-[var(--tally-program)]' : onPreview ? 'bg-[var(--tally-preview)]' : 'bg-black/70'}`}
             >
-              {live ? t('mediaBin.live') : onPreview ? t('switcher.preview') : t('switcher.pip')}
+              {live ? liveLabel : onPreview ? t('switcher.preview') : t('switcher.pip')}
             </Typography>
           )}
         </div>

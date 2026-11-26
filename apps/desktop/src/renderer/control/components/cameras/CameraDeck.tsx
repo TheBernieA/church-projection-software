@@ -198,7 +198,7 @@ function Stepper({ label, onStep }: { label: string; onStep: (dir: 'up' | 'down'
 }
 
 /** Focus, exposure and white balance: on the PTZ camera itself. */
-function PtzImage({ deviceId }: { deviceId: string }) {
+export function PtzImage({ deviceId }: { deviceId: string }) {
   const { t } = useTranslation();
   const [wb, setWb] = useState<'auto' | 'indoor' | 'outdoor' | 'onePush'>('auto');
   const [manual, setManual] = useState(false);
@@ -278,195 +278,206 @@ function PtzImage({ deviceId }: { deviceId: string }) {
   );
 }
 
-/** A titled group in the deck. */
-function DeckSection({ title, children }: { title: string; children: ReactNode }) {
+/** A titled column of the camera bar. */
+export function BarSection({
+  title,
+  children,
+  className = '',
+  aside,
+}: {
+  title: string;
+  children: ReactNode;
+  className?: string;
+  aside?: ReactNode;
+}) {
   return (
     <section
       aria-label={title}
-      className="flex flex-col gap-2.5 border-t border-[var(--hairline)] px-4 py-3.5"
+      className={`flex min-h-0 shrink-0 flex-col gap-2.5 border-r border-[var(--hairline)] px-4 py-3 last:border-r-0 ${className}`}
     >
-      <Typography size={10} weight="bold" tone="muted" caps>
-        {title}
-      </Typography>
+      <div className="flex h-4 items-center justify-between gap-2">
+        <Typography size={10} weight="bold" tone="muted" caps>
+          {title}
+        </Typography>
+        {aside}
+      </div>
       {children}
     </section>
   );
 }
 
-/**
- * The camera desk's controls (Cameras mode, right): they drive the camera on Preview. A PTZ
- * camera (Settings › Video: its address) moves on its motors; any other camera moves a digital
- * shot inside its picture. Follow keeps a person framed (Close, Waist, Full) and carries on when
- * the camera goes to Program. Moving by hand is off for the camera on Program, so a live shot
- * never jumps.
- */
-export function CameraDeck() {
-  const { t } = useTranslation();
+/** The camera the bar controls (the one on Preview), and whether it's on air anywhere. */
+export function useControlledCamera() {
   const preview = useStore((s) => s.live?.switcher.preview ?? null);
-  const programId = useStore((s) => s.live?.program.input?.deviceId ?? null);
-  const follow = useCameraControl((s) => s.follow);
-  const speed = useCameraControl((s) => s.speed);
-  const size = useCameraControl((s) => s.size);
   const deviceId = preview?.deviceId ?? null;
+  // On the screens or on the stream: moving it by hand would jump a live shot.
+  const onAir = useStore(
+    (s) =>
+      !!deviceId &&
+      (s.live?.program.input?.deviceId === deviceId ||
+        s.live?.streamCut?.input?.deviceId === deviceId),
+  );
   const settings = useCameraSettings(deviceId ?? '');
-  const onProgram = !!deviceId && deviceId === programId;
-  const isPtz = !!settings.ptz;
-  const stick = useRef({ pan: 0, tilt: 0, zoom: 0 });
+  return { preview, deviceId, onAir, settings, isPtz: !!settings.ptz };
+}
 
-  // A new camera on Preview, or this one taken to Program: whatever was moving stops.
-  useEffect(() => {
-    stick.current = { pan: 0, tilt: 0, zoom: 0 };
-    letGo();
-  }, [deviceId, onProgram]);
-  useEffect(() => () => letGo(), []);
-
-  const move = (patch: Partial<typeof stick.current>): void => {
-    if (!deviceId) return;
-    stick.current = { ...stick.current, ...patch };
-    const s = stick.current;
-    moveCamera(deviceId, s.pan, s.tilt, s.zoom);
-  };
-
+/** The Preview camera: its name, its tally and what kind of control it has. */
+export function CameraInfo() {
+  const { t } = useTranslation();
+  const { preview, deviceId, onAir, settings, isPtz } = useControlledCamera();
   if (!deviceId)
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-[var(--surface-2)]">
-          <Video size={20} className="text-[var(--text-3)]" />
+      <div className="flex flex-col gap-1.5">
+        <span className="flex size-9 items-center justify-center rounded-full bg-[var(--surface-2)]">
+          <Video size={16} className="text-[var(--text-3)]" />
         </span>
-        <Typography size={13} weight="semibold" tone="primary">
+        <Typography size={12} weight="semibold" tone="primary">
           {t('cameraMode.pickTitle')}
         </Typography>
-        <Typography size={12} tone="muted" leading="snug">
+        <Typography size={11} tone="muted" leading="snug">
           {t('cameraMode.pickHelp')}
         </Typography>
-        {follow && (
-          <Button size="xs" variant="secondary" icon={<X size={12} />} onClick={stopFollow}>
-            {t('camera.stopFollow')}
-          </Button>
-        )}
       </div>
     );
-
-  const followingThis = follow?.deviceId === deviceId;
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <div className="flex flex-col gap-1 px-4 py-3.5">
-        <div className="flex items-center gap-2">
-          <Typography
-            size={14}
-            weight="semibold"
-            tone="primary"
-            truncate
-            className="min-w-0 flex-1"
-          >
-            {preview?.label}
-          </Typography>
-          <Typography
-            size={10}
-            weight="bold"
-            tone="white"
-            caps
-            className={`shrink-0 rounded-[3px] px-1.5 py-px ${onProgram ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'}`}
-          >
-            {onProgram ? t('camera.onProgram') : t('camera.onPreview')}
-          </Typography>
-        </div>
-        <Typography size={11} tone="muted" leading="snug">
-          {isPtz
-            ? t('cameraMode.ptzAt', { host: settings.ptz?.host ?? '' })
-            : t('camera.digitalKind')}
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 items-center gap-2">
+        <Typography size={13} weight="semibold" tone="primary" truncate className="min-w-0">
+          {preview?.label}
         </Typography>
-        {onProgram && (
-          <Typography size={11} tone="muted" leading="snug" className="mt-1">
-            {t('camera.lockedOnProgram')}
-          </Typography>
-        )}
-      </div>
-
-      <DeckSection title={t('cameraMode.move')}>
-        <div className="flex items-center justify-center gap-5 py-1">
-          <Joystick
-            size={156}
-            disabled={onProgram}
-            label={t('camera.joystick')}
-            onMove={(pan, tilt) => move({ pan, tilt })}
-          />
-          <ZoomRocker
-            height={128}
-            disabled={onProgram}
-            label={t('camera.zoom')}
-            onZoom={(zoom) => move({ zoom })}
-          />
-        </div>
-        <div className="flex items-center gap-2" title={t('camera.speedHelp')}>
-          <Snail size={14} className="shrink-0 text-[var(--text-3)]" />
-          <Slider
-            aria-label={t('camera.speed')}
-            min={0.25}
-            max={2}
-            step={0.05}
-            value={speed}
-            format={(v) => `${v.toFixed(2)}×`}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            onDoubleClick={() => setSpeed(1)}
-          />
-          <Rabbit size={14} className="shrink-0 text-[var(--text-3)]" />
-        </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          icon={<Home size={13} />}
-          disabled={onProgram}
-          onClick={() => homeCamera(deviceId)}
+        <Typography
+          size={10}
+          weight="bold"
+          tone="white"
+          caps
+          className={`shrink-0 rounded-[3px] px-1.5 py-px ${onAir ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'}`}
         >
-          {isPtz ? t('camera.home') : t('camera.wholePicture')}
-        </Button>
-      </DeckSection>
-
-      <DeckSection title={t('camera.follow')}>
-        {followingThis ? (
-          <Button
-            size="md"
-            variant="live"
-            icon={<Footprints size={14} />}
-            onClick={stopFollow}
-            title={t('camera.stopFollow')}
-          >
-            {t(`camera.status.${follow.status}`)}
-          </Button>
-        ) : (
-          <Button
-            size="md"
-            variant="secondary"
-            icon={<ScanEye size={14} />}
-            disabled={onProgram}
-            onClick={() => void startFollow(deviceId)}
-            title={t('camera.followHelp')}
-          >
-            {t('camera.startFollow')}
-          </Button>
-        )}
-        <Segmented<ShotSize>
-          label={t('camera.size')}
-          value={followingThis ? follow.size : size}
-          onChange={setFollowSize}
-          options={SHOT_SIZES.map((s) => ({ value: s, label: t(`camera.sizes.${s}`) }))}
-        />
-        <Typography size={11} tone="muted" leading="snug">
-          <Crosshair size={11} className="mr-1 inline" />
-          {t('camera.clickToFollow')}
+          {onAir ? t('camera.onProgram') : t('camera.onPreview')}
         </Typography>
-        {follow && !followingThis && (
-          <Button size="xs" variant="ghost" icon={<X size={12} />} onClick={stopFollow}>
-            {t('camera.stopOther')}
-          </Button>
-        )}
-      </DeckSection>
+      </div>
+      <Typography size={11} tone="muted" leading="snug">
+        {isPtz
+          ? t('cameraMode.ptzAt', { host: settings.ptz?.host ?? '' })
+          : t('camera.digitalKind')}
+      </Typography>
+      {onAir && (
+        <Typography size={11} tone="muted" leading="snug">
+          {t('camera.lockedOnProgram')}
+        </Typography>
+      )}
+    </div>
+  );
+}
 
-      {isPtz && (
-        <DeckSection title={t('camera.image')}>
-          <PtzImage deviceId={deviceId} />
-        </DeckSection>
+/** Joystick, zoom rocker, speed and Home for the Preview camera. */
+export function MoveControls({ stick = 128, rocker = 104 }: { stick?: number; rocker?: number }) {
+  const { t } = useTranslation();
+  const { deviceId, onAir, isPtz } = useControlledCamera();
+  const speed = useCameraControl((s) => s.speed);
+  const held = useRef({ pan: 0, tilt: 0, zoom: 0 });
+
+  // A new camera on Preview, or this one taken live: whatever was moving stops.
+  useEffect(() => {
+    held.current = { pan: 0, tilt: 0, zoom: 0 };
+    letGo();
+  }, [deviceId, onAir]);
+  useEffect(() => () => letGo(), []);
+
+  const move = (patch: Partial<typeof held.current>): void => {
+    if (!deviceId) return;
+    held.current = { ...held.current, ...patch };
+    const s = held.current;
+    moveCamera(deviceId, s.pan, s.tilt, s.zoom);
+  };
+  const off = !deviceId || onAir;
+  return (
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-center justify-center gap-4">
+        <Joystick
+          size={stick}
+          disabled={off}
+          label={t('camera.joystick')}
+          onMove={(pan, tilt) => move({ pan, tilt })}
+        />
+        <ZoomRocker
+          height={rocker}
+          disabled={off}
+          label={t('camera.zoom')}
+          onZoom={(zoom) => move({ zoom })}
+        />
+      </div>
+      <div className="flex items-center gap-2" title={t('camera.speedHelp')}>
+        <Snail size={14} className="shrink-0 text-[var(--text-3)]" />
+        <Slider
+          aria-label={t('camera.speed')}
+          min={0.25}
+          max={2}
+          step={0.05}
+          value={speed}
+          format={(v) => `${v.toFixed(2)}×`}
+          onChange={(e) => setSpeed(Number(e.target.value))}
+          onDoubleClick={() => setSpeed(1)}
+        />
+        <Rabbit size={14} className="shrink-0 text-[var(--text-3)]" />
+      </div>
+      <Button
+        size="xs"
+        variant="secondary"
+        icon={<Home size={12} />}
+        disabled={off}
+        onClick={() => deviceId && homeCamera(deviceId)}
+      >
+        {isPtz ? t('camera.home') : t('camera.wholePicture')}
+      </Button>
+    </div>
+  );
+}
+
+/** Follow: start or stop, how close, and the hint to click a person. */
+export function FollowControls() {
+  const { t } = useTranslation();
+  const { deviceId, onAir } = useControlledCamera();
+  const follow = useCameraControl((s) => s.follow);
+  const size = useCameraControl((s) => s.size);
+  const followingThis = !!deviceId && follow?.deviceId === deviceId;
+  return (
+    <div className="flex flex-col gap-2.5">
+      {followingThis ? (
+        <Button
+          size="md"
+          variant="live"
+          icon={<Footprints size={14} />}
+          onClick={stopFollow}
+          title={t('camera.stopFollow')}
+        >
+          {t(`camera.status.${follow.status}`)}
+        </Button>
+      ) : (
+        <Button
+          size="md"
+          variant="secondary"
+          icon={<ScanEye size={14} />}
+          disabled={!deviceId || onAir}
+          onClick={() => deviceId && void startFollow(deviceId)}
+          title={t('camera.followHelp')}
+        >
+          {t('camera.startFollow')}
+        </Button>
+      )}
+      <Segmented<ShotSize>
+        label={t('camera.size')}
+        value={followingThis ? follow.size : size}
+        onChange={setFollowSize}
+        options={SHOT_SIZES.map((s) => ({ value: s, label: t(`camera.sizes.${s}`) }))}
+      />
+      <Typography size={11} tone="muted" leading="snug">
+        <Crosshair size={11} className="mr-1 inline" />
+        {t('camera.clickToFollow')}
+      </Typography>
+      {follow && !followingThis && (
+        <Button size="xs" variant="ghost" icon={<X size={12} />} onClick={stopFollow}>
+          {t('camera.stopOther')}
+        </Button>
       )}
     </div>
   );

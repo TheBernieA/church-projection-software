@@ -6,6 +6,7 @@ import {
   WebLayerSchema,
   OverlaySchema,
   SceneSchema,
+  StreamCutSchema,
   VideoInputLayerSchema,
   type BackgroundLayer,
   type ContentLayer,
@@ -132,6 +133,11 @@ export const LiveStateSchema = z.object({
   /** The video switcher: the camera waiting on Preview (Cut / Auto take it to Program). */
   switcher: z.object({ preview: VideoInputLayerSchema.nullable() }).default({ preview: null }),
   /**
+   * The livestream's own camera (Cameras › take to Stream or Screens alone), or null: the stream
+   * shows the screens' camera. The stream, its recording and NDI feeds of it use this.
+   */
+  streamCut: StreamCutSchema.nullable().default(null),
+  /**
    * Each camera's digital shot (a crop and zoom inside its picture), by device; a camera with no
    * entry shows its whole picture. Changes often while following someone, so windows apply it
    * without redrawing (a delivery marked `viewsOnly`).
@@ -169,6 +175,7 @@ export function initialLiveState(): LiveState {
     cleared: {},
     audio: null,
     switcher: { preview: null },
+    streamCut: null,
     cameraViews: {},
     mixer: defaultMixer(),
     mixerScope: null,

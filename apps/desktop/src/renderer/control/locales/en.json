@@ -2799,7 +2799,24 @@
       "small": "Small",
       "medium": "Medium",
       "large": "Large"
-    }
+    },
+    "takeTo": "Take to",
+    "to": {
+      "both": "Both",
+      "screens": "Screens",
+      "stream": "Stream"
+    },
+    "toHelp": {
+      "both": "Takes go to the screens and the livestream together",
+      "screens": "Takes go to the projectors only: the stream keeps its camera",
+      "stream": "Takes go to the livestream only (and its recording and NDI): the screens keep theirs"
+    },
+    "link": "Link",
+    "linkHelp": "The stream shows the screens' camera again",
+    "screens": "Screens",
+    "stream": "Stream",
+    "slidesOnly": "No camera: slides only",
+    "streamOwn": "The stream shows its own camera: {{name}}"
   },
   "ndi": {
     "feeds": "Feeds",
@@ -3277,16 +3294,47 @@
   },
   "cameraMode": {
     "title": "Camera control",
-    "hint": "Click a camera to put it on Preview and control it; double-click sends it straight to Program. Click a person on Preview to follow them.",
+    "hint": "Click a camera for Preview (its controls are below); double-click takes it live. Take to: Screens, Stream or Both.",
     "settings": "Camera settings (PTZ addresses, names, which cameras show)",
     "back": "Back to Show",
     "backHelp": "Back to the slides (the cameras keep their shots and Follow carries on)",
     "pickTitle": "No camera on Preview",
-    "pickHelp": "Click a camera on the left to put it on Preview. Its joystick, zoom, shots and Follow appear here.",
+    "pickHelp": "Click a camera above to put it on Preview. Its joystick, zoom and Follow work here; its shots are in its row.",
     "ptzAt": "PTZ camera at {{host}}: moves on its motors",
     "move": "Move",
     "shotsNoCamera": "Put a camera on Preview to see and save its shots.",
     "shotsOf": "Shots of {{name}}",
-    "goToShot": "Go to {{name}}"
+    "goToShot": "Go to {{name}}",
+    "view": "Camera workspace view",
+    "operate": "Operate",
+    "routing": "Routing",
+    "camera": "Camera",
+    "takeLive": "Take live",
+    "black": "Black",
+    "blackHelp": "The audience screens to black (and back)",
+    "lowerThirds": "Lower thirds",
+    "lowerThirdsHelp": "The words along the bottom, over the camera, in the lower-third theme chosen in the Live column",
+    "noLowerThirds": "Add a lower-third theme first (Themes)",
+    "shotOnAir": "This camera is on air: take another camera first, then move it",
+    "shotHelp": "Click: put the camera on Preview, on this shot. Double-click: rename",
+    "rowHelp": "Put {{name}} on Preview",
+    "saveShotOf": "Save where {{name}} is pointing as a shot"
+  },
+  "routing": {
+    "hint": "Drag a camera onto the screens or the livestream to send it there.",
+    "sources": "Sources",
+    "destinations": "Destinations",
+    "dragHint": "Drag onto a destination",
+    "dragHelp": "Drag onto the screens or the livestream",
+    "dropHere": "Send to {{name}}",
+    "sourceOf": "What {{name}} shows",
+    "slidesOnly": "Slides only (no camera)",
+    "screens": "Screens",
+    "screensHelp": "Projectors and audience screens, under the words",
+    "stream": "Livestream",
+    "streamHelp": "The stream, its recording and NDI feeds",
+    "follows": "Follows the screens",
+    "own": "Its own camera (switch on to follow the screens again)",
+    "followSwitch": "The livestream follows the screens"
   }
 }

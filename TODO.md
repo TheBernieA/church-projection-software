@@ -25,6 +25,12 @@ _Started 2026-11-26._
 
 ## Cameras
 
+- [ ] Routing per screen: today the destinations are all the screens together and the
+  livestream. Send a camera to the side screens only (Churchfront routes ATEM aux outputs), and
+  an NDI feed as its own destination.
+- [ ] Hear a split in a real service: the stream on one camera, the projector on slides or
+  another camera, checked with the stream window only (not a real broadcast or recording).
+
 - [ ] Camera mode on real PTZ cameras: tested against pretend VISCA cameras only (UDP and TCP).
   Check pan/tilt/zoom speeds, shots, exposure steps and Follow on a PTZOptics / Sony / BirdDog.
 - [ ] Follow on a real stage: measured on a fake camera (a panning photo), not yet with someone

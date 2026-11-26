@@ -241,6 +241,21 @@ export const PipLayerSchema = VideoInputLayerSchema.extend({
 });
 export type PipLayer = z.infer<typeof PipLayerSchema>;
 
+/**
+ * The livestream's own camera, when it differs from the screens' (the switcher took a camera to
+ * the stream alone, or to the screens alone): its camera, how it changed, and the T-bar's mix.
+ * Picture-in-picture, slides and everything else still follow the screens.
+ */
+export const StreamCutSchema = z.object({
+  input: VideoInputLayerSchema.nullable(),
+  inputTransition: InputTransitionSchema.optional(),
+  inputNext: z
+    .object({ input: VideoInputLayerSchema, pos: z.number().min(0).max(1) })
+    .nullable()
+    .optional(),
+});
+export type StreamCut = z.infer<typeof StreamCutSchema>;
+
 export const SceneSchema = z.object({
   background: BackgroundLayerSchema.nullable(),
   media: MediaLayerSchema.nullable(),

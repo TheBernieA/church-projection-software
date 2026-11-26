@@ -249,7 +249,21 @@ shot keeps a 192×108 JPEG taken when saved, `CameraShot.thumb`, since the camer
 it isn't pointing at); and the deck on the right (`cameras/CameraDeck.tsx`) that drives the camera
 on **Preview**: a joystick and spring-back zoom rocker with a speed dial, Home, Follow (Close /
 Waist / Full; click a person on Preview) and, for PTZ cameras, focus, exposure steps and white
-balance. Media › Video input keeps the cameras and the switcher. Moving by hand is off for the camera on
+balance. Media › Video input keeps the cameras and the switcher.
+
+**Screens and stream on different cameras.** `LiveState.streamCut` is the livestream's own camera
+(null: the stream follows the screens). Every switcher take has a destination (`to`: `both`,
+`screens`, `stream`; core `switcher.ts`, tested): to the stream alone sets `streamCut`; to the
+screens alone first freezes the stream on what it had; to both (or `link`) clears it. The stream
+window draws `streamCut`'s camera, transition and T-bar mix in place of the screens' (a video on
+the screens plays hidden under it, so its sound stays in the stream mix); slides, PiP, Looks and
+lower thirds still follow the screens. Its recording and NDI feeds of the stream follow it. The
+control window picks the destination once (`useSwitchTarget`, "Take to" in every switcher; Cut,
+Auto, the T-bar, double-click and the C/T keys use it). Cameras has two views: **Operate** (NEXT,
+SCREENS and STREAM monitors, the camera strip, then one bar: camera and exposure, every camera's
+shots in rows, joystick and zoom, Follow, Take to with FADE, CUT, BLACK and LOWER THIRDS) and
+**Routing** (sources and destinations with cables; drag a camera onto Screens or Livestream, or
+pick from each one's list; the stream's cable is dashed while it follows the screens). Moving by hand is off for the camera on
 Program; Follow keeps going when its camera is cut to Program. Inspired by Churchfront Video
 (Apache-2.0); its framing numbers are credited in `cameraFollow.ts`.
 
