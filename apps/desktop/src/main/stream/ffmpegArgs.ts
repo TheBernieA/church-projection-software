@@ -436,8 +436,10 @@ export function buildArgs(o: EncodeOptions): string[] {
   return [
     '-hide_banner',
     '-nostdin',
+    // Verbose, with each line's level, for one line only: "Successfully connected to …", the
+    // sign a stream server answered (splitLevel drops the rest of verbose).
     '-loglevel',
-    'info',
+    'level+verbose',
     '-stats_period',
     '1',
     // Video: the stream window's frames (raw), or its hardware-encoded H.264.
@@ -517,6 +519,30 @@ export interface Progress {
   dropped: number;
   /** Seconds encoded. */
   time: number;
+}
+
+/** ffmpeg's log levels. */
+const LEVEL = /\[(trace|debug|verbose|info|warning|error|fatal|panic)\] /;
+
+/**
+ * A stderr line from `-loglevel level+…`: its level, and the line as it reads without the tag
+ * (what every other parser here expects). Lines without a tag (rare) count as info.
+ */
+export function splitLevel(line: string): { level: string; text: string } {
+  const m = LEVEL.exec(line);
+  if (!m?.[1]) return { level: 'info', text: line };
+  return { level: m[1], text: line.slice(0, m.index) + line.slice(m.index + m[0].length) };
+}
+
+/**
+ * A stream server answered: ffmpeg opened the TCP connection to it (verbose, from its tcp
+ * layer, for RTMP and RTMPS alike). `host` is the address ffmpeg connected to (an IP when the
+ * destination's address is a name). Before this, ffmpeg's clock already runs (the outputs write
+ * through a queue), so its progress alone doesn't mean anything reached a server.
+ */
+export function parseConnected(text: string): { host: string; port: number } | null {
+  const m = /Successfully connected to (\S+) port (\d+)/.exec(text);
+  return m?.[1] && m[2] ? { host: m[1], port: Number(m[2]) } : null;
 }
 
 /** Read one of ffmpeg's `frame= … fps= … bitrate= … speed=` lines (null if it isn't one). */

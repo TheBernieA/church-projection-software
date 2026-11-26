@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { lookup } from 'node:dns/promises';
 import { monitorEventLoopDelay, type IntervalHistogram } from 'node:perf_hooks';
 import { mkdir, stat } from 'node:fs/promises';
 import { cpus, setPriority, totalmem, constants as osConstants } from 'node:os';
@@ -42,6 +43,8 @@ import {
   freeName,
   hasFallbackIngest,
   redactKeys,
+  splitLevel,
+  parseConnected,
   parseProgress,
   type Progress,
   pickEncoder,
@@ -220,6 +223,15 @@ export class StreamController {
   private outageSince: number | null = null;
   /** Each destination's server (host and port, never the key), to check the network is back. */
   private endpoints = new Map<string, Endpoint | null>();
+  /**
+   * This run's stream servers that answered (ffmpeg connected to them), how many connections
+   * opened, and each destination's server addresses (its name and what the name resolves to:
+   * ffmpeg reports the address it connected to). LIVE waits for a server to answer: ffmpeg's
+   * clock runs through the output queue even when none does.
+   */
+  private answered = new Set<string>();
+  private connections = 0;
+  private addressesById = new Map<string, Set<string>>();
   /** Reconnect attempts that are waiting or checking; bumped to cancel them (stop, a new run). */
   private reconnectSeq = 0;
   /** A reconnect is waiting or checking the network (only one at a time). */
@@ -1032,6 +1044,19 @@ export class StreamController {
         .map((x, i) => [x.id, endpointOf(urls[i] ?? '')]),
     );
     const streamIds = destinations.filter((x) => x.state === 'connecting').map((x) => x.id);
+    this.answered = new Set();
+    this.connections = 0;
+    this.addressesById = new Map();
+    for (const [id, e] of this.endpoints) {
+      if (!e) continue;
+      const known = new Set([e.host]);
+      this.addressesById.set(id, known);
+      // Best effort, alongside ffmpeg's own lookup (same resolver): to tell which destination's
+      // server answered when there are several. Without it, the count still decides.
+      lookup(e.host, { all: true })
+        .then((list) => list.forEach((a) => known.add(a.address)))
+        .catch(() => undefined);
+    }
     if (this.want.stream && urls.length === 0) {
       this.want.stream = false;
       this.setStatus({ destinations, error: 'noDestinations' });
@@ -1561,9 +1586,14 @@ export class StreamController {
   }
 
   /** A line from ffmpeg: a progress reading, or something to remember (and maybe act on). */
-  private onLog(line: string): void {
-    if (!line.trim()) return;
+  private onLog(raw: string): void {
+    if (!raw.trim()) return;
+    const { level, text: line } = splitLevel(raw);
     if (DEBUG) this.d.log.info('ffmpeg', { line: redactKeys(line) });
+    const connected = parseConnected(line);
+    if (connected) return this.onConnected(connected);
+    // ffmpeg runs at verbose only for that line: the rest of verbose is noise.
+    if (level === 'verbose' || level === 'debug' || level === 'trace') return;
     const p = parseProgress(line);
     if (p) return this.onProgress(p);
     const before = this.lastStderr;
@@ -1576,15 +1606,17 @@ export class StreamController {
   /** ffmpeg's progress (every second): live yet?, the readings, and the bitrate to aim for. */
   private onProgress(p: Progress): void {
     this.progressAt = performance.now();
-    const destinations =
-      p.time > 1
-        ? this.markDestinations(
-            'ok',
-            undefined,
-            (x) => x.state === 'connecting' && !this.down.has(x.id),
-          )
-        : this.status.destinations;
-    const first = this.status.state === 'starting' && p.time > 1;
+    // Live once ffmpeg's clock runs and a server has answered (the clock alone runs into the
+    // output queue even when nothing does).
+    const live = p.time > 1 && this.serverAnswered();
+    const destinations = live
+      ? this.markDestinations(
+          'ok',
+          undefined,
+          (x) => x.state === 'connecting' && !this.down.has(x.id) && this.reached(x.id),
+        )
+      : this.status.destinations;
+    const first = this.status.state === 'starting' && live;
     this.ffmpegDropped = p.dropped;
     // How far behind live the stream leaves here: time since the first frame, less the
     // stream time ffmpeg has sent on (it grows when a destination can't keep up), plus what
@@ -1616,7 +1648,7 @@ export class StreamController {
     }
     this.setStatus(
       {
-        state: p.time > 1 ? 'live' : this.status.state,
+        state: live ? 'live' : this.status.state,
         fps: p.fps,
         kbps,
         delayMs,
@@ -1650,6 +1682,52 @@ export class StreamController {
         if (this.ff === ff && this.status.state === 'live') this.setStatus({ restarts: 0 });
       }, STEADY_MS);
     }
+  }
+
+  /**
+   * Has anything reached a server? Recording only, or a direct link (SRT/UDP: nothing answers
+   * to confirm), counts at once; a stream service once ffmpeg has connected to one.
+   */
+  private serverAnswered(): boolean {
+    if (!this.want.stream) return true;
+    return [...this.endpoints.values()].some((e) => !e) || this.connections > 0;
+  }
+
+  /** This destination's server answered (or it has none that can: a direct link). */
+  private reached(id: string): boolean {
+    if (!this.endpoints.get(id) || this.answered.has(id)) return true;
+    // As many connections as stream servers: all of them answered, whichever is which.
+    const servers = [...this.endpoints.values()].filter(Boolean).length;
+    return this.connections >= servers;
+  }
+
+  /** ffmpeg connected to a stream server: that destination is getting through. */
+  private onConnected(c: { host: string; port: number }): void {
+    this.connections += 1;
+    const id = [...this.endpoints.keys()].find(
+      (x) =>
+        !this.answered.has(x) &&
+        this.endpoints.get(x)?.port === c.port &&
+        !!this.addressesById.get(x)?.has(c.host),
+    );
+    if (id) this.answered.add(id);
+    this.d.log.info('server answered', { destination: id ?? null, port: c.port });
+    // Already live (another destination answered first): this one is through now too.
+    if (this.status.state !== 'live') return;
+    this.setStatus(
+      {
+        destinations: this.markDestinations(
+          'ok',
+          undefined,
+          (x) =>
+            x.state === 'connecting' &&
+            this.endpoints.has(x.id) &&
+            !this.down.has(x.id) &&
+            this.reached(x.id),
+        ),
+      },
+      true,
+    );
   }
 
   /** One of the tee's outputs failed: mark that destination (the rest carry on). */

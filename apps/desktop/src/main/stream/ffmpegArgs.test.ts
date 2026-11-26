@@ -10,7 +10,9 @@ import {
   freeName,
   isStreamKey,
   isStreamUrl,
+  parseConnected,
   parseProgress,
+  splitLevel,
   pasteShape,
   pickEncoder,
   plausibleKey,
@@ -269,6 +271,40 @@ describe('progress and names', () => {
     );
     expect(p).toEqual({ fps: 30, kbps: 2046.5, speed: 1.01, dropped: 3, time: 64.1 });
     expect(parseProgress('Input #0, rawvideo')).toBeNull();
+  });
+
+  it('reads each line’s level and gives the line as it reads without it', () => {
+    // Real lines from `-loglevel level+verbose`.
+    expect(
+      splitLevel('[tcp @ 0x7b9cc34960] [verbose] Successfully connected to 127.0.0.1 port 19350'),
+    ).toEqual({
+      level: 'verbose',
+      text: '[tcp @ 0x7b9cc34960] Successfully connected to 127.0.0.1 port 19350',
+    });
+    expect(
+      splitLevel('[info] frame=  120 fps= 30 time=00:00:04.00 bitrate=N/A speed=1.13x'),
+    ).toEqual({
+      level: 'info',
+      text: 'frame=  120 fps= 30 time=00:00:04.00 bitrate=N/A speed=1.13x',
+    });
+    expect(
+      splitLevel('[fifo @ 0x7c5302ad00] [error] Error opening rtmp://h/live/x: Operation timed out')
+        .text,
+    ).toBe('[fifo @ 0x7c5302ad00] Error opening rtmp://h/live/x: Operation timed out');
+    expect(splitLevel('no tag here')).toEqual({ level: 'info', text: 'no tag here' });
+  });
+
+  it('notices a stream server answering, and only then', () => {
+    expect(parseConnected('[tcp @ 0x1] Successfully connected to 142.250.1.2 port 1935')).toEqual({
+      host: '142.250.1.2',
+      port: 1935,
+    });
+    expect(
+      parseConnected('[tcp @ 0x1] Starting connection attempt to 192.0.2.1 port 1935'),
+    ).toBeNull();
+    expect(
+      parseConnected('[tcp @ 0x1] Connection attempt to 192.0.2.1 port 1935 failed'),
+    ).toBeNull();
   });
 
   it('names recordings by date, with parts after a restart', () => {

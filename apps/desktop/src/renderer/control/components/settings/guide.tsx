@@ -212,6 +212,7 @@ const DESK_HOWTO = [
   'cameraWindow',
   'deskSound',
   'channelEq',
+  'eqBasics',
   'presets',
   'deskLink',
   'midi',
@@ -299,10 +300,35 @@ function RecipeSteps({ text }: { text: string }) {
           leading="relaxed"
           className={steps.length ? 'mt-2.5 border-l-2 border-[var(--hairline-strong)] pl-2.5' : ''}
         >
-          {note}
+          <WithLinks text={note} />
         </Typography>
       ))}
     </div>
+  );
+}
+
+const URL_RE = /(https:\/\/[^\s]+)/;
+
+/** Text with its https addresses as links (they open in the computer's browser). */
+function WithLinks({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(URL_RE).map((part, i) =>
+        URL_RE.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[var(--accent)] underline underline-offset-2 hover:opacity-80"
+          >
+            {part.replace(/^https:\/\//, '').replace(/\/$/, '')}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
   );
 }
 
