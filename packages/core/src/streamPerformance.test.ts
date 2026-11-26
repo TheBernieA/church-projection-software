@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { StreamSettingsSchema } from './schemas/stream';
-import { autoMode, resolvePerformance } from './streamPerformance';
+import {
+  autoMode,
+  lighterProfile,
+  performanceProfile,
+  resolvePerformance,
+} from './streamPerformance';
 
 const settings = (patch: object = {}) => ({ ...StreamSettingsSchema.parse({}), ...patch });
 const machine = (cores: number, memoryGB: number, hardwareEncoder: boolean) => ({
@@ -51,5 +56,32 @@ describe('H.264 level for the stream size', async () => {
     expect(avcCodecFor(1280, 720, 60)).toBe('avc1.640020');
     expect(avcCodecFor(1920, 1080, 30)).toBe('avc1.640028');
     expect(avcCodecFor(1920, 1080, 60)).toBe('avc1.64002a');
+  });
+});
+
+describe("a lighter stream for a computer that can't keep up", () => {
+  it('steps Quality → Balanced → Light, then stops', () => {
+    const balanced = lighterProfile(performanceProfile('quality'));
+    expect(balanced?.mode).toBe('balanced');
+    const light = balanced && lighterProfile(balanced);
+    expect(light).toMatchObject({ mode: 'light', height: 540 });
+    expect(light && lighterProfile(light)).toBeNull();
+  });
+
+  it('a custom stream drops 60 fps first, then the size, capping the bitrate', () => {
+    const custom = resolvePerformance(
+      StreamSettingsSchema.parse({
+        performance: 'custom',
+        quality: { height: 1080, fps: 60, videoKbps: 9000 },
+      }),
+      { cores: 8, memoryGB: 16, hardwareEncoder: true },
+    );
+    const a = lighterProfile(custom);
+    expect(a).toMatchObject({ height: 1080, fps: 30, videoKbps: 6000 });
+    const b = a && lighterProfile(a);
+    expect(b).toMatchObject({ height: 720, fps: 30, videoKbps: 3500 });
+    const c = b && lighterProfile(b);
+    expect(c).toMatchObject({ height: 540, videoKbps: 2000, x264Preset: 'superfast' });
+    expect(c && lighterProfile(c)).toBeNull();
   });
 });

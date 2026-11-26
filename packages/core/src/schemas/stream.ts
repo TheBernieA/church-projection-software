@@ -147,6 +147,11 @@ export const StreamSettingsSchema = z.object({
    * computer (or from "Check this computer"); Custom uses the Quality values as set.
    */
   performance: z.enum(['auto', 'light', 'balanced', 'quality', 'custom']).default('auto'),
+  /**
+   * The computer can't keep up while live: step down a mode by itself (after warning for 30 s),
+   * and back up once it has kept up for 2 minutes. Off: Lampstand warns and offers instead.
+   */
+  autoLighten: z.boolean().default(false),
   /** The last "Check this computer" result: the best mode it managed, and when. */
   benchmark: z
     .object({

@@ -420,6 +420,13 @@ export function StreamingPage({ s, update }: { s: Settings; update: Update }) {
         <Row label={t('benchmark.button')} description={t('benchmark.help')}>
           <CheckComputer size="sm" />
         </Row>
+        <Row label={t('streaming.autoLighten')} description={t('streaming.autoLightenHelp')}>
+          <Switch
+            label={t('streaming.autoLighten')}
+            checked={st.autoLighten}
+            onChange={(autoLighten) => set({ autoLighten })}
+          />
+        </Row>
         <Row
           label={t(`streaming.modeHelpTitle`)}
           description={t(`streaming.modeHelp.${st.performance}`)}

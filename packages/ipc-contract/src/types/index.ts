@@ -338,6 +338,22 @@ export interface StreamStatus {
   /** Suggest Light: the computer can't keep up (`lighter`), or the upload carries too little for
    *  this picture size (`upload`: a smaller picture looks sharper at the rate it carries). */
   advice: 'lighter' | 'upload' | null;
+  /** Late frames counted as the upload's (the stream was behind, or starting), not the computer's. */
+  droppedUpload: number;
+  /**
+   * The computer couldn't keep up this session: the control window eases off its own work
+   * (slower previews) so the stream gets the computer. Off after 30 s of keeping up; for good
+   * after a second struggle.
+   */
+  easeOff: boolean;
+  /** A lighter mode exists for the running stream. */
+  canLighten: boolean;
+  /** Lighter than the settings, and steady for 2 minutes: going back up is offered. */
+  canRestore: boolean;
+  /** Running lighter than the settings this session, and who chose it (null: as set). */
+  lightened: 'user' | 'auto' | null;
+  /** The mode going back up would return to. */
+  restoreTo: { height: number; fps: number } | null;
   /** CPU and memory while running (every 2 s), with recent history for sparklines. */
   health: StreamHealth | null;
   /** The recording's size so far, in bytes. */
