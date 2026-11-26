@@ -844,7 +844,9 @@
     "stream": "Couldn’t start or stop the stream.",
     "benchmark": "The computer check couldn't run.",
     "noService": "Open a playlist first, then add to it.",
-    "camera": "The camera could not do that. Check it is on and reachable."
+    "camera": "The camera could not do that. Check it is on and reachable.",
+    "desk": "The sound desk didn’t do that.",
+    "presets": "That couldn’t be done with the presets."
   },
   "guide": {
     "intro": "Everything you need to run your first service, in order. Steps tick themselves off as you go.",
@@ -2712,7 +2714,9 @@
       "tab": {
         "eq": "EQ",
         "dynamics": "Dynamics",
-        "input": "Input"
+        "input": "Input",
+        "presets": "Presets",
+        "desk": "Desk"
       },
       "previous": "Previous channel",
       "next": "Next channel",
@@ -3355,5 +3359,120 @@
     "follows": "Follows the screens",
     "own": "Its own camera (switch on to follow the screens again)",
     "followSwitch": "The livestream follows the screens"
+  },
+  "presets": {
+    "untitled": "Preset",
+    "full": "You have {{max}} presets: delete some to save more.",
+    "deleteConfirm": "Delete the preset “{{name}}”?",
+    "unreadable": "{{file}} isn’t a presets file or a text EQ Lampstand can read.",
+    "imported": "{{count}} presets added.",
+    "importedEq": "“{{name}}” added as an EQ preset.",
+    "skippedLines": "{{count}} lines couldn’t be used.",
+    "preampIgnored": "Its preamp ({{db}} dB) isn’t part of a preset: set the channel’s trim if you need it.",
+    "notApplied": "Not everything went over exactly:",
+    "ok": "OK",
+    "rename": "Rename",
+    "exportOne": "Save “{{name}}” to a file",
+    "delete": "Delete “{{name}}”",
+    "apply": "Apply",
+    "sendToDesk": "Send to desk channel {{channel}}",
+    "saveTitle": "Save this channel",
+    "name": "Preset name",
+    "scope": "What the preset holds",
+    "scopes": {
+      "all": "Whole channel",
+      "eq": "EQ only"
+    },
+    "scopeHelp": {
+      "all": "EQ, low and high cut, gate and compressor.",
+      "eq": "The EQ with the low and high cut; the gate and compressor stay as they are wherever it’s applied."
+    },
+    "save": "Save preset",
+    "builtIn": "Starting points",
+    "mine": "My presets",
+    "import": "Import…",
+    "exportAll": "Export all…",
+    "empty": "No presets yet. Save this channel, or import presets or an EQ file (Equalizer APO, REW).",
+    "manage": "Save, import or export presets…"
+  },
+  "fit": {
+    "bandDropped": "A {{db}} dB band at {{hz}} doesn’t fit (too few bands): left out.",
+    "kindChanged": "The {{from}} at {{hz}} became a {{to}} (no {{from}} there).",
+    "clamped": {
+      "hz": "The band at {{hz}} was moved into range.",
+      "db": "The band at {{hz}} was boosted or cut less (out of range).",
+      "q": "The band at {{hz}} has a different width (out of range)."
+    },
+    "cutDropped": "There’s no {{which}}: left out.",
+    "cutAsBand": "The {{which}} uses one of the EQ bands.",
+    "slopeChanged": "The {{which}} is {{to}} dB/oct instead of {{from}}.",
+    "gateDropped": "There’s no gate: left out.",
+    "compDropped": "There’s no compressor: left out.",
+    "compChanged": "The compressor’s {{what}} was set to the nearest it has.",
+    "kinds": {
+      "bell": "bell",
+      "lowShelf": "low shelf",
+      "highShelf": "high shelf",
+      "notch": "notch",
+      "lowCut": "low cut",
+      "highCut": "high cut"
+    },
+    "comp": {
+      "ratio": "ratio",
+      "thresholdDb": "threshold",
+      "attackMs": "attack",
+      "releaseMs": "release",
+      "makeupDb": "make-up"
+    }
+  },
+  "desk": {
+    "title": "Sound desk",
+    "footnote": "Lampstand speaks to digital desks over the network (OSC): read a channel’s EQ and dynamics, and send presets to it. Desks it doesn’t know yet work with a profile file.",
+    "enable": "Link a sound desk",
+    "enableHelp": "Read and send channel processing over the network. The desk’s sound still comes in as an input, as before.",
+    "type": "Desk",
+    "typeHelp": "Which desk it is (its profile).",
+    "choose": "Choose the desk",
+    "address": "Address",
+    "addressHelp": "The desk’s network address, and its port if it isn’t the usual one. The desk and this computer must be on the same network.",
+    "port": "Port",
+    "check": "Check",
+    "checkHelp": "See if the desk answers.",
+    "notChecked": "Not checked yet.",
+    "answering": "{{desk}} at {{host}} is answering.",
+    "notAnswering": "Nothing answers at {{host}}. Check the address, the network and the desk type.",
+    "checking": "Checking the desk…",
+    "importProfile": "Import a desk profile…",
+    "importProfileHelp": "For a desk Lampstand doesn’t know yet: a profile file says where it keeps each channel’s EQ and dynamics.",
+    "badProfile": "{{file}} isn’t a desk profile Lampstand can use.",
+    "profileAdded": "Desk profile “{{name}}” added.",
+    "removeProfile": "Remove the profile {{name}}",
+    "removeProfileConfirm": "Remove the desk profile “{{name}}”?",
+    "nextStep": "Next: open a channel in the Mixer and link it to its desk channel (Desk tab).",
+    "noProfile": "Choose your desk in Settings › Audio › Sound desk first.",
+    "sendConfirm": "Send {{what}} to channel {{channel}} on the {{desk}}? The room hears the change at once.",
+    "changes": "To fit the desk:",
+    "send": "Send",
+    "sent": "Desk channel {{channel}} set.",
+    "undone": "Desk channel {{channel}} put back.",
+    "notSetUp": "No sound desk linked",
+    "notSetUpHelp": "Link your digital desk in Settings › Audio › Sound desk to read its channels’ EQ here, and send this channel or a preset to it.",
+    "openSettings": "Open Settings › Audio",
+    "link": "Desk link",
+    "linkedTo": "This channel on the desk",
+    "notLinked": "Not linked",
+    "channelN": "Channel {{n}}",
+    "undo": "Put desk channel {{channel}} back",
+    "sendTitle": "Send to the desk",
+    "sendChannel": "Send this channel to desk channel {{channel}}",
+    "linkFirst": "Link a desk channel first",
+    "presetToSend": "Preset to send",
+    "sendPreset": "Send preset",
+    "readTitle": "Read from the desk",
+    "read": "Read desk channel {{channel}}",
+    "readSummary": "{{name}}: {{bands}} filters.",
+    "applyHere": "Apply to this channel",
+    "saveAsPreset": "Save as a preset",
+    "profileFrom": "Profile: {{desk}}."
   }
 }

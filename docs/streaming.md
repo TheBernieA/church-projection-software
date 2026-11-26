@@ -221,6 +221,17 @@ against threshold), compressor (transfer curve, gain reduction), ducking. Input:
 delay, pan, polarity, mono, noise suppression. Fast edits are sent at most every 40 ms, nested
 changes merged (`mergePatch`).
 
+**Presets, imports and the sound desk** share one device-neutral model (core
+`schemas/processing.ts`: filters, gate, compressor) and one fitting function (`fitProcessing`,
+`processing.ts`): Lampstand channels (`channelProcessing` / `processingPatch`), saved presets
+(`settings.processingPresets`, files via `presets.export` / `presets.import`), text EQs (Equalizer
+APO / REW, `eqText.ts`) and desks (profiles, `desk.ts`; see `docs/desk-profiles.md`) all convert to
+and from it, and every change made to fit is a `FitNote` shown before anything is applied or sent.
+The channel window's Presets tab saves (whole channel or EQ only), applies, renames, deletes,
+imports and exports; its Desk tab links the channel to a desk channel (`MixerChannel.deskChannel`),
+reads it (apply here, or keep as a preset) and sends the channel or a preset to it after a
+confirmation listing the changes, with Undo (the desk's previous values are read first).
+
 The strip's numbers come from `stripSettings` (pure, tested; a section that's off gets neutral
 values, so nothing is rewired). The gate and the loudness meter are AudioWorklet processors
 (`apps/desktop/src/renderer/shared/mixer.worklet.js`, given to the engine by `installMixerWorklet`

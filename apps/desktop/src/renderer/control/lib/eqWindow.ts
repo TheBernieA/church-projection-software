@@ -10,8 +10,8 @@ import { useStore } from './store';
  * it was, its size and the tab last used are remembered on this computer.
  */
 
-export type ChannelTab = 'eq' | 'dynamics' | 'input';
-export const CHANNEL_TABS: readonly ChannelTab[] = ['eq', 'dynamics', 'input'];
+export type ChannelTab = 'eq' | 'dynamics' | 'input' | 'presets' | 'desk';
+export const CHANNEL_TABS: readonly ChannelTab[] = ['eq', 'dynamics', 'input', 'presets', 'desk'];
 
 /** Where the floating window sits, in CSS px of the control window. */
 export interface WindowRect {

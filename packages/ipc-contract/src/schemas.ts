@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { BookIdSchema, OnlineBibleSchema, OutputRoleSchema } from '@lampstand/core';
+import {
+  BookIdSchema,
+  OnlineBibleSchema,
+  OutputRoleSchema,
+  ProcessingPresetSchema,
+  ProcessingSchema,
+} from '@lampstand/core';
 import type { QueryName } from './channels';
 
 /**
@@ -77,6 +83,26 @@ export const QuerySchemas = {
   'recording.chooseFolder': z.undefined(),
   /** Show the recordings folder (or one recording) in Finder / Explorer. */
   'recording.reveal': z.object({ path: z.string().max(2000).nullable() }),
+  /** The sound desk: is it answering (Settings › Audio › Sound desk). */
+  'desk.status': z.undefined(),
+  /** A desk channel's processing and name, read from the desk. */
+  'desk.read': z.object({ channel: z.number().int().min(1).max(128) }),
+  /** Put processing on a desk channel (fitted to the desk; what it had is returned, for undo). */
+  'desk.write': z.object({
+    channel: z.number().int().min(1).max(128),
+    processing: ProcessingSchema,
+  }),
+  /** The desk's channel names (where it has them). */
+  'desk.channels': z.undefined(),
+  /** Pick a desk profile file; it's checked and returned (saving it is a settings change). */
+  'desk.importProfile': z.undefined(),
+  /** Save presets to a file the operator picks. */
+  'presets.export': z.object({
+    presets: z.array(ProcessingPresetSchema).min(1).max(500),
+    name: z.string().max(80).default('Lampstand presets'),
+  }),
+  /** Pick a presets file or a text EQ (Equalizer APO / REW); what it holds comes back. */
+  'presets.import': z.undefined(),
 } as const satisfies Record<QueryName, z.ZodType>;
 
 export type QueryArgs<K extends QueryName> = z.input<(typeof QuerySchemas)[K]>;

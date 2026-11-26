@@ -23,6 +23,13 @@ _Started 2026-11-26._
 - [ ] Hear the pro Mixer (`feature/pro-mixer`) running: gate, ducking and the loudness meter
   were unit-tested and their worklet run in Node, not yet heard in the app or on Windows.
 
+- [ ] Sound desk link on a real desk: the X32/M32 and X Air profiles were written from Behringer's
+  OSC documents and tested against a pretend desk only. Check every address and value scale on
+  real hardware, and add the X32's low-cut slope and high cut if its firmware has them.
+- [ ] Desks that aren't OSC: an Allen & Heath (MIDI over TCP) and a Yamaha transport for the
+  profile format; Behringer Wing and Soundcraft Ui profiles once their OSC is confirmed.
+- [ ] Import desk preset files (X32 .chn / scenes) once the format is checked on real files.
+
 ## Cameras
 
 - [ ] Routing per screen: today the destinations are all the screens together and the
