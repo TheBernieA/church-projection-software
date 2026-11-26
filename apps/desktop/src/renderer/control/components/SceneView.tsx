@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react';
-import type { Scene, ScreenMask, Standby } from '@lampstand/core';
+import type { CameraView, Scene, ScreenMask, Standby } from '@lampstand/core';
 import { SceneRenderer, type RenderMode } from '@lampstand/renderer';
 import { mediaUrl } from '../../shared/mediaUrl';
 import { useLogo } from '../lib/hooks';
@@ -11,6 +11,8 @@ import { localVideoTap } from '../lib/audio';
  * projector shows (WYSIWYG, §3.2). Thumbnails render lazily when scrolled into view, and a
  * memo keeps an unchanged scene from re-rendering when its parent does.
  */
+const NO_VIEWS: Readonly<Record<string, CameraView>> = {};
+
 export const SceneView = memo(function SceneView({
   scene,
   mode = 'monitor',
@@ -43,6 +45,8 @@ export const SceneView = memo(function SceneView({
   // With no output, the monitor plays the room's video sound: through the room output.
   const sink = useStore((s) => (audio ? (s.settings?.audio.roomOutput ?? '') : ''));
   const [visible, setVisible] = useState(mode !== 'thumbnail');
+  // The cameras' digital shots, as on the outputs (moved in place, never redrawn).
+  const views = useStore((s) => s.live?.cameraViews ?? NO_VIEWS);
 
   useEffect(() => {
     if (visible || !host.current) return;
@@ -64,6 +68,10 @@ export const SceneView = memo(function SceneView({
       renderer.current = null;
     };
   }, [visible, mode, transparent]);
+
+  useEffect(() => {
+    renderer.current?.setCameraViews(views);
+  }, [views, visible, mode, transparent]);
 
   useEffect(() => {
     renderer.current?.setLogo(logo);

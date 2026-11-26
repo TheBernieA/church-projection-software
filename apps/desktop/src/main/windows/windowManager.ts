@@ -395,8 +395,14 @@ export class WindowManager {
         o.win.webContents.send(Channels.evOutputInfo, this.outputInfo(o));
   }
 
-  broadcastLive(state: LiveState, soundOnly = false): void {
-    const delivery: LiveDelivery = soundOnly ? { ...state, soundOnly } : state;
+  broadcastLive(state: LiveState, only: 'sound' | 'views' | null = null): void {
+    const delivery: LiveDelivery =
+      only === 'sound'
+        ? { ...state, soundOnly: true }
+        : only === 'views'
+          ? { ...state, viewsOnly: true }
+          : state;
+    const soundOnly = only !== null;
     for (const o of this.outputs.values())
       if (o.ready && !o.win.isDestroyed()) o.win.webContents.send(Channels.evLive, delivery);
     this.sendToControl(Channels.evLive, delivery);

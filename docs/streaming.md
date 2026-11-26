@@ -184,9 +184,19 @@ instant.
 ## The mixer
 
 `LiveState.mixer` (core `schemas/mixer.ts`) is the sound desk: one channel per source (Audio tab
-tracks, video sound, each live input) with fader (dB), mute, solo, pan, mono, high-pass, 3-band
-EQ, compressor, and Room / Stream sends; and two buses (Room, Stream) with level, mute, limiter and
-delay. Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
+tracks, video sound, each live input) with fader (dB), mute, solo, pan, Room / Stream sends, and
+its strip: trim and polarity, mono, sync delay (0–1000 ms), noise suppression (inputs: the
+capture's `noiseSuppression`), a noise gate, a low cut and a high cut (12, 24 or 48 dB/octave,
+Butterworth), a 6-band parametric EQ (each band a bell, low shelf, high shelf or notch, with
+frequency, gain and Q, on/off; the EQ bypassable, the cuts not), a
+compressor (threshold, ratio, attack, release, make-up) and ducking (dips by an amount while a
+live input that "ducks others" is above a threshold; held 600 ms between words). A channel can
+be locked (core ignores every change to it but unlocking, so a control surface can't move it
+either). Presets (`PRESETS`: speech, singing, instrument, music, flat) set the processing only.
+Two buses (Room, Stream) with level, mute, a limiter with its ceiling, and delay. Every field
+added later has a default that leaves the sound as it was (a saved 3-band EQ is converted into
+bands 1, 3 and 6, `fromThreeBand`; EQ changes name only the bands they change,
+`eq.bands["2"]`). Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
 each change; older settings are converted from `stream.sound` (`mixerFromSettings`).
 
 One WebAudio engine (`packages/renderer/src/mixer.ts`, `MixerEngine`) makes each mix where it is
@@ -194,14 +204,87 @@ heard: the **room** in the main output (or the control window with no output; `R
 **stream** in the stream window and NDI feeds, and the **cue** (solo) mix on the "Listen on"
 output in the control window. Media elements join a mix through `createMediaElementSource`
 (SceneRenderer's `audioTap`), so they never also play straight to the speakers. The room and
-stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters.
+stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters,
+with each channel's compressor gain reduction and ducking (`dyn`) and the mix's loudness.
+
+**The channel window** (click a strip's name or its processing chip;
+`control/components/mixer/eq/`, state in `control/lib/eqWindow.ts`) floats over the workspace
+(moved by its header, resized from its corner, kept on screen) or docks into the Mixer; dock state,
+size and tab are remembered on the computer. EQ: a graph (`EqGraph`) of the strip's real response
+(`eqFilters.ts`: each biquad's magnitude from the Web Audio spec's coefficients, so the curve is
+what's heard), nodes to drag (frequency and gain; Alt-drag or wheel: Q, a cut's slope; double-click:
+flatten or switch a cut off; double-click the graph: the nearest unused band goes there; arrows,
+Shift, [ ] on a focused node), and a live spectrum before and after the EQ: the window sets
+`live.mixerScope` to the channel shown, the room engine adds two 8192-point analysers to that
+strip only and sends 96 log bands (`spectrum.ts`) with its meter report. Dynamics: gate (level
+against threshold), compressor (transfer curve, gain reduction), ducking. Input: device, trim,
+delay, pan, polarity, mono, noise suppression. Fast edits are sent at most every 40 ms, nested
+changes merged (`mergePatch`).
+
+The strip's numbers come from `stripSettings` (pure, tested; a section that's off gets neutral
+values, so nothing is rewired). The gate and the loudness meter are AudioWorklet processors
+(`apps/desktop/src/renderer/shared/mixer.worklet.js`, given to the engine by `installMixerWorklet`
+in each page with a mixer; without it the engine runs with no gate and no loudness). Loudness is
+BS.1770: K-weighting (a +4 dB high shelf at 1.68 kHz and a 38 Hz high-pass, as biquads), 100 ms
+blocks of mean square from the processor, then `LoudnessMeter`: momentary (400 ms), short-term
+(3 s) and integrated (gated: −70 LUFS absolute, −10 LU relative, over a histogram so it costs the
+same after hours). The Stream strip shows short-term and integrated against −14 LUFS (YouTube,
+Facebook). Ducking reads each strip's post-fader meter every 20 ms (`DuckFollower`).
 
 Gain staging: Web Audio's `DynamicsCompressorNode` adds its own makeup gain ((1/gain at full
 scale)^0.6: about +7 dB for a −18 dB, 3:1 channel compressor). The engine takes it back out
 (`autoMakeupDb`), so the makeup knob means what it says and the bus limiter's ceiling sits where
-it's set (−1.5 dBFS, 20:1; fast peaks that slip past are clipped at the stream's sound tap). A
+it's set (−1.5 dBFS by default, 20:1; fast peaks that slip past are clipped at the stream's sound tap). A
 one-channel mic is folded to both sides like a channel marked Mono (left alone, the stereo panner
 would play it 3 dB quieter).
+
+## Camera mode (PTZ, digital shots, follow)
+
+**Cameras** (a toolbar workspace, `mode: 'cameras'`; also Media › Video input › Camera control)
+is the camera operator's desk on its own screen: the library and media bin step aside; big Preview
+and Program monitors with Cut, Auto, the T-bar and the transition (`SwitcherBar`, stacked); every
+camera live with its tally (click: Preview, double-click: Program); the Preview camera's shots as
+picture tiles (`cameras/ShotGrid.tsx`: a digital shot shows the camera live, cropped to it; a PTZ
+shot keeps a 192×108 JPEG taken when saved, `CameraShot.thumb`, since the camera can't show a shot
+it isn't pointing at); and the deck on the right (`cameras/CameraDeck.tsx`) that drives the camera
+on **Preview**: a joystick and spring-back zoom rocker with a speed dial, Home, Follow (Close /
+Waist / Full; click a person on Preview) and, for PTZ cameras, focus, exposure steps and white
+balance. Media › Video input keeps the cameras and the switcher.
+
+**Screens and stream on different cameras.** `LiveState.streamCut` is the livestream's own camera
+(null: the stream follows the screens). Every switcher take has a destination (`to`: `both`,
+`screens`, `stream`; core `switcher.ts`, tested): to the stream alone sets `streamCut`; to the
+screens alone first freezes the stream on what it had; to both (or `link`) clears it. The stream
+window draws `streamCut`'s camera, transition and T-bar mix in place of the screens' (a video on
+the screens plays hidden under it, so its sound stays in the stream mix); slides, PiP, Looks and
+lower thirds still follow the screens. Its recording and NDI feeds of the stream follow it. The
+control window picks the destination once (`useSwitchTarget`, "Take to" in every switcher; Cut,
+Auto, the T-bar, double-click and the C/T keys use it). Cameras has two views: **Operate** (NEXT,
+SCREENS and STREAM monitors, the camera strip, then one bar: camera and exposure, every camera's
+shots in rows, joystick and zoom, Follow, Take to with FADE, CUT, BLACK and LOWER THIRDS) and
+**Routing** (sources and destinations with cables; drag a camera onto Screens or Livestream, or
+pick from each one's list; the stream's cable is dashed while it follows the screens). Moving by hand is off for the camera on
+Program; Follow keeps going when its camera is cut to Program. Inspired by Churchfront Video
+(Apache-2.0); its framing numbers are credited in `cameraFollow.ts`.
+
+- **PTZ cameras** (Settings › Video › Remote control: VISCA over IP, UDP 52381, or VISCA over TCP,
+  5678): `main/cameras/visca.ts` (command bytes, tested; one connection per camera, moves
+  coalesced to the newest every 50 ms, position inquiries, reconnect) and `ptzService.ts`
+  (`camera.ptz` commands; a move not renewed within 1 s is stopped, every camera stops on quit).
+  Shots keep the camera's position counts, or one of its preset slots if it won't say.
+- **Any other camera: digital shots.** `live.cameraViews` (core `schemas/camera.ts`) holds each
+  camera's crop and zoom; every window applies it to that camera's picture
+  (`SceneRenderer.setCameraViews`, a CSS transform eased over 120 ms, the camera never reopened).
+  A change to only the views is delivered `viewsOnly`, so windows move pictures and redraw
+  nothing else. Zoom is capped by the camera's capture size (`maxDigitalZoom`).
+- **Follow** (`control/lib/cameraControl.ts`): the control window opens the camera, finds people
+  ~12 times a second with MediaPipe's pose model (`lib/follow/detector.ts`, model in
+  `assets/models/`, WebAssembly allowed by ADR 0007), keeps to one (`PersonLock`), and frames them
+  (`DigitalFollow` → views, or `PtzFollow` → pan/tilt/zoom speeds). Measured on a fake camera
+  panning across a photo of three people: the shot followed one person across 0.30–0.71 of the
+  picture with the heads framed. The pose model's scores run low on real pictures, so it runs at
+  0.1 and `personFromLandmarks` drops anything not upright (shapes in a car's wheel were measured
+  coming through as "people").
 
 ## Video switcher
 

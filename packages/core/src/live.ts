@@ -6,6 +6,7 @@ import {
   WebLayerSchema,
   OverlaySchema,
   SceneSchema,
+  StreamCutSchema,
   VideoInputLayerSchema,
   type BackgroundLayer,
   type ContentLayer,
@@ -22,6 +23,7 @@ import { omit } from './utils/object';
 import { applyMixerAction, defaultMixer, MixerActionSchema, MixerSchema } from './schemas/mixer';
 import { EMPTY_MASKS, makeScene, overlayGroup } from './utils/scene';
 import { applySwitcherAction, SwitcherActionSchema } from './switcher';
+import { applyCameraAction, CameraActionSchema, CameraViewSchema } from './schemas/camera';
 
 export const DetectionModeSchema = z.enum(['off', 'suggest', 'approve', 'auto']);
 export type DetectionMode = z.infer<typeof DetectionModeSchema>;
@@ -130,8 +132,24 @@ export const LiveStateSchema = z.object({
   audio: AudioCueSchema.nullable().default(null),
   /** The video switcher: the camera waiting on Preview (Cut / Auto take it to Program). */
   switcher: z.object({ preview: VideoInputLayerSchema.nullable() }).default({ preview: null }),
+  /**
+   * The livestream's own camera (Cameras › take to Stream or Screens alone), or null: the stream
+   * shows the screens' camera. The stream, its recording and NDI feeds of it use this.
+   */
+  streamCut: StreamCutSchema.nullable().default(null),
+  /**
+   * Each camera's digital shot (a crop and zoom inside its picture), by device; a camera with no
+   * entry shows its whole picture. Changes often while following someone, so windows apply it
+   * without redrawing (a delivery marked `viewsOnly`).
+   */
+  cameraViews: z.record(z.string().max(300), CameraViewSchema).default({}),
   /** The sound desk: every channel's level, EQ and routing, live in every window. */
   mixer: MixerSchema.default(() => defaultMixer()),
+  /**
+   * The channel whose sound spectrum the Mixer's EQ window shows (null: none). The window that
+   * plays the room's mix measures only this one, and only while the EQ window is open.
+   */
+  mixerScope: z.string().max(64).nullable().default(null),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
   /**
@@ -157,7 +175,10 @@ export function initialLiveState(): LiveState {
     cleared: {},
     audio: null,
     switcher: { preview: null },
+    streamCut: null,
+    cameraViews: {},
     mixer: defaultMixer(),
+    mixerScope: null,
     look: null,
     lowerThird: null,
   };
@@ -591,11 +612,31 @@ export function registerLiveCommands(
   });
 
   bus.register({
+    type: 'live.camera',
+    schema: CameraActionSchema,
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => ({ ...s, cameraViews: applyCameraAction(s.cameraViews, p) }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
     type: 'live.mixer',
     schema: MixerActionSchema,
     undoable: false,
     handle: (p) => {
       store.update((s) => ({ ...s, mixer: applyMixerAction(s.mixer, p) }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.mixerScope',
+    schema: z.object({ channel: z.string().max(64).nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => (s.mixerScope === p.channel ? s : { ...s, mixerScope: p.channel }));
       return { result: null };
     },
   });

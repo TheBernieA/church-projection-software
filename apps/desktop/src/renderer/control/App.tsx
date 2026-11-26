@@ -5,6 +5,8 @@ import { useEditorExpanded } from './lib/editing';
 import { migrateLocalCameras } from './lib/inputs';
 import { saveSettings } from './lib/actions';
 import { MixerPanel } from './components/mixer/MixerPanel';
+import { FloatingChannelWindow } from './components/mixer/eq/ChannelWindow';
+import { installChannelScope } from './lib/eqWindow';
 import { LiveConsole } from './components/live/LiveConsole';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -57,12 +59,15 @@ export function App() {
   const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
   // An expanded editor takes the whole window, as a presentation editor does.
   const fullEditor = useEditorExpanded();
+  // Cameras mode is a workspace of its own: the library and media bin step aside for it.
+  const cameraMode = useStore((s) => s.mode === 'cameras');
   useEffect(() => installShortcuts(), []);
   useEffect(() => installSurfaces(), []);
   useEffect(() => installMediaTransition(), []);
   useEffect(() => installMediaWatch(), []);
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
+  useEffect(() => installChannelScope(), []);
   useEffect(() => installCueMix(), []);
   useSwitcherSources();
   // Camera settings used to live in this computer's local storage: move them into settings once.
@@ -83,7 +88,7 @@ export function App() {
       {textBarOpen && <TextBar />}
       {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
       <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
-        {!fullEditor && (
+        {!fullEditor && !cameraMode && (
           <>
             <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
               <LeftSidebar binHeight={binOpen ? bin.size : null} />
@@ -96,7 +101,7 @@ export function App() {
             <CenterPane />
           </main>
           {/* The media bin opens under the slides from the toolbar's Media button. */}
-          {binOpen && !fullEditor && (
+          {binOpen && !fullEditor && !cameraMode && (
             <>
               <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />
               <div className="pane">
@@ -133,6 +138,7 @@ export function App() {
         </>
       )}
       <QuickBar />
+      {!fullEditor && <FloatingChannelWindow />}
       <Suspense fallback={null}>
         {dialog === 'newSong' && <NewSongDialog />}
         {dialog === 'theme' && <ThemeEditor />}

@@ -1,6 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   BookOpen,
+  Cctv,
   Circle,
   Clapperboard,
   Ellipsis,
@@ -45,6 +46,7 @@ const MAIN_MODES: { mode: Mode; icon: LucideIcon }[] = [
   { mode: 'edit', icon: Pencil },
   { mode: 'reflow', icon: Rows3 },
   { mode: 'bible', icon: BookOpen },
+  { mode: 'cameras', icon: Cctv },
 ];
 // Themes has its own toolbar button (Theme), so More only holds the Stage workspace.
 const MORE_MODES: { mode: Mode; icon: LucideIcon }[] = [{ mode: 'stage', icon: SquareUser }];

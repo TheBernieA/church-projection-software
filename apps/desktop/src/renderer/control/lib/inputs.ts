@@ -163,6 +163,8 @@ export const DEFAULT_CAMERA: CameraSettings = {
   mirror: false,
   resolution: 'auto',
   hidden: false,
+  ptz: null,
+  shots: [],
 };
 
 const NO_CAMERAS: Record<string, CameraSettings> = {};
@@ -177,7 +179,7 @@ const cameraSettings = (deviceId: string): CameraSettings => ({
 /**
  * Change a camera's settings: shown at once, then saved. Back to the defaults removes its entry.
  */
-function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
+export function setCameraSettings(deviceId: string, patch: Partial<CameraSettings>): void {
   const next = { ...cameraSettings(deviceId), ...patch };
   const isDefault = JSON.stringify(next) === JSON.stringify(DEFAULT_CAMERA);
   const cameras = Object.fromEntries(

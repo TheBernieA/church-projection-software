@@ -15,3 +15,5 @@ export * from './audioPlayer';
 export * from './mixer';
 export * from './inputs';
 export * from './stageView';
+export * from './eqFilters';
+export * from './spectrum';

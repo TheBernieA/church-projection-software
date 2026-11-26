@@ -10,6 +10,7 @@ import {
   Settings2,
   Video,
   Clapperboard,
+  Cctv,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { usePaneSize } from '../shell/Splitter';
@@ -172,7 +173,7 @@ function CameraMenu({
  * click puts it on screen (click again takes it off). Its "…" holds its settings, which apply
  * straight away when it's live.
  */
-function InputTile({
+export function InputTile({
   device,
   n,
   width,
@@ -190,7 +191,19 @@ function InputTile({
   const video = useRef<HTMLVideoElement>(null);
   const settings = useCameraSettings(device.deviceId);
   const [renaming, setRenaming] = useState(false);
-  const live = useStore((s) => s.live?.program.input?.deviceId === device.deviceId);
+  const onScreens = useStore((s) => s.live?.program.input?.deviceId === device.deviceId);
+  // The stream's own camera, when it has one (Cameras › take to Stream).
+  const split = useStore((s) => !!s.live?.streamCut);
+  const onStream = useStore(
+    (s) => !!s.live?.streamCut && s.live.streamCut.input?.deviceId === device.deviceId,
+  );
+  const live = onScreens || onStream;
+  const liveLabel =
+    !split || (onScreens && onStream)
+      ? t('mediaBin.live')
+      : onScreens
+        ? t('switcher.screens')
+        : t('switcher.stream');
   const onPreview = useStore((s) => s.live?.switcher.preview?.deviceId === device.deviceId);
   const inPip = useStore((s) => s.live?.program.pip?.deviceId === device.deviceId);
   const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
@@ -283,7 +296,7 @@ function InputTile({
               caps
               className={`absolute bottom-1.5 right-1.5 rounded-[3px] px-1 py-px ${live ? 'bg-[var(--tally-program)]' : onPreview ? 'bg-[var(--tally-preview)]' : 'bg-black/70'}`}
             >
-              {live ? t('mediaBin.live') : onPreview ? t('switcher.preview') : t('switcher.pip')}
+              {live ? liveLabel : onPreview ? t('switcher.preview') : t('switcher.pip')}
             </Typography>
           )}
         </div>
@@ -441,6 +454,18 @@ export function VideoInputs() {
             className="shrink-0"
           >
             {t('inputs.switcher')}
+          </Button>
+        )}
+        {devices && devices.length > 0 && (
+          <Button
+            size="xs"
+            variant="ghost"
+            icon={<Cctv size={13} />}
+            title={t('camera.modeHelp')}
+            onClick={() => useStore.setState({ mode: 'cameras' })}
+            className="shrink-0"
+          >
+            {t('camera.mode')}
           </Button>
         )}
         <IconButton
