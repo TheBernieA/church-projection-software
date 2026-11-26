@@ -423,9 +423,10 @@ export interface StreamApi {
 /**
  * The live state as sent to a window. `soundOnly`: only the sound (the mixer, the audio
  * track) changed since the last one, so a picture can stay as it is (a fader drag sends
- * many of these a second).
+ * many of these a second). `viewsOnly`: only the cameras' digital shots changed (following
+ * someone sends ~15 a second): a window moves its camera pictures and redraws nothing else.
  */
-export type LiveDelivery = LiveState & { soundOnly?: boolean };
+export type LiveDelivery = LiveState & { soundOnly?: boolean; viewsOnly?: boolean };
 
 /** API exposed to output and stage windows: read-only (§17.2 — outputs may only subscribe). */
 export interface OutputApi {

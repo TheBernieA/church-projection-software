@@ -1,3 +1,4 @@
+import { PtzSettings } from './PtzSettings';
 import { useEffect, useRef } from 'react';
 import { RefreshCw, RotateCcw, Video } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -51,7 +52,8 @@ function CameraCard({ device }: { device: InputDevice }) {
   }, [stream]);
   const name = settings.name || device.label;
   const change = (patch: Partial<CameraSettings>): void => updateCamera(device, patch);
-  const custom = JSON.stringify(settings) !== JSON.stringify(DEFAULT_CAMERA);
+  const shown = (c: CameraSettings) => [c.name, c.fit, c.mirror, c.resolution, c.hidden];
+  const custom = JSON.stringify(shown(settings)) !== JSON.stringify(shown(DEFAULT_CAMERA));
   return (
     <section aria-label={name} className="flex gap-4 px-4 py-4">
       <div className="w-[200px] shrink-0">
@@ -136,13 +138,19 @@ function CameraCard({ device }: { device: InputDevice }) {
             />
           </div>
         </Field>
+        <Field label={t('camera.ptzLabel')}>
+          <PtzSettings deviceId={device.deviceId} settings={settings} />
+        </Field>
         {custom && (
           <div>
             <Button
               size="xs"
               variant="ghost"
               icon={<RotateCcw size={13} />}
-              onClick={() => change(DEFAULT_CAMERA)}
+              // How it shows goes back to the defaults; its PTZ address and shots are kept.
+              onClick={() =>
+                change({ ...DEFAULT_CAMERA, ptz: settings.ptz, shots: settings.shots })
+              }
             >
               {t('inputs.reset')}
             </Button>

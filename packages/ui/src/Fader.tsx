@@ -31,6 +31,8 @@ export interface FaderProps {
   max?: number;
   /** Scale numbers beside the track. */
   scale?: boolean;
+  /** Shown but not movable (a locked channel). */
+  disabled?: boolean;
   className?: string;
 }
 
@@ -47,20 +49,24 @@ export function Fader({
   min = -60,
   max = 12,
   scale = true,
+  disabled = false,
   className = '',
 }: FaderProps) {
   const track = useRef<HTMLDivElement>(null);
   const at = dbToTravel(value, min, max);
   const fromPointer = (e: PointerEvent<HTMLDivElement>): void => {
+    if (disabled) return;
     const r = track.current?.getBoundingClientRect();
     if (!r) return;
     onChange(travelToDb(1 - (e.clientY - r.top) / r.height, min, max));
   };
   const nudge = (steps: number): void => {
+    if (disabled) return;
     const base = value <= min ? -40 : value;
     onChange(Math.min(max, Math.max(min, base + steps)));
   };
   const onKey = (e: KeyboardEvent<HTMLDivElement>): void => {
+    if (disabled) return;
     const big = e.shiftKey ? 6 : 1;
     const step = { ArrowUp: big, ArrowRight: big, ArrowDown: -big, ArrowLeft: -big }[e.key];
     if (step) {
@@ -96,7 +102,8 @@ export function Fader({
         title={format(value)}
         onKeyDown={onKey}
         onWheel={onWheel}
-        onDoubleClick={() => onChange(0)}
+        aria-disabled={disabled || undefined}
+        onDoubleClick={() => !disabled && onChange(0)}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
           fromPointer(e);
@@ -104,7 +111,7 @@ export function Fader({
         onPointerMove={(e) => {
           if (e.currentTarget.hasPointerCapture(e.pointerId)) fromPointer(e);
         }}
-        className="group relative w-7 cursor-ns-resize touch-none rounded-[6px] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)]"
+        className={`group relative w-7 touch-none rounded-[6px] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-ns-resize'}`}
       >
         <span className="absolute inset-y-1.5 left-1/2 w-[3px] -translate-x-1/2 rounded-full bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline-strong)]" />
         <span

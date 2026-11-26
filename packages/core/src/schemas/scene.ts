@@ -6,6 +6,7 @@ import {
   ThemeSchema,
   TransitionSpecSchema,
 } from './theme';
+import { CameraShotSchema, PtzConnectionSchema } from './camera';
 import { ColorSchema, IdSchema } from './common';
 
 /**
@@ -215,6 +216,10 @@ export const CameraSettingsSchema = z.object({
   resolution: z.enum(['auto', '720', '1080', '2160']).default('auto'),
   /** Left out of Media › Video input (e.g. a virtual camera nobody uses). */
   hidden: z.boolean().default(false),
+  /** A PTZ camera's network address (VISCA); null: a camera without remote control. */
+  ptz: PtzConnectionSchema.nullable().default(null),
+  /** Shots saved for this camera (Media › Video input › Camera), in button order. */
+  shots: z.array(CameraShotSchema).max(40).default([]),
 });
 export type CameraSettings = z.infer<typeof CameraSettingsSchema>;
 
@@ -235,6 +240,21 @@ export const PipLayerSchema = VideoInputLayerSchema.extend({
   side: z.boolean().optional(),
 });
 export type PipLayer = z.infer<typeof PipLayerSchema>;
+
+/**
+ * The livestream's own camera, when it differs from the screens' (the switcher took a camera to
+ * the stream alone, or to the screens alone): its camera, how it changed, and the T-bar's mix.
+ * Picture-in-picture, slides and everything else still follow the screens.
+ */
+export const StreamCutSchema = z.object({
+  input: VideoInputLayerSchema.nullable(),
+  inputTransition: InputTransitionSchema.optional(),
+  inputNext: z
+    .object({ input: VideoInputLayerSchema, pos: z.number().min(0).max(1) })
+    .nullable()
+    .optional(),
+});
+export type StreamCut = z.infer<typeof StreamCutSchema>;
 
 export const SceneSchema = z.object({
   background: BackgroundLayerSchema.nullable(),

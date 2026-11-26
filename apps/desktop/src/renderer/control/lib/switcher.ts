@@ -1,6 +1,8 @@
-import type { SwitcherAction } from '@lampstand/core';
+import { SWITCH_TARGETS, type SwitchTarget, type SwitcherAction } from '@lampstand/core';
+import { create } from 'zustand';
 import { cmd } from './api';
 import { useEffect } from 'react';
+import { remember, remembered } from './prefs';
 import {
   inputLayerFor,
   useCameraSettingsVersion,
@@ -18,15 +20,47 @@ const send = (a: SwitcherAction, source: 'ui' | 'shortcut' = 'ui'): Promise<unkn
 
 const settings = () => useStore.getState().settings?.switcher;
 
+/**
+ * Where Cut, Auto, the T-bar and a double-clicked camera go: the screens and the stream together,
+ * or one of them (Cameras › Take to). Remembered on this computer.
+ */
+export const useSwitchTarget = create<{ to: SwitchTarget }>()(() => {
+  const saved = remembered('lampstand.switchTarget');
+  return { to: SWITCH_TARGETS.find((t) => t === saved) ?? 'both' };
+});
+export function setSwitchTarget(to: SwitchTarget): void {
+  useSwitchTarget.setState({ to });
+  remember('lampstand.switchTarget', to);
+}
+const to = (): SwitchTarget => useSwitchTarget.getState().to;
+
+/** The stream shows the screens' camera again. */
+export const linkStream = (): Promise<unknown> => send({ action: 'link' });
+
+/** A camera to one destination at once, with the Auto transition (Cameras › Routing). */
+export const routeTo = (device: InputDevice | null, dest: SwitchTarget): Promise<unknown> => {
+  const transition = settings()?.transition;
+  return send({
+    action: 'take',
+    input: device ? inputLayerFor(device) : null,
+    to: dest,
+    ...(transition ? { transition } : {}),
+  });
+};
+
 export const previewSource = (device: InputDevice | null): Promise<unknown> =>
   send({ action: 'preview', input: device ? inputLayerFor(device) : null });
 
 export const cut = (source?: 'ui' | 'shortcut'): Promise<unknown> =>
-  send({ action: 'cut' }, source);
+  send({ action: 'cut', to: to() }, source);
 
 export const auto = (source?: 'ui' | 'shortcut'): Promise<unknown> =>
   send(
-    { action: 'auto', transition: settings()?.transition ?? { kind: 'fade', durationMs: 600 } },
+    {
+      action: 'auto',
+      transition: settings()?.transition ?? { kind: 'fade', durationMs: 600 },
+      to: to(),
+    },
     source,
   );
 
@@ -41,6 +75,7 @@ export const take = (
     {
       action: 'take',
       input: device ? inputLayerFor(device) : null,
+      to: to(),
       ...(withTransition && transition ? { transition } : {}),
     },
     source,
@@ -58,13 +93,15 @@ export function tbar(pos: number): void {
   tbarPos = pos;
   tbarTimer ??= setTimeout(() => {
     tbarTimer = null;
-    void send({ action: 'tbar', pos: tbarPos });
+    void send({ action: 'tbar', pos: tbarPos, to: to() });
   }, 40);
 }
 export function tbarRelease(): void {
   if (tbarTimer) clearTimeout(tbarTimer);
   tbarTimer = null;
-  void send({ action: 'tbar', pos: tbarPos }).then(() => send({ action: 'tbarRelease' }));
+  void send({ action: 'tbar', pos: tbarPos, to: to() }).then(() =>
+    send({ action: 'tbarRelease', to: to() }),
+  );
 }
 
 /** Picture-in-picture: this camera in the corner from Settings (or none). */

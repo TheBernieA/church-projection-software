@@ -1,12 +1,29 @@
-import { useRef, useState, type PointerEvent } from 'react';
+import { FollowOverlay } from './FollowOverlay';
+import { useRef, useState, type PointerEvent, type ReactNode } from 'react';
+import { Link2, Unlink2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { EMPTY_SCENE, type InputTransition, type Scene } from '@lampstand/core';
+import {
+  EMPTY_SCENE,
+  SWITCH_TARGETS,
+  type InputTransition,
+  type Scene,
+  type SwitchTarget,
+} from '@lampstand/core';
 import { Button, Kbd, Segmented, Typography } from '@lampstand/ui';
 import { type InputDevice } from '../../lib/inputs';
 import { saveSettings } from '../../lib/actions';
 import { useStore } from '../../lib/store';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { auto, cut, setPip, tbar, tbarRelease } from '../../lib/switcher';
+import {
+  auto,
+  cut,
+  linkStream,
+  setPip,
+  setSwitchTarget,
+  tbar,
+  tbarRelease,
+  useSwitchTarget,
+} from '../../lib/switcher';
 import { SceneView } from '../SceneView';
 import { Select } from '../Select';
 
@@ -36,7 +53,11 @@ function BusMonitor({
   name,
   empty,
   height,
+  clickToFollow = false,
+  children,
 }: {
+  /** In camera mode, a click on the picture follows the person there (Preview). */
+  clickToFollow?: boolean;
   scene: Scene;
   tone: 'preview' | 'program';
   label: string;
@@ -45,6 +66,8 @@ function BusMonitor({
   empty: string;
   /** Picture height (px): the monitors scale with the room the pane has. */
   height: number;
+  /** Something drawn over the picture (the stream's own camera, inset). */
+  children?: ReactNode;
 }) {
   const color = tone === 'program' ? 'var(--tally-program)' : 'var(--tally-preview)';
   return (
@@ -59,6 +82,11 @@ function BusMonitor({
         style={{ boxShadow: `0 0 0 2px ${color}` }}
       >
         <SceneView scene={scene} label={`${label}: ${name ?? '—'}`} />
+        <FollowOverlay
+          deviceId={scene.input?.deviceId ?? null}
+          mirror={scene.input?.mirror ?? false}
+          clickToFollow={clickToFollow && !!scene.input}
+        />
         <Typography
           size={10}
           weight="bold"
@@ -91,6 +119,7 @@ function BusMonitor({
             {empty}
           </Typography>
         )}
+        {children}
       </div>
     </figure>
   );
@@ -100,7 +129,7 @@ function BusMonitor({
  * The T-bar: drag it down to mix the Preview camera over Program by hand. Let go past half-way
  * and the take finishes; before that it goes back. It springs back to the top after each mix.
  */
-function TBar({ disabled }: { disabled: boolean }) {
+export function TBar({ disabled }: { disabled: boolean }) {
   const { t } = useTranslation();
   const track = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState(0);
@@ -151,15 +180,158 @@ function TBar({ disabled }: { disabled: boolean }) {
   );
 }
 
+/** What Cut and Auto may do now: something on Preview that the destination doesn't show yet. */
+export function useCanTake(): boolean {
+  const to = useSwitchTarget((s) => s.to);
+  const preview = useStore((s) => s.live?.switcher.preview?.deviceId ?? null);
+  const screens = useStore((s) => s.live?.program.input?.deviceId ?? null);
+  const own = useStore((s) => s.live?.streamCut ?? null);
+  const stream = own ? (own.input?.deviceId ?? null) : screens;
+  const current = to === 'stream' ? stream : screens;
+  const split = to === 'both' && stream !== screens;
+  return !!preview && (preview !== current || split);
+}
+
 /**
- * The switcher's control strip (Media › Video input): Preview and Program monitors, Cut and
- * Auto, the transition and its length, the T-bar, and picture-in-picture.
+ * Where a take goes (Both, Screens, Stream), and Link while the stream has its own camera: the
+ * same choice everywhere (Media › Video input, Cameras), remembered on this computer.
+ */
+export function TakeTo({ compact = false }: { compact?: boolean }) {
+  const { t } = useTranslation();
+  const to = useSwitchTarget((s) => s.to);
+  const split = useStore((s) => !!s.live?.streamCut);
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      {!compact && (
+        <Typography size={11} tone="secondary" className="shrink-0">
+          {t('switcher.takeTo')}
+        </Typography>
+      )}
+      <Segmented<SwitchTarget>
+        label={t('switcher.takeTo')}
+        value={to}
+        onChange={setSwitchTarget}
+        options={SWITCH_TARGETS.map((x) => ({
+          value: x,
+          label: t(`switcher.to.${x}`),
+          name: t(`switcher.toHelp.${x}`),
+        }))}
+      />
+      {split && (
+        <Button
+          size="2xs"
+          variant="subtle"
+          icon={<Link2 size={12} />}
+          title={t('switcher.linkHelp')}
+          onClick={() => void linkStream()}
+        >
+          {t('switcher.link')}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/** The Program side: one monitor, or the screens' and the stream's when they differ. */
+function ProgramMonitors({
+  height,
+  side,
+}: {
+  height: number;
+  /** Split: the stream's monitor beside the screens' (else inset in its corner). */
+  side: boolean;
+}) {
+  const { t } = useTranslation();
+  const input = useStore((s) => s.live?.program.input ?? null);
+  const inputNext = useStore((s) => s.live?.program.inputNext ?? null);
+  const pip = useStore((s) => s.live?.program.pip ?? null);
+  const own = useStore((s) => s.live?.streamCut ?? null);
+  const programScene: Scene = { ...EMPTY_SCENE, input, inputNext, pip };
+  if (!own)
+    return (
+      <BusMonitor
+        scene={programScene}
+        tone="program"
+        label={t('switcher.program')}
+        name={input?.label ?? null}
+        empty={t('switcher.programEmpty')}
+        height={height}
+      />
+    );
+  const streamScene: Scene = {
+    ...EMPTY_SCENE,
+    input: own.input,
+    inputNext: own.inputNext ?? null,
+    pip,
+  };
+  if (side)
+    return (
+      <>
+        <BusMonitor
+          scene={programScene}
+          tone="program"
+          label={t('switcher.screens')}
+          name={input?.label ?? null}
+          empty={t('switcher.slidesOnly')}
+          height={height}
+        />
+        <BusMonitor
+          scene={streamScene}
+          tone="program"
+          label={t('switcher.stream')}
+          name={own.input?.label ?? null}
+          empty={t('switcher.slidesOnly')}
+          height={height}
+        />
+      </>
+    );
+  return (
+    <BusMonitor
+      scene={programScene}
+      tone="program"
+      label={t('switcher.screens')}
+      name={input?.label ?? null}
+      empty={t('switcher.slidesOnly')}
+      height={height}
+    >
+      <div
+        className="absolute bottom-1.5 right-1.5 w-[38%] overflow-hidden rounded-[4px] bg-black shadow-[0_0_0_1.5px_var(--tally-program),0_4px_12px_rgba(0,0,0,0.5)]"
+        title={t('switcher.streamOwn', { name: own.input?.label ?? t('switcher.slidesOnly') })}
+      >
+        <SceneView
+          scene={streamScene}
+          label={`${t('switcher.stream')}: ${own.input?.label ?? '—'}`}
+        />
+        <Typography
+          size={10}
+          weight="bold"
+          tone="white"
+          caps
+          className="absolute left-1 top-1 flex items-center gap-1 rounded-[3px] bg-[var(--tally-program)] px-1 py-px"
+        >
+          <Unlink2 size={9} />
+          {t('switcher.stream')}
+        </Typography>
+      </div>
+    </BusMonitor>
+  );
+}
+
+/**
+ * The switcher's control strip (Media › Video input, Cameras): Preview and Program monitors,
+ * Cut and Auto, the transition and its length, the T-bar, picture-in-picture, and where takes go.
+ * `monitorsOnly`: just the monitors (Cameras puts the take controls in its own bar).
  */
 export function SwitcherBar({
   devices,
   monitorHeight,
   stacked,
+  controlMode = false,
+  monitorsOnly = false,
 }: {
+  /** In Cameras mode: a click on a person on Preview follows them. */
+  controlMode?: boolean;
+  monitorsOnly?: boolean;
   devices: InputDevice[];
   /** How tall the Preview and Program pictures are (px), from the space available. */
   monitorHeight: number;
@@ -170,42 +342,45 @@ export function SwitcherBar({
   const settings = useStore((s) => s.settings?.switcher);
   const preview = useStore((s) => s.live?.switcher.preview ?? null);
   const input = useStore((s) => s.live?.program.input ?? null);
-  const inputNext = useStore((s) => s.live?.program.inputNext ?? null);
-  const pip = useStore((s) => s.live?.program.pip ?? null);
+  const streamId = useStore((s) => s.live?.streamCut?.input?.deviceId ?? null);
+  const canTake = useCanTake();
   // Subscribed, so the key hints follow a shortcut remapped in Settings.
   useStore((s) => s.settings?.shortcuts);
   if (!settings) return null;
   const keys = effectiveShortcuts();
+  const previewScene: Scene = { ...EMPTY_SCENE, input: preview };
+  const live = preview && (preview.deviceId === input?.deviceId || preview.deviceId === streamId);
+  const previewMonitor = (
+    <BusMonitor
+      scene={previewScene}
+      tone="preview"
+      label={t('switcher.preview')}
+      name={preview?.label ?? null}
+      empty={t('switcher.previewEmpty')}
+      height={monitorHeight}
+      clickToFollow={controlMode && !!preview && !live}
+    />
+  );
+  if (monitorsOnly)
+    return (
+      <section
+        aria-label={t('switcher.title')}
+        className="flex shrink-0 items-center justify-center gap-4 border-b border-[var(--divider)] bg-[var(--surface-1)] px-4 py-3"
+      >
+        {previewMonitor}
+        <ProgramMonitors height={monitorHeight} side />
+      </section>
+    );
   const transition = settings.transition;
   const setTransition = (patch: Partial<InputTransition>): void =>
     void saveSettings({ switcher: { ...settings, transition: { ...transition, ...patch } } });
-  const canTake = !!preview && preview.deviceId !== input?.deviceId;
   const duration = (
-    <Select<string>
-      size="sm"
-      aria-label={t('switcher.duration')}
-      value={String(transition.durationMs)}
-      onChange={(v) => setTransition({ durationMs: Number(v) })}
-      options={[...new Set([...DURATIONS, transition.durationMs])].map((ms) => ({
-        value: String(ms),
-        label: t('switcher.seconds', { s: ms / 1000 }),
-      }))}
+    <TransitionLength
+      value={transition.durationMs}
+      onChange={(durationMs) => setTransition({ durationMs })}
     />
   );
-  const pipCamera = (
-    <Select<string>
-      size="sm"
-      aria-label={t('switcher.pipLabel')}
-      value={pip?.deviceId ?? OFF}
-      onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
-      options={[
-        { value: OFF, label: t('switcher.pipOff') },
-        ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
-      ]}
-    />
-  );
-  const programScene: Scene = { ...EMPTY_SCENE, input, inputNext, pip };
-  const previewScene: Scene = { ...EMPTY_SCENE, input: preview };
+  const pipCamera = <PipSelect devices={devices} />;
   return (
     <section
       aria-label={t('switcher.title')}
@@ -213,14 +388,7 @@ export function SwitcherBar({
     >
       {/* Preview → take → Program, left to right: the way a camera travels to the screen. */}
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <BusMonitor
-          scene={previewScene}
-          tone="preview"
-          label={t('switcher.preview')}
-          name={preview?.label ?? null}
-          empty={t('switcher.previewEmpty')}
-          height={monitorHeight}
-        />
+        {previewMonitor}
         <div
           className="flex w-[124px] shrink-0 gap-2"
           style={{ height: Math.max(MIN_TAKE_HEIGHT, monitorHeight) }}
@@ -251,28 +419,24 @@ export function SwitcherBar({
           </div>
           <TBar disabled={!canTake} />
         </div>
-        <BusMonitor
-          scene={programScene}
-          tone="program"
-          label={t('switcher.program')}
-          name={input?.label ?? null}
-          empty={t('switcher.programEmpty')}
-          height={monitorHeight}
-        />
+        <ProgramMonitors height={monitorHeight} side={false} />
       </div>
-      {/* How Auto and the T-bar mix, and the second camera in a corner. */}
+      {/* How Auto and the T-bar mix, the second camera in a corner, and where takes go. */}
       {stacked ? (
         // A narrow pane: one row of three under the monitors, so the cameras keep their room.
-        <div className="grid grid-cols-3 gap-2">
-          <Select<InputTransition['kind']>
-            size="sm"
-            aria-label={t('switcher.transition')}
-            value={transition.kind}
-            onChange={(kind) => setTransition({ kind })}
-            options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
-          />
-          {duration}
-          {pipCamera}
+        <div className="flex flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <Select<InputTransition['kind']>
+              size="sm"
+              aria-label={t('switcher.transition')}
+              value={transition.kind}
+              onChange={(kind) => setTransition({ kind })}
+              options={KINDS.map((k) => ({ value: k, label: t(`switcher.kinds.${k}`) }))}
+            />
+            {duration}
+            {pipCamera}
+          </div>
+          <TakeTo />
         </div>
       ) : (
         <div className="flex w-[300px] shrink-0 flex-col justify-center gap-2">
@@ -287,11 +451,55 @@ export function SwitcherBar({
             <Row label={t('switcher.duration')}>{duration}</Row>
             <Row label={t('switcher.pip')}>{pipCamera}</Row>
           </div>
+          <TakeTo />
         </div>
       )}
     </section>
   );
 }
+
+/** The transition's length (Auto and a double-clicked camera). */
+export function TransitionLength({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (ms: number) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Select<string>
+      size="sm"
+      aria-label={t('switcher.duration')}
+      value={String(value)}
+      onChange={(v) => onChange(Number(v))}
+      options={[...new Set([...DURATIONS, value])].map((ms) => ({
+        value: String(ms),
+        label: t('switcher.seconds', { s: ms / 1000 }),
+      }))}
+    />
+  );
+}
+
+/** Picture-in-picture: which camera goes in the corner (or none). */
+export function PipSelect({ devices }: { devices: InputDevice[] }) {
+  const { t } = useTranslation();
+  const pip = useStore((s) => s.live?.program.pip ?? null);
+  return (
+    <Select<string>
+      size="sm"
+      aria-label={t('switcher.pipLabel')}
+      value={pip?.deviceId ?? OFF}
+      onChange={(id) => void setPip(devices.find((d) => d.deviceId === id) ?? null)}
+      options={[
+        { value: OFF, label: t('switcher.pipOff') },
+        ...devices.map((d) => ({ value: d.deviceId, label: d.label })),
+      ]}
+    />
+  );
+}
+
+export { KINDS as TRANSITION_KINDS };
 
 /** A labelled control in the switcher's settings column. */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {

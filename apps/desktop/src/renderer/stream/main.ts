@@ -6,6 +6,7 @@ import {
   type LiveState,
   type Mixer,
   type Scene,
+  type StreamCut,
   type VideoInputLayer,
 } from '@lampstand/core';
 import type { StreamApi, StreamConfig } from '@lampstand/ipc-contract';
@@ -19,6 +20,8 @@ import {
 } from '@lampstand/renderer';
 import { fontsReady } from '../shared/fonts';
 import { mediaUrl } from '../shared/mediaUrl';
+import { meterReport } from '../shared/meterReport';
+import { installMixerWorklet } from '../shared/mixerWorklet';
 // A real file, never inlined: the security policy doesn't run scripts from data: addresses
 // (inlined, the tap failed to load and the stream had no sound).
 import pcmTapUrl from './pcmTap.worklet.js?url&no-inline';
@@ -119,7 +122,15 @@ function draw(): void {
   const inputs =
     config.picture.mirror === 'stage'
       ? [config, latest]
-      : [config, latest.program, latest.look, latest.audio, latest.mixer, latest.lowerThird];
+      : [
+          config,
+          latest.program,
+          latest.streamCut,
+          latest.look,
+          latest.audio,
+          latest.mixer,
+          latest.lowerThird,
+        ];
   if (inputs.length === drawn.length && inputs.every((x, i) => x === drawn[i])) return;
   drawn = inputs;
   // Covered: only the cover shows (drawn as the Logo mask over everything; the sound goes on).
@@ -132,11 +143,15 @@ function draw(): void {
   const pic = alternate
     ? { ...config.picture, background: 'program' as const, words: 'full' as const }
     : config.picture;
-  // What the screens show under the active Look.
-  const program: Scene = applyLook(
+  // What the screens show under the active Look, with the stream's own camera when the switcher
+  // gave it one (Cameras › take to Stream). A video on the screens then plays hidden under it,
+  // so its sound still reaches the stream mix.
+  const screens: Scene = applyLook(
     latest.program,
     lookLayersFor(latest.look, alternate ? 'secondary' : 'main'),
   );
+  const cut = alternate ? null : latest.streamCut;
+  const program: Scene = cut ? withStreamCut(screens, cut) : screens;
   // The stream's own cameras: one, or two laid out together.
   const own = [
     config.cameraLayer,
@@ -203,7 +218,7 @@ function draw(): void {
   });
   // Behind the words is the camera or black: the projector's pictures and videos stay off the
   // stream (a video keeps playing, unseen, so its sound still reaches the stream mix).
-  back.setMediaHidden(pic.background !== 'program');
+  back.setMediaHidden(pic.background !== 'program' || !!cut?.input);
   document.body.classList.toggle('lower-third', pic.words === 'lowerThird');
   document.body.classList.toggle(
     'words-top',
@@ -221,6 +236,15 @@ function draw(): void {
   // Getting ready (not live yet): no sound, and no microphones open.
   room.sync(config.mix ? latest.audio : null);
   mix.sync(config.mix ? latest.mixer : silent(latest.mixer));
+}
+
+/** The screens' picture with the stream's own camera in place of theirs. */
+function withStreamCut(scene: Scene, cut: StreamCut): Scene {
+  const next: Scene = { ...scene, input: cut.input, inputNext: cut.inputNext ?? null };
+  // The stream's own last change, not the screens'.
+  if (cut.inputTransition) next.inputTransition = cut.inputTransition;
+  else delete next.inputTransition;
+  return next;
 }
 
 /** The slide's words in a text box `widthPct` of the picture wide (at a lower third's size). */
@@ -323,6 +347,7 @@ function silent(m: Mixer): Mixer {
 // The stream mix: the same desk as the room (Mixer), each channel sent to the stream or not,
 // with the stream bus's own level, limiter and lip-sync delay. It never plays here.
 const ctx = new AudioContext({ sampleRate: 48_000 });
+installMixerWorklet();
 const mix = new MixerEngine(window, { bus: 'stream', ctx });
 const room = new AudioPlayer(document, mediaUrl);
 mix.attach('tracks', room.element);
@@ -352,10 +377,7 @@ api.onConfig((c) => {
     }
   }
   // Only the livestream reports the stream mix's levels (NDI feeds make the same mix).
-  if (c.meters && !config?.meters)
-    mix.startMeters((l) =>
-      api.sendMeters({ bus: 'stream', channels: l.channels, level: l.bus, sides: l.sides }),
-    );
+  if (c.meters && !config?.meters) mix.startMeters((l) => api.sendMeters(meterReport('stream', l)));
   if (!c.meters) mix.stopMeters();
   document.body.classList.toggle('transparent', c.transparent);
   config = c;
@@ -366,6 +388,12 @@ api.onConfig((c) => {
   draw();
 });
 api.onLiveState((s) => {
+  // The cameras' digital shots move the camera pictures in place; nothing else is redrawn.
+  back.setCameraViews(s.cameraViews);
+  if (s.viewsOnly && latest) {
+    latest = { ...latest, cameraViews: s.cameraViews };
+    return;
+  }
   // Only the sound moved: keep the picture's own objects, so its layers see nothing new.
   latest =
     s.soundOnly && latest

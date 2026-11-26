@@ -19,6 +19,7 @@ import {
   type BibleVersionInfo,
   type OnlineBible,
   OnlineBibleSchema,
+  PtzCommandSchema,
   newId,
   type Settings,
   type LiveState,
@@ -38,6 +39,7 @@ import {
 } from '@lampstand/ipc-contract';
 import { stripChords } from '@lampstand/lyrics';
 import { OscServer } from '../surfaces/oscServer';
+import { PtzService } from '../cameras/ptzService';
 import { registerIpc } from '../ipc/router';
 import { installAppMenu } from './menu';
 import { showSplash } from '../windows/splash';
@@ -114,6 +116,7 @@ export class AppController {
   private stream!: StreamController;
   private ndi!: NdiController;
   private osc!: OscServer;
+  private ptz!: PtzService;
   private secrets!: SecretStore;
   private auditLog: AuditEntry[] = [];
   private log!: Logger;
@@ -294,6 +297,8 @@ export class AppController {
       onStatus: (s) => this.windows.sendToControl(Channels.evOscStatus, s),
     });
     this.osc.settingsChanged();
+    this.ptz = new PtzService({ log: log.child('ptz'), getSettings: () => settings.get() });
+    this.ptz.settingsChanged();
 
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
@@ -346,12 +351,15 @@ export class AppController {
     live.subscribe((state) => {
       const prev = sent;
       sent = state;
-      const soundOnly =
+      const onlyChanged = (keys: (keyof LiveState)[]): boolean =>
         !!prev &&
         (Object.keys(state) as (keyof LiveState)[]).every(
-          (k) => k === 'mixer' || k === 'audio' || k === 'revision' || state[k] === prev[k],
+          (k) => keys.includes(k) || k === 'revision' || state[k] === prev[k],
         );
-      this.windows.broadcastLive(state, soundOnly);
+      this.windows.broadcastLive(
+        state,
+        onlyChanged(['mixer', 'audio', 'mixerScope']) ? 'sound' : onlyChanged(['cameraViews']) ? 'views' : null,
+      );
     });
     bus.onAudit((e) => {
       this.auditLog.push(e);
@@ -413,6 +421,7 @@ export class AppController {
       this.stream.settingsChanged();
       this.ndi.settingsChanged();
       this.osc.settingsChanged();
+      this.ptz.settingsChanged();
       void this.refreshWordsTheme();
       const key = outputsOf(next);
       if (key !== outputKey) {
@@ -456,6 +465,13 @@ export class AppController {
       schema: z.object({ patch: z.record(z.string().max(60), z.unknown()) }),
       undoable: false,
       handle: ({ patch }) => ({ result: settings.update(patch) }),
+    });
+    // PTZ cameras (Media › Video input › Camera): moves, shots, focus and exposure.
+    bus.register({
+      type: 'camera.ptz',
+      schema: PtzCommandSchema,
+      undoable: false,
+      handle: async (p) => ({ result: await this.ptz.handle(p) }),
     });
     // Livestream / recording (the toolbar's Live button).
     bus.register({
@@ -973,6 +989,7 @@ export class AppController {
     await this.stream.shutdown();
     await this.ndi.shutdown();
     this.osc.close();
+    this.ptz.close();
     this.search.stop();
     await this.closeWatcher?.();
     for (const { timer, run } of this.pendingSaves.values()) {

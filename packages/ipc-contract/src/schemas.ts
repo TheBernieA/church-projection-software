@@ -94,5 +94,27 @@ export const MeterReportSchema = z.object({
   level: Level,
   /** The mix, left and right (for stereo meters). */
   sides: z.tuple([Level, Level]),
+  /** Per channel, in dB (0 or less): the compressor's gain reduction, and how far it's ducked. */
+  dyn: z
+    .record(z.string().max(64), z.tuple([z.number().min(-100).max(0), z.number().min(-100).max(0)]))
+    .optional(),
+  /** The mix's loudness in LUFS (null: silence, or not measured yet). */
+  loudness: z
+    .object({
+      momentary: z.number().min(-200).max(20).nullable(),
+      shortTerm: z.number().min(-200).max(20).nullable(),
+      integrated: z.number().min(-200).max(20).nullable(),
+    })
+    .nullable()
+    .optional(),
+  /** The channel the EQ window watches: its spectrum (dB bands) into and out of its EQ. */
+  spectrum: z
+    .object({
+      id: z.string().max(64),
+      pre: z.array(z.number().min(-120).max(0)).max(256),
+      post: z.array(z.number().min(-120).max(0)).max(256),
+    })
+    .nullable()
+    .optional(),
 });
 export type MeterReport = z.infer<typeof MeterReportSchema>;
