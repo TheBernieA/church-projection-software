@@ -522,6 +522,20 @@ export class WindowManager {
     );
   }
 
+  /**
+   * Cameras in a window of its own (undocked: it can go on another display); `false` closes it,
+   * docking it back in the main window. `closed` runs however it closes.
+   */
+  openCameras(open: boolean, closed: () => void): void {
+    if (!open) return this.closePanel('cameras');
+    this.openPanel(
+      'cameras',
+      null,
+      { title: 'Lampstand Cameras', width: 1440, height: 900, minWidth: 980, minHeight: 640 },
+      { closed },
+    );
+  }
+
   /** Keep displays awake while outputs are active (§18). */
   private updatePowerBlocker(): void {
     const active = this.outputs.size > 0;
@@ -535,7 +549,7 @@ export class WindowManager {
 }
 
 /** Parts of the control window that can open in windows of their own. */
-type PanelKind = 'live' | 'multiview';
+type PanelKind = 'live' | 'multiview' | 'cameras';
 
 /** Edge-blending rehearsal windows' ids: `window-blend-1`, `window-blend-2`… */
 const BLEND_WINDOW = 'window-blend-';

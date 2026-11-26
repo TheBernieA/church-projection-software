@@ -36,6 +36,7 @@ const api: ControlApi = {
   oscStatus: () => ipcRenderer.invoke(Channels.oscStatus),
   oscSend: (address, args) => ipcRenderer.send(Channels.oscSend, { address, args }),
   onLiveConsole: (cb) => listen(Channels.evLiveConsole, cb),
+  onCamerasWindow: (cb) => listen(Channels.evCamerasWindow, cb),
   onStreamPreview: (cb) => listen(Channels.evStreamPreview, cb),
   onStreamFrame: receiveGpuFrames(),
   streamWatch: (fps, ready) => ipcRenderer.send(Channels.streamWatch, { fps, ready }),

@@ -6,8 +6,15 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
   Crosshair,
+  Focus,
   Footprints,
+  ZoomIn,
+  ZoomOut,
   Home,
   Minus,
   Plus,
@@ -97,11 +104,23 @@ function Joystick({
       className={`relative shrink-0 touch-none rounded-full bg-[radial-gradient(circle_at_50%_40%,var(--surface-2),var(--surface-0)_70%)] shadow-[inset_0_0_0_1px_var(--hairline-strong),inset_0_6px_18px_rgba(0,0,0,0.45)] ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-grab active:cursor-grabbing'}`}
     >
       <span className="absolute inset-[22%] rounded-full border border-dashed border-[var(--hairline-strong)]" />
-      {/* Direction marks. */}
-      <span className="absolute left-1/2 top-2 h-1.5 w-px -translate-x-1/2 bg-[var(--text-3)]" />
-      <span className="absolute bottom-2 left-1/2 h-1.5 w-px -translate-x-1/2 bg-[var(--text-3)]" />
-      <span className="absolute left-2 top-1/2 h-px w-1.5 -translate-y-1/2 bg-[var(--text-3)]" />
-      <span className="absolute right-2 top-1/2 h-px w-1.5 -translate-y-1/2 bg-[var(--text-3)]" />
+      {/* Direction arrows. */}
+      <ChevronUp
+        size={14}
+        className="absolute left-1/2 top-1.5 -translate-x-1/2 text-[var(--text-3)]"
+      />
+      <ChevronDown
+        size={14}
+        className="absolute bottom-1.5 left-1/2 -translate-x-1/2 text-[var(--text-3)]"
+      />
+      <ChevronLeft
+        size={14}
+        className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]"
+      />
+      <ChevronRight
+        size={14}
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]"
+      />
       <span
         className="absolute left-1/2 top-1/2 rounded-full bg-[linear-gradient(#5b5f69,#3b3e46)] shadow-[0_2px_6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.18)]"
         style={{
@@ -141,7 +160,7 @@ function ZoomRocker({
   };
   return (
     <div className="flex shrink-0 flex-col items-center gap-1">
-      <Plus size={12} className="text-[var(--text-3)]" />
+      <ZoomIn size={13} className="text-[var(--text-3)]" />
       <div
         ref={track}
         role="application"
@@ -166,7 +185,7 @@ function ZoomRocker({
           style={{ transform: `translate(-50%, calc(-50% + ${-pos * (height / 2 - 10)}px))` }}
         />
       </div>
-      <Minus size={12} className="text-[var(--text-3)]" />
+      <ZoomOut size={13} className="text-[var(--text-3)]" />
     </div>
   );
 }
@@ -198,28 +217,13 @@ function Stepper({ label, onStep }: { label: string; onStep: (dir: 'up' | 'down'
 }
 
 /** Focus, exposure and white balance: on the PTZ camera itself. */
+/** Exposure (auto or manual steps) and white balance, on the PTZ camera itself. */
 export function PtzImage({ deviceId }: { deviceId: string }) {
   const { t } = useTranslation();
   const [wb, setWb] = useState<'auto' | 'indoor' | 'outdoor' | 'onePush'>('auto');
   const [manual, setManual] = useState(false);
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-1.5">
-        <Button
-          size="xs"
-          variant="secondary"
-          onClick={() => void ptz({ action: 'focus', deviceId, mode: 'once' })}
-        >
-          {t('camera.focusNow')}
-        </Button>
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={() => void ptz({ action: 'focus', deviceId, mode: 'auto' })}
-        >
-          {t('camera.autoFocus')}
-        </Button>
-      </div>
       <Segmented<'auto' | 'manual'>
         label={t('camera.exposure')}
         value={manual ? 'manual' : 'auto'}
@@ -341,8 +345,20 @@ export function CameraInfo() {
     );
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <Typography size={13} weight="semibold" tone="primary" truncate className="min-w-0">
+      <div
+        className="flex min-w-0 max-w-full items-center gap-2 self-start rounded-[var(--radius-md)] bg-[var(--surface-2)] px-2.5 py-1.5"
+        style={{
+          boxShadow: `inset 0 0 0 1.5px ${onAir ? 'var(--tally-program)' : 'var(--tally-preview)'}`,
+        }}
+      >
+        <Video size={14} className="shrink-0 text-[var(--text-2)]" />
+        <Typography
+          size={13}
+          weight="semibold"
+          tone="primary"
+          truncate
+          className="min-w-0 max-w-[130px]"
+        >
           {preview?.label}
         </Typography>
         <Typography
@@ -352,7 +368,7 @@ export function CameraInfo() {
           caps
           className={`shrink-0 rounded-[3px] px-1.5 py-px ${onAir ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'}`}
         >
-          {onAir ? t('camera.onProgram') : t('camera.onPreview')}
+          {onAir ? t('cameraMode.onAir') : t('cameraMode.onNext')}
         </Typography>
       </div>
       <Typography size={11} tone="muted" leading="snug">
@@ -433,46 +449,69 @@ export function MoveControls({ stick = 128, rocker = 104 }: { stick?: number; ro
   );
 }
 
-/** Follow: start or stop, how close, and the hint to click a person. */
-export function FollowControls() {
+/**
+ * Focus and tracking (the reference's middle column): Focus once (PTZ), Tracking (Follow) on or
+ * off, how close it frames, and what it's doing.
+ */
+export function TrackingControls() {
   const { t } = useTranslation();
-  const { deviceId, onAir } = useControlledCamera();
+  const { deviceId, onAir, isPtz } = useControlledCamera();
   const follow = useCameraControl((s) => s.follow);
   const size = useCameraControl((s) => s.size);
   const followingThis = !!deviceId && follow?.deviceId === deviceId;
+  const sizeNow = followingThis ? follow.size : size;
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
+      <Button
+        size="sm"
+        variant="secondary"
+        icon={<Focus size={13} />}
+        disabled={!deviceId || !isPtz}
+        title={isPtz ? t('cameraMode.focusHelp') : t('cameraMode.focusPtzOnly')}
+        onClick={() => deviceId && void ptz({ action: 'focus', deviceId, mode: 'once' })}
+      >
+        {t('cameraMode.focus')}
+      </Button>
       {followingThis ? (
         <Button
-          size="md"
+          size="sm"
           variant="live"
-          icon={<Footprints size={14} />}
+          icon={<Footprints size={13} />}
           onClick={stopFollow}
           title={t('camera.stopFollow')}
         >
-          {t(`camera.status.${follow.status}`)}
+          {t('cameraMode.tracking')}
         </Button>
       ) : (
         <Button
-          size="md"
-          variant="secondary"
-          icon={<ScanEye size={14} />}
+          size="sm"
+          variant="subtle"
+          icon={<ScanEye size={13} />}
           disabled={!deviceId || onAir}
           onClick={() => deviceId && void startFollow(deviceId)}
           title={t('camera.followHelp')}
         >
-          {t('camera.startFollow')}
+          {t('cameraMode.tracking')}
         </Button>
       )}
       <Segmented<ShotSize>
         label={t('camera.size')}
-        value={followingThis ? follow.size : size}
+        value={sizeNow}
         onChange={setFollowSize}
         options={SHOT_SIZES.map((s) => ({ value: s, label: t(`camera.sizes.${s}`) }))}
       />
       <Typography size={11} tone="muted" leading="snug">
-        <Crosshair size={11} className="mr-1 inline" />
-        {t('camera.clickToFollow')}
+        {followingThis ? (
+          t('cameraMode.followingAt', {
+            status: t(`camera.status.${follow.status}`),
+            size: t(`camera.sizes.${sizeNow}`),
+          })
+        ) : (
+          <>
+            <Crosshair size={11} className="mr-1 inline" />
+            {t('camera.clickToFollow')}
+          </>
+        )}
       </Typography>
       {follow && !followingThis && (
         <Button size="xs" variant="ghost" icon={<X size={12} />} onClick={stopFollow}>

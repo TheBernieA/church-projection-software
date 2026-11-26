@@ -46,7 +46,7 @@ export const SWITCHER_MIN_HEIGHT = 72;
  * One bus monitor (Preview or Program): the camera layer alone, with its tally colour. The
  * camera's name sits on the picture; an empty bus says what to do.
  */
-function BusMonitor({
+export function BusMonitor({
   scene,
   tone,
   label,
@@ -233,10 +233,13 @@ export function TakeTo({ compact = false }: { compact?: boolean }) {
 }
 
 /** The Program side: one monitor, or the screens' and the stream's when they differ. */
-function ProgramMonitors({
+export function ProgramMonitors({
   height,
   side,
+  label,
 }: {
+  /** The monitor's name while screens and stream match (Program, or Live in Cameras). */
+  label?: string;
   height: number;
   /** Split: the stream's monitor beside the screens' (else inset in its corner). */
   side: boolean;
@@ -252,7 +255,7 @@ function ProgramMonitors({
       <BusMonitor
         scene={programScene}
         tone="program"
-        label={t('switcher.program')}
+        label={label ?? t('switcher.program')}
         name={input?.label ?? null}
         empty={t('switcher.programEmpty')}
         height={height}

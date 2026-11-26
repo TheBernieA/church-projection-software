@@ -41,6 +41,7 @@ export const useStore = create<ControlState>(() => ({
   binOpen: true,
   mixerOpen: false,
   liveConsole: 'closed',
+  camerasWindow: false,
   streamTakeover: null,
   textBarOpen: false,
   settingsPage: 'general',
@@ -378,6 +379,7 @@ export function connect(opts: { only?: readonly RepoKind[] } = {}): void {
   api.onNdi((ndi) => patch({ ndi }));
   // The console's own window opened, or closed (the console docks back in the main window).
   api.onLiveConsole((open) => patch({ liveConsole: open ? 'window' : 'docked' }));
+  api.onCamerasWindow((open) => patch({ camerasWindow: open }));
   api.onMeters(publishMeters);
   void q('stream.status').then((stream) => patch({ stream }));
   void q('ndi.status').then((ndi) => patch({ ndi }));
