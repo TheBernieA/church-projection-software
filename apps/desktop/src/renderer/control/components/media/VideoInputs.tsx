@@ -178,6 +178,7 @@ export function InputTile({
   n,
   width,
   compact = false,
+  overlay = false,
 }: {
   device: InputDevice;
   n: number;
@@ -185,6 +186,8 @@ export function InputTile({
   width?: number;
   /** No name under the picture (a short pane): it's in the tooltip. */
   compact?: boolean;
+  /** The name on the picture, with its tally (Cameras' strip). */
+  overlay?: boolean;
 }) {
   const { t } = useTranslation();
   const stream = useDeviceStream('videoinput', device.deviceId);
@@ -227,7 +230,7 @@ export function InputTile({
               : t('inputs.show', { name })
         }
         aria-pressed={previewFirst ? onPreview : live}
-        title={compact ? name : undefined}
+        title={compact || overlay ? name : undefined}
         onClick={() =>
           void (previewFirst ? clickSource(device) : live ? showCamera(null) : clickSource(device))
         }
@@ -288,7 +291,32 @@ export function InputTile({
           >
             {n}
           </Typography>
-          {(live || onPreview || inPip) && (
+          {overlay && (
+            <Typography
+              size={11}
+              weight="semibold"
+              tone="white"
+              truncate
+              className="absolute bottom-1.5 left-1.5 flex max-w-[calc(100%-12px)] items-center gap-1.5 rounded-full bg-black/65 py-0.5 pl-2 pr-1 backdrop-blur-sm"
+            >
+              <Typography as="span" size={11} weight="semibold" tone="inherit" truncate>
+                {name}
+              </Typography>
+              {(live || onPreview) && (
+                <Typography
+                  as="span"
+                  size={10}
+                  weight="bold"
+                  tone="white"
+                  caps
+                  className={`shrink-0 rounded-full px-1.5 ${live ? 'bg-[var(--tally-program)]' : 'bg-[var(--tally-preview)]'}`}
+                >
+                  {live ? liveLabel : t('cameraMode.next')}
+                </Typography>
+              )}
+            </Typography>
+          )}
+          {!overlay && (live || onPreview || inPip) && (
             <Typography
               size={10}
               weight="bold"
@@ -300,7 +328,7 @@ export function InputTile({
             </Typography>
           )}
         </div>
-        {!renaming && !compact && (
+        {!renaming && !compact && !overlay && (
           <Typography size={12} tone="secondary" truncate className="mt-1.5 block">
             {name}
           </Typography>

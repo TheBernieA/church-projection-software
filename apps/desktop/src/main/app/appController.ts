@@ -358,7 +358,11 @@ export class AppController {
         );
       this.windows.broadcastLive(
         state,
-        onlyChanged(['mixer', 'audio', 'mixerScope']) ? 'sound' : onlyChanged(['cameraViews']) ? 'views' : null,
+        onlyChanged(['mixer', 'audio', 'mixerScope'])
+          ? 'sound'
+          : onlyChanged(['cameraViews'])
+            ? 'views'
+            : null,
       );
     });
     bus.onAudit((e) => {
@@ -511,6 +515,19 @@ export class AppController {
             : null,
         );
         this.windows.sendToControl(Channels.evLiveConsole, open);
+        return { result: null };
+      },
+    });
+    // Cameras undocked into its own window (or docked back): the control window follows.
+    bus.register({
+      type: 'cameras.window',
+      schema: z.object({ open: z.boolean() }),
+      undoable: false,
+      handle: ({ open }) => {
+        this.windows.openCameras(open, () =>
+          this.windows.sendToControl(Channels.evCamerasWindow, false),
+        );
+        this.windows.sendToControl(Channels.evCamerasWindow, open);
         return { result: null };
       },
     });

@@ -73,6 +73,8 @@ export const Channels = {
   evNdi: 'ev:ndi',
   /** main → control: the Live console window opened or closed. */
   evLiveConsole: 'ev:live-console',
+  /** Cameras is open in a window of its own (true) or docked in the main window (false). */
+  evCamerasWindow: 'ev:cameras-window',
   /** main → control: the stream picture (JPEG bytes) while a Live console watches. */
   evStreamPreview: 'ev:stream-preview',
   /** main → control: livestream / recording status. */

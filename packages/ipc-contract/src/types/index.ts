@@ -229,6 +229,8 @@ export interface ControlApi {
   onStreamPreview(cb: (jpeg: Uint8Array) => void): () => void;
   /** The Live console window opened (true) or closed (false). */
   onLiveConsole(cb: (open: boolean) => void): () => void;
+  /** Cameras was undocked into its own window (true) or docked back (false). */
+  onCamerasWindow(cb: (open: boolean) => void): () => void;
   /** NDI status changes (runtime found, receivers per feed). */
   onNdi(cb: (s: NdiStatus) => void): () => void;
   /** OSC messages from a desk or app (when listening is on in Settings › Control surfaces). */

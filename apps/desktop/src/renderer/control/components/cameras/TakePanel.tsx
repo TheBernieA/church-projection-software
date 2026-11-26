@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { themeAligned, themeAlignOf, type InputTransition } from '@lampstand/core';
-import { Button, Kbd, Typography } from '@lampstand/ui';
+import { Button, Typography } from '@lampstand/ui';
 import { saveSettings, setLowerThird, toggleMask } from '../../lib/actions';
 import { remembered } from '../../lib/prefs';
 import { LT_ALIGN_KEY, LT_THEME_KEY } from '../../lib/screenScenes';
@@ -46,9 +46,11 @@ export function TakePanel() {
   const setTransition = (patch: Partial<InputTransition>): void =>
     void saveSettings({ switcher: { ...settings, transition: { ...transition, ...patch } } });
   const big =
-    'flex !h-[58px] flex-1 flex-col !items-center !justify-center !gap-0.5 rounded-[var(--radius-lg)]';
+    'flex !h-[64px] flex-1 flex-col !items-center !justify-center !gap-0.5 rounded-[var(--radius-lg)]';
+  const toggle = (on: boolean, onTone: string): string =>
+    `flex h-[46px] flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-lg)] transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:opacity-40 ${on ? onTone : 'bg-[var(--surface-3)] text-[var(--text-1)] hover:bg-[var(--surface-4)]'}`;
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       <TakeTo compact />
       <div className="flex gap-2">
         <Button
@@ -58,7 +60,7 @@ export function TakePanel() {
           title={t('shortcuts.action.switcherAuto')}
           className={big}
         >
-          <Typography size={15} weight="bold" tone="inherit" caps>
+          <Typography size={18} weight="bold" tone="inherit" caps>
             {t(`switcher.kinds.${transition.kind === 'cut' ? 'fade' : transition.kind}`)}
           </Typography>
           <Typography size={10} tone="inherit" className="opacity-80">
@@ -73,10 +75,43 @@ export function TakePanel() {
           title={t('shortcuts.action.switcherCut')}
           className={big}
         >
-          <Typography size={15} weight="bold" tone="inherit" caps>
+          <Typography size={18} weight="bold" tone="inherit" caps>
             {t('switcher.cut')}
           </Typography>
-          <Kbd>{displayCombo(keys.switcherCut)}</Kbd>
+          <Typography size={10} tone="inherit" className="opacity-70">
+            {displayCombo(keys.switcherCut)}
+          </Typography>
+        </Button>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="bare"
+          aria-pressed={black}
+          title={t('cameraMode.blackHelp')}
+          onClick={() => void toggleMask('black')}
+          className={toggle(black, 'bg-[var(--tally-program)] text-white')}
+        >
+          <Typography size={12} weight="bold" tone="inherit" caps>
+            {t('cameraMode.black')}
+          </Typography>
+          <Typography size={10} tone="inherit" caps className="opacity-70">
+            {black ? t('cameraMode.on') : t('cameraMode.off')}
+          </Typography>
+        </Button>
+        <Button
+          variant="bare"
+          aria-pressed={lowerThird}
+          disabled={!hasThemes}
+          title={hasThemes ? t('cameraMode.lowerThirdsHelp') : t('cameraMode.noLowerThirds')}
+          onClick={() => toggleLowerThirds(!lowerThird)}
+          className={toggle(lowerThird, 'bg-[var(--accent)] text-[var(--accent-ink)]')}
+        >
+          <Typography size={12} weight="bold" tone="inherit" caps>
+            {t('cameraMode.lowerThirds')}
+          </Typography>
+          <Typography size={10} tone="inherit" caps className="opacity-70">
+            {lowerThird ? t('cameraMode.on') : t('cameraMode.off')}
+          </Typography>
         </Button>
       </div>
       <div className="grid grid-cols-2 gap-2">
@@ -91,33 +126,6 @@ export function TakePanel() {
           value={transition.durationMs}
           onChange={(durationMs) => setTransition({ durationMs })}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          size="sm"
-          variant="bare"
-          aria-pressed={black}
-          title={t('cameraMode.blackHelp')}
-          onClick={() => void toggleMask('black')}
-          className={`h-9 rounded-[var(--radius-control)] ${black ? 'bg-[var(--tally-program)] text-white' : 'bg-[var(--surface-3)] text-[var(--text-1)] hover:bg-[var(--surface-4)]'}`}
-        >
-          <Typography size={12} weight="bold" tone="inherit" caps>
-            {t('cameraMode.black')}
-          </Typography>
-        </Button>
-        <Button
-          size="sm"
-          variant="bare"
-          aria-pressed={lowerThird}
-          disabled={!hasThemes}
-          title={hasThemes ? t('cameraMode.lowerThirdsHelp') : t('cameraMode.noLowerThirds')}
-          onClick={() => toggleLowerThirds(!lowerThird)}
-          className={`h-9 rounded-[var(--radius-control)] disabled:opacity-40 ${lowerThird ? 'bg-[var(--accent)] text-[var(--accent-ink)]' : 'bg-[var(--surface-3)] text-[var(--text-1)] hover:bg-[var(--surface-4)]'}`}
-        >
-          <Typography size={12} weight="bold" tone="inherit" caps>
-            {t('cameraMode.lowerThirds')}
-          </Typography>
-        </Button>
       </div>
     </div>
   );
