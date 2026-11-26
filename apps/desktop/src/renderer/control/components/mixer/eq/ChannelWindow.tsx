@@ -11,11 +11,19 @@ import {
   Music,
   PanelBottom,
   Power,
+  RotateCcw,
   SquareArrowOutUpRight,
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PRESET_IDS, type MixerChannel, type ProcessingPreset } from '@lampstand/core';
+import type { TFunction } from 'i18next';
+import {
+  dynamicsResetPatch,
+  eqResetPatch,
+  PRESET_IDS,
+  type MixerChannel,
+  type ProcessingPreset,
+} from '@lampstand/core';
 import { Button, IconButton, Meter, Segmented, Typography } from '@lampstand/ui';
 import {
   closeChannelWindow,
@@ -33,6 +41,7 @@ import {
 } from '../../../lib/eqWindow';
 import { onMeters, readMeter } from '../../../lib/meters';
 import { mixerCmd, mixerLive } from '../../../lib/mixer';
+import { ask } from '../../../lib/confirm';
 import { useStore } from '../../../lib/store';
 import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../../menu';
 import { EMPTY_LIST } from '../../../constants';
@@ -281,6 +290,21 @@ export function ChannelWindow({ mode }: { mode: 'floating' | 'docked' }) {
           onChange={setChannelTab}
         />
         <span className="flex-1" />
+        {(tab === 'eq' || tab === 'dynamics') && (
+          <Button
+            size="2xs"
+            variant="bare"
+            disabled={off}
+            title={t(tab === 'eq' ? 'mixer.eqw.resetEqHelp' : 'mixer.eqw.resetDynHelp')}
+            onClick={() => void resetSection(c, tab === 'eq' ? 'eq' : 'dynamics', t)}
+            className="flex h-6 items-center gap-1 rounded-[var(--radius-sm)] bg-[var(--surface-3)] px-2 text-[var(--text-2)] transition-colors hover:text-[var(--text-1)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] disabled:opacity-40"
+          >
+            <RotateCcw size={12} />
+            <Typography size={11} weight="semibold" tone="inherit">
+              {t('mixer.eqw.reset')}
+            </Typography>
+          </Button>
+        )}
         {tab === 'eq' && (
           <Button
             size="2xs"
@@ -371,4 +395,28 @@ export function ChannelWindow({ mode }: { mode: 'floating' | 'docked' }) {
 export function FloatingChannelWindow() {
   const open = useChannelWindow((s) => !!s.channel && !s.docked);
   return open ? <ChannelWindow mode="floating" /> : null;
+}
+
+/**
+ * Put a channel's EQ (bands and both cuts) or its dynamics (gate, compressor, ducking) back as a
+ * new channel starts, after asking: it can't be undone, so the question offers saving a preset.
+ */
+async function resetSection(
+  c: MixerChannel,
+  section: 'eq' | 'dynamics',
+  t: TFunction,
+): Promise<void> {
+  const sure = await ask({
+    message: t(section === 'eq' ? 'mixer.eqw.resetEqAsk' : 'mixer.eqw.resetDynAsk', {
+      name: c.name,
+    }),
+    confirm: t(section === 'eq' ? 'mixer.eqw.resetEq' : 'mixer.eqw.resetDyn'),
+    tone: 'danger',
+  });
+  if (!sure) return;
+  await mixerCmd({
+    action: 'channel',
+    id: c.id,
+    patch: section === 'eq' ? eqResetPatch() : dynamicsResetPatch(),
+  });
 }

@@ -3,6 +3,8 @@ import {
   applyMixerAction,
   dbToGain,
   defaultMixer,
+  dynamicsResetPatch,
+  eqResetPatch,
   MixerActionSchema,
   MixerChannelSchema,
   MixerSchema,
@@ -262,5 +264,29 @@ describe('mixer', () => {
         hpf: false,
       });
     });
+  });
+});
+
+describe('resetting a channel', () => {
+  it('puts the EQ and the cuts back to flat, keeps the EQ switch, and leaves the rest', () => {
+    let m = applyMixerAction(defaultMixer(), { action: 'add', deviceId: 'dev1', name: 'Pulpit' });
+    const id = m.channels.at(-1)?.id ?? '';
+    m = applyMixerAction(m, { action: 'preset', id, preset: 'speech' });
+    m = applyMixerAction(m, {
+      action: 'channel',
+      id,
+      patch: { eq: { on: false, bands: { '2': { db: 6, hz: 400 } } }, lpf: true, gainDb: -6 },
+    });
+    m = applyMixerAction(m, { action: 'channel', id, patch: eqResetPatch() });
+    const c = m.channels.find((x) => x.id === id);
+    expect(c?.eq.on).toBe(false);
+    expect(c?.eq.bands.every((b) => b.db === 0)).toBe(true);
+    expect(c?.eq.bands[2]?.hz).toBe(800);
+    expect([c?.hpf, c?.lpf, c?.hpfHz]).toEqual([false, false, 80]);
+    expect(c?.gainDb).toBe(-6);
+    expect(c?.comp.on).toBe(true); // dynamics untouched
+    m = applyMixerAction(m, { action: 'channel', id, patch: dynamicsResetPatch() });
+    const d = m.channels.find((x) => x.id === id);
+    expect([d?.gate.on, d?.comp.on, d?.duck.on]).toEqual([false, false, false]);
   });
 });

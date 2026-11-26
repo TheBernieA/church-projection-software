@@ -455,6 +455,30 @@ function patchEq(eq: MixerChannel['eq'], p: EqPatch | undefined): MixerChannel['
   };
 }
 
+type ChannelPatch = Extract<MixerAction, { action: 'channel' }>['patch'];
+
+/**
+ * A channel's EQ back to flat, as a new channel starts: every band at its default place and
+ * 0 dB, the low and high cuts off at their default frequencies. The EQ switch stays as it is.
+ */
+export function eqResetPatch(): ChannelPatch {
+  const bands = Object.fromEntries(EQ_DEFAULT_BANDS.map((b, i) => [String(i), { ...b }]));
+  return {
+    hpf: FLAT.hpf,
+    hpfHz: FLAT.hpfHz,
+    hpfSlope: FLAT.hpfSlope,
+    lpf: FLAT.lpf,
+    lpfHz: FLAT.lpfHz,
+    lpfSlope: FLAT.lpfSlope,
+    eq: { bands },
+  };
+}
+
+/** A channel's gate, compressor and ducking back as a new channel starts (all off). */
+export function dynamicsResetPatch(): ChannelPatch {
+  return { gate: { ...FLAT.gate }, comp: { ...FLAT.comp }, duck: { ...FLAT.duck } };
+}
+
 /** Apply one mixer command (pure). */
 export function applyMixerAction(m: Mixer, a: MixerAction): Mixer {
   switch (a.action) {
