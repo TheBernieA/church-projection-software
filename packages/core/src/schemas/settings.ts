@@ -4,6 +4,8 @@ import { MediaTransitionSchema, TransitionSpecSchema } from './theme';
 import { StageLayoutSchema } from './stage';
 import { NdiFeedSchema, StreamSettingsSchema } from './stream';
 import { MixerSchema } from './mixer';
+import { MAX_PRESETS, ProcessingPresetSchema } from './processing';
+import { DeskProfileSchema, DeskSettingsSchema } from './desk';
 import { SurfacesSettingsSchema } from './surfaces';
 import { OnlineBibleSchema } from './scripture';
 import { TimerDefSchema } from './timers';
@@ -245,6 +247,12 @@ export const SettingsSchema = z
     ndi: z.object({ feeds: z.array(NdiFeedSchema).max(4).default([]) }).default({ feeds: [] }),
     /** The sound desk (channels, buses). Absent in older settings: made from `stream.sound`. */
     mixer: MixerSchema.optional(),
+    /** The operator's saved processing presets (Mixer › channel window › Presets). */
+    processingPresets: z.array(ProcessingPresetSchema).max(MAX_PRESETS).default([]),
+    /** The sound desk Lampstand reads and sends channel processing to (Settings › Audio). */
+    desk: DeskSettingsSchema.default(DeskSettingsSchema.parse({})),
+    /** Desk profiles the operator imported (besides the built-in ones). */
+    deskProfiles: z.array(DeskProfileSchema).max(20).default([]),
     /** Livestream and recording (the toolbar's Live button). Stream keys are kept elsewhere. */
     stream: StreamSettingsSchema.default(StreamSettingsSchema.parse({})),
     /** Custom stage screen layouts, and which one stage screens show (null: Classic). */

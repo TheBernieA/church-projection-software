@@ -22,7 +22,14 @@ export function ConfirmHost() {
           className="fixed left-1/2 top-[22vh] z-[61] w-[min(420px,92vw)] -translate-x-1/2 rounded-[var(--radius-xl)] bg-[var(--surface-1)] p-5 shadow-[var(--shadow-3),var(--highlight-top)] data-[state=open]:animate-[ls-dialog_160ms_var(--ease-out)]"
         >
           <RD.Title className="sr-only">{t('confirm.title')}</RD.Title>
-          <Typography as="p" id="confirm-message" size={14} leading="snug" tone="primary">
+          <Typography
+            as="p"
+            id="confirm-message"
+            size={14}
+            leading="snug"
+            tone="primary"
+            className="max-h-[50vh] overflow-y-auto whitespace-pre-line"
+          >
             {q?.message}
           </Typography>
           <div className="mt-5 flex justify-end gap-2">

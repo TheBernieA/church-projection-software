@@ -40,6 +40,7 @@ import {
 import { stripChords } from '@lampstand/lyrics';
 import { OscServer } from '../surfaces/oscServer';
 import { PtzService } from '../cameras/ptzService';
+import { DeskLink } from '../desk/deskLink';
 import { registerIpc } from '../ipc/router';
 import { installAppMenu } from './menu';
 import { showSplash } from '../windows/splash';
@@ -117,6 +118,7 @@ export class AppController {
   private ndi!: NdiController;
   private osc!: OscServer;
   private ptz!: PtzService;
+  private desk!: DeskLink;
   private secrets!: SecretStore;
   private auditLog: AuditEntry[] = [];
   private log!: Logger;
@@ -299,6 +301,7 @@ export class AppController {
     this.osc.settingsChanged();
     this.ptz = new PtzService({ log: log.child('ptz'), getSettings: () => settings.get() });
     this.ptz.settingsChanged();
+    this.desk = new DeskLink({ log: log.child('desk'), getSettings: () => settings.get() });
 
     handleAppProtocol(rendererRootDir());
     handleMediaProtocol(async (kind, id) => {
@@ -333,6 +336,7 @@ export class AppController {
         stream: this.stream,
         ndi: this.ndi,
         secrets: this.secrets,
+        desk: this.desk,
       }),
       kindOf: (e) => this.windows.kindOf(e.sender),
       onOutputReady: (e) => this.windows.outputReady(e.sender),
@@ -426,6 +430,7 @@ export class AppController {
       this.ndi.settingsChanged();
       this.osc.settingsChanged();
       this.ptz.settingsChanged();
+      this.desk.settingsChanged();
       void this.refreshWordsTheme();
       const key = outputsOf(next);
       if (key !== outputKey) {
@@ -1007,6 +1012,7 @@ export class AppController {
     await this.ndi.shutdown();
     this.osc.close();
     this.ptz.close();
+    this.desk.close();
     this.search.stop();
     await this.closeWatcher?.();
     for (const { timer, run } of this.pendingSaves.values()) {

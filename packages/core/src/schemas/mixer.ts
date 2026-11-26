@@ -177,6 +177,8 @@ export const MixerChannelSchema = z.object({
   ducksOthers: z.boolean().default(true),
   /** Locked: its controls don't move (no accidental changes during a service). */
   locked: z.boolean().default(false),
+  /** The sound desk channel this one is linked to (Mixer › channel window › Desk), or none. */
+  deskChannel: z.number().int().min(1).max(128).nullable().default(null),
   /** Heard in the room (the main output's speakers). */
   room: z.boolean().default(true),
   /** Goes out on the livestream and recording (and NDI feeds with sound). */
@@ -323,10 +325,13 @@ const ChannelPatchSchema = z
       .partial(),
     ducksOthers: z.boolean(),
     locked: z.boolean(),
+    deskChannel: z.number().int().min(1).max(128).nullable(),
     room: z.boolean(),
     stream: z.boolean(),
   })
   .partial();
+export type MixerChannelPatch = z.infer<typeof ChannelPatchSchema>;
+
 const BusPatchSchema = z
   .object({
     gainDb: Db,
