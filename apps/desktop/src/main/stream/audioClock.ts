@@ -20,6 +20,12 @@ const MAX_WAITING_BYTES = BYTES_PER_SECOND * 3;
  * silence.
  */
 const DRIFT_BYTES = BYTES_PER_SECOND * 0.04;
+/**
+ * Once nudging, keep on until the sound is this close to the clock. Stopping at the 40 ms edge
+ * left it there for good after a main-process stall (measured live: +45 ms for the rest of the
+ * stream, where viewers start to notice sound ahead of lips).
+ */
+const SETTLED_BYTES = BYTES_PER_SECOND * 0.005;
 
 const toMs = (bytes: number): number => Math.round((bytes / BYTES_PER_SECOND) * 1000);
 
@@ -36,6 +42,8 @@ export class AudioClock {
   private dropped = 0;
   /** Samples taken out or repeated to follow the clock (drift). */
   private nudged = 0;
+  /** Nudging back towards the clock (until within SETTLED_BYTES). */
+  private correcting = false;
 
   constructor(
     private readonly out: () => Writable | null,
@@ -46,6 +54,7 @@ export class AudioClock {
   begin(): void {
     this.startedAt = this.now();
     this.written = 0;
+    this.correcting = false;
   }
 
   /** A new session: forget the last one's counts. */
@@ -90,16 +99,16 @@ export class AudioClock {
    */
   private followClock(chunk: Buffer): Buffer {
     if (!this.started || chunk.length < FRAME_BYTES * 2) return chunk;
-    const lead = this.written - this.dueBytes();
-    if (lead > DRIFT_BYTES) {
-      this.nudged += 1;
-      return chunk.subarray(0, chunk.length - FRAME_BYTES);
-    }
-    if (lead < -DRIFT_BYTES) {
-      this.nudged += 1;
-      return Buffer.concat([chunk, chunk.subarray(chunk.length - FRAME_BYTES)]);
-    }
-    return chunk;
+    // Judged where this batch leaves the sound: before it, the sound is always a batch short
+    // (measured from there, correcting stopped ~11 ms off-centre and swung around it).
+    const after = this.written + chunk.length - this.dueBytes();
+    if (Math.abs(after) > DRIFT_BYTES) this.correcting = true;
+    else if (Math.abs(after) < SETTLED_BYTES) this.correcting = false;
+    if (!this.correcting) return chunk;
+    this.nudged += 1;
+    return after > 0
+      ? chunk.subarray(0, chunk.length - FRAME_BYTES)
+      : Buffer.concat([chunk, chunk.subarray(chunk.length - FRAME_BYTES)]);
   }
 
   /** Fill with silence once the sound is well behind the clock. */

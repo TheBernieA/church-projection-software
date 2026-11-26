@@ -15,6 +15,7 @@ import { type Logger, type QueryHandlers, type WindowKind } from '../types';
 import { APP_SCHEME } from '../constants';
 import { errorMessage } from '../utils';
 import type { OscStatus } from '@lampstand/ipc-contract';
+import { noteActivity } from '../diagnostics/stallWatch';
 
 const StreamWatchSchema = z.object({ fps: z.number().min(0).max(60), ready: z.boolean() });
 const OscSendSchema = z.object({
@@ -67,6 +68,7 @@ export function registerIpc(d: RouterDeps): void {
     const env = CommandEnvelopeSchema.safeParse(raw);
     if (!env.success)
       return { ok: false, error: { code: 'invalid-payload', message: 'Invalid command.' } };
+    noteActivity(`command:${env.data.type}`);
     return d.bus.dispatch({
       type: env.data.type,
       payload: env.data.payload,
@@ -83,6 +85,7 @@ export function registerIpc(d: RouterDeps): void {
       if (!parsed.success)
         return { ok: false, error: { code: 'invalid-payload', message: 'Invalid request.' } };
       try {
+        noteActivity(`query:${name}`);
         const handler = d.queries[name] as (a: unknown) => Promise<unknown>;
         return { ok: true, value: await handler(parsed.data) };
       } catch (err) {

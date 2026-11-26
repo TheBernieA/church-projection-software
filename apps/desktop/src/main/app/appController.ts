@@ -46,6 +46,7 @@ import { installAppMenu } from './menu';
 import { showSplash } from '../windows/splash';
 import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
+import { whileLive } from '../diagnostics/whileLive';
 import { keyName, StreamController } from '../stream/streamController';
 import type { PictureSources } from '../stream/pictureWindow';
 import { NdiController } from '../ndi/ndiController';
@@ -279,11 +280,15 @@ export class AppController {
       kindThemes: () => this.outputThemes.stream,
       alternateThemes: () => this.outputThemes.alternate,
     });
+    const liveGuards = whileLive(log.child('live'), paths.logs);
     this.stream = new StreamController({
       ...pictures('stream'),
       secrets: this.secrets,
       updateSettings: (patch) => settings.update(patch),
-      onStatus: (status) => this.windows.sendToControl(Channels.evStream, status),
+      onStatus: (status) => {
+        liveGuards(status.state !== 'idle');
+        this.windows.sendToControl(Channels.evStream, status);
+      },
       notice: (n) => this.notice(n),
     });
     // NDI feeds (Settings › NDI), with the NDI runtime from NDI Tools when it's installed.
@@ -546,15 +551,19 @@ export class AppController {
         return { result: null };
       },
     });
-    // The computer can't keep up: switch the stream to Light now (it carries on).
+    // The computer (or the upload) can't keep up: one mode lighter for this session (the
+    // settings stay as they are), or back up again once it has kept up.
     bus.register({
       type: 'stream.lighter',
       schema: z.object({}),
       undoable: false,
-      handle: async () => {
-        await this.stream.lighter();
-        return { result: null };
-      },
+      handle: async () => ({ result: await this.stream.lighten('user') }),
+    });
+    bus.register({
+      type: 'stream.restore',
+      schema: z.object({}),
+      undoable: false,
+      handle: async () => ({ result: await this.stream.restore('user') }),
     });
     // "Check this computer": what streaming mode suits it (Auto then uses the answer).
     bus.register({

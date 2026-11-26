@@ -34,6 +34,18 @@ _Started 2026-11-26._
 - [ ] Desk link on Windows: the first UDP send may raise a firewall prompt; say so in Settings ›
   Audio › Sound desk if it does, and check reads come back through it.
 
+## Livestream
+
+- [ ] Upload guard on a real slow upload (CPU pipeline): its step-down was unit-tested; through
+  the local relay every dip read as a stall (ffmpeg's output queue), so tune `STALL_RATE` with
+  `upload dip` lines from real networks (a phone hotspot, a busy church Wi-Fi).
+- [ ] Ease off more in the control window when the computer struggles: today only the stream
+  previews slow down; output previews and the multiview could pause too (Onda pauses its Edit
+  preview and halves camera effects).
+- [ ] Recovery and the guards on Windows (never run there) and on an Intel Mac.
+- [ ] The YouTube "is YouTube receiving it?" check from Onda needs YouTube sign-in, which
+  Lampstand doesn't have yet.
+
 ## Cameras
 
 - [ ] Routing per screen: today the destinations are all the screens together and the
