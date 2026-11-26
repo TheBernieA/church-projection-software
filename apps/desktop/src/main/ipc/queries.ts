@@ -1,8 +1,19 @@
 import type { NdiController } from '../ndi/ndiController';
-import { mkdir, readFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 import { app, dialog, shell, systemPreferences, type BrowserWindow } from 'electron';
-import { AppError, OnlineBibleSchema, STARTER_THEMES, type AuditEntry } from '@lampstand/core';
+import {
+  AppError,
+  OnlineBibleSchema,
+  parseEqText,
+  ProcessingPresetSchema,
+  ProcessingSchema,
+  presetFileText,
+  readDeskProfileFile,
+  readPresetFile,
+  STARTER_THEMES,
+  type AuditEntry,
+} from '@lampstand/core';
 import type { ModuleSummary, Notice, QueryArgs, QueryResults } from '@lampstand/ipc-contract';
 import type { SearchService } from '../search/searchService';
 import type { WindowManager } from '../windows/windowManager';
@@ -10,10 +21,14 @@ import { dailyBackup, importLibraryZip, zipLibrary } from '../library/backup';
 import { parsePptx } from '../library/pptx';
 import { type QueryHandlers, type Services } from '../types';
 import type { SecretStore } from '../secrets/secretStore';
+import type { DeskLink } from '../desk/deskLink';
 import { isWithin } from '../security/safePath';
 import { keyName, recordingsFolder, type StreamController } from '../stream/streamController';
 import { MAX_DECK_BYTES, MAX_SONG_FILE_BYTES } from '../constants';
 import { decodeTextFile, SONG_FILE_EXTENSIONS } from '@lampstand/lyrics';
+
+/** The largest presets file, text EQ or desk profile read (1 MB). */
+const MAX_SMALL_TEXT = 1024 * 1024;
 
 interface QueryDeps {
   installModules: (files: string[]) => Promise<QueryResults['modules.install']>;
@@ -27,6 +42,7 @@ interface QueryDeps {
   stream: StreamController;
   ndi: NdiController;
   secrets: SecretStore;
+  desk: DeskLink;
 }
 
 /** Read-side handlers for the control window. Args are already Zod-validated by the router. */
@@ -42,12 +58,20 @@ export function createQueries({
   stream,
   ndi,
   secrets,
+  desk,
 }: QueryDeps): QueryHandlers {
   const parent = (): BrowserWindow | undefined => control() ?? undefined;
   const openDialog = async (opts: Electron.OpenDialogOptions): Promise<string[]> => {
     const w = parent();
     const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
     return res.canceled ? [] : res.filePaths;
+  };
+
+  /** A small text file (presets, an EQ, a desk profile); anything big isn't one. */
+  const readSmallText = async (file: string): Promise<string> => {
+    if ((await stat(file)).size > MAX_SMALL_TEXT)
+      throw new AppError('import-too-large', 'That file is too large to be presets or a profile.');
+    return readFile(file, 'utf8');
   };
 
   return {
@@ -218,6 +242,52 @@ export function createQueries({
         properties: ['openDirectory', 'createDirectory'],
       });
       return { folder: folders.at(0) ?? null };
+    },
+    'desk.status': () => desk.status(),
+    'desk.read': ({ channel }: QueryArgs<'desk.read'>) => desk.read(channel),
+    'desk.write': ({ channel, processing }: QueryArgs<'desk.write'>) =>
+      desk.write(channel, ProcessingSchema.parse(processing)),
+    'desk.channels': () => desk.channels(),
+    'desk.importProfile': async () => {
+      const [file] = await openDialog({
+        title: 'Import a sound desk profile',
+        properties: ['openFile'],
+        filters: [{ name: 'Lampstand desk profile', extensions: ['json'] }],
+      });
+      if (!file) return { profile: null, file: null };
+      const text = await readSmallText(file);
+      return { profile: readDeskProfileFile(text), file: basename(file) };
+    },
+    'presets.export': async ({ presets, name }: QueryArgs<'presets.export'>) => {
+      const w = parent();
+      const safe = (name ?? 'Lampstand presets').replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'Presets';
+      const opts: Electron.SaveDialogOptions = {
+        title: 'Export presets',
+        defaultPath: `${safe}.lampstand-presets.json`,
+        filters: [{ name: 'Lampstand presets', extensions: ['json'] }],
+      };
+      const res = w ? await dialog.showSaveDialog(w, opts) : await dialog.showSaveDialog(opts);
+      if (res.canceled || !res.filePath) return { done: false };
+      await writeFile(res.filePath, presetFileText(ProcessingPresetSchema.array().parse(presets)), 'utf8');
+      return { done: true };
+    },
+    'presets.import': async () => {
+      const [file] = await openDialog({
+        title: 'Import presets or an EQ',
+        properties: ['openFile'],
+        filters: [
+          { name: 'Presets or EQ (Lampstand, Equalizer APO, REW)', extensions: ['json', 'txt'] },
+          { name: 'All files', extensions: ['*'] },
+        ],
+      });
+      if (!file) return { kind: 'none' as const };
+      const text = await readSmallText(file);
+      const name = basename(file);
+      const presets = readPresetFile(text);
+      if (presets) return { kind: 'presets' as const, file: name, presets };
+      const eq = parseEqText(text);
+      if (eq) return { kind: 'eqText' as const, file: name, eq };
+      return { kind: 'unreadable' as const, file: name };
     },
     'recording.reveal': async ({ path }: QueryArgs<'recording.reveal'>) => {
       const folder = recordingsFolder(s.settings.get().stream.recording.folder);

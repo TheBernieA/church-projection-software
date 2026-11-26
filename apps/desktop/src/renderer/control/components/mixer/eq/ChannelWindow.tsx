@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PRESET_IDS, type MixerChannel } from '@lampstand/core';
+import { PRESET_IDS, type MixerChannel, type ProcessingPreset } from '@lampstand/core';
 import { Button, IconButton, Meter, Segmented, Typography } from '@lampstand/ui';
 import {
   closeChannelWindow,
@@ -34,17 +34,22 @@ import {
 import { onMeters, readMeter } from '../../../lib/meters';
 import { mixerCmd, mixerLive } from '../../../lib/mixer';
 import { useStore } from '../../../lib/store';
-import { ITEM_CLASS, MENU_CLASS } from '../../menu';
+import { ITEM_CLASS, MENU_CLASS, MENU_LABEL_CLASS, SEPARATOR_CLASS } from '../../menu';
+import { EMPTY_LIST } from '../../../constants';
+import { applyPreset } from '../../../lib/presets';
 import { DynamicsView, GrMeter } from './DynamicsView';
 import { EqBands } from './EqBands';
 import { EqGraph } from './EqGraph';
+import { DeskView } from './DeskView';
 import { InputView } from './InputView';
+import { PresetsView } from './PresetsView';
 
 const KIND_ICON = { tracks: Music, video: Film, input: Mic } as const;
 
 /** Pick a preset for a channel's processing. */
 function PresetMenu({ c }: { c: MixerChannel }) {
   const { t } = useTranslation();
+  const mine = useStore((s) => s.settings?.processingPresets ?? (EMPTY_LIST as ProcessingPreset[]));
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild disabled={c.locked}>
@@ -68,6 +73,27 @@ function PresetMenu({ c }: { c: MixerChannel }) {
               </span>
             </DropdownMenu.Item>
           ))}
+          {mine.length > 0 && (
+            <>
+              <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+              <DropdownMenu.Label className={MENU_LABEL_CLASS}>
+                {t('presets.mine')}
+              </DropdownMenu.Label>
+              {mine.slice(0, 12).map((p) => (
+                <DropdownMenu.Item
+                  key={p.id}
+                  className={ITEM_CLASS}
+                  onSelect={() => void applyPreset(c, p.processing)}
+                >
+                  {p.name}
+                </DropdownMenu.Item>
+              ))}
+            </>
+          )}
+          <DropdownMenu.Separator className={SEPARATOR_CLASS} />
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => setChannelTab('presets')}>
+            {t('presets.manage')}
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -249,6 +275,8 @@ export function ChannelWindow({ mode }: { mode: 'floating' | 'docked' }) {
             { value: 'eq', label: t('mixer.eqw.tab.eq') },
             { value: 'dynamics', label: t('mixer.eqw.tab.dynamics') },
             { value: 'input', label: t('mixer.eqw.tab.input') },
+            { value: 'presets', label: t('mixer.eqw.tab.presets') },
+            { value: 'desk', label: t('mixer.eqw.tab.desk') },
           ]}
           onChange={setChannelTab}
         />
@@ -316,6 +344,8 @@ export function ChannelWindow({ mode }: { mode: 'floating' | 'docked' }) {
         )}
         {tab === 'dynamics' && <DynamicsView c={c} />}
         {tab === 'input' && <InputView c={c} />}
+        {tab === 'presets' && <PresetsView c={c} />}
+        {tab === 'desk' && <DeskView c={c} />}
         <SideMeters c={c} />
       </div>
 

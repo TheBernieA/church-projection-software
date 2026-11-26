@@ -205,7 +205,21 @@ const LIVE_HOWTO = [
 ];
 
 /** Cameras, the sound desk, and desks or controllers driving the show. */
-const DESK_HOWTO = ['cameras', 'deskSound', 'midi', 'osc', 'feedback', 'cues', 'deskTrouble'];
+const DESK_HOWTO = [
+  'cameras',
+  'cameraMode',
+  'cameraRouting',
+  'cameraWindow',
+  'deskSound',
+  'channelEq',
+  'presets',
+  'deskLink',
+  'midi',
+  'osc',
+  'feedback',
+  'cues',
+  'deskTrouble',
+];
 
 /** A list of recipes that open on a click. */
 function Recipes({

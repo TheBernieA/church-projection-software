@@ -2,6 +2,9 @@ import type {
   BibleVersionInfo,
   BlendPart,
   BookId,
+  DeskProfile,
+  EqTextResult,
+  FitNote,
   KeyFeedMode,
   LiveState,
   MediaItem,
@@ -9,6 +12,8 @@ import type {
   OscArg,
   OscMessage,
   OutputRole,
+  Processing,
+  ProcessingPreset,
   ResolvedKindThemes,
   ScreenAdjust,
   Result,
@@ -125,6 +130,25 @@ export interface AppInfo {
   electron: string;
 }
 
+/** The sound desk link, as Settings › Audio shows it. */
+export interface DeskStatus {
+  enabled: boolean;
+  /** The profile in use (null: the one chosen doesn't exist any more). */
+  profile: string | null;
+  host: string;
+  port: number;
+  /** null: not checked (off, or no address yet). */
+  answering: boolean | null;
+  error: string | null;
+}
+
+/** What a picked file held: Lampstand presets, or a text EQ to turn into one. */
+export type PresetImport =
+  | { kind: 'none' }
+  | { kind: 'presets'; file: string; presets: ProcessingPreset[] }
+  | { kind: 'eqText'; file: string; eq: EqTextResult }
+  | { kind: 'unreadable'; file: string };
+
 export interface QueryResults {
   'app.info': AppInfo;
   'live.get': LiveState;
@@ -168,6 +192,13 @@ export interface QueryResults {
   'devices.access': { status: DeviceAccess };
   'stream.status': StreamStatus;
   'ndi.status': NdiStatus;
+  'desk.status': DeskStatus;
+  'desk.read': { name: string | null; processing: Processing };
+  'desk.write': { notes: FitNote[]; previous: Processing | null };
+  'desk.channels': { channel: number; name: string | null }[];
+  'desk.importProfile': { profile: DeskProfile | null; file: string | null };
+  'presets.export': { done: boolean };
+  'presets.import': PresetImport;
   'stream.keys': Record<string, boolean>;
   'recording.chooseFolder': { folder: string | null };
   'recording.reveal': { done: boolean };

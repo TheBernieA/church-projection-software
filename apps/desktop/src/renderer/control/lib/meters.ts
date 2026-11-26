@@ -48,10 +48,7 @@ export function readDyn(bus: Bus, channel: string): [number, number] {
 }
 
 /** The spectrum into and out of a channel's EQ (null: not watched yet, or stale). */
-export function readSpectrum(
-  bus: Bus,
-  channel: string,
-): { pre: number[]; post: number[] } | null {
+export function readSpectrum(bus: Bus, channel: string): { pre: number[]; post: number[] } | null {
   const m = latest[bus];
   if (!m || performance.now() - m.at > 500) return null;
   const s = m.report.spectrum;

@@ -12,6 +12,7 @@ import { mixerCmd } from '../../lib/mixer';
 import { closeDialog, useStore } from '../../lib/store';
 import { Group, Row, SettingsPage, Tag } from './parts';
 import { ask } from '../../lib/confirm';
+import { DeskSettings } from './DeskSettings';
 
 const DEFAULT = 'default';
 
@@ -96,6 +97,7 @@ export function AudioPage({
           </Button>
         </Row>
       </Group>
+      <DeskSettings s={s} update={update} />
       <Group title={t('audioSettings.room')} footnote={t('audioSettings.roomHelp')}>
         <Row label={t('audioSettings.roomOutput')} description={t('audioSettings.roomOutputHelp')}>
           <div className="w-60">
