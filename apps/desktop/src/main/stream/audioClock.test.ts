@@ -114,4 +114,25 @@ describe('the stream sound clock', () => {
       expect(r.audioNudged).toBeGreaterThan(0);
     }
   });
+
+  it('after a stall leaves the sound ahead, brings it back to the clock, not just under 40 ms', () => {
+    const { clock, at } = setup();
+    const batch = Math.round(ms(512 / 48) / 8) * 8;
+    let t = 0;
+    let i = 0;
+    const step = (): void => {
+      i++;
+      t = (i * 512) / 48;
+      at(t);
+      clock.write(Buffer.alloc(batch));
+      clock.topUp();
+    };
+    for (let k = 0; k < 500; k++) step();
+    // The stall's aftermath: 60 ms more sound than the clock (within the slack: not dropped).
+    clock.write(Buffer.alloc(Math.round(ms(60) / 8) * 8));
+    for (let k = 0; k < 94 * 40; k++) step(); // 40 s
+    const r = clock.report();
+    expect(Math.abs(r.audioLeadMs)).toBeLessThanOrEqual(10);
+    expect(r.audioDroppedMs).toBe(0);
+  });
 });

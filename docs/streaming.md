@@ -166,7 +166,7 @@ Quality (1080p), or Custom (the Quality values as set). Auto uses "Check this co
 (`benchmark.ts`: a 4-second test encode per mode, needing 1.7–2.2× real time) or else cores,
 memory and whether there's a hardware encoder (`resolvePerformance` in core). Hardware
 encoders get NV12. While running, health (CPU, memory, fps, bitrate, speed) is sampled every
-2 s; if it can't keep up for 15 s the Live console offers "Switch to Light".
+2 s; what happens when the computer can't keep up is under "Can't keep up" below.
 
 Measured on an M-series Mac, 30 s of a playing video with a camera PiP (VideoToolbox), before
 → after: 28.6 → 30 fps, 16 → 0 frames dropped, A/V drift +1.17 s → −0.1 s; ffmpeg CPU 9.6% in
@@ -424,6 +424,11 @@ Main process (`apps/desktop/src/main/stream/`):
 | `textureRelay.ts`                                   | GPU pipeline: each picture to the encoder and the watching consoles     |
 | `framePump.ts`                                      | CPU pipeline: frames to ffmpeg on wall-clock time                       |
 | `backlog.ts`, `flv.ts`, `health.ts`, `benchmark.ts` | Video waiting for ffmpeg; FLV tags; CPU sampling; "Check this computer" |
+| `bitrate.ts`, `uploadGuard.ts`                      | GPU: bitrate on the fly; CPU: restart lower (pure)                      |
+| `recovery.ts`, `dipTrace.ts`                        | Can't keep up: warn, ease off, lighten, come back; upload-dip log lines |
+
+Diagnostics (`apps/desktop/src/main/diagnostics/`): `whileLive.ts` (what runs only while live:
+the App Nap blocker, `stallWatch.ts`, `mainProfile.ts`).
 
 Stream page (`renderer/stream/`): `main.ts` (the picture and the mix), `wordsLayout.ts` (lower
 third sums), `encoder.ts` + `encoder.worker.ts` (the hardware encoder).
@@ -462,7 +467,62 @@ Measured with the slow-link relay (`LAMPSTAND_LATENCY_KBPS=1000`, `e2e/fixtures/
 1080p30): without it the delay climbed to 17 s in a minute with 39 s of sound replaced by
 silence; with it the stream was live again within about 25 s, the sound intact and in sync
 within 35 ms. On a fast connection nothing changes. `LAMPSTAND_ABR=0` turns it off for
-comparison. (GPU pipeline only; the CPU pipeline's ffmpeg encoder keeps its bitrate.)
+comparison. (GPU pipeline only; the CPU pipeline has the upload guard below instead. The two
+never both act on one stream.)
 
 Capping the socket send buffer (`send_buffer_size`) was tried and made no measurable
 difference, so it isn't used.
+
+## Staying live on the CPU pipeline, and a computer that can't keep up
+
+Ported from Onda (which runs this same engine) on 2026-11-26.
+
+**Upload guard (CPU pipeline).** ffmpeg's bitrate is fixed for a run, so `uploadGuard.ts`
+answers a stream that falls behind its upload with a restart: behind by more than 1.5 s for 6 s
+and not draining → restart at ×0.7, at most every 30 s, never below a floor that follows the
+picture size (35 % of the target, at least 1500 kb/s at 1080p, 1000 at 720p, 600 at 540p). A
+stall (falling behind ≥ 0.85 s a second: nothing getting through) never lowers the bitrate: it
+waits 20 s for the connection, then tries a fresh one; a dead connection times out in ffmpeg
+after 5 s and reconnects. At the floor it restarts only for a backlog of 10 s or more (a break
+costs viewers more than a delay), and the console suggests a lighter mode. A restart that only
+throws a backlog away, with nothing recording, gives ffmpeg 300 ms to exit instead of 6 s
+(measured in Onda: a 7 s gap became ~0.3 s). It never climbs back by itself; the next session
+starts at full rate.
+
+**Whose fault are late frames?** Late frames while the stream is more than 1 s behind, or in
+the first 20 s of a run, count as the upload's (`droppedUpload`), not the computer's. So does
+any moment when ffmpeg hasn't reported progress for 2 s: the stream outputs' 4 s queue hides
+the first seconds of a stall from the delay reading, and frames are already late by then
+(found while porting: a 150 kb/s relay was read as "computer struggling" before this).
+
+**Can't keep up (`recovery.ts`).** Struggling for 15 s (encoder slower than real time, or more
+than 2 % of frames late in at least half the samples; one burst doesn't count), and not because
+of the upload: the console warns and the control window eases off (stream previews at a lower
+rate: `easeOff`), cleared after 30 s of keeping up (a second struggle keeps the ease-off for the
+session). "Go lighter" steps down one mode for this session (Quality → Balanced → Light; a
+custom stream drops 60 fps, then size); the settings stay as they are. With Settings ›
+Streaming › "Lighten by itself" (off by default) it steps down by itself 30 s after the warning,
+and back up after 2 minutes steady (offered, "Back to 720p30", when it's off); mode changes are
+at least 60 s apart, and struggling within 5 minutes of going back up keeps it light. A mode
+change resizes the stream window in place (`resizeWindow`): its videos and sound carry on, and
+the encoder restarts about 15 ms later; a recording continues as a new part.
+
+**While live (`diagnostics/whileLive.ts`).** `powerSaveBlocker` 'prevent-app-suspension' (App Nap
+throttled main's timers when the window was covered: 330–350 ms stalls in Onda, each a glitch
+in the sound); `StallWatch` logs every main-process block of 200 ms or more as `main stalled`,
+with GC overlap and what main did in the 3 s before (`noteActivity`: commands, queries, ffmpeg
+spawns, window resizes); `LAMPSTAND_PROFILE_MAIN=1` writes a CPU profile of main per session to
+the log folder. The 10 s `stream health` line adds the target bitrate, `droppedUpload` and the
+event loop's worst delay (`loopMaxMs`, `loopP99Ms`); each upload dip gets an `upload dip` line
+(its shape once a second, peak, growth s/s, how it ended).
+
+**Sound drift.** `AudioClock` nudges the sound back to within 5 ms once it's 40 ms off (judged
+where each batch leaves it), instead of stopping at the 40 ms edge, where a main-process stall
+could leave it for the rest of the stream.
+
+Checked end to end (CPU pipeline, 720p30, libx264, a local RTMP receiver behind a throttling
+relay): a stall was logged as an upload dip and handled by ffmpeg's timeout and a reconnect,
+with its late frames counted as the upload's (no false "struggling"); Go lighter and Back up
+gave 720p → 540p → 720p files (h264 + aac) with the window resized in place and ~15 ms between
+runs; the sound stayed within ±5 ms; the GPU pipeline still streamed. The guard's step-down
+path is covered by its unit tests (the relay's stalls read as stalls, not as a slow upload).

@@ -93,3 +93,19 @@ export const streamSize = (height: number): { width: number; height: number } =>
   width: Math.round((height * 16) / 9),
   height,
 });
+
+/**
+ * One step lighter than a profile, for a computer that can't keep up mid-stream: Quality →
+ * Balanced → Light; a custom size drops 60 fps first, then 1080p → 720p → 540p (bitrate capped
+ * to the new size's). Null when it's already as light as it goes.
+ */
+export function lighterProfile(p: StreamProfile): StreamProfile | null {
+  if (p.mode === 'quality') return PROFILES.balanced;
+  if (p.mode === 'balanced') return PROFILES.light;
+  if (p.mode === 'light') return null;
+  const fps = 30;
+  const height = p.fps > 30 ? p.height : p.height === 1080 ? 720 : p.height === 720 ? 540 : null;
+  if (height === null) return null;
+  const cap = height === 540 ? PROFILES.light.videoKbps : recommendedKbps(height, fps);
+  return { ...p, height, fps, videoKbps: Math.min(p.videoKbps, cap), x264Preset: 'superfast' };
+}

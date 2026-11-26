@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { monitorEventLoopDelay, type IntervalHistogram } from 'node:perf_hooks';
 import { mkdir, stat } from 'node:fs/promises';
 import { cpus, setPriority, totalmem, constants as osConstants } from 'node:os';
 import { basename, join } from 'node:path';
@@ -6,6 +7,7 @@ import type { Writable } from 'node:stream';
 import { app, BrowserWindow, ipcMain, nativeImage, type IpcMainEvent } from 'electron';
 import { anyReachable, endpointOf, type Endpoint } from './reachability';
 import {
+  lighterProfile,
   resolvePerformance,
   type ScreenVisual,
   streamSize,
@@ -54,7 +56,11 @@ import { Backlog } from './backlog';
 import { BitrateController } from './bitrate';
 import { FLV_HEADER, flvFrame, flvSequenceHeader } from './flv';
 import { FramePump } from './framePump';
-import { isStruggling, Ring, sampleProcess, type HealthSample } from './health';
+import { Ring, sampleProcess, type HealthSample } from './health';
+import { floorFor, UploadGuard } from './uploadGuard';
+import { Recovery, RESTORE_SAMPLES } from './recovery';
+import { DipTrace, type DipEnd, type DipSummary } from './dipTrace';
+import { noteActivity } from '../diagnostics/stallWatch';
 import { pickBenchmarkMode, runBenchmark, type BenchmarkRun } from './benchmark';
 import {
   bitmapOf,
@@ -130,6 +136,12 @@ const idle = (
   pipeline: 'cpu',
   profile,
   advice: null,
+  droppedUpload: 0,
+  easeOff: false,
+  canLighten: false,
+  canRestore: false,
+  lightened: null,
+  restoreTo: null,
   health: null,
   restarts: 0,
   available,
@@ -163,6 +175,18 @@ const RECONNECT_TRY_MS = [5_000, 10_000, 20_000, 30_000];
  * give up on its own (about half a minute).
  */
 const STUCK_START_MS = 15_000;
+/** A restart that only throws a backlog away (nothing recording) gives ffmpeg this to exit. */
+const QUICK_STOP_MS = 300;
+/** Behind by more than this: late frames are the upload's doing, not the computer's. */
+const UPLOAD_LATE_MS = 1000;
+/**
+ * ffmpeg reports progress every second; silent this long, it's blocked on its outputs (the
+ * upload), even while the delay reading still looks fine: the stream outputs' queue (use_fifo)
+ * hides the first seconds of a stall from it, and frames are already late by then.
+ */
+const PROGRESS_STALE_MS = 2000;
+/** Late frames in the first seconds after a start don't count against the computer. */
+const WARM_UP_MS = 20_000;
 
 /**
  * Livestream and recording, done by Lampstand itself. A hidden (offscreen) stream window draws
@@ -287,6 +311,23 @@ export class StreamController {
   private steadyTimer: ReturnType<typeof setTimeout> | null = null;
   /** Watches a first start: nothing sent after STUCK_START_MS means it's stuck. */
   private stuckTimer: ReturnType<typeof setTimeout> | null = null;
+  /** This session's mode when it isn't the settings' own (lightened, or on the way back up). */
+  private override: StreamProfile | null = null;
+  /** The modes it was lightened from (back up pops one). */
+  private heavier: StreamProfile[] = [];
+  private lightenedBy: 'user' | 'auto' | null = null;
+  /** Can't keep up: when to warn, ease off, lighten, and come back (recovery.ts). */
+  private recovery = new Recovery(false);
+  /** CPU pipeline: keeps the bitrate within the upload by restarting lower (uploadGuard.ts). */
+  private guard: UploadGuard | null = null;
+  /** Each upload dip's shape, for the log (dipTrace.ts). */
+  private dips = new DipTrace();
+  /** The next stop only throws a backlog away: ffmpeg needn't push it out first. */
+  private dropBacklog = false;
+  private droppedUpload = 0;
+  private loopDelay: IntervalHistogram | null = null;
+  /** When ffmpeg last reported progress (performance.now()). */
+  private progressAt = 0;
 
   constructor(private readonly d: StreamDeps) {
     this.status = { ...idle(!!findFfmpeg(), 'auto', DEFAULT_PROFILE), srt: null };
@@ -294,7 +335,8 @@ export class StreamController {
       log: d.log,
       pageFrame: () =>
         this.winGpu && this.win && !this.win.isDestroyed() ? this.win.webContents.mainFrame : null,
-      light: () => this.winProfile?.mode === 'light',
+      // Light, or easing off for a struggling computer: previews at a slower rate.
+      light: () => this.winProfile?.mode === 'light' || this.status.easeOff,
       debug: DEBUG,
     });
     ipcMain.on(Channels.streamReady, (e) => {
@@ -364,6 +406,12 @@ export class StreamController {
     if (before.stream === this.want.stream && before.record === this.want.record) return;
     if (!before.stream && !before.record) {
       this.sessionStart = new Date();
+      this.override = null;
+      this.heavier = [];
+      this.lightenedBy = null;
+      this.recovery = new Recovery(s.autoLighten);
+      this.dips = new DipTrace();
+      this.droppedUpload = 0;
       this.part = 1;
       this.altIngest.clear();
       this.samples = [];
@@ -383,6 +431,8 @@ export class StreamController {
       if (!this.win) this.openWindow();
       this.sendConfig(); // a window that was only getting ready now mixes the sound too
     }
+    // What's wanted changed: the upload guard starts again from the mode's bitrate.
+    this.guard = null;
     await this.restartEncoder(before.record && this.want.record);
   }
 
@@ -415,13 +465,96 @@ export class StreamController {
     await this.restartEncoder(wasRecording && this.want.record);
   }
 
-  /** The computer can't keep up: switch to Light and carry on (a ~2 s gap; recording continues). */
-  async lighter(): Promise<void> {
-    this.d.updateSettings({ stream: { ...this.d.getSettings().stream, performance: 'light' } });
-    if (!this.encoding) return;
-    this.setStatus({ advice: null }, true);
-    this.abr.reset(this.freshProfile().videoKbps);
-    await this.restartWithNewWindow();
+  /**
+   * The computer (or the upload) can't keep up: one mode lighter for this session (a short pause;
+   * a recording carries on as a new part). The settings stay as they are. False when it can't
+   * (not live, reconnecting, already as light as it goes).
+   */
+  async lighten(by: 'user' | 'auto' = 'user'): Promise<boolean> {
+    const from = this.profile();
+    const next = lighterProfile(from);
+    if (!this.canChangeMode() || !next) return false;
+    this.heavier.push(from);
+    this.lightenedBy = by;
+    await this.changeMode(next, 'lighter', by);
+    return true;
+  }
+
+  /** Back up one mode, towards the settings (it has kept up for a while). */
+  async restore(by: 'user' | 'auto' = 'user'): Promise<boolean> {
+    const to = this.heavier.pop();
+    if (!this.canChangeMode() || !to) {
+      if (to) this.heavier.push(to);
+      return false;
+    }
+    if (this.heavier.length === 0) this.lightenedBy = null;
+    // Back at the settings' own mode: resolve it from them again (as if never lightened).
+    await this.changeMode(this.heavier.length ? to : null, 'heavier', by, to);
+    return true;
+  }
+
+  /** A mode change can't happen while starting, stopping or reconnecting. */
+  private canChangeMode(): boolean {
+    return !!this.ff && this.status.state === 'live' && this.status.error !== 'reconnecting';
+  }
+
+  /**
+   * Restart the encoder at a new mode (null: the settings' own). The stream window is resized
+   * in place, never reloaded, so its videos and sound carry on. The upload guard starts no
+   * higher than what the upload was carrying (going lighter) or afresh (going back up).
+   */
+  private async changeMode(
+    next: StreamProfile | null,
+    direction: 'lighter' | 'heavier',
+    by: 'user' | 'auto',
+    to: StreamProfile | null = next,
+  ): Promise<void> {
+    const name = (p: StreamProfile | null): string | null => (p ? `${p.height}p${p.fps}` : null);
+    this.d.log.info(direction === 'lighter' ? 'stream lightened' : 'stream back up', {
+      by,
+      from: name(this.winProfile),
+      to: name(to ?? this.freshProfile()),
+    });
+    this.override = next;
+    this.recovery.changed(Date.now(), direction);
+    const profile = this.freshProfile();
+    const carried = this.guard?.current;
+    this.guard =
+      direction === 'lighter' && carried && this.want.stream
+        ? new UploadGuard(profile.videoKbps, floorFor(profile.videoKbps, profile.height), carried)
+        : null;
+    this.abr.reset(profile.videoKbps);
+    if (by === 'auto')
+      this.d.notice({
+        level: 'info',
+        key: direction === 'lighter' ? 'streamLightened' : 'streamRestored',
+        params: { size: name(profile) ?? '' },
+      });
+    this.setStatus({ restarts: 0, canRestore: false }, true);
+    this.resizeWindow(profile);
+    this.dropBacklog = true;
+    await this.restartEncoder(this.want.record);
+  }
+
+  /**
+   * The stream window to a new mode's size and rate, keeping its page (videos, music and the
+   * mix carry on). The encoder restarts after; it moves to the CPU pipeline by itself if the
+   * hardware encoder can't take the new size.
+   */
+  private resizeWindow(profile: StreamProfile): void {
+    const win = this.win;
+    if (!win || win.isDestroyed()) return this.syncWindow();
+    const { width, height } = sizeOf(profile);
+    noteActivity('stream window resize');
+    this.d.log.info('stream window resized', { size: `${width}x${height}@${profile.fps}` });
+    this.winProfile = profile;
+    this.latest = null;
+    if (!this.winGpu) this.black = Buffer.alloc(width * height * 4);
+    win.setContentSize(width, height);
+    win.webContents.setFrameRate(profile.fps);
+    this.sendConfig();
+    this.repaint();
+    this.setStatus({ profile }, true);
   }
 
   /**
@@ -538,6 +671,12 @@ export class StreamController {
 
   /** Settings changed: the stream window redraws; size and quality apply to the next start. */
   settingsChanged(): void {
+    const auto = this.d.getSettings().stream.autoLighten;
+    if (this.recovery.autoLighten !== auto) {
+      // Switched while live: it applies now, not next time.
+      this.d.log.info('auto-lighten', { on: auto });
+      this.recovery.autoLighten = auto;
+    }
     if (this.win) this.sendConfig();
     if (this.status.state === 'idle') {
       void this.refreshEncoder();
@@ -572,7 +711,7 @@ export class StreamController {
 
   /** The profile the settings ask for now (on this computer). */
   private freshProfile(): StreamProfile {
-    return resolvePerformance(this.d.getSettings().stream, this.machine);
+    return this.override ?? resolvePerformance(this.d.getSettings().stream, this.machine);
   }
 
   /** `cpu`: the hardware encoder can't take this stream: frames are copied for ffmpeg. */
@@ -593,7 +732,11 @@ export class StreamController {
       onPaint: (e, image) => {
         if (gpu) this.relay.onTexture(e.texture ?? null, this.watchers);
         // Only the raw picture is kept (one copy); the preview is made from it when wanted.
-        else this.latest = bitmapOf(image, width, height);
+        else {
+          // The window may have been resized since it opened (a mode change mid-stream).
+          const size = sizeOf(this.winProfile ?? profile);
+          this.latest = bitmapOf(image, size.width, size.height);
+        }
       },
       onCrash: () => {
         if (this.win !== win) return;
@@ -656,7 +799,8 @@ export class StreamController {
   /** The preview JPEG, only while a console watches (at the fastest rate any asks for). */
   private syncPreview(): void {
     const fps = Math.min(
-      8,
+      // Easing off for a struggling computer: previews at a slower rate.
+      this.status.easeOff ? 2 : 8,
       this.profile().previewFps * 2,
       Math.max(0, ...[...this.watchers.values()].map((w) => w.fps)),
     );
@@ -930,12 +1074,23 @@ export class StreamController {
     }
     const { width, height } = sizeOf(profile);
     this.pipeline = gpu ? 'gpu' : 'cpu';
+    // CPU pipeline: ffmpeg's bitrate is fixed for the run, so the upload guard picks it (the GPU
+    // pipeline's BitrateController changes it on the fly instead: never both).
+    if (!gpu && this.want.stream)
+      this.guard ??= new UploadGuard(
+        profile.videoKbps,
+        floorFor(profile.videoKbps, profile.height),
+      );
+    const guard = !gpu && this.want.stream ? this.guard : null;
+    const videoKbps = guard ? guard.current : profile.videoKbps;
+    this.endDip('restart');
+    noteActivity('spawn ffmpeg');
     const args = buildArgs({
       input: gpu ? 'flv' : 'raw',
       width,
       height,
       fps: profile.fps,
-      videoKbps: profile.videoKbps,
+      videoKbps,
       audioKbps: profile.audioKbps,
       audioEncoder: await probeAacEncoder(ffmpeg),
       x264Preset: profile.x264Preset,
@@ -949,6 +1104,10 @@ export class StreamController {
     this.lastStderr = [];
     this.stopping = false;
     this.spawnedAt = Date.now();
+    this.progressAt = 0;
+    guard?.restarted(this.spawnedAt);
+    // The computer's warning is re-earned on each run (its samples start again).
+    this.recovery.restarted();
     const ff = spawn(ffmpeg, args, {
       stdio: ['pipe', 'ignore', 'pipe', 'pipe'],
       windowsHide: true,
@@ -1002,6 +1161,21 @@ export class StreamController {
         pipeline: this.pipeline,
         profile,
         error: this.status.error === 'noDestinations' ? 'noDestinations' : null,
+        ...this.modeStatus(profile),
+        // CPU: lowered as far as it goes for this size (a smaller one would look sharper).
+        // GPU: the bitrate controller says so when it's starved.
+        advice: guard
+          ? guard.atFloor && profile.mode !== 'light'
+            ? 'upload'
+            : null
+          : this.status.advice === 'upload'
+            ? 'upload'
+            : null,
+        adaptedKbps: guard
+          ? guard.current < profile.videoKbps
+            ? guard.current
+            : null
+          : this.status.adaptedKbps,
       },
       true,
     );
@@ -1033,6 +1207,19 @@ export class StreamController {
       this.startPump(profile.fps);
     }
     this.startHealth();
+  }
+
+  /** What the console shows about the stream's mode: lighter than set, and the way back. */
+  private modeStatus(profile: StreamProfile): Partial<StreamStatus> {
+    const back = this.heavier.at(-1);
+    return {
+      canLighten: !!lighterProfile(profile),
+      lightened: this.lightenedBy,
+      easeOff: this.recovery.easeOff,
+      canRestore: this.recovery.offering,
+      restoreTo: back ? { height: back.height, fps: back.fps } : null,
+      droppedUpload: this.droppedUpload,
+    };
   }
 
   /**
@@ -1089,6 +1276,7 @@ export class StreamController {
         kbps: this.abr.current,
       });
       this.abr.reconnected(at);
+      this.endDip('catchUp');
       void this.catchUp();
       return;
     }
@@ -1121,7 +1309,37 @@ export class StreamController {
       this.d.log.warn('stream fell behind and its servers do not answer; waiting for the network');
       return;
     }
+    this.dropBacklog = true;
     await this.restartEncoder(this.want.record);
+  }
+
+  /** One line per upload dip: its shape and how it ended (to tune the guards on real networks). */
+  private logDip(dip: DipSummary | null): void {
+    if (dip)
+      this.d.log.info('upload dip', {
+        ...dip,
+        kbps: this.pipeline === 'gpu' ? this.abr.current : (this.guard?.current ?? null),
+      });
+  }
+
+  private endDip(end: DipEnd): void {
+    this.logDip(this.dips.end(end, Date.now()));
+  }
+
+  /**
+   * CPU pipeline: the upload guard's answer to the delay: restart lower, or restart to throw a
+   * backlog away (only if the servers answer: see catchUp).
+   */
+  private keepUp(delayMs: number): void {
+    const action = this.guard?.next(delayMs, Date.now());
+    if (!action) return;
+    this.endDip(action.kind);
+    this.d.log.warn('stream falling behind its upload', {
+      delayMs,
+      action: action.kind,
+      kbps: this.guard?.current,
+    });
+    void this.catchUp();
   }
 
   /** The upload has held the bitrate far under the target: Light would look sharper. */
@@ -1168,11 +1386,16 @@ export class StreamController {
   private startHealth(): void {
     this.stopHealth();
     this.healthTimer = setInterval(() => void this.sampleHealth(), HEALTH_MS);
+    // How long main's event loop was held up (frames and sound wait for it): in the health line.
+    this.loopDelay = monitorEventLoopDelay({ resolution: 10 });
+    this.loopDelay.enable();
   }
 
   private stopHealth(): void {
     if (this.healthTimer) clearInterval(this.healthTimer);
     this.healthTimer = null;
+    this.loopDelay?.disable();
+    this.loopDelay = null;
   }
 
   /** A line every 10 s while running, so a problem stream can be understood afterwards. */
@@ -1192,7 +1415,12 @@ export class StreamController {
         congested: this.congested,
         pcmSeen: this.pcmSeen,
         audioPeakDb: this.sound.takePeakDb(),
+        targetKbps: this.pipeline === 'gpu' ? this.abr.current : (this.guard?.current ?? null),
+        droppedUpload: this.droppedUpload,
+        loopMaxMs: Math.round((this.loopDelay?.max ?? 0) / 1e6),
+        loopP99Ms: Math.round((this.loopDelay?.percentile(99) ?? 0) / 1e6),
       });
+    this.loopDelay?.reset();
     if (!DEBUG) return;
     this.d.log.info('gpu frames', {
       ...this.relay.stats,
@@ -1217,14 +1445,17 @@ export class StreamController {
     const pump = this.pump;
     const sentTotal = pump ? pump.framesSent : this.pageEncoded + this.pageDropped;
     const droppedTotal = this.localDropped();
-    this.samples = [
-      ...this.samples.slice(-15),
-      {
-        speed: this.status.speed,
-        sent: sentTotal - this.lastSent,
-        dropped: droppedTotal - this.lastDropped,
-      },
-    ];
+    const late = droppedTotal - this.lastDropped;
+    // Late because the upload stalled (frames wait while ffmpeg can't send), or while starting:
+    // not the computer's doing.
+    const stalled = this.uploadBehind(UPLOAD_LATE_MS);
+    if (stalled && this.status.state === 'live') this.droppedUpload += late;
+    const counts = !stalled && Date.now() - this.spawnedAt >= WARM_UP_MS;
+    if (this.status.state === 'live')
+      this.samples = [
+        ...this.samples.slice(-(RESTORE_SAMPLES - 1)),
+        { speed: this.status.speed, sent: sentTotal - this.lastSent, dropped: counts ? late : 0 },
+      ];
     this.lastSent = sentTotal;
     this.lastDropped = droppedTotal;
 
@@ -1245,17 +1476,12 @@ export class StreamController {
     this.history.kbps.push(this.status.kbps);
     this.history.speed.push(this.status.speed);
     this.history.cpu.push(Math.round(appCpu + (enc?.cpu ?? 0)));
-    // Falling behind while the bitrate is lowered is the upload, not this computer (that advice
-    // is the upload one).
-    const struggling =
-      isStruggling(this.samples) && this.profile().mode !== 'light' && !this.status.adaptedKbps;
-    if (struggling && !this.status.advice)
-      this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
+    this.recover(droppedTotal);
     this.setStatus({
       silent: this.checkSilence(),
       dropped: droppedTotal + this.ffmpegDropped,
+      droppedUpload: this.droppedUpload,
       recordingBytes,
-      advice: struggling && !this.status.advice ? 'lighter' : this.status.advice,
       health: {
         appCpu: Math.round(appCpu),
         appMemMB,
@@ -1269,6 +1495,69 @@ export class StreamController {
         },
       },
     });
+  }
+
+  /**
+   * The upload is holding the stream back: behind by more than `ms`, or ffmpeg blocked on its
+   * outputs (no progress for a while: see PROGRESS_STALE_MS).
+   */
+  private uploadBehind(ms: number): boolean {
+    const blocked =
+      this.status.state === 'live' &&
+      this.progressAt > 0 &&
+      performance.now() - this.progressAt > PROGRESS_STALE_MS;
+    return blocked || (this.status.delayMs ?? 0) > ms;
+  }
+
+  /**
+   * The computer can't keep up (and not because of the upload, which the bitrate guards
+   * handle): warn and ease off; with auto-lighten, step down a mode and come back once steady.
+   */
+  private recover(droppedTotal: number): void {
+    if (this.status.state !== 'live') return;
+    const action = this.recovery.next(this.samples, {
+      now: Date.now(),
+      uploadBound: this.status.adaptedKbps !== null || this.uploadBehind(1500),
+      canLighten: this.status.canLighten,
+      lightened: this.heavier.length,
+    });
+    switch (action) {
+      case 'advise':
+        this.d.log.warn('stream struggling', { speed: this.status.speed, dropped: droppedTotal });
+        this.setStatus(
+          {
+            advice: this.status.advice === 'upload' ? 'upload' : 'lighter',
+            easeOff: true,
+            canRestore: false,
+          },
+          true,
+        );
+        this.syncPreview();
+        break;
+      case 'clear':
+        this.d.log.info('computer keeping up again', { easeOff: this.recovery.easeOff });
+        this.setStatus(
+          {
+            // Only the computer's warning (an upload one stays until the upload recovers).
+            advice: this.status.advice === 'lighter' ? null : this.status.advice,
+            easeOff: this.recovery.easeOff,
+          },
+          true,
+        );
+        this.syncPreview();
+        break;
+      case 'lighten':
+        void this.lighten('auto');
+        break;
+      case 'restore':
+        void this.restore('auto');
+        break;
+      case 'offerRestore':
+        this.setStatus({ canRestore: true }, true);
+        break;
+      case null:
+        break;
+    }
   }
 
   /** A line from ffmpeg: a progress reading, or something to remember (and maybe act on). */
@@ -1286,6 +1575,7 @@ export class StreamController {
 
   /** ffmpeg's progress (every second): live yet?, the readings, and the bitrate to aim for. */
   private onProgress(p: Progress): void {
+    this.progressAt = performance.now();
     const destinations =
       p.time > 1
         ? this.markDestinations(
@@ -1317,7 +1607,13 @@ export class StreamController {
           : this.status.kbps;
     this.rateAt = at;
     this.rateBytes = this.videoBytes;
-    if (delayMs !== null) this.adaptBitrate(delayMs, videoKbps, at);
+    if (delayMs !== null) {
+      this.adaptBitrate(delayMs, videoKbps, at);
+      if (this.status.state === 'live' && this.want.stream) {
+        this.logDip(this.dips.next(delayMs, Date.now()));
+        if (this.pipeline === 'cpu') this.keepUp(delayMs);
+      }
+    }
     this.setStatus(
       {
         state: p.time > 1 ? 'live' : this.status.state,
@@ -1611,14 +1907,22 @@ export class StreamController {
     if (this.steadyTimer) clearTimeout(this.steadyTimer);
     this.steadyTimer = null;
     this.stopFeeding();
+    // A restart that throws the backlog away, with nothing recording: ffmpeg needn't spend its
+    // 6 s pushing the backlog out through the dip it came from (measured in Onda: a 7 s gap,
+    // ~0.3 s like this).
+    const quick = this.dropBacklog && !this.status.recording;
+    this.dropBacklog = false;
     const ff = this.ff;
     if (!ff) return;
     this.stopping = true;
     await new Promise<void>((resolve) => {
-      const kill = setTimeout(() => {
-        ff.kill('SIGKILL');
-        resolve();
-      }, STOP_TIMEOUT_MS);
+      const kill = setTimeout(
+        () => {
+          ff.kill('SIGKILL');
+          resolve();
+        },
+        quick ? QUICK_STOP_MS : STOP_TIMEOUT_MS,
+      );
       ff.once('exit', () => {
         clearTimeout(kill);
         resolve();

@@ -763,7 +763,9 @@
     "streamGpuFallback": "Hardware encoding stopped; the stream carries on with the standard encoder.",
     "recordingFolderFailed": "The recording folder can’t be used (was a drive unplugged?). Choose another in Settings › Streaming.",
     "streamReconnected": "The stream is back on.",
-    "streamGaveUp": "A stream destination couldn’t reconnect for 10 minutes and has stopped. Anything else (a recording, other destinations) carries on."
+    "streamGaveUp": "A stream destination couldn’t reconnect for 10 minutes and has stopped. Anything else (a recording, other destinations) carries on.",
+    "streamLightened": "The computer couldn't keep up, so the stream went down to {{size}}. It goes back up once things are steady.",
+    "streamRestored": "The computer has kept up: the stream is back to {{size}}."
   },
   "perf": {
     "fps": "Control FPS",
@@ -2555,7 +2557,9 @@
     "wordsWidthHelp": "How far across the picture the words may spread. Wider: fewer, longer lines.",
     "cover": "Cover picture",
     "coverHelp": "What the stream shows while it’s covered (the Cover button in the Live console): the logo card, or one of your pictures or videos.",
-    "coverLogo": "The logo card"
+    "coverLogo": "The logo card",
+    "autoLighten": "Lighten by itself",
+    "autoLightenHelp": "If the computer can't keep up while live, step down a mode after 30 seconds (a short pause; the recording carries on), and back up once it has kept up for two minutes. Off: Lampstand warns and offers instead. Your settings stay as they are."
   },
   "surfaces": {
     "connections": "Connections",
@@ -2931,9 +2935,9 @@
     "speedHelp": "1.00× keeps up with real time",
     "cpu": "Computer load",
     "cpuSplit": "Lampstand {{app}}% · encoder {{encoder}}% · {{mem}}",
-    "advice": "This computer is struggling to keep up. Light mode streams smoothly with a smaller picture (a two-second pause, and the recording carries on).",
-    "adviceUpload": "Your internet upload is only carrying about {{rate}} Mb/s, too little for this picture size. Light mode (540p) will look sharper and smoother (a two-second pause, and the recording carries on).",
-    "switchLight": "Switch to Light",
+    "advice": "This computer is struggling to keep up. A lighter mode streams smoothly with a smaller picture (a two-second pause, and the recording carries on). Your settings stay as they are.",
+    "adviceUpload": "Your internet upload is only carrying about {{rate}} Mb/s, too little for this picture size. A lighter mode will look sharper and smoother (a two-second pause, and the recording carries on).",
+    "switchLight": "Go lighter",
     "recordingTitle": "Recording",
     "addDestination": "Add",
     "noDestinations": "Nowhere to stream yet. Use Add to choose a service such as YouTube, or a direct link to another room.",
@@ -3021,7 +3025,11 @@
     "fade": "Scene changes",
     "fadeHelp": "When the stream changes scene or camera: a cut, or a fade this long.",
     "fadeCut": "Cut",
-    "fadeFor": "Fade {{s}} s"
+    "fadeFor": "Fade {{s}} s",
+    "adviceLightest": "This computer is struggling to keep up, even in the lightest mode. Close other apps, or stop recording, to give the stream more room.",
+    "canRestore": "This computer has kept up for two minutes in the lighter mode.",
+    "restore": "Back to {{size}}",
+    "easeOff": "Previews here are slowed down so the stream gets the computer. Viewers see no change."
   },
   "benchmark": {
     "button": "Check this computer",
