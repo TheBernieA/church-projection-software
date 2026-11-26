@@ -259,11 +259,16 @@ window draws `streamCut`'s camera, transition and T-bar mix in place of the scre
 the screens plays hidden under it, so its sound stays in the stream mix); slides, PiP, Looks and
 lower thirds still follow the screens. Its recording and NDI feeds of the stream follow it. The
 control window picks the destination once (`useSwitchTarget`, "Take to" in every switcher; Cut,
-Auto, the T-bar, double-click and the C/T keys use it). Cameras has two views: **Operate** (NEXT,
-SCREENS and STREAM monitors, the camera strip, then one bar: camera and exposure, every camera's
-shots in rows, joystick and zoom, Follow, Take to with FADE, CUT, BLACK and LOWER THIRDS) and
+Auto, the T-bar, double-click and the C/T keys use it). Cameras has two views: **Operate** (NEXT and
+LIVE monitors as big as the window allows, the stream's own camera inset in LIVE; the camera strip
+with names and tallies on the pictures; then one bar: camera chip and exposure, every camera's
+shots in rows, joystick and zoom, focus and tracking, Take to with FADE, CUT, BLACK and LOWER
+THIRDS) and
 **Routing** (sources and destinations with cables; drag a camera onto Screens or Livestream, or
-pick from each one's list; the stream's cable is dashed while it follows the screens). Moving by hand is off for the camera on
+pick from each one's list; the stream's cable is dashed while it follows the screens). **Undock**
+opens Cameras in a window of its own (`?view=cameras`, `cameras.window`, a panel like the Live
+console's, for another display); the main window's Cameras then offers to show or dock it, and
+closing the window docks it. Moving by hand is off for the camera on
 Program; Follow keeps going when its camera is cut to Program. Inspired by Churchfront Video
 (Apache-2.0); its framing numbers are credited in `cameraFollow.ts`.
 

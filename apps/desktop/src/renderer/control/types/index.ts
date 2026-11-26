@@ -152,6 +152,8 @@ export interface ControlState {
   mixerOpen: boolean;
   /** The Live console: hidden, docked beside the output, or in its own window. */
   liveConsole: 'closed' | 'docked' | 'window';
+  /** Cameras is undocked into a window of its own. */
+  camerasWindow: boolean;
   /**
    * The screens sent to the stream (the monitor's Send to stream): the stream's picture before,
    * to put back, and the one sent (so a scene picked meanwhile ends it).
