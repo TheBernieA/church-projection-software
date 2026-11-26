@@ -240,9 +240,16 @@ would play it 3 dB quieter).
 
 ## Camera mode (PTZ, digital shots, follow)
 
-Media › Video input › **Camera** (beside Switcher) drives the camera on **Preview**: a joystick and
-spring-back zoom rocker with a speed dial, Home, saved shots, Follow (Close / Waist / Full) and, for
-PTZ cameras, focus, exposure steps and white balance. Moving by hand is off for the camera on
+**Cameras** (a toolbar workspace, `mode: 'cameras'`; also Media › Video input › Camera control)
+is the camera operator's desk on its own screen: the library and media bin step aside; big Preview
+and Program monitors with Cut, Auto, the T-bar and the transition (`SwitcherBar`, stacked); every
+camera live with its tally (click: Preview, double-click: Program); the Preview camera's shots as
+picture tiles (`cameras/ShotGrid.tsx`: a digital shot shows the camera live, cropped to it; a PTZ
+shot keeps a 192×108 JPEG taken when saved, `CameraShot.thumb`, since the camera can't show a shot
+it isn't pointing at); and the deck on the right (`cameras/CameraDeck.tsx`) that drives the camera
+on **Preview**: a joystick and spring-back zoom rocker with a speed dial, Home, Follow (Close /
+Waist / Full; click a person on Preview) and, for PTZ cameras, focus, exposure steps and white
+balance. Media › Video input keeps the cameras and the switcher. Moving by hand is off for the camera on
 Program; Follow keeps going when its camera is cut to Program. Inspired by Churchfront Video
 (Apache-2.0); its framing numbers are credited in `cameraFollow.ts`.
 

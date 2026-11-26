@@ -1,5 +1,3 @@
-import { CameraControl } from './CameraControl';
-import { setCameraMode, useCameraControl } from '../../lib/cameraControl';
 import { useEffect, useRef, useState } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
@@ -12,7 +10,7 @@ import {
   Settings2,
   Video,
   Clapperboard,
-  Joystick,
+  Cctv,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { usePaneSize } from '../shell/Splitter';
@@ -175,7 +173,7 @@ function CameraMenu({
  * click puts it on screen (click again takes it off). Its "…" holds its settings, which apply
  * straight away when it's live.
  */
-function InputTile({
+export function InputTile({
   device,
   n,
   width,
@@ -390,7 +388,6 @@ export function VideoInputs() {
   const hiddenCount = (all?.length ?? 0) - (devices?.length ?? 0);
   // The switcher (Preview, Program, Cut, Auto) folds away so the cameras get the room.
   const switcher = usePaneSize('inputSwitcher', 1, 0, 1);
-  const cameraMode = useCameraControl((s) => s.open);
   const previewFirst = useStore((s) => s.settings?.switcher.click !== 'program');
   const [body, size] = useSize();
   const shown = devices && devices.length > 0 && switcher.size === 1 ? devices : null;
@@ -447,14 +444,13 @@ export function VideoInputs() {
             {t('inputs.switcher')}
           </Button>
         )}
-        {devices && devices.length > 0 && switcher.size === 1 && (
+        {devices && devices.length > 0 && (
           <Button
             size="xs"
-            variant={cameraMode ? 'subtle' : 'ghost'}
-            aria-pressed={cameraMode}
-            icon={<Joystick size={13} />}
+            variant="ghost"
+            icon={<Cctv size={13} />}
             title={t('camera.modeHelp')}
-            onClick={() => setCameraMode(!cameraMode)}
+            onClick={() => useStore.setState({ mode: 'cameras' })}
             className="shrink-0"
           >
             {t('camera.mode')}
@@ -484,7 +480,6 @@ export function VideoInputs() {
       {/* Sized to fit; in a pane too short even for that, it scrolls rather than hide the cameras. */}
       <div ref={body} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         {shown && <SwitcherBar devices={shown} monitorHeight={fit.monitor} stacked={fit.stacked} />}
-        {shown && cameraMode && <CameraControl />}
         <CameraAccess className="mx-4 mt-3" />
         <div
           className={`flex-1 overflow-y-auto ${shown ? 'min-h-16' : 'min-h-0'} ${shown && fit.dense ? 'px-4 py-2' : 'p-4'}`}

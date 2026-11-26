@@ -59,6 +59,8 @@ export function App() {
   const liveWidth = usePaneSize('liveWidth', 420, 340, 640);
   // An expanded editor takes the whole window, as a presentation editor does.
   const fullEditor = useEditorExpanded();
+  // Cameras mode is a workspace of its own: the library and media bin step aside for it.
+  const cameraMode = useStore((s) => s.mode === 'cameras');
   useEffect(() => installShortcuts(), []);
   useEffect(() => installSurfaces(), []);
   useEffect(() => installMediaTransition(), []);
@@ -86,7 +88,7 @@ export function App() {
       {textBarOpen && <TextBar />}
       {/* Operator-console layout: flush panes separated by 1px dividers (the splitters). */}
       <div className="flex min-h-0 flex-1 border-t border-[var(--divider)]">
-        {!fullEditor && (
+        {!fullEditor && !cameraMode && (
           <>
             <aside className="pane flex shrink-0 flex-col" style={{ width: left.size }}>
               <LeftSidebar binHeight={binOpen ? bin.size : null} />
@@ -99,7 +101,7 @@ export function App() {
             <CenterPane />
           </main>
           {/* The media bin opens under the slides from the toolbar's Media button. */}
-          {binOpen && !fullEditor && (
+          {binOpen && !fullEditor && !cameraMode && (
             <>
               <Splitter axis="y" pane={bin} invert label={t('layout.resizeBin')} />
               <div className="pane">

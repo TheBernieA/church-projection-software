@@ -7,6 +7,7 @@ import {
   newId,
   PersonLock,
   PtzFollow,
+  SHOT_THUMB_MAX,
   WHOLE,
   type CameraShot,
   type CameraView,
@@ -41,34 +42,13 @@ interface CameraControlState {
   speed: number;
   /** The shot size Follow frames people at. */
   size: ShotSize;
-  /** Camera mode is open under the switcher. */
-  open: boolean;
 }
 
 export const useCameraControl = create<CameraControlState>()(() => ({
   follow: null,
   speed: readSpeed(),
   size: 'waist',
-  open: readOpen(),
 }));
-
-function readOpen(): boolean {
-  try {
-    return localStorage.getItem('lampstand.cameraMode') === '1';
-  } catch {
-    return false;
-  }
-}
-
-/** Show or hide camera mode under the switcher (remembered on this computer). */
-export function setCameraMode(open: boolean): void {
-  useCameraControl.setState({ open });
-  try {
-    localStorage.setItem('lampstand.cameraMode', open ? '1' : '0');
-  } catch {
-    // Not kept: fine.
-  }
-}
 
 function readSpeed(): number {
   try {
@@ -219,6 +199,10 @@ export async function saveShot(deviceId: string, name: string): Promise<void> {
     id: newId(),
     name: name.trim().slice(0, 40) || `Shot ${shots.length + 1}`,
   };
+  // A PTZ shot keeps a picture of itself (the camera can't show a shot it isn't pointing at); a
+  // digital shot's tile shows the camera live, cropped to the shot.
+  const thumb = ptzOf(deviceId) ? grabThumb(deviceId) : null;
+  if (thumb) shot.thumb = thumb;
   if (ptzOf(deviceId)) {
     const pos = await attempt(
       () => cmd<PtzPosition | null>('camera.ptz', { action: 'position', deviceId }),
@@ -234,6 +218,43 @@ export async function saveShot(deviceId: string, name: string): Promise<void> {
     }
   } else shot.view = viewOf(deviceId);
   setCameraSettings(deviceId, { shots: [...shots, shot] });
+}
+
+/** Shot pictures are this size (16:9). */
+const THUMB_W = 192;
+const THUMB_H = 108;
+
+/**
+ * A small JPEG of what a camera shows now, from a video on the page that's playing it (null if
+ * none is, or the picture would be too big to keep).
+ */
+export function grabThumb(deviceId: string): string | null {
+  const video = [...document.querySelectorAll('video')].find((v) => {
+    const s = v.srcObject;
+    return (
+      s instanceof MediaStream &&
+      v.readyState >= 2 &&
+      v.videoWidth > 0 &&
+      s.getVideoTracks().some((t) => t.getSettings().deviceId === deviceId)
+    );
+  });
+  if (!video) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = THUMB_W;
+  canvas.height = THUMB_H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  // Fill the tile (crop the longer side), mirrored like the camera is set to show.
+  const scale = Math.max(THUMB_W / video.videoWidth, THUMB_H / video.videoHeight);
+  const w = video.videoWidth * scale;
+  const h = video.videoHeight * scale;
+  if (settingsOf(deviceId)?.mirror) {
+    ctx.translate(THUMB_W, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(video, (THUMB_W - w) / 2, (THUMB_H - h) / 2, w, h);
+  const url = canvas.toDataURL('image/jpeg', 0.72);
+  return url.length <= SHOT_THUMB_MAX ? url : null;
 }
 
 /** Go to a saved shot (following stops: the operator chose a shot). */

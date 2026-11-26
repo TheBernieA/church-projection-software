@@ -46,6 +46,9 @@ export const PtzPositionSchema = z.object({
 });
 export type PtzPosition = z.infer<typeof PtzPositionSchema>;
 
+/** The longest a shot's picture may be (characters of its data URL: about 15 KB). */
+export const SHOT_THUMB_MAX = 20_000;
+
 /**
  * A saved shot: a digital view, a PTZ position, or (a camera that won't say where it points)
  * one of the camera's own preset slots.
@@ -56,6 +59,15 @@ export const CameraShotSchema = z.object({
   view: CameraViewSchema.optional(),
   ptz: PtzPositionSchema.optional(),
   preset: z.number().int().min(0).max(127).optional(),
+  /**
+   * A small picture of the shot (a JPEG data URL, taken when it was saved), for the shot's tile:
+   * a PTZ camera can't show a shot it isn't pointing at.
+   */
+  thumb: z
+    .string()
+    .max(SHOT_THUMB_MAX)
+    .regex(/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/)
+    .optional(),
 });
 export type CameraShot = z.infer<typeof CameraShotSchema>;
 

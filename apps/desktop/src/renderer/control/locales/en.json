@@ -1174,7 +1174,8 @@
     "pickItem": "Pick something from the library or the service plan",
     "addToEdit": "Add this to the service plan to edit it",
     "nothingToEdit": "This item has no text to edit",
-    "scriptureEditHint": "To change the passage, pick verses in the Bible workspace."
+    "scriptureEditHint": "To change the passage, pick verses in the Bible workspace.",
+    "cameras": "Cameras"
   },
   "soon": {
     "badge": "Soon",
@@ -3199,8 +3200,8 @@
   },
   "camera": {
     "title": "Camera control",
-    "mode": "Camera",
-    "modeHelp": "Camera mode: drive the camera on Preview with a joystick, save shots, and follow a person",
+    "mode": "Camera control",
+    "modeHelp": "Open Cameras: the camera desk with big monitors, every camera, saved shots, the joystick and Follow",
     "noPreview": "Put a camera on Preview to control it.",
     "onPreview": "Preview",
     "onProgram": "On Program",
@@ -3273,5 +3274,19 @@
     "test": "Test",
     "testOk": "The camera answered.",
     "testNone": "No answer. Check the address, the port, and that VISCA is on in the camera’s settings."
+  },
+  "cameraMode": {
+    "title": "Camera control",
+    "hint": "Click a camera to put it on Preview and control it; double-click sends it straight to Program. Click a person on Preview to follow them.",
+    "settings": "Camera settings (PTZ addresses, names, which cameras show)",
+    "back": "Back to Show",
+    "backHelp": "Back to the slides (the cameras keep their shots and Follow carries on)",
+    "pickTitle": "No camera on Preview",
+    "pickHelp": "Click a camera on the left to put it on Preview. Its joystick, zoom, shots and Follow appear here.",
+    "ptzAt": "PTZ camera at {{host}}: moves on its motors",
+    "move": "Move",
+    "shotsNoCamera": "Put a camera on Preview to see and save its shots.",
+    "shotsOf": "Shots of {{name}}",
+    "goToShot": "Go to {{name}}"
   }
 }

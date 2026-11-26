@@ -6,6 +6,7 @@ import { PlaylistView } from '../show/PlaylistView';
 
 // Show is the startup workspace; the others load the first time they're opened.
 const BibleMode = lazyNamed(() => import('./BibleMode'), 'BibleMode');
+const CameraMode = lazyNamed(() => import('../cameras/CameraMode'), 'CameraMode');
 const EditMode = lazyNamed(() => import('./EditMode'), 'EditMode');
 const ReflowMode = lazyNamed(() => import('./ReflowMode'), 'ReflowMode');
 const StageMode = lazyNamed(() => import('./StageMode'), 'StageMode');
@@ -23,6 +24,7 @@ export function CenterPane() {
       {mode === 'edit' && <EditMode />}
       {mode === 'reflow' && <ReflowMode />}
       {mode === 'bible' && <BibleMode />}
+      {mode === 'cameras' && <CameraMode />}
       {mode === 'themes' && <ThemesMode />}
       {mode === 'stage' && <StageMode />}
     </Suspense>
