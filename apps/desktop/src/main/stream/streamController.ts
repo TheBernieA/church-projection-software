@@ -298,6 +298,8 @@ export class StreamController {
   private readonly altIngest = new Set<string>();
   /** The stream page has loaded (it can take "start encoding"). */
   private pageReady = false;
+  /** This window's page has been ready before: a new "ready" means it reloaded. */
+  private pageEverReady = false;
   /** GPU encoding to start once the page is ready. */
   private pendingEncode: EncodeConfig | null = null;
   /** GPU pipeline: the page is encoding (sound is written only from then, on the same clock). */
@@ -353,11 +355,20 @@ export class StreamController {
     });
     ipcMain.on(Channels.streamReady, (e) => {
       if (!this.fromStreamWindow(e)) return;
+      const reloaded = this.pageEverReady;
+      this.pageEverReady = true;
       this.pageReady = true;
       this.sendConfig();
       e.sender.send(Channels.evLive, d.getLiveState());
       // Encoding was asked for before the page had loaded: start it now.
       if (this.pendingEncode) this.beginGpuEncode(this.pendingEncode);
+      // The page reloaded (a development hot reload, or anything else that navigates it) while
+      // encoding on it: that encoder is gone (and the texture hand-off with it), so start again in
+      // a fresh window, as after a crash; else the stream freezes and falls further behind.
+      else if (reloaded && this.ff && this.winGpu) {
+        this.d.log.warn('stream window reloaded while encoding on the GPU; starting it afresh');
+        void this.restartWithNewWindow();
+      }
     });
     ipcMain.on(Channels.streamAudio, (e, pcm: unknown) => {
       if (!this.fromStreamWindow(e)) return;
@@ -769,8 +780,13 @@ export class StreamController {
       )
         this.d.log.warn('stream page', { level: e.level, message: e.message.slice(0, 400) });
     });
+    // Reloading: nothing goes to the page until it says it's ready again.
+    win.webContents.on('did-start-loading', () => {
+      if (this.win === win) this.pageReady = false;
+    });
     this.win = win;
     this.pageReady = false;
+    this.pageEverReady = false;
     this.black = gpu ? null : Buffer.alloc(width * height * 4);
     this.setStatus({ ready: true, profile, pipeline: gpu ? 'gpu' : 'cpu' }, true);
     this.syncPreview();

@@ -431,3 +431,8 @@ export function stopFollow(): void {
 function stopFollowOf(deviceId: string): void {
   if (useCameraControl.getState().follow?.deviceId === deviceId) stopFollow();
 }
+
+// Development: a hot update would leave a second copy of this store that only part of the page
+// uses (the rest, listeners wired to main among them, keeps the old one), so reload the page
+// instead. Main, and a stream in progress, carry on.
+if (import.meta.hot) import.meta.hot.accept(() => location.reload());
