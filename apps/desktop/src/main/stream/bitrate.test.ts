@@ -107,4 +107,22 @@ describe('adaptive bitrate', () => {
     c.reset(4500);
     expect(c.starved(40_000)).toBe(false);
   });
+
+  it('sets no ceiling when a dip hits well under what the upload had been carrying', () => {
+    // A real stream (720p30, a still picture, 3500 target): dips at 1817 and, 2 minutes later,
+    // at 866, while the upload carried 2600 in between. The second dip held it at 736 for five
+    // minutes; it should climb straight back instead.
+    const c = new BitrateController(3500);
+    let t = 0;
+    for (; t < 60_000; t += 1000) c.next({ delayMs: 45, sentKbps: 2600, at: t });
+    c.next({ delayMs: 1267, sentKbps: 1817, at: t });
+    for (t += 1000; t < 170_000; t += 1000)
+      c.next({ delayMs: 45, sentKbps: Math.min(c.current * 0.8, 2600), at: t });
+    expect(c.current).toBe(3500);
+    c.next({ delayMs: 1203, sentKbps: 866, at: t });
+    expect(c.current).toBeLessThan(866);
+    for (t += 1000; t < 300_000; t += 1000)
+      c.next({ delayMs: 45, sentKbps: Math.min(c.current * 0.8, 2600), at: t });
+    expect(c.current).toBe(3500);
+  });
 });

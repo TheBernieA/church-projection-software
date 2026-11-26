@@ -37,6 +37,15 @@ const REPEAT_MS = 2 * 60_000;
 /** Climbing back stops at this share of the rate that choked, for this long. */
 const CEILING = 0.85;
 const CEILING_MS = 5 * 60_000;
+/**
+ * A choke at under this share of what the upload carried lately (while keeping up) is a network
+ * blip, not a rate too high: it lowers as usual but sets no ceiling. Measured (Onda): a still
+ * picture sent 866 kb/s when a 2-second dip hit an upload that had carried 2600 a minute
+ * earlier, and the ceiling held the stream at 736 for five minutes (YouTube: "bitrate low").
+ */
+const BLIP = 0.8;
+/** How much each reading moves the smoothed "carried" rate (keyframes make single readings jumpy). */
+const CARRIED_EASE = 0.2;
 /** Never reconnect more often than this. */
 const RECONNECT_GAP_MS = 45_000;
 /** Held at or under this share of the target for this long: the upload is too slow for this
@@ -63,6 +72,11 @@ export class BitrateController {
   private choked = Infinity;
   private lowSince: number | null = null;
 
+  /** What the upload has carried lately while keeping up (smoothed; its peak in REPEAT_MS). */
+  private carriedNow = 0;
+  private carried = 0;
+  private carriedAt = -Infinity;
+
   constructor(
     /** The bitrate the performance mode asks for: never above it. */
     private target: number,
@@ -84,6 +98,9 @@ export class BitrateController {
     this.lastChange = -Infinity;
     this.clearSince = null;
     this.lowered = false;
+    this.carriedNow = 0;
+    this.carried = 0;
+    this.carriedAt = -Infinity;
     this.ceiling = Infinity;
     this.lastCongestion = -Infinity;
     this.congested = false;
@@ -128,7 +145,7 @@ export class BitrateController {
         this.choked = s.sentKbps > 0 ? Math.min(s.sentKbps, this.kbps) : this.kbps;
         // Choked again soon after the last time: that rate is more than the upload carries, so
         // climbing back stops short of it (a one-off stall, a network blip, sets no ceiling).
-        if (s.at - this.lastCongestion < REPEAT_MS) {
+        if (s.at - this.lastCongestion < REPEAT_MS && this.choked >= this.carried * BLIP) {
           this.ceiling = Math.max(this.floor, Math.round(this.choked * CEILING));
           this.ceilingAt = s.at;
         }
@@ -146,6 +163,7 @@ export class BitrateController {
     if (s.delayMs < CLEAR_MS) {
       this.clearSince ??= s.at;
       this.congested = false;
+      this.noteCarried(s);
     } else this.clearSince = null;
     // The remembered ceiling fades after a while: the connection may have got better.
     if (s.at - this.ceilingAt > CEILING_MS) this.ceiling = Infinity;
@@ -163,5 +181,17 @@ export class BitrateController {
       return { kind: 'set', kbps: this.kbps, reason: 'recovered' };
     }
     return null;
+  }
+
+  /** Keeping up: remember what the upload carried (smoothed), and its peak lately. */
+  private noteCarried(s: BitrateSample): void {
+    if (s.sentKbps <= 0) return;
+    this.carriedNow = this.carriedNow
+      ? this.carriedNow + (s.sentKbps - this.carriedNow) * CARRIED_EASE
+      : s.sentKbps;
+    if (this.carriedNow >= this.carried || s.at - this.carriedAt > REPEAT_MS) {
+      this.carried = this.carriedNow;
+      this.carriedAt = s.at;
+    }
   }
 }
