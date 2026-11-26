@@ -29,12 +29,19 @@ _Started 2026-11-26._
 - [ ] Desks that aren't OSC: an Allen & Heath (MIDI over TCP) and a Yamaha transport for the
   profile format; Behringer Wing and Soundcraft Ui profiles once their OSC is confirmed.
 - [ ] Import desk preset files (X32 .chn / scenes) once the format is checked on real files.
+- [ ] Click through the file dialogs: presets Import… / Export all… / save one, and Import a desk
+  profile were tested through their handlers only, not by picking files in the real dialogs.
+- [ ] Desk link on Windows: the first UDP send may raise a firewall prompt; say so in Settings ›
+  Audio › Sound desk if it does, and check reads come back through it.
 
 ## Cameras
 
 - [ ] Routing per screen: today the destinations are all the screens together and the
   livestream. Send a camera to the side screens only (Churchfront routes ATEM aux outputs), and
   an NDI feed as its own destination.
+- [ ] The undocked Cameras window doesn't remember where it was (display, size): reopen it there.
+- [ ] Camera settings from the undocked Cameras window: the button is hidden there today (Settings
+  opens in the main window); open it beside the camera window instead.
 - [ ] Hear a split in a real service: the stream on one camera, the projector on slides or
   another camera, checked with the stream window only (not a real broadcast or recording).
 

@@ -1132,15 +1132,39 @@
     "allKeys": "All keyboard shortcuts",
     "desk": {
       "title": "Cameras, sound desks and controllers",
-      "help": "Switching cameras, bringing in the sound desk, and running Lampstand from a desk or controller over MIDI or OSC.",
+      "help": "Switching cameras, sending them to the screens or the stream, shaping the sound, linking the sound desk, and running Lampstand from a desk or controller over MIDI or OSC.",
       "items": {
         "cameras": {
           "q": "Switch between cameras",
-          "a": "1. Open Media › Sources › Video input.\n2. Click a camera to put it on Preview.\n3. Press Cut ({{switcherCut}}) or Auto ({{switcherAuto}}) to take it to the screen, or drag the T-bar to mix by hand. Pick the transition (Cut, Fade, Dip or Wipe) and its length beside them.\nDouble-click a camera to take it at once. Keys 1–9 preview a camera, Shift+1–9 take it. PiP puts a second camera in a corner. The Switcher button hides Preview and Program when you want bigger cameras. Slide words stay on top of the camera.\nFor one-click looks, use Scenes under the live monitor: Slides, a camera with the slide or with a lower third, or two cameras side by side or in a corner. Any camera the computer sees works: USB webcams, HDMI/SDI capture cards, or virtual cameras (OBS, NDI Webcam Input)."
+          "a": "1. Open Media › Sources › Video input (or Cameras in the toolbar, below).\n2. Click a camera to put it on Preview.\n3. Press Cut ({{switcherCut}}) or Auto ({{switcherAuto}}) to take it to the screen, or drag the T-bar to mix by hand. Pick the transition (Cut, Fade, Dip or Wipe) and its length beside them.\nDouble-click a camera to take it at once. Keys 1–9 preview a camera, Shift+1–9 take it. PiP puts a second camera in a corner. The Switcher button hides Preview and Program when you want bigger cameras. Slide words stay on top of the camera.\nFor one-click looks, use Scenes under the live monitor: Slides, a camera with the slide or with a lower third, or two cameras side by side or in a corner. Any camera the computer sees works: USB webcams, HDMI/SDI capture cards, or virtual cameras (OBS, NDI Webcam Input)."
+        },
+        "cameraMode": {
+          "q": "Run the cameras from Camera control",
+          "a": "1. Click Cameras in the toolbar. The window turns into Camera control: every camera across the top, Preview and Program, and the controls of the camera on Preview below.\n2. Click a camera to put it on Preview; double-click takes it live. Take live (or Cut and Auto) sends Preview to where “Take to” points.\n3. A PTZ camera’s joystick, zoom, Focus and Follow are under Preview. Its shots are in its row: “Save shot” keeps where it’s pointing; click a shot to put the camera on Preview on that shot. A camera on air can’t move: take another one first.\n4. Black and Lower thirds sit beside Take live.\n5. Back to Show (top left) returns to the slides; the cameras keep their shots and Follow carries on.\nCamera settings (top right) holds PTZ addresses, names and which cameras show."
+        },
+        "cameraRouting": {
+          "q": "Send one camera to the stream and another to the screens",
+          "a": "1. In Camera control, set “Take to” to Screens, Stream or Both before you take a camera.\n2. Screens changes the projectors and audience screens only; Stream changes the livestream, its recording and NDI only; Both changes the two together.\n3. Or open Routing (beside Operate) and drag a camera onto the screens or the livestream. “Slides only” takes the camera off.\n4. To make the stream show the screens again, click Link (or switch on “The livestream follows the screens” in Routing).\nThe stream keeps its own camera until you link it again, even when the screens change."
+        },
+        "cameraWindow": {
+          "q": "Put Camera control on another display",
+          "a": "1. In Camera control, click Undock (top right). Cameras opens in a window of its own; drag it to the other display.\n2. The main window goes back to the slides, so one person can run slides and another the cameras.\n3. Dock (in the camera window) puts it back in the main window. Closing the window docks it too."
         },
         "deskSound": {
           "q": "Bring the sound desk into Lampstand",
           "a": "1. Connect the desk by USB (or through an audio interface). Install its driver if the maker provides one; many desks need none on a Mac.\n2. On the desk, send the main mix to USB channels 1–2 (Lampstand takes the first two channels).\n3. In the Live console, pick it in the mic box under the scenes (or open Media › Sources › Audio input and click Stream on it).\n4. Check the L/R meter on the stream picture moves when someone speaks. The input meters read in decibels like the desk’s own: speech usually sits around the middle; if it stays near the left, raise the desk’s USB send (or the input’s level in Windows’ sound settings).\n5. A desk can show many inputs (IN 1-2, IN 3-4…). In Audio inputs, click Choose and tick only the ones you use; the others leave the lists.\nLeave Room off for mics and the desk: the desk already puts them on the room’s speakers, and playing them twice echoes."
+        },
+        "channelEq": {
+          "q": "Shape a channel’s sound in the channel window",
+          "a": "1. In the Mixer, click a channel’s processing (the small curve on its strip). The channel window opens: EQ, Dynamics, Input, Presets and Desk.\n2. EQ: drag a numbered point left and right for its frequency, up and down for its level. Alt-drag up and down, or turn the scroll wheel on it, to make it wider or narrower. Hold Shift for fine steps.\n3. Double-click an empty spot to add a band there; double-click a point to put it back to 0 dB (on a cut, it switches the cut on or off).\n4. With a point selected, the arrow keys move it, [ and ] change its width (or a cut’s slope), Delete flattens it.\n5. The coloured line is what the channel does; behind it is the channel’s live sound. Bypass hears it without the EQ to compare.\n6. Dynamics holds the gate and compressor; Input the trim, delay, pan and polarity. The arrows beside the name step through channels. Lock keeps a channel from being changed by accident.\nThe channel window docks under the mixer or floats over the show (the button at the top right)."
+        },
+        "presets": {
+          "q": "Save, import and export EQ presets",
+          "a": "1. In the channel window, open Presets.\n2. Name the preset and choose Whole channel (EQ, cuts, gate, compressor) or EQ only, then Save preset.\n3. Apply puts a preset on the open channel. The Preset menu at the top applies one in a click.\n4. Import… takes a presets file from Lampstand (or Onda), or a text EQ from Equalizer APO or REW (an “auto EQ” from a measurement). Export all… saves every preset to one file; the menu on a preset saves just that one.\nIf a preset has more than the channel can do (more bands, a filter it doesn’t have), Lampstand fits it as closely as it can and says what changed."
+        },
+        "deskLink": {
+          "q": "Link the sound desk to read and send EQ",
+          "a": "1. Open Settings › Audio › Sound desk and switch on “Link a sound desk”.\n2. Choose the desk (Behringer X32 / Midas M32, or X Air / MR) and type its network address. Check says whether it answers. This computer and the desk must be on the same network.\n3. In the Mixer, open a channel’s channel window, choose Desk, and pick its channel on the desk (the list shows the desk’s own names).\n4. Read desk channel puts the desk’s EQ, cuts, gate and compressor on a graph: apply it here, or keep it as a preset.\n5. Send this channel, or a preset, to the desk. Lampstand asks first and says what had to change to fit the desk; the room hears the change at once. “Put desk channel N back” undoes the last send.\nNothing goes to the desk unless you read or send. For another desk that takes OSC, import a desk profile file (Settings › Audio › Sound desk; docs/desk-profiles.md says how to write one). The desk’s sound still comes in over USB, as before."
         },
         "midi": {
           "q": "Run Lampstand from a desk or MIDI controller",
@@ -1686,6 +1710,22 @@
     "stage-app": {
       "name": "Stage app",
       "description": "Show the stage display on a phone or tablet for musicians."
+    },
+    "camera-control": {
+      "name": "Camera control",
+      "description": "A workspace for the cameras: Preview and Program, PTZ joystick, shots and Follow; take to the screens, the stream or both; undock it onto another display."
+    },
+    "channel-eq": {
+      "name": "Channel window",
+      "description": "A 6-band EQ to drag over the channel's live sound, low and high cuts, gate and compressor, floating or docked."
+    },
+    "processing-presets": {
+      "name": "EQ presets",
+      "description": "Save a channel's EQ or whole processing, apply it to any channel, and import or export files (including Equalizer APO and REW EQs)."
+    },
+    "desk-link": {
+      "name": "Sound desk link",
+      "description": "Read a digital desk's channel EQ and dynamics over the network, and send channels or presets to it, with undo (X32/M32, X Air; others with a profile file)."
     }
   },
   "connections": {
