@@ -55,7 +55,7 @@ function draw(state: LiveDelivery): void {
   // Kept without the flag, so a later redraw (new renderer, new info) draws it in full.
   latest =
     state.soundOnly || state.viewsOnly ? { ...state, soundOnly: false, viewsOnly: false } : state;
-  audio?.sync(state.audio, state.mixer);
+  audio?.sync(state.audio, state.mixer, state.mixerScope);
   if (!ready || !renderer) return;
   // The cameras' digital shots: moved in place (following someone sends many a second).
   renderer.setCameraViews(state.cameraViews);

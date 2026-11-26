@@ -58,10 +58,12 @@ describe('mixer', () => {
     m = applyMixerAction(m, {
       action: 'channel',
       id: a?.id ?? '',
-      patch: { gainDb: -6, eq: { low: 3 }, comp: { on: true } },
+      patch: { gainDb: -6, eq: { bands: { '0': { db: 3 } } }, comp: { on: true } },
     });
     const edited = m.channels[2];
-    expect(edited?.eq).toMatchObject({ on: true, low: 3, mid: 0, high: 0, midHz: 1000 });
+    expect(edited?.eq.on).toBe(true);
+    expect(edited?.eq.bands[0]).toEqual({ type: 'lowShelf', on: true, hz: 100, db: 3, q: 0.7 });
+    expect(edited?.eq.bands[2]).toMatchObject({ db: 0, hz: 800 });
     expect(edited?.comp.on).toBe(true);
     expect(edited?.comp.ratio).toBe(3);
     m = applyMixerAction(m, { action: 'move', id: a?.id ?? '', to: 0 });
@@ -77,18 +79,34 @@ describe('mixer', () => {
   });
 
   it('a partial EQ or compressor change leaves the other settings alone', () => {
-    const a = MixerActionSchema.parse({ action: 'channel', id: 'a', patch: { eq: { low: 3 } } });
-    expect(a).toEqual({ action: 'channel', id: 'a', patch: { eq: { low: 3 } } });
+    const patch = { eq: { bands: { '0': { db: 3 } } } };
+    const a = MixerActionSchema.parse({ action: 'channel', id: 'a', patch });
+    expect(a).toEqual({ action: 'channel', id: 'a', patch });
     let m = applyMixerAction(defaultMixer(), {
       action: 'channel',
       id: 'tracks',
-      patch: { eq: { mid: -4 } },
+      patch: { eq: { bands: { '2': { db: -4, q: 2 } } } },
     });
-    m = applyMixerAction(
-      m,
-      MixerActionSchema.parse({ action: 'channel', id: 'tracks', patch: { eq: { low: 3 } } }),
-    );
-    expect(m.channels[0]?.eq).toMatchObject({ low: 3, mid: -4, high: 0, lowHz: 120 });
+    m = applyMixerAction(m, MixerActionSchema.parse({ action: 'channel', id: 'tracks', patch }));
+    m = applyMixerAction(m, {
+      action: 'channel',
+      id: 'tracks',
+      patch: { eq: { bands: { '2': { hz: 1200 } } } },
+    });
+    const eq = m.channels[0]?.eq;
+    expect(eq?.bands.map((b) => b.db)).toEqual([3, 0, -4, 0, 0, 0]);
+    expect(eq?.bands[2]).toMatchObject({ hz: 1200, q: 2, type: 'bell' });
+    expect(eq?.bands[0]?.hz).toBe(100);
+  });
+
+  it('refuses EQ settings out of range, and a band number that does not exist', () => {
+    const bad = (eq: unknown) =>
+      MixerActionSchema.safeParse({ action: 'channel', id: 'a', patch: { eq } }).success;
+    expect(bad({ bands: { '0': { db: 24 } } })).toBe(false);
+    expect(bad({ bands: { '6': { db: 1 } } })).toBe(false);
+    expect(bad({ bands: { '1': { hz: 5 } } })).toBe(false);
+    expect(bad({ bands: { '1': { type: 'comb' } } })).toBe(false);
+    expect(bad({ bands: { '1': { type: 'notch', q: 8 } } })).toBe(true);
   });
 
   it('resets levels and processing but keeps inputs and routing', () => {
@@ -149,17 +167,14 @@ describe('mixer', () => {
         ducksOthers: true,
         locked: false,
       });
-      // The old fixed EQ's bands, so it sounds the same.
-      expect(c?.eq).toEqual({
-        on: true,
-        low: 2,
-        mid: 0,
-        high: 1,
-        lowHz: 120,
-        midHz: 1000,
-        midQ: 0.9,
-        highHz: 8000,
-      });
+      // The old fixed EQ's bands, moved into the bands that do the same, so it sounds the same.
+      expect(c?.eq.on).toBe(true);
+      expect(c?.eq.bands).toHaveLength(6);
+      expect(c?.eq.bands[0]).toEqual({ type: 'lowShelf', on: true, hz: 120, db: 2, q: 0.7 });
+      expect(c?.eq.bands[2]).toEqual({ type: 'bell', on: true, hz: 1000, db: 0, q: 0.9 });
+      expect(c?.eq.bands[5]).toEqual({ type: 'highShelf', on: true, hz: 8000, db: 1, q: 0.7 });
+      expect([1, 3, 4].map((i) => c?.eq.bands[i]?.db)).toEqual([0, 0, 0]);
+      expect(c).toMatchObject({ hpfSlope: 12, lpf: false });
       expect(c?.comp).toMatchObject({ thresholdDb: -20, ratio: 4, attackMs: 5, releaseMs: 150 });
       expect(m.stream).toMatchObject({ delayMs: 120, limiter: true, ceilingDb: -1.5 });
     });
@@ -169,12 +184,17 @@ describe('mixer', () => {
       const id = micId(m);
       m = applyMixerAction(m, { action: 'channel', id, patch: { gate: { on: true } } });
       m = applyMixerAction(m, { action: 'channel', id, patch: { duck: { amountDb: 20 } } });
-      m = applyMixerAction(m, { action: 'channel', id, patch: { eq: { midHz: 3000 } } });
+      m = applyMixerAction(m, {
+        action: 'channel',
+        id,
+        patch: { eq: { bands: { '2': { hz: 3000 } } } },
+      });
       m = applyMixerAction(m, { action: 'channel', id, patch: { comp: { attackMs: 20 } } });
       const c = m.channels[2];
       expect(c?.gate).toEqual({ on: true, thresholdDb: -50 });
       expect(c?.duck).toEqual({ on: false, amountDb: 20, thresholdDb: -40 });
-      expect(c?.eq).toMatchObject({ on: true, midHz: 3000, lowHz: 120 });
+      expect(c?.eq.bands[2]?.hz).toBe(3000);
+      expect(c?.eq.bands[0]?.hz).toBe(100);
       expect(c?.comp).toMatchObject({ attackMs: 20, releaseMs: 150, thresholdDb: -18 });
       m = applyMixerAction(m, { action: 'bus', bus: 'stream', patch: { ceilingDb: -3 } });
       expect(m.stream).toMatchObject({ ceilingDb: -3, limiter: true });

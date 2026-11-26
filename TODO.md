@@ -14,6 +14,12 @@ _Started 2026-11-26._
   down when it isn't (vMix's "audio follow video").
 - [ ] Link two channels as a stereo pair (one fader, mute and processing for both).
 - [ ] Saved mixer snapshots: store the whole mix and recall it in one click (or from a cue).
+- [ ] Hear the channel window's EQ on real mics: the curve is the filters' own maths and the
+  spectrum was seen with music playing, but a voice through 48 dB/oct cuts and narrow notches
+  hasn't been listened to yet. Spectrum when the room plays in an output window (only the
+  control window's own room mix was seen).
+- [ ] EQ extras: solo a band (hear just its range in headphones), a second spectrum of another
+  channel to compare (masking), more than one EQ curve undo step.
 - [ ] Hear the pro Mixer (`feature/pro-mixer`) running: gate, ducking and the loudness meter
   were unit-tested and their worklet run in Node, not yet heard in the app or on Windows.
 

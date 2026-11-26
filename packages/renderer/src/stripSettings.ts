@@ -1,12 +1,11 @@
 import { dbToGain, sendGain, type MixerChannel } from '@lampstand/core';
+import { eqStages, type FilterStage } from './eqFilters';
 
 /** Which mix an engine makes: the room's, the stream's, or the operator's headphones (solo). */
 export type MixBus = 'room' | 'stream' | 'cue';
 
 /** The gate's threshold that lets everything through. */
 export const GATE_OFF = -100;
-/** Below hearing: the low cut's "off". */
-const HPF_OFF_HZ = 10;
 /** The Web Audio compressor lets go in at most 1 s. */
 const MAX_RELEASE_SEC = 1;
 
@@ -33,10 +32,10 @@ export interface StripSettings {
   trim: number;
   delaySec: number;
   gateDb: number;
-  hpfHz: number;
-  low: { hz: number; db: number };
-  mid: { hz: number; q: number; db: number };
-  high: { hz: number; db: number };
+  /** The low cut's four biquads, then the high cut's, then the six EQ bands. */
+  hpf: FilterStage[];
+  lpf: FilterStage[];
+  bands: FilterStage[];
   comp: {
     thresholdDb: number;
     ratio: number;
@@ -52,17 +51,13 @@ export interface StripSettings {
 }
 
 export function stripSettings(c: MixerChannel, bus: MixBus): StripSettings {
-  const eq = c.eq.on;
   const comp = c.comp.on;
   const trim = dbToGain(c.trimDb);
   return {
     trim: c.invert ? -trim : trim,
     delaySec: c.delayMs / 1000,
     gateDb: c.gate.on ? c.gate.thresholdDb : GATE_OFF,
-    hpfHz: c.hpf ? c.hpfHz : HPF_OFF_HZ,
-    low: { hz: c.eq.lowHz, db: eq ? c.eq.low : 0 },
-    mid: { hz: c.eq.midHz, q: c.eq.midQ, db: eq ? c.eq.mid : 0 },
-    high: { hz: c.eq.highHz, db: eq ? c.eq.high : 0 },
+    ...eqStages(c),
     comp: comp
       ? {
           thresholdDb: c.comp.thresholdDb,

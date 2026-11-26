@@ -118,16 +118,30 @@ export const localVideoTap = (v: HTMLMediaElement): void => local?.tapVideo(v);
  * Program monitor does for video), so the operator still hears it, through the room mix.
  */
 export function installLocalAudio(): () => void {
-  let last: { cue: AudioCue | null; mixer: Mixer | null; on: boolean; sink: string } | null = null;
+  let last: {
+    cue: AudioCue | null;
+    mixer: Mixer | null;
+    scope: string | null;
+    on: boolean;
+    sink: string;
+  } | null = null;
   const sync = (): void => {
     const s = get();
     const on = !(s.settings?.windowMode || s.displays.some((d) => d.role === 'main'));
     // Only when the cue, the mixer or where it plays changes (the store changes for everything).
     const cue = s.live?.audio ?? null;
     const mixer = s.live?.mixer ?? null;
+    const scope = s.live?.mixerScope ?? null;
     const sink = s.settings?.audio.roomOutput ?? '';
-    if (last?.cue === cue && last.mixer === mixer && last.on === on && last.sink === sink) return;
-    last = { cue, mixer, on, sink };
+    if (
+      last?.cue === cue &&
+      last.mixer === mixer &&
+      last.scope === scope &&
+      last.on === on &&
+      last.sink === sink
+    )
+      return;
+    last = { cue, mixer, scope, on, sink };
     if (on && !local) {
       local = new RoomAudio(window, mediaUrl);
       local.mixer.startMeters((l) => publishMeters(meterReport('room', l)));
@@ -137,7 +151,7 @@ export function installLocalAudio(): () => void {
       local = null;
     }
     local?.setSink(sink);
-    if (mixer) local?.sync(cue, mixer);
+    if (mixer) local?.sync(cue, mixer, scope);
   };
   sync();
   const off = useStore.subscribe(sync);

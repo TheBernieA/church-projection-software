@@ -21,5 +21,6 @@ export function meterReport(bus: MeterReport['bus'], l: MixerLevels): MeterRepor
       shortTerm: lu(l.loudness.shortTerm),
       integrated: lu(l.loudness.integrated),
     },
+    spectrum: l.spectrum,
   };
 }

@@ -17,20 +17,8 @@ export const formatDb = (db: number): string =>
     : `${db > 0 ? '+' : db < 0 ? '−' : ''}${Math.abs(db).toFixed(1)} dB`;
 
 const Db = z.number().min(MIN_DB).max(MAX_DB);
-const EqBand = z.number().min(-15).max(15);
 const Hz = (lo: number, hi: number) => z.number().min(lo).max(hi);
 
-/** Where each EQ band sits unless moved (the old fixed EQ's bands, so old mixes sound the same). */
-export const EQ_DEFAULTS = {
-  on: true,
-  low: 0,
-  mid: 0,
-  high: 0,
-  lowHz: 120,
-  midHz: 1000,
-  midQ: 0.9,
-  highHz: 8000,
-} as const;
 export const COMP_DEFAULTS = {
   on: false,
   thresholdDb: -18,
@@ -42,22 +30,75 @@ export const COMP_DEFAULTS = {
 export const GATE_DEFAULTS = { on: false, thresholdDb: -50 } as const;
 export const DUCK_DEFAULTS = { on: false, amountDb: 12, thresholdDb: -40 } as const;
 
+/** How far an EQ band can boost or cut. */
+export const EQ_MAX_DB = 18;
+/** The EQ's bands: shelves at the ends, four bells between (each band can change its shape). */
+export const EQ_BAND_COUNT = 6;
+export const EQ_BAND_TYPES = ['bell', 'lowShelf', 'highShelf', 'notch'] as const;
+export type EqBandType = (typeof EQ_BAND_TYPES)[number];
+/** The low and high cut's steepness, in dB per octave. */
+export const CUT_SLOPES = [12, 24, 48] as const;
+export type CutSlope = (typeof CUT_SLOPES)[number];
+
+const BandDb = z.number().min(-EQ_MAX_DB).max(EQ_MAX_DB);
+const BandHz = Hz(20, 20_000);
+const BandQ = z.number().min(0.1).max(18);
+const Slope = z.union([z.literal(12), z.literal(24), z.literal(48)]);
+
+export const EqBandSchema = z.object({
+  type: z.enum(EQ_BAND_TYPES),
+  /** Off: this band is left out (its settings kept). */
+  on: z.boolean().default(true),
+  hz: BandHz,
+  db: BandDb.default(0),
+  /** Width (higher is narrower); a shelf's Q sets how sharp its corner is. */
+  q: BandQ.default(1),
+});
+export type EqBand = z.infer<typeof EqBandSchema>;
+
+/** Where each band sits until moved: spread over the range a voice or an instrument uses. */
+export const EQ_DEFAULT_BANDS: readonly EqBand[] = [
+  { type: 'lowShelf', on: true, hz: 100, db: 0, q: 0.7 },
+  { type: 'bell', on: true, hz: 250, db: 0, q: 1 },
+  { type: 'bell', on: true, hz: 800, db: 0, q: 1 },
+  { type: 'bell', on: true, hz: 2500, db: 0, q: 1 },
+  { type: 'bell', on: true, hz: 6000, db: 0, q: 1 },
+  { type: 'highShelf', on: true, hz: 10_000, db: 0, q: 0.7 },
+];
+export const eqDefaults = (): { on: boolean; bands: EqBand[] } => ({
+  on: true,
+  bands: EQ_DEFAULT_BANDS.map((b) => ({ ...b })),
+});
+
+/**
+ * The 3-band EQ of earlier versions (low shelf, mid bell, high shelf): its settings move into
+ * the new bands that do the same, so a saved mix sounds as it did.
+ */
+function fromThreeBand(v: unknown): unknown {
+  if (!v || typeof v !== 'object' || 'bands' in v) return v;
+  const o = v as Record<string, unknown>;
+  const num = (k: string, d: number): number => {
+    const x = o[k];
+    return typeof x === 'number' ? x : d;
+  };
+  const bands = eqDefaults().bands;
+  const [low, , mid, , , high] = bands;
+  if (low) Object.assign(low, { hz: num('lowHz', 120), db: num('low', 0) });
+  if (mid) Object.assign(mid, { hz: num('midHz', 1000), db: num('mid', 0), q: num('midQ', 0.9) });
+  if (high) Object.assign(high, { hz: num('highHz', 8000), db: num('high', 0) });
+  return { on: typeof o.on === 'boolean' ? o.on : true, bands };
+}
+
 const EqSchema = z
-  .object({
-    /** Off: the EQ is bypassed (its settings kept). */
-    on: z.boolean().default(EQ_DEFAULTS.on),
-    low: EqBand.default(0),
-    mid: EqBand.default(0),
-    high: EqBand.default(0),
-    /** The low shelf's corner. */
-    lowHz: Hz(40, 500).default(EQ_DEFAULTS.lowHz),
-    /** The mid bell's centre and width (Q: higher is narrower). */
-    midHz: Hz(150, 10_000).default(EQ_DEFAULTS.midHz),
-    midQ: z.number().min(0.3).max(8).default(EQ_DEFAULTS.midQ),
-    /** The high shelf's corner. */
-    highHz: Hz(1500, 18_000).default(EQ_DEFAULTS.highHz),
-  })
-  .default({ ...EQ_DEFAULTS });
+  .preprocess(
+    fromThreeBand,
+    z.object({
+      /** Off: the EQ is bypassed (its settings kept). */
+      on: z.boolean().default(true),
+      bands: z.array(EqBandSchema).length(EQ_BAND_COUNT),
+    }),
+  )
+  .default(eqDefaults);
 
 const CompSchema = z
   .object({
@@ -96,8 +137,8 @@ const DuckSchema = z
 
 /**
  * One mixer channel: the Audio tab's tracks, the sound of videos, or a live input (a microphone,
- * the desk's feed, a capture card's audio). Its strip runs, in order: high-pass, 3-band EQ,
- * compressor, fader, pan; then it is sent to the room, the stream, or both.
+ * the desk's feed, a capture card's audio). Its strip runs, in order: low and high cut, a 6-band
+ * parametric EQ, compressor, fader, pan; then it is sent to the room, the stream, or both.
  */
 export const MixerChannelSchema = z.object({
   id: IdSchema,
@@ -124,6 +165,11 @@ export const MixerChannelSchema = z.object({
   /** Cut the rumble below the low cut's frequency (handling noise, stage thumps). */
   hpf: z.boolean().default(false),
   hpfHz: Hz(20, 400).default(80),
+  hpfSlope: Slope.default(12),
+  /** Cut the hiss and harshness above the high cut's frequency. */
+  lpf: z.boolean().default(false),
+  lpfHz: Hz(1000, 20_000).default(16_000),
+  lpfSlope: Slope.default(12),
   eq: EqSchema,
   comp: CompSchema,
   duck: DuckSchema,
@@ -236,16 +282,26 @@ const ChannelPatchSchema = z
     gate: z.object({ on: z.boolean(), thresholdDb: z.number().min(-80).max(0) }).partial(),
     hpf: z.boolean(),
     hpfHz: Hz(20, 400),
+    hpfSlope: Slope,
+    lpf: z.boolean(),
+    lpfHz: Hz(1000, 20_000),
+    lpfSlope: Slope,
     eq: z
       .object({
         on: z.boolean(),
-        low: EqBand,
-        mid: EqBand,
-        high: EqBand,
-        lowHz: Hz(40, 500),
-        midHz: Hz(150, 10_000),
-        midQ: z.number().min(0.3).max(8),
-        highHz: Hz(1500, 18_000),
+        /** Changes to some bands, by number ("0" … "5"). */
+        bands: z.partialRecord(
+          z.enum(['0', '1', '2', '3', '4', '5']),
+          z
+            .object({
+              type: z.enum(EQ_BAND_TYPES),
+              on: z.boolean(),
+              hz: BandHz,
+              db: BandDb,
+              q: BandQ,
+            })
+            .partial(),
+        ),
       })
       .partial(),
     comp: z
@@ -285,13 +341,37 @@ const BusPatchSchema = z
 export const PRESET_IDS = ['speech', 'singing', 'instrument', 'music', 'flat'] as const;
 export type MixerPreset = (typeof PRESET_IDS)[number];
 
-type Processing = Pick<MixerChannel, 'gate' | 'hpf' | 'hpfHz' | 'eq' | 'comp' | 'duck' | 'denoise'>;
+type Processing = Pick<
+  MixerChannel,
+  | 'gate'
+  | 'hpf'
+  | 'hpfHz'
+  | 'hpfSlope'
+  | 'lpf'
+  | 'lpfHz'
+  | 'lpfSlope'
+  | 'eq'
+  | 'comp'
+  | 'duck'
+  | 'denoise'
+>;
+
+/** The default EQ with some bands changed. */
+function eqWith(changes: Record<number, Partial<EqBand>>): MixerChannel['eq'] {
+  const eq = eqDefaults();
+  eq.bands = eq.bands.map((b, i) => ({ ...b, ...changes[i] }));
+  return eq;
+}
 
 const FLAT: Processing = {
   gate: { ...GATE_DEFAULTS },
   hpf: false,
   hpfHz: 80,
-  eq: { ...EQ_DEFAULTS },
+  hpfSlope: 12,
+  lpf: false,
+  lpfHz: 16_000,
+  lpfSlope: 12,
+  eq: eqDefaults(),
   comp: { ...COMP_DEFAULTS },
   duck: { ...DUCK_DEFAULTS },
   denoise: false,
@@ -308,14 +388,15 @@ export const PRESETS: Record<MixerPreset, Processing> = {
     gate: { on: true, thresholdDb: -55 },
     hpf: true,
     hpfHz: 100,
-    eq: { ...EQ_DEFAULTS, low: -2, lowHz: 200, mid: 2, midHz: 3000, midQ: 1, high: 2 },
+    hpfSlope: 24,
+    eq: eqWith({ 0: { hz: 200, db: -2 }, 3: { hz: 3000, db: 2 }, 5: { hz: 8000, db: 2 } }),
     comp: { on: true, thresholdDb: -20, ratio: 3, makeupDb: 4, attackMs: 5, releaseMs: 120 },
   },
   singing: {
     ...FLAT,
     hpf: true,
     hpfHz: 80,
-    eq: { ...EQ_DEFAULTS, mid: -2, midHz: 400, midQ: 1.2, high: 3, highHz: 10_000 },
+    eq: eqWith({ 1: { hz: 400, db: -2, q: 1.2 }, 5: { hz: 10_000, db: 3 } }),
     comp: { on: true, thresholdDb: -18, ratio: 2.5, makeupDb: 3, attackMs: 10, releaseMs: 200 },
   },
   instrument: {
@@ -355,6 +436,20 @@ export const MixerActionSchema = z.discriminatedUnion('action', [
 ]);
 export type MixerAction = z.infer<typeof MixerActionSchema>;
 
+type EqPatch = NonNullable<z.infer<typeof ChannelPatchSchema>['eq']>;
+
+/** An EQ with some of its settings changed (each band only in the fields given). */
+function patchEq(eq: MixerChannel['eq'], p: EqPatch | undefined): MixerChannel['eq'] {
+  if (!p) return eq;
+  const bands = p.bands;
+  return {
+    on: p.on ?? eq.on,
+    bands: bands
+      ? eq.bands.map((b, i) => ({ ...b, ...bands[String(i) as keyof typeof bands] }))
+      : eq.bands,
+  };
+}
+
 /** Apply one mixer command (pure). */
 export function applyMixerAction(m: Mixer, a: MixerAction): Mixer {
   switch (a.action) {
@@ -370,7 +465,7 @@ export function applyMixerAction(m: Mixer, a: MixerAction): Mixer {
                   ...c,
                   ...a.patch,
                   gate: { ...c.gate, ...a.patch.gate },
-                  eq: { ...c.eq, ...a.patch.eq },
+                  eq: patchEq(c.eq, a.patch.eq),
                   comp: { ...c.comp, ...a.patch.comp },
                   duck: { ...c.duck, ...a.patch.duck },
                 }),
@@ -428,7 +523,11 @@ export function applyMixerAction(m: Mixer, a: MixerAction): Mixer {
           gate: flat.gate,
           hpf: false,
           hpfHz: flat.hpfHz,
-          eq: flat.eq,
+          hpfSlope: flat.hpfSlope,
+          lpf: false,
+          lpfHz: flat.lpfHz,
+          lpfSlope: flat.lpfSlope,
+          eq: eqDefaults(),
           comp: flat.comp,
           duck: flat.duck,
           locked: false,

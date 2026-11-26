@@ -112,8 +112,10 @@ export class RoomAudio {
   /** A video's sound joins the room mix (pass to SceneRenderer's `audioTap`). */
   readonly tapVideo = (v: HTMLMediaElement): void => this.mixer.attach('video', v);
 
-  sync(audio: AudioCue | null, mixer: Mixer): void {
+  /** `scope`: the channel whose spectrum the Mixer's EQ window shows. */
+  sync(audio: AudioCue | null, mixer: Mixer, scope: string | null = null): void {
     this.player.sync(audio);
+    this.mixer.setScope(scope);
     this.mixer.sync(mixer);
   }
 

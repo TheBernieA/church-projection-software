@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { MixerChannelSchema, type MixerChannel } from '@lampstand/core';
+import { eqDefaults, MixerChannelSchema, type MixerChannel } from '@lampstand/core';
+import { HPF_OFF_HZ, LPF_OFF_HZ } from './eqFilters';
 import { autoMakeupDb, GATE_OFF, stripSettings, triggersDucking } from './stripSettings';
 
 const ch = (o: Partial<MixerChannel> = {}): MixerChannel =>
@@ -11,8 +12,9 @@ describe('a channel strip’s settings', () => {
     expect(p.trim).toBe(1);
     expect(p.delaySec).toBe(0);
     expect(p.gateDb).toBe(GATE_OFF);
-    expect(p.hpfHz).toBeLessThan(20);
-    expect([p.low.db, p.mid.db, p.high.db]).toEqual([0, 0, 0]);
+    expect(p.hpf.every((s) => s.type === 'highpass' && s.hz === HPF_OFF_HZ)).toBe(true);
+    expect(p.lpf.every((s) => s.type === 'lowpass' && s.hz === LPF_OFF_HZ)).toBe(true);
+    expect(p.bands.map((b) => b.db)).toEqual([0, 0, 0, 0, 0, 0]);
     expect(p.comp.ratio).toBe(1);
     expect(p.makeup).toBe(1);
     expect(p.send).toBe(1);
@@ -29,23 +31,24 @@ describe('a channel strip’s settings', () => {
   });
 
   it('the EQ’s bands where they’re set; bypassed, they’re flat', () => {
-    const eq = {
-      on: true,
-      low: 3,
-      mid: -4,
-      high: 2,
-      lowHz: 200,
-      midHz: 2500,
-      midQ: 2,
-      highHz: 9000,
-    };
-    const p = stripSettings(ch({ eq, hpf: true, hpfHz: 120 }), 'room');
-    expect(p.hpfHz).toBe(120);
-    expect(p.low).toEqual({ hz: 200, db: 3 });
-    expect(p.mid).toEqual({ hz: 2500, q: 2, db: -4 });
-    expect(p.high).toEqual({ hz: 9000, db: 2 });
-    const off = stripSettings(ch({ eq: { ...eq, on: false } }), 'room');
-    expect([off.low.db, off.mid.db, off.high.db]).toEqual([0, 0, 0]);
+    const eq = eqDefaults();
+    eq.bands[0] = { type: 'lowShelf', on: true, hz: 200, db: 3, q: 0.7 };
+    eq.bands[2] = { type: 'bell', on: true, hz: 2500, db: -4, q: 2 };
+    eq.bands[3] = { type: 'notch', on: true, hz: 60, db: 0, q: 8 };
+    eq.bands[4] = { type: 'bell', on: false, hz: 5000, db: 6, q: 1 };
+    const p = stripSettings(ch({ eq, hpf: true, hpfHz: 120, hpfSlope: 24 }), 'room');
+    expect(p.hpf.map((s) => s.hz)).toEqual([120, 120, HPF_OFF_HZ, HPF_OFF_HZ]);
+    expect(p.bands[0]).toEqual({ type: 'lowshelf', hz: 200, q: 0.7, db: 3 });
+    expect(p.bands[2]).toEqual({ type: 'peaking', hz: 2500, q: 2, db: -4 });
+    expect(p.bands[3]).toMatchObject({ type: 'notch', hz: 60 });
+    // A band switched off is flat.
+    expect(p.bands[4]?.db).toBe(0);
+    const off = stripSettings(ch({ eq: { ...eq, on: false }, hpf: true, hpfHz: 120 }), 'room');
+    expect(off.bands.map((b) => b.db)).toEqual([0, 0, 0, 0, 0, 0]);
+    // A notch has no flat setting: bypassed, it becomes a flat bell.
+    expect(off.bands[3]).toMatchObject({ type: 'peaking', db: 0 });
+    // The cuts aren't part of the bypass (they protect the sound system).
+    expect(off.hpf[0]?.hz).toBe(120);
   });
 
   it('the compressor’s make-up means what it says (the node’s own gain taken out)', () => {

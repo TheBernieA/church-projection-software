@@ -358,7 +358,7 @@ export class AppController {
         );
       this.windows.broadcastLive(
         state,
-        onlyChanged(['mixer', 'audio']) ? 'sound' : onlyChanged(['cameraViews']) ? 'views' : null,
+        onlyChanged(['mixer', 'audio', 'mixerScope']) ? 'sound' : onlyChanged(['cameraViews']) ? 'views' : null,
       );
     });
     bus.onAudit((e) => {

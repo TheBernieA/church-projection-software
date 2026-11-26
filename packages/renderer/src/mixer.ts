@@ -2,7 +2,9 @@ import { dbToGain, type Mixer, type MixerBus, type MixerChannel } from '@lampsta
 import { isReleased, trySetSink } from './dom';
 import { DUCK_DOWN_SEC, DUCK_UP_SEC, DuckFollower } from './ducking';
 import { RAW_AUDIO } from './inputs';
+import { HPF_OFF_HZ, type FilterStage } from './eqFilters';
 import { LoudnessMeter, type Loudness } from './loudness';
+import { spectrumBands } from './spectrum';
 import { autoMakeupDb, stripSettings, triggersDucking, type MixBus } from './stripSettings';
 
 export { autoMakeupDb, type MixBus } from './stripSettings';
@@ -21,6 +23,11 @@ export interface MixerLevels {
   dyn: Record<string, [compressor: number, duck: number]>;
   /** The finished mix's loudness (LUFS), once the loudness processor runs. */
   loudness: Loudness | null;
+  /**
+   * The watched channel's spectrum (`setScope`), as dB bands from 20 Hz to 20 kHz: going into
+   * its EQ and coming out of it.
+   */
+  spectrum: { id: string; pre: number[]; post: number[] } | null;
 }
 
 /** Where a channel's sound comes from in this window. */
@@ -81,10 +88,21 @@ function biquad(
   return f;
 }
 
+/** Set a biquad to a stage (its type only when it changes; a type change is a rare click). */
+function setStage(f: BiquadFilterNode, s: FilterStage, ctx: BaseAudioContext): void {
+  if (f.type !== s.type) f.type = s.type;
+  ramp(f.frequency, Math.min(s.hz, ctx.sampleRate / 2), ctx);
+  ramp(f.Q, s.q, ctx);
+  ramp(f.gain, s.db, ctx);
+}
+
+/** The EQ window's analysers: what goes into the EQ and what comes out. */
+const SCOPE_FFT = 8192;
+
 /**
  * One channel strip: input (a sum of its sources, with trim and polarity) → mono fold → sync
- * delay → gate → low cut → low shelf → mid bell → high shelf → compressor → make-up → duck →
- * pan → fader → send to the bus. A meter reads it after the fader (before mute, so you can see
+ * delay → gate → low cut → high cut → six EQ bands → compressor → make-up → duck → pan →
+ * fader → send to the bus. A meter reads it after the fader (before mute, so you can see
  * a muted mic is working).
  */
 class Strip {
@@ -95,10 +113,14 @@ class Strip {
   /** The gate goes after this once its processor has loaded. */
   private readonly gateIn: GainNode;
   private gate: AudioWorkletNode | null = null;
-  private readonly hpf: BiquadFilterNode;
-  private readonly low: BiquadFilterNode;
-  private readonly mid: BiquadFilterNode;
-  private readonly high: BiquadFilterNode;
+  /** The low cut's biquads, then the high cut's, then the bands. */
+  private readonly hpf: BiquadFilterNode[];
+  private readonly lpf: BiquadFilterNode[];
+  private readonly bands: BiquadFilterNode[];
+  /** Where the EQ starts and ends (the scope listens here). */
+  private readonly eqIn: AudioNode;
+  private readonly eqOut: AudioNode;
+  private scope: { pre: AnalyserNode; post: AnalyserNode } | null = null;
   readonly comp: DynamicsCompressorNode;
   private readonly makeup: GainNode;
   readonly duck: GainNode;
@@ -130,10 +152,9 @@ class Strip {
     this.fold = c.createChannelMerger(2);
     this.delay = c.createDelay(1.05);
     this.gateIn = c.createGain();
-    this.hpf = biquad(c, 'highpass', 10, 0.707);
-    this.low = biquad(c, 'lowshelf', 120);
-    this.mid = biquad(c, 'peaking', 1000, 0.9);
-    this.high = biquad(c, 'highshelf', 8000);
+    this.hpf = Array.from({ length: 4 }, () => biquad(c, 'highpass', HPF_OFF_HZ, -3));
+    this.lpf = Array.from({ length: 4 }, () => biquad(c, 'lowpass', c.sampleRate / 2, -3));
+    this.bands = Array.from({ length: 6 }, () => biquad(c, 'peaking', 1000));
     this.comp = c.createDynamicsCompressor();
     this.makeup = c.createGain();
     this.duck = c.createGain();
@@ -147,8 +168,12 @@ class Strip {
     this.split.connect(this.fold, 0, 1);
     this.input.connect(this.delay);
     this.fold.connect(this.delay);
-    this.delay.connect(this.gateIn).connect(this.hpf);
-    this.hpf.connect(this.low).connect(this.mid).connect(this.high).connect(this.comp);
+    const chain = [...this.hpf, ...this.lpf, ...this.bands];
+    for (let i = 1; i < chain.length; i++) chain[i - 1]?.connect(chain[i] as AudioNode);
+    this.eqIn = chain[0] as AudioNode;
+    this.eqOut = chain[chain.length - 1] as AudioNode;
+    this.delay.connect(this.gateIn).connect(this.eqIn);
+    this.eqOut.connect(this.comp);
     this.comp.connect(this.makeup).connect(this.duck).connect(this.pan).connect(this.fader);
     this.fader.connect(this.meter);
     this.fader.connect(this.send).connect(out);
@@ -161,7 +186,7 @@ class Strip {
       outputChannelCount: [2],
     });
     this.gateIn.disconnect();
-    this.gateIn.connect(this.gate).connect(this.hpf);
+    this.gateIn.connect(this.gate).connect(this.eqIn);
     this.reapply();
   }
 
@@ -181,14 +206,11 @@ class Strip {
     ramp(this.input.gain, p.trim, ctx);
     ramp(this.delay.delayTime, p.delaySec, ctx, 0.05);
     this.gate?.parameters.get('threshold')?.setValueAtTime(p.gateDb, ctx.currentTime);
-    ramp(this.hpf.frequency, p.hpfHz, ctx);
-    ramp(this.low.frequency, p.low.hz, ctx);
-    ramp(this.low.gain, p.low.db, ctx);
-    ramp(this.mid.frequency, p.mid.hz, ctx);
-    ramp(this.mid.Q, p.mid.q, ctx);
-    ramp(this.mid.gain, p.mid.db, ctx);
-    ramp(this.high.frequency, p.high.hz, ctx);
-    ramp(this.high.gain, p.high.db, ctx);
+    const stages = [...p.hpf, ...p.lpf, ...p.bands];
+    [...this.hpf, ...this.lpf, ...this.bands].forEach((f, i) => {
+      const s = stages[i];
+      if (s) setStage(f, s, ctx);
+    });
     this.comp.threshold.value = p.comp.thresholdDb;
     this.comp.ratio.value = p.comp.ratio;
     this.comp.knee.value = p.comp.kneeDb;
@@ -212,6 +234,38 @@ class Strip {
     if (this.last) this.apply(this.last, this.bus);
   }
 
+  /** Start or stop measuring this strip's spectrum, before and after its EQ. */
+  watch(on: boolean): void {
+    if (on === !!this.scope) return;
+    if (!on) {
+      this.scope?.pre.disconnect();
+      this.scope?.post.disconnect();
+      this.scope = null;
+      return;
+    }
+    const analyser = (): AnalyserNode => {
+      const a = this.ctx.createAnalyser();
+      a.fftSize = SCOPE_FFT;
+      a.smoothingTimeConstant = 0.55;
+      a.minDecibels = -120;
+      a.maxDecibels = 0;
+      return a;
+    };
+    this.scope = { pre: analyser(), post: analyser() };
+    this.eqIn.connect(this.scope.pre);
+    this.eqOut.connect(this.scope.post);
+  }
+
+  /** The spectrum in and out of the EQ, or null when not watched. */
+  spectrum(buf: Float32Array<ArrayBuffer>): { pre: number[]; post: number[] } | null {
+    if (!this.scope) return null;
+    const read = (a: AnalyserNode): number[] => {
+      a.getFloatFrequencyData(buf);
+      return spectrumBands(buf, this.ctx.sampleRate);
+    };
+    return { pre: read(this.scope.pre), post: read(this.scope.post) };
+  }
+
   closeDevice(): void {
     this.device?.source?.disconnect();
     for (const t of this.device?.stream?.getTracks() ?? []) t.stop();
@@ -220,6 +274,7 @@ class Strip {
 
   dispose(): void {
     this.closeDevice();
+    this.watch(false);
     this.send.disconnect();
     this.input.disconnect();
     this.gate?.disconnect();
@@ -272,6 +327,9 @@ export class MixerEngine {
   private meterTimer: ReturnType<typeof setInterval> | null = null;
   private duckTimer: ReturnType<typeof setInterval> | null = null;
   private readonly buf: Float32Array<ArrayBuffer>;
+  private readonly fftBuf = new Float32Array(SCOPE_FFT / 2);
+  /** The channel whose spectrum is measured (the EQ window's), or null. */
+  private scope: string | null = null;
   private readonly loudness = new LoudnessMeter();
   private loudnessOn = false;
   private workletReady = false;
@@ -365,6 +423,12 @@ export class MixerEngine {
     return c ? this.strips.get(c.id) : undefined;
   }
 
+  /** Measure this channel's spectrum (the EQ window shows it), or none. */
+  setScope(id: string | null): void {
+    this.scope = id;
+    for (const [sid, s] of this.strips) s.watch(sid === id);
+  }
+
   /** Follow the mixer: build, change or remove strips, open and close inputs. */
   sync(m: Mixer): void {
     if (this.disposed) return;
@@ -381,6 +445,7 @@ export class MixerEngine {
         if (c.kind !== 'input') for (const s of this.sources[c.kind]) s.connect(strip.input);
       }
       strip.apply(c, bus);
+      strip.watch(c.id === this.scope);
       if (c.kind === 'input') this.syncDevice(strip, c);
     }
     for (const [id, strip] of this.strips)
@@ -493,12 +558,15 @@ export class MixerEngine {
       Math.max(left[0], right[0]),
       Math.sqrt((left[1] ** 2 + right[1] ** 2) / 2),
     ];
+    const watched = this.scope ? this.strips.get(this.scope) : undefined;
+    const spectrum = watched?.spectrum(this.fftBuf);
     return {
       channels,
       bus,
       sides: [left, right],
       dyn,
       loudness: this.loudnessOn ? this.loudness.read() : null,
+      spectrum: spectrum && this.scope ? { id: this.scope, ...spectrum } : null,
     };
   }
 

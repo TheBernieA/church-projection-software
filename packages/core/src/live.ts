@@ -139,6 +139,11 @@ export const LiveStateSchema = z.object({
   cameraViews: z.record(z.string().max(300), CameraViewSchema).default({}),
   /** The sound desk: every channel's level, EQ and routing, live in every window. */
   mixer: MixerSchema.default(() => defaultMixer()),
+  /**
+   * The channel whose sound spectrum the Mixer's EQ window shows (null: none). The window that
+   * plays the room's mix measures only this one, and only while the EQ window is open.
+   */
+  mixerScope: z.string().max(64).nullable().default(null),
   /** The Look on screen (a copy of its layers), or null for everything everywhere. */
   look: LookSchema.nullable().default(null),
   /**
@@ -166,6 +171,7 @@ export function initialLiveState(): LiveState {
     switcher: { preview: null },
     cameraViews: {},
     mixer: defaultMixer(),
+    mixerScope: null,
     look: null,
     lowerThird: null,
   };
@@ -614,6 +620,16 @@ export function registerLiveCommands(
     undoable: false,
     handle: (p) => {
       store.update((s) => ({ ...s, mixer: applyMixerAction(s.mixer, p) }));
+      return { result: null };
+    },
+  });
+
+  bus.register({
+    type: 'live.mixerScope',
+    schema: z.object({ channel: z.string().max(64).nullable() }),
+    undoable: false,
+    handle: (p) => {
+      store.update((s) => (s.mixerScope === p.channel ? s : { ...s, mixerScope: p.channel }));
       return { result: null };
     },
   });

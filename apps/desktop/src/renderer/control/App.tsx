@@ -5,6 +5,8 @@ import { useEditorExpanded } from './lib/editing';
 import { migrateLocalCameras } from './lib/inputs';
 import { saveSettings } from './lib/actions';
 import { MixerPanel } from './components/mixer/MixerPanel';
+import { FloatingChannelWindow } from './components/mixer/eq/ChannelWindow';
+import { installChannelScope } from './lib/eqWindow';
 import { LiveConsole } from './components/live/LiveConsole';
 import { Suspense, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,6 +65,7 @@ export function App() {
   useEffect(() => installMediaWatch(), []);
   useEffect(() => installAudioWatch(), []);
   useEffect(() => installLocalAudio(), []);
+  useEffect(() => installChannelScope(), []);
   useEffect(() => installCueMix(), []);
   useSwitcherSources();
   // Camera settings used to live in this computer's local storage: move them into settings once.
@@ -133,6 +136,7 @@ export function App() {
         </>
       )}
       <QuickBar />
+      {!fullEditor && <FloatingChannelWindow />}
       <Suspense fallback={null}>
         {dialog === 'newSong' && <NewSongDialog />}
         {dialog === 'theme' && <ThemeEditor />}

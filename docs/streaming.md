@@ -186,15 +186,17 @@ instant.
 `LiveState.mixer` (core `schemas/mixer.ts`) is the sound desk: one channel per source (Audio tab
 tracks, video sound, each live input) with fader (dB), mute, solo, pan, Room / Stream sends, and
 its strip: trim and polarity, mono, sync delay (0–1000 ms), noise suppression (inputs: the
-capture's `noiseSuppression`), a noise gate, a low cut at a set frequency, a semi-parametric EQ
-(low and high shelves with movable corners, a mid bell with frequency and Q; bypassable), a
+capture's `noiseSuppression`), a noise gate, a low cut and a high cut (12, 24 or 48 dB/octave,
+Butterworth), a 6-band parametric EQ (each band a bell, low shelf, high shelf or notch, with
+frequency, gain and Q, on/off; the EQ bypassable, the cuts not), a
 compressor (threshold, ratio, attack, release, make-up) and ducking (dips by an amount while a
 live input that "ducks others" is above a threshold; held 600 ms between words). A channel can
 be locked (core ignores every change to it but unlocking, so a control surface can't move it
 either). Presets (`PRESETS`: speech, singing, instrument, music, flat) set the processing only.
 Two buses (Room, Stream) with level, mute, a limiter with its ceiling, and delay. Every field
-added later has a default that leaves the sound as it was (the EQ's corners are the old fixed
-bands). Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
+added later has a default that leaves the sound as it was (a saved 3-band EQ is converted into
+bands 1, 3 and 6, `fromThreeBand`; EQ changes name only the bands they change,
+`eq.bands["2"]`). Commands: `live.mixer` (`applyMixerAction`). Main saves it to `settings.mixer` a second after
 each change; older settings are converted from `stream.sound` (`mixerFromSettings`).
 
 One WebAudio engine (`packages/renderer/src/mixer.ts`, `MixerEngine`) makes each mix where it is
@@ -204,6 +206,20 @@ output in the control window. Media elements join a mix through `createMediaElem
 (SceneRenderer's `audioTap`), so they never also play straight to the speakers. The room and
 stream engines report peak/RMS levels ~15×/s on `mix:meters` → `ev:meters` for the Mixer's meters,
 with each channel's compressor gain reduction and ducking (`dyn`) and the mix's loudness.
+
+**The channel window** (click a strip's name or its processing chip;
+`control/components/mixer/eq/`, state in `control/lib/eqWindow.ts`) floats over the workspace
+(moved by its header, resized from its corner, kept on screen) or docks into the Mixer; dock state,
+size and tab are remembered on the computer. EQ: a graph (`EqGraph`) of the strip's real response
+(`eqFilters.ts`: each biquad's magnitude from the Web Audio spec's coefficients, so the curve is
+what's heard), nodes to drag (frequency and gain; Alt-drag or wheel: Q, a cut's slope; double-click:
+flatten or switch a cut off; double-click the graph: the nearest unused band goes there; arrows,
+Shift, [ ] on a focused node), and a live spectrum before and after the EQ: the window sets
+`live.mixerScope` to the channel shown, the room engine adds two 8192-point analysers to that
+strip only and sends 96 log bands (`spectrum.ts`) with its meter report. Dynamics: gate (level
+against threshold), compressor (transfer curve, gain reduction), ducking. Input: device, trim,
+delay, pan, polarity, mono, noise suppression. Fast edits are sent at most every 40 ms, nested
+changes merged (`mergePatch`).
 
 The strip's numbers come from `stripSettings` (pure, tested; a section that's off gets neutral
 values, so nothing is rewired). The gate and the loudness meter are AudioWorklet processors

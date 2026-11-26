@@ -13,7 +13,9 @@ describe('the meter report', () => {
       ],
       dyn: { m: [-4.2, -Infinity] },
       loudness: { momentary: -13.94, shortTerm: -Infinity, integrated: -15.26 },
+      spectrum: { id: 'm', pre: [-40, -110], post: [-38, -110] },
     });
+    expect(r.spectrum).toEqual({ id: 'm', pre: [-40, -110], post: [-38, -110] });
     expect(r.dyn).toEqual({ m: [-4.2, -100] });
     expect(r.loudness).toEqual({ momentary: -13.9, shortTerm: null, integrated: -15.3 });
     expect(MeterReportSchema.safeParse(r).success).toBe(true);
@@ -29,6 +31,7 @@ describe('the meter report', () => {
       ],
       dyn: {},
       loudness: null,
+      spectrum: null,
     });
     expect(r.loudness).toBeNull();
     expect(MeterReportSchema.safeParse(r).success).toBe(true);

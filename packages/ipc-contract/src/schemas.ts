@@ -107,5 +107,14 @@ export const MeterReportSchema = z.object({
     })
     .nullable()
     .optional(),
+  /** The channel the EQ window watches: its spectrum (dB bands) into and out of its EQ. */
+  spectrum: z
+    .object({
+      id: z.string().max(64),
+      pre: z.array(z.number().min(-120).max(0)).max(256),
+      post: z.array(z.number().min(-120).max(0)).max(256),
+    })
+    .nullable()
+    .optional(),
 });
 export type MeterReport = z.infer<typeof MeterReportSchema>;

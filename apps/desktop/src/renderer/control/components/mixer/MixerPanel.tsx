@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
   AudioLines,
-  ChevronDown,
   Film,
   Headphones,
   Lock,
@@ -12,17 +11,10 @@ import {
   Plus,
   RotateCcw,
   Settings2,
-  Trash2,
   X,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import {
-  formatDb,
-  PRESET_IDS,
-  type MixerBus,
-  type MixerBusId,
-  type MixerChannel,
-} from '@lampstand/core';
+import { formatDb, type MixerBus, type MixerBusId, type MixerChannel } from '@lampstand/core';
 import {
   Button,
   Fader,
@@ -37,16 +29,13 @@ import { useHiddenAudioInputs, useInputDevices } from '../../lib/inputs';
 import { onMeters, readDyn, readLoudness, readMeter } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { openDialog, useStore } from '../../lib/store';
-import { DeferredInput } from '../DeferredControls';
-import { Select } from '../Select';
 import { ITEM_CLASS, MENU_CLASS } from '../menu';
 import { ask } from '../../lib/confirm';
-import { eqResponseDb } from './eqResponse';
+import { ChannelWindow } from './eq/ChannelWindow';
+import { nodeActive } from './eq/eqGeometry';
+import { toggleChannelWindow, useChannelWindow } from '../../lib/eqWindow';
 
 const KIND_ICON = { tracks: Music, video: Film, input: Mic } as const;
-
-/** What can be open in the editor: a channel, or a bus's own settings. */
-type Selection = { channel: string } | { bus: MixerBusId } | null;
 
 /** YouTube and Facebook play streams at about this loudness (LUFS). */
 const STREAM_TARGET_LUFS = -14;
@@ -156,8 +145,9 @@ function StripToggle({
 
 /** The processing a channel has switched on, as the strip's chip says it. */
 function processingLabel(c: MixerChannel): string {
-  const eq = c.eq.on && (c.eq.low || c.eq.mid || c.eq.high);
-  return [c.gate.on && 'GATE', c.hpf && 'LC', eq && 'EQ', c.comp.on && 'COMP', c.duck.on && 'DUCK']
+  const eq = ([0, 1, 2, 3, 4, 5] as const).some((i) => nodeActive(c, i));
+  const cut = c.hpf || c.lpf;
+  return [c.gate.on && 'GATE', cut && 'CUT', eq && 'EQ', c.comp.on && 'COMP', c.duck.on && 'DUCK']
     .filter(Boolean)
     .join(' · ');
 }
@@ -174,8 +164,13 @@ function ChannelStrip({
   const { t } = useTranslation();
   const Icon = KIND_ICON[c.kind];
   const locked = c.locked;
-  const set = (patch: Partial<MixerChannel>): void =>
-    void mixerCmd({ action: 'channel', id: c.id, patch });
+  const set = (patch: {
+    mute?: boolean;
+    solo?: boolean;
+    room?: boolean;
+    stream?: boolean;
+    locked?: boolean;
+  }): void => void mixerCmd({ action: 'channel', id: c.id, patch });
   const processing = processingLabel(c);
   return (
     <section
@@ -401,43 +396,6 @@ function BusStrip({
   );
 }
 
-/** A small curve of what the EQ and low cut do (a picture, not exact). */
-function EqCurve({ c }: { c: MixerChannel }) {
-  const W = 260;
-  const H = 64;
-  const path = useMemo(() => {
-    const pts: string[] = [];
-    for (let i = 0; i <= 80; i++) {
-      const f = 20 * Math.pow(1000, i / 80); // 20 Hz … 20 kHz
-      const db = eqResponseDb(c, f);
-      const x = (i / 80) * W;
-      const y = H / 2 - (Math.max(-15, Math.min(15, db)) / 15) * (H / 2 - 4);
-      pts.push(`${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`);
-    }
-    return pts.join(' ');
-  }, [c]);
-  const at = (hz: number): number => (Math.log10(hz / 20) / 3) * W;
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      aria-hidden
-      className="h-16 w-full rounded-[6px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]"
-    >
-      {[100, 1000, 10_000].map((hz) => (
-        <line key={hz} x1={at(hz)} x2={at(hz)} y1="0" y2={H} stroke="var(--hairline)" />
-      ))}
-      <line x1="0" x2={W} y1={H / 2} y2={H / 2} stroke="var(--hairline-strong)" />
-      <path
-        d={path}
-        fill="none"
-        stroke="var(--accent)"
-        strokeWidth="2"
-        opacity={c.eq.on || c.hpf ? 1 : 0.35}
-      />
-    </svg>
-  );
-}
-
 /** One labelled control in an editor. */
 function EditRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -478,480 +436,6 @@ function Section({
       </div>
       {children}
     </div>
-  );
-}
-
-const signedDb = (v: number): string => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)} dB`;
-const hz = (v: number): string =>
-  v >= 1000 ? `${(v / 1000).toFixed(v >= 10_000 ? 0 : 1)} kHz` : `${Math.round(v)} Hz`;
-
-/** A frequency slider on a log scale (so 100 Hz and 10 kHz get the same room). */
-function FreqSlider({
-  label,
-  value,
-  min,
-  max,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  disabled?: boolean;
-  onChange: (hz: number) => void;
-}) {
-  const toPos = (v: number): number => Math.log(v / min) / Math.log(max / min);
-  const fromPos = (p: number): number => {
-    const v = min * Math.pow(max / min, p);
-    return v >= 1000 ? Math.round(v / 50) * 50 : Math.round(v / 5) * 5;
-  };
-  return (
-    <Slider
-      aria-label={label}
-      min={0}
-      max={1}
-      step={0.005}
-      value={toPos(value)}
-      disabled={disabled}
-      format={() => hz(value)}
-      onChange={(e) => onChange(Math.min(max, Math.max(min, fromPos(Number(e.target.value)))))}
-    />
-  );
-}
-
-/** The compressor's gain reduction as a bar that grows down from 0 (up to −20 dB). */
-function ReductionBar({ id }: { id: string }) {
-  const bar = useRef<HTMLSpanElement>(null);
-  const label = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const draw = (): void => {
-      const gr = readDyn('room', id)[0];
-      if (bar.current) bar.current.style.width = `${Math.min(100, (-gr / 20) * 100)}%`;
-      if (label.current) label.current.textContent = `${dbText(gr)} dB`;
-    };
-    draw();
-    return onMeters(draw);
-  }, [id]);
-  return (
-    <div className="flex items-center gap-2">
-      <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]">
-        <span ref={bar} className="absolute inset-y-0 right-0 bg-[#e8b04b]" />
-      </div>
-      <Typography ref={label} size={10} tabular tone="secondary" className="w-12 text-right" />
-    </div>
-  );
-}
-
-/** Pick a preset for a channel's processing. */
-function PresetMenu({ c }: { c: MixerChannel }) {
-  const { t } = useTranslation();
-  return (
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger asChild disabled={c.locked}>
-        <Button size="xs" variant="secondary" icon={<ChevronDown size={12} />}>
-          {t('mixer.preset')}
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="start" sideOffset={4} className={MENU_CLASS}>
-          {PRESET_IDS.map((p) => (
-            <DropdownMenu.Item
-              key={p}
-              className={ITEM_CLASS}
-              onSelect={() => void mixerCmd({ action: 'preset', id: c.id, preset: p })}
-            >
-              <span className="flex flex-col">
-                <span>{t(`mixer.presets.${p}`)}</span>
-                <Typography size={11} tone="muted">
-                  {t(`mixer.presets.${p}Help`)}
-                </Typography>
-              </span>
-            </DropdownMenu.Item>
-          ))}
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
-  );
-}
-
-/**
- * The selected channel, in full: name, device and input (trim, polarity, delay, noise
- * suppression), pan, gate, EQ with low cut, compressor, ducking.
- */
-function ChannelEditor({ c, onClose }: { c: MixerChannel; onClose: () => void }) {
-  const { t } = useTranslation();
-  const hidden = useHiddenAudioInputs();
-  // The inputs chosen to show, and always the one this channel uses.
-  const devices = useInputDevices('audioinput')?.filter(
-    (d) => !hidden.has(d.deviceId) || d.deviceId === c.deviceId,
-  );
-  const off = c.locked;
-  const set = (patch: Parameters<typeof mixerLive>[0]['patch']): void =>
-    mixerLive({ action: 'channel', id: c.id, patch });
-  const n = { name: c.name };
-  return (
-    <aside
-      aria-label={t('mixer.editorOf', n)}
-      className="flex w-[320px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-[8px] bg-[var(--surface-2)] p-3"
-    >
-      <div className="flex items-center gap-2">
-        <DeferredInput
-          aria-label={t('mixer.name')}
-          value={c.name}
-          maxLength={40}
-          disabled={off}
-          onCommit={(v) =>
-            v.trim() && void mixerCmd({ action: 'channel', id: c.id, patch: { name: v.trim() } })
-          }
-          className="field !h-7 min-w-0 flex-1"
-        />
-        {c.kind === 'input' && (
-          <IconButton
-            size="xs"
-            variant="danger"
-            disabled={off}
-            aria-label={t('mixer.remove', n)}
-            onClick={() => {
-              onClose();
-              void mixerCmd({ action: 'remove', id: c.id });
-            }}
-          >
-            <Trash2 size={13} />
-          </IconButton>
-        )}
-        <IconButton size="xs" aria-label={t('mixer.closeEditor')} onClick={onClose}>
-          <X size={13} />
-        </IconButton>
-      </div>
-      <div className="flex items-center gap-2">
-        <PresetMenu c={c} />
-        <span className="flex-1" />
-        <Typography size={11} tone="secondary">
-          {t('mixer.lock')}
-        </Typography>
-        <Switch
-          label={t(off ? 'mixer.unlockOf' : 'mixer.lockOf', n)}
-          checked={off}
-          onChange={(locked) => void mixerCmd({ action: 'channel', id: c.id, patch: { locked } })}
-        />
-      </div>
-      {off && (
-        <Typography size={11} tone="muted" leading="snug">
-          {t('mixer.lockedHelp')}
-        </Typography>
-      )}
-
-      <Section title={t('mixer.input')}>
-        {c.kind === 'input' && (
-          <>
-            <EditRow label={t('mixer.device')}>
-              <Select<string>
-                size="sm"
-                aria-label={t('mixer.device')}
-                value={c.deviceId}
-                onChange={(deviceId) =>
-                  void mixerCmd({ action: 'channel', id: c.id, patch: { deviceId } })
-                }
-                options={(devices ?? []).map((d) => ({ value: d.deviceId, label: d.label }))}
-                placeholder={t('mixer.deviceMissing')}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.mono')}>
-              <Switch
-                label={t('mixer.monoOf', n)}
-                checked={c.mono}
-                disabled={off}
-                onChange={(mono) => set({ mono })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.denoise')}>
-              <Switch
-                label={t('mixer.denoiseOf', n)}
-                checked={c.denoise}
-                disabled={off}
-                onChange={(denoise) => set({ denoise })}
-              />
-            </EditRow>
-          </>
-        )}
-        <EditRow label={t('mixer.trim')}>
-          <Slider
-            aria-label={t('mixer.trimOf', n)}
-            min={-20}
-            max={20}
-            step={0.5}
-            value={c.trimDb}
-            disabled={off}
-            format={signedDb}
-            onChange={(e) => set({ trimDb: Number(e.target.value) })}
-            onDoubleClick={() => set({ trimDb: 0 })}
-          />
-        </EditRow>
-        <EditRow label={t('mixer.invert')}>
-          <Switch
-            label={t('mixer.invertOf', n)}
-            checked={c.invert}
-            disabled={off}
-            onChange={(invert) => set({ invert })}
-          />
-        </EditRow>
-        <EditRow label={t('mixer.syncDelay')}>
-          <Slider
-            aria-label={t('mixer.syncDelayOf', n)}
-            min={0}
-            max={1000}
-            step={5}
-            value={c.delayMs}
-            disabled={off}
-            format={(v) => `${v} ms`}
-            onChange={(e) => set({ delayMs: Number(e.target.value) })}
-            onDoubleClick={() => set({ delayMs: 0 })}
-          />
-        </EditRow>
-        <EditRow label={t('mixer.pan')}>
-          <Slider
-            aria-label={t('mixer.panOf', n)}
-            min={-1}
-            max={1}
-            step={0.05}
-            value={c.pan}
-            disabled={off}
-            format={(v) =>
-              Math.abs(v) < 0.025 ? 'C' : `${v < 0 ? 'L' : 'R'}${Math.round(Math.abs(v) * 100)}`
-            }
-            onChange={(e) => set({ pan: Number(e.target.value) })}
-            onDoubleClick={() => set({ pan: 0 })}
-          />
-        </EditRow>
-      </Section>
-
-      <Section
-        title={t('mixer.gate')}
-        label={t('mixer.gateOf', n)}
-        on={c.gate.on}
-        disabled={off}
-        onToggle={(on) => set({ gate: { on } })}
-      >
-        {c.gate.on && (
-          <EditRow label={t('mixer.threshold')}>
-            <Slider
-              aria-label={t('mixer.gateThreshold')}
-              min={-80}
-              max={0}
-              step={1}
-              value={c.gate.thresholdDb}
-              disabled={off}
-              format={signedDb}
-              onChange={(e) => set({ gate: { thresholdDb: Number(e.target.value) } })}
-            />
-          </EditRow>
-        )}
-      </Section>
-
-      <Section
-        title={t('mixer.eqTitle')}
-        label={t('mixer.eqOnOf', n)}
-        on={c.eq.on}
-        disabled={off}
-        onToggle={(on) => set({ eq: { on } })}
-      >
-        <EqCurve c={c} />
-        <EditRow label={t('mixer.hpf')}>
-          <div className="flex items-center gap-2">
-            <Switch
-              label={t('mixer.hpfOf', { ...n, hz: c.hpfHz })}
-              checked={c.hpf}
-              disabled={off}
-              onChange={(hpf) => set({ hpf })}
-            />
-            <FreqSlider
-              label={t('mixer.hpfFreq')}
-              value={c.hpfHz}
-              min={20}
-              max={400}
-              disabled={off || !c.hpf}
-              onChange={(hpfHz) => set({ hpfHz })}
-            />
-          </div>
-        </EditRow>
-        {c.eq.on && (
-          <>
-            {(
-              [
-                ['low', 'lowHz', 40, 500],
-                ['mid', 'midHz', 150, 10_000],
-                ['high', 'highHz', 1500, 18_000],
-              ] as const
-            ).map(([band, freq, lo, hi]) => (
-              <div key={band} className="flex flex-col gap-1">
-                <EditRow label={t(`mixer.eq.${band}`)}>
-                  <Slider
-                    aria-label={t('mixer.eqOf', { band: t(`mixer.eq.${band}`), name: c.name })}
-                    min={-15}
-                    max={15}
-                    step={0.5}
-                    value={c.eq[band]}
-                    disabled={off}
-                    format={signedDb}
-                    onChange={(e) => set({ eq: { [band]: Number(e.target.value) } })}
-                    onDoubleClick={() => set({ eq: { [band]: 0 } })}
-                  />
-                </EditRow>
-                <EditRow label="">
-                  <FreqSlider
-                    label={t('mixer.eqFreqOf', { band: t(`mixer.eq.${band}`) })}
-                    value={c.eq[freq]}
-                    min={lo}
-                    max={hi}
-                    disabled={off}
-                    onChange={(v) => set({ eq: { [freq]: v } })}
-                  />
-                </EditRow>
-                {band === 'mid' && (
-                  <EditRow label={t('mixer.width')}>
-                    <Slider
-                      aria-label={t('mixer.widthOf')}
-                      min={0.3}
-                      max={8}
-                      step={0.1}
-                      value={c.eq.midQ}
-                      disabled={off}
-                      format={(v) => `Q ${v.toFixed(1)}`}
-                      onChange={(e) => set({ eq: { midQ: Number(e.target.value) } })}
-                    />
-                  </EditRow>
-                )}
-              </div>
-            ))}
-          </>
-        )}
-      </Section>
-
-      <Section
-        title={t('mixer.comp')}
-        label={t('mixer.compOf', n)}
-        on={c.comp.on}
-        disabled={off}
-        onToggle={(on) => set({ comp: { on } })}
-      >
-        {c.comp.on && (
-          <>
-            <ReductionBar id={c.id} />
-            <EditRow label={t('mixer.threshold')}>
-              <Slider
-                aria-label={t('mixer.threshold')}
-                min={-60}
-                max={0}
-                step={1}
-                value={c.comp.thresholdDb}
-                disabled={off}
-                format={signedDb}
-                onChange={(e) => set({ comp: { thresholdDb: Number(e.target.value) } })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.ratio')}>
-              <Slider
-                aria-label={t('mixer.ratio')}
-                min={1}
-                max={20}
-                step={0.5}
-                value={c.comp.ratio}
-                disabled={off}
-                format={(v) => `${v}:1`}
-                onChange={(e) => set({ comp: { ratio: Number(e.target.value) } })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.attack')}>
-              <Slider
-                aria-label={t('mixer.attack')}
-                min={0.5}
-                max={100}
-                step={0.5}
-                value={c.comp.attackMs}
-                disabled={off}
-                format={(v) => `${v} ms`}
-                onChange={(e) => set({ comp: { attackMs: Number(e.target.value) } })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.release')}>
-              <Slider
-                aria-label={t('mixer.release')}
-                min={10}
-                max={1000}
-                step={10}
-                value={c.comp.releaseMs}
-                disabled={off}
-                format={(v) => `${v} ms`}
-                onChange={(e) => set({ comp: { releaseMs: Number(e.target.value) } })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.makeup')}>
-              <Slider
-                aria-label={t('mixer.makeup')}
-                min={0}
-                max={24}
-                step={0.5}
-                value={c.comp.makeupDb}
-                disabled={off}
-                format={signedDb}
-                onChange={(e) => set({ comp: { makeupDb: Number(e.target.value) } })}
-              />
-            </EditRow>
-          </>
-        )}
-      </Section>
-
-      <Section
-        title={t('mixer.ducking')}
-        label={t('mixer.duckOf', n)}
-        on={c.duck.on}
-        disabled={off}
-        onToggle={(on) => set({ duck: { on } })}
-      >
-        <Typography size={11} tone="muted" leading="snug">
-          {t('mixer.duckHelp')}
-        </Typography>
-        {c.duck.on && (
-          <>
-            <EditRow label={t('mixer.duckAmount')}>
-              <Slider
-                aria-label={t('mixer.duckAmount')}
-                min={3}
-                max={40}
-                step={1}
-                value={c.duck.amountDb}
-                disabled={off}
-                format={(v) => `−${v} dB`}
-                onChange={(e) => set({ duck: { amountDb: Number(e.target.value) } })}
-              />
-            </EditRow>
-            <EditRow label={t('mixer.duckWhen')}>
-              <Slider
-                aria-label={t('mixer.duckWhen')}
-                min={-60}
-                max={-10}
-                step={1}
-                value={c.duck.thresholdDb}
-                disabled={off}
-                format={signedDb}
-                onChange={(e) => set({ duck: { thresholdDb: Number(e.target.value) } })}
-              />
-            </EditRow>
-          </>
-        )}
-        {c.kind === 'input' && (
-          <EditRow label={t('mixer.ducksOthers')}>
-            <Switch
-              label={t('mixer.ducksOthersOf', n)}
-              checked={c.ducksOthers}
-              disabled={off}
-              onChange={(ducksOthers) => set({ ducksOthers })}
-            />
-          </EditRow>
-        )}
-      </Section>
-    </aside>
   );
 }
 
@@ -1037,18 +521,14 @@ export function MixerPanel({ height }: { height: number }) {
   const mixer = useStore((s) => s.live?.mixer ?? null);
   const hidden = useHiddenAudioInputs();
   const devices = useInputDevices('audioinput')?.filter((d) => !hidden.has(d.deviceId)) ?? null;
-  const [selected, setSelected] = useState<Selection>(null);
+  const [busOpen, setBusOpen] = useState<MixerBusId | null>(null);
+  const windowChannel = useChannelWindow((s) => s.channel);
+  const docked = useChannelWindow((s) => s.docked);
   if (!mixer) return null;
   const soloed = mixer.channels.some((c) => c.solo);
-  const current =
-    selected && 'channel' in selected
-      ? (mixer.channels.find((c) => c.id === selected.channel) ?? null)
-      : null;
-  const busOpen = selected && 'bus' in selected ? selected.bus : null;
   const used = new Set(mixer.channels.map((c) => c.deviceId));
   const addable = (devices ?? []).filter((d) => !used.has(d.deviceId));
-  const toggle = (s: NonNullable<Selection>): void =>
-    setSelected((cur) => (JSON.stringify(cur) === JSON.stringify(s) ? null : s));
+  const dockedOpen = docked && !!windowChannel;
 
   return (
     <section
@@ -1134,8 +614,11 @@ export function MixerPanel({ height }: { height: number }) {
             <ChannelStrip
               key={c.id}
               c={c}
-              selected={current?.id === c.id}
-              onSelect={() => toggle({ channel: c.id })}
+              selected={windowChannel === c.id}
+              onSelect={() => {
+                setBusOpen(null);
+                toggleChannelWindow(c.id);
+              }}
             />
           ))}
           {mixer.channels.length < 3 && (
@@ -1154,13 +637,17 @@ export function MixerPanel({ height }: { height: number }) {
               id={id}
               bus={mixer[id]}
               selected={busOpen === id}
-              onSelect={() => toggle({ bus: id })}
+              onSelect={() => setBusOpen((b) => (b === id ? null : id))}
             />
           ))}
         </div>
-        {current && <ChannelEditor c={current} onClose={() => setSelected(null)} />}
+        {dockedOpen && (
+          <div className="flex min-w-[620px] max-w-[980px] flex-[1.4]">
+            <ChannelWindow mode="docked" />
+          </div>
+        )}
         {busOpen && (
-          <BusEditor id={busOpen} bus={mixer[busOpen]} onClose={() => setSelected(null)} />
+          <BusEditor id={busOpen} bus={mixer[busOpen]} onClose={() => setBusOpen(null)} />
         )}
       </div>
     </section>

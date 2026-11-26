@@ -1,5 +1,6 @@
 import { applyMixerAction, type MixerAction } from '@lampstand/core';
 import { cmd } from './api';
+import { mergePatch } from './mergePatch';
 import { attempt, useStore } from './store';
 import { channelName } from './utils';
 
@@ -13,6 +14,7 @@ export const mixerCmd = (a: MixerAction): Promise<unknown> =>
   );
 
 type Live = Extract<MixerAction, { action: 'channel' | 'bus' }>;
+
 const pending = new Map<string, Live>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -25,7 +27,7 @@ export function mixerLive(a: Live): void {
   if (s.live) useStore.setState({ live: { ...s.live, mixer: applyMixerAction(s.live.mixer, a) } });
   const key = a.action === 'bus' ? `bus:${a.bus}` : `ch:${a.id}`;
   const prev = pending.get(key);
-  pending.set(key, prev ? { ...a, patch: { ...prev.patch, ...a.patch } } : a);
+  pending.set(key, prev ? { ...a, patch: mergePatch(prev.patch, a.patch) } : a);
   timer ??= setTimeout(() => {
     timer = null;
     const all = [...pending.values()];
