@@ -1219,7 +1219,7 @@
         },
         "listenSetup": {
           "q": "Set up listening",
-          "a": "1. Settings › Assistant › Speech model: click Download beside English — Base (Tiny is lighter for older computers). It downloads once and is checked.\n2. Listen to: pick the pulpit microphone or the desk’s feed of it. The preacher’s voice alone works best; music and the congregation make it harder.\n3. In the toolbar, click Listen › Start listening. The button lights and gets a green dot; the Listening card appears beside the live output with a level bar and the transcript.\n4. Speak a sentence and watch it appear. The time beside Transcript is how long recognition took (usually 2–3 seconds).\nStop listening (Listen › Stop listening) closes the microphone at once."
+          "a": "1. Settings › Assistant › Speech model: click Download beside English — Base (Tiny is lighter for older computers). It downloads once and is checked.\n2. Listen to: pick the pulpit microphone or the desk’s feed of it. The preacher’s voice alone works best; music and the congregation make it harder.\n3. In the toolbar, click Listen and choose Suggest, Approve or Auto (or tick Voice commands): listening starts by itself. Start listening does the same with scripture left as it is. The button lights and gets a green dot; the Listening card appears beside the live output with a level bar and the transcript.\n4. Speak a sentence and watch it appear. The time beside Transcript is how long recognition took (usually 2–3 seconds).\nStop listening (Listen › Stop listening) closes the microphone at once."
         },
         "listenModes": {
           "q": "Let it put up the verses the preacher reads",
@@ -1235,7 +1235,7 @@
         },
         "listenTrouble": {
           "q": "Listening doesn’t hear anything",
-          "a": "• “Download a speech model first”: Settings › Assistant › Speech model › Download, then Start listening again.\n• “Isn’t allowed to use the microphone”: System Settings › Privacy & Security › Microphone, turn Lampstand on (Windows: Settings › Privacy › Microphone).\n• The level bar doesn’t move: check Listen to in Settings › Assistant is the right input, and that the desk sends to it.\n• It hears words but finds no verses: is Scripture on (Suggest, Approve or Auto)? Speech with loud music behind it is hard to recognise; a clean pulpit feed helps most.\n• Slow (more than 4–5 seconds): try English — Tiny, or close other heavy apps."
+          "a": "• If listening can’t start, a red notice says why, the Listen button gets a red dot, and the Listening card under the live picture keeps the reason with Try again.\n• “Download a speech model first”: Settings › Assistant › Speech model › Download, then Start listening again.\n• “Isn’t allowed to use the microphone”: System Settings › Privacy & Security › Microphone, turn Lampstand on (Windows: Settings › Privacy › Microphone).\n• The level bar doesn’t move: check Listen to in Settings › Assistant is the right input, and that the desk sends to it.\n• It hears words but finds no verses: is Scripture on (Suggest, Approve or Auto)? Speech with loud music behind it is hard to recognise; a clean pulpit feed helps most.\n• Slow (more than 4–5 seconds): try English — Tiny, or close other heavy apps."
         },
         "privacy": {
           "q": "What leaves the computer?",

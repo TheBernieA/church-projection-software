@@ -690,6 +690,8 @@ export function RightColumn() {
             />
           </div>
         </figure>
+        {/* What listening heard sits right under the live picture, where the operator looks. */}
+        <ListenCard />
         {/* The scenes, with the screen masks along their header row. */}
         <ScreenScenes
           trailing={
@@ -725,7 +727,6 @@ export function RightColumn() {
           program={p.media?.kind === 'video' ? p.media : null}
           preview={live.preview.media?.kind === 'video' ? live.preview.media : null}
         />
-        <ListenCard />
       </div>
       <ShowControls />
     </div>

@@ -6,6 +6,7 @@ import { Typography } from '@lampstand/ui';
 import type { DetectionMode } from '@lampstand/detection';
 import { saveSettings } from '../../lib/actions';
 import {
+  isListening,
   setDetectionMode,
   startListening,
   stopListening,
@@ -75,7 +76,11 @@ export function ListenMenu() {
           </DropdownMenu.Label>
           <DropdownMenu.RadioGroup
             value={mode}
-            onValueChange={(m) => void setDetectionMode(m as DetectionMode)}
+            onValueChange={(m) => {
+              void setDetectionMode(m as DetectionMode);
+              // Choosing what to do with scripture means "listen": no separate step to miss.
+              if (m !== 'off' && !isListening()) void startListening();
+            }}
           >
             {DETECTION_MODES.map((m) => (
               <DropdownMenu.RadioItem key={m} value={m} className={`${ITEM_CLASS} items-start`}>
@@ -97,9 +102,10 @@ export function ListenMenu() {
           <DropdownMenu.CheckboxItem
             className={`${ITEM_CLASS} items-start`}
             checked={voice}
-            onCheckedChange={(v) =>
-              listening && void saveSettings({ listening: { ...listening, voiceCommands: v } })
-            }
+            onCheckedChange={(v) => {
+              if (listening) void saveSettings({ listening: { ...listening, voiceCommands: v } });
+              if (v && !isListening()) void startListening();
+            }}
           >
             <span className="mt-0.5 flex w-4 shrink-0 justify-center">
               <DropdownMenu.ItemIndicator>

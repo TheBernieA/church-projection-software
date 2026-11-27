@@ -28,7 +28,7 @@ import {
   stepItem,
 } from '../actions';
 import { api, cmd, q } from '../api';
-import { useStore } from '../store';
+import { toast, useStore } from '../store';
 import i18n from '../../i18n';
 import captureUrl from './capture.worklet.js?url&no-inline';
 import { WhisperTranscriber } from './whisperTranscriber';
@@ -155,6 +155,18 @@ function transcriberFor(model: string): Transcriber {
   return t;
 }
 
+/** Listening stopped or couldn't start: said in a notice (the card may be out of view) too. */
+function fail(kind: NonNullable<ListenState['errorKind']>, message: string): void {
+  patch({ status: 'error', error: message, errorKind: kind });
+  toast(message, 'error');
+}
+
+/** Listening is off (or stopped by a problem). */
+export const isListening = (): boolean => {
+  const st = useListen.getState().status;
+  return st !== 'off' && st !== 'error';
+};
+
 /** Turn listening on: the model loads (once), then the input opens. */
 export async function startListening(): Promise<void> {
   const st = useListen.getState().status;
@@ -165,7 +177,7 @@ export async function startListening(): Promise<void> {
   const model = s.listening.model;
   await refreshModels();
   if (!modelReady(model)) {
-    patch({ status: 'error', error: i18n.t('listen.needsModel'), errorKind: 'model' });
+    fail('model', i18n.t('listen.needsModel'));
     return;
   }
   patch({ status: 'loading', error: null, errorKind: null, loadProgress: 0 });
@@ -203,7 +215,7 @@ export async function startListening(): Promise<void> {
       }
     };
     stream.getTracks()[0]?.addEventListener('ended', () => {
-      patch({ status: 'error', error: i18n.t('listen.inputLost'), errorKind: 'input' });
+      fail('input', i18n.t('listen.inputLost'));
       stopTracks();
     });
     expireTimer = setInterval(() => {
@@ -214,13 +226,12 @@ export async function startListening(): Promise<void> {
   } catch (e) {
     stopTracks();
     const denied = e instanceof DOMException && e.name === 'NotAllowedError';
-    patch({
-      status: 'error',
-      errorKind: denied ? 'input' : 'other',
-      error: denied
+    fail(
+      denied ? 'input' : 'other',
+      denied
         ? i18n.t('listen.noMicAccess')
         : i18n.t('listen.failed', { reason: e instanceof Error ? e.message : String(e) }),
-    });
+    );
   }
 }
 
