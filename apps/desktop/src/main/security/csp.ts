@@ -11,7 +11,8 @@ export const PROD_CSP = [
   "img-src 'self' lampstand-media: data: blob:",
   "media-src 'self' lampstand-media: blob: mediastream:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // lampstand-media: the control window reads its speech model's files (ADR 0008).
+  "connect-src 'self' lampstand-media:",
   "object-src 'none'",
   "base-uri 'none'",
   "frame-ancestors 'none'",
@@ -26,7 +27,7 @@ export function devCsp(devOrigin: string): string {
     `img-src 'self' lampstand-media: data: blob: ${devOrigin}`,
     "media-src 'self' lampstand-media: blob: mediastream:",
     `font-src 'self' data: ${devOrigin}`,
-    `connect-src 'self' ${devOrigin} ${ws}`,
+    `connect-src 'self' lampstand-media: ${devOrigin} ${ws}`,
     "object-src 'none'",
     "base-uri 'none'",
     "frame-ancestors 'none'",

@@ -5,6 +5,7 @@ import {
   OutputRoleSchema,
   ProcessingPresetSchema,
   ProcessingSchema,
+  SPEECH_MODEL_IDS,
 } from '@lampstand/core';
 import type { QueryName } from './channels';
 
@@ -14,10 +15,17 @@ import type { QueryName } from './channels';
  * schemas and checks which window type sent it.
  */
 
+/**
+ * Who asked, from the control window: a click, a shortcut, a spoken command, or a verse heard
+ * in Auto (the audit log keeps it: "why did that verse appear?").
+ */
+export const ControlSourceSchema = z.enum(['ui', 'shortcut', 'voice', 'auto-detect']);
+export type ControlSource = z.infer<typeof ControlSourceSchema>;
+
 export const CommandEnvelopeSchema = z.object({
   type: z.string().min(1).max(80),
   payload: z.unknown(),
-  source: z.enum(['ui', 'shortcut']).default('ui'),
+  source: ControlSourceSchema.default('ui'),
 });
 export type CommandEnvelope = z.input<typeof CommandEnvelopeSchema>;
 
@@ -103,6 +111,28 @@ export const QuerySchemas = {
   }),
   /** Pick a presets file or a text EQ (Equalizer APO / REW); what it holds comes back. */
   'presets.import': z.undefined(),
+  /** Is an Anthropic key saved (never the key itself)? */
+  'assistant.status': z.undefined(),
+  /** Check a key with Anthropic and save it in the keychain. */
+  'assistant.setKey': z.object({ key: z.string().min(1).max(300) }),
+  'assistant.forgetKey': z.undefined(),
+  /** Plan a service from what the operator wrote; the draft comes back for review. */
+  'assistant.plan': z.object({
+    text: z.string().trim().min(1).max(20_000),
+    date: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    /** Send the library's song titles (also needs Settings › Assistant to allow it). */
+    useLibrary: z.boolean().default(true),
+  }),
+  /** Structure pasted lyrics into verses and choruses. */
+  'assistant.lyrics': z.object({ text: z.string().trim().min(1).max(20_000) }),
+  'speech.models': z.undefined(),
+  /** Start downloading a speech model; progress comes as `evSpeechModel`. */
+  'speech.download': z.object({ id: z.enum(SPEECH_MODEL_IDS) }),
+  'speech.cancel': z.object({ id: z.enum(SPEECH_MODEL_IDS) }),
+  'speech.remove': z.object({ id: z.enum(SPEECH_MODEL_IDS) }),
 } as const satisfies Record<QueryName, z.ZodType>;
 
 export type QueryArgs<K extends QueryName> = z.input<(typeof QuerySchemas)[K]>;

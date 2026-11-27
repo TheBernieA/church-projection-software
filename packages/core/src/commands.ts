@@ -2,7 +2,7 @@ import type { z } from 'zod';
 import { AppError, toErrorShape, type Result } from './result';
 
 export type CommandSource =
-  'ui' | 'remote' | 'auto-detect' | 'shortcut' | 'api' | 'midi' | 'system';
+  'ui' | 'remote' | 'auto-detect' | 'voice' | 'shortcut' | 'api' | 'midi' | 'system';
 
 export interface Command<P = unknown> {
   type: string;

@@ -1,3 +1,5 @@
+import type { Assistant } from '../ai/assistant';
+import type { SpeechModels } from '../modules/speechModels';
 import type { BrowserWindow } from 'electron';
 import type { z } from 'zod';
 import type {
@@ -69,6 +71,10 @@ export interface Services {
   onlineBibles: OnlineBibles;
   hymnSongs: Song[];
   hymnals: InstalledHymnal[];
+  /** The online assistant (Claude), with its key in the keychain. */
+  assistant: Assistant;
+  /** Speech models for listening, downloaded on request. */
+  speechModels: SpeechModels;
 }
 
 export type WindowKind = 'control' | 'output' | 'stage' | 'stream';

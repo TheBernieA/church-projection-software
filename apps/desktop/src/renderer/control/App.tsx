@@ -37,6 +37,11 @@ const SettingsDialog = lazyNamed(() => import('./components/SettingsDialog'), 'S
 const ShortcutsDialog = lazyNamed(() => import('./components/ShortcutsDialog'), 'ShortcutsDialog');
 const NewSongDialog = lazyNamed(() => import('./components/song/NewSongDialog'), 'NewSongDialog');
 const ThemeEditor = lazyNamed(() => import('./components/ThemeEditor'), 'ThemeEditor');
+const PlanServiceDialog = lazyNamed(
+  () => import('./components/assistant/PlanServiceDialog'),
+  'PlanServiceDialog',
+);
+const LyricsDialog = lazyNamed(() => import('./components/assistant/LyricsDialog'), 'LyricsDialog');
 
 /**
  * Control window, "Show workspace" layout:
@@ -148,6 +153,8 @@ export function App() {
         {dialog === 'services' && <ServicesDialog />}
         {dialog === 'playback' && <PlaybackDialog />}
         {dialog === 'perf' && <PerfHud />}
+        {dialog === 'planService' && <PlanServiceDialog />}
+        {dialog === 'lyrics' && <LyricsDialog />}
       </Suspense>
       <Toasts />
       <ConfirmHost />

@@ -10,7 +10,9 @@ import {
   Music2,
   Pencil,
   Plus,
+  Sparkles,
   Trash2,
+  Wand2,
 } from 'lucide-react';
 import { useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -85,6 +87,10 @@ function LibraryAddMenu() {
               {displayCombo(effectiveShortcuts().newSong)}
             </Typography>
           </DropdownMenu.Item>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => openDialog('lyrics')}>
+            <Wand2 size={14} />
+            {t('lyricsAi.menu')}
+          </DropdownMenu.Item>
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => newPlaylist()}>
             <ListMusic size={14} />
@@ -114,6 +120,10 @@ function LibraryAddMenu() {
               </DropdownMenu.SubContent>
             </DropdownMenu.Portal>
           </DropdownMenu.Sub>
+          <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => openDialog('planService')}>
+            <Sparkles size={14} />
+            {t('planner.menu')}
+          </DropdownMenu.Item>
           <DropdownMenu.Separator className={SEPARATOR_CLASS} />
           <DropdownMenu.Item className={ITEM_CLASS} onSelect={() => void importSlides()}>
             <FileUp size={14} />

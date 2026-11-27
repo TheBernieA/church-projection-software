@@ -4,6 +4,24 @@ What's left to build, with why it's open. Tick an item when it lands.
 
 _Started 2026-11-26._
 
+## Assistant and listening (docs/ai.md, ADR 0008)
+
+- [ ] Try the planner and lyrics against the real API: the request shape, structured-output
+  schemas and error wording were checked offline and with a rejected key, but no plan has been
+  made with a real key yet (no Anthropic credentials on the build Mac).
+- [ ] Listening on a real pulpit microphone and a desk feed, with music and a congregation: so far
+  only synthesized speech through Chromium's fake microphone (latency 2–3 s on an Apple-silicon
+  Mac with Whisper base). Tune the segmenter's margin and pause length there.
+- [ ] Listening on Windows and an Intel Mac (never run); time Tiny vs Base on a modest laptop.
+- [ ] WebGPU for Whisper: it's tried first, then WebAssembly; which one ran wasn't checked (the
+  latency readout's tooltip says). Check which ops run on the GPU and whether fp16 models are
+  worth a second download.
+- [ ] A shortcut to show the newest suggestion (`newestPending` is ready; needs a shortcut entry).
+- [ ] Verses read without their reference (quoted text), live captions, sermon points and notes,
+  lyric follow, song suggestions, operator chat (Settings › Assistant › Coming next).
+- [ ] The speech model download is ~78 MB at whatever speed the church's connection has: resume a
+  broken download instead of starting over.
+
 ## Sound (the Mixer)
 
 - [ ] Port Onda's meters to the Mixer: peak decay rates (IEC PPM types) and true peak.

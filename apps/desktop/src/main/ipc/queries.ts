@@ -161,6 +161,43 @@ export function createQueries({
       s.onlineBibles.probe(OnlineBibleSchema.parse({ ...a.source, id: 'ol-probe' }), a.key ?? ''),
     'onlineBible.catalog': (a: QueryArgs<'onlineBible.catalog'>) =>
       s.onlineBibles.apiBibleCatalog(a.key),
+    // The assistant: the key is checked and kept in main; the page only learns whether one is
+    // saved. A plan sends only what was typed, and the song titles when both allow it.
+    'assistant.status': async () => ({ hasKey: await s.assistant.hasKey() }),
+    'assistant.setKey': async (a: QueryArgs<'assistant.setKey'>) => {
+      await s.assistant.setKey(a.key);
+      return { saved: true };
+    },
+    'assistant.forgetKey': async () => {
+      await s.assistant.forgetKey();
+      return { forgotten: true };
+    },
+    'assistant.plan': async (a: QueryArgs<'assistant.plan'>) => {
+      const share = a.useLibrary !== false && s.settings.get().assistant.sendSongTitles;
+      const titles = share
+        ? [...new Set([...(await s.songs.list()), ...s.hymnSongs].map((x) => x.title))].sort()
+        : [];
+      return s.assistant.planService({
+        text: a.text,
+        ...(a.date ? { date: a.date } : {}),
+        ...(titles.length ? { songTitles: titles } : {}),
+      });
+    },
+    'assistant.lyrics': (a: QueryArgs<'assistant.lyrics'>) => s.assistant.structureLyrics(a.text),
+    'speech.models': () => s.speechModels.status(),
+    // Runs on after answering; progress and the outcome come as evSpeechModel.
+    'speech.download': (a: QueryArgs<'speech.download'>) => {
+      void s.speechModels.download(a.id).catch(() => undefined);
+      return { started: true };
+    },
+    'speech.cancel': (a: QueryArgs<'speech.cancel'>) => {
+      s.speechModels.cancel(a.id);
+      return { cancelled: true };
+    },
+    'speech.remove': async (a: QueryArgs<'speech.remove'>) => {
+      await s.speechModels.remove(a.id);
+      return { removed: true };
+    },
     'search.query': (a: QueryArgs<'search.query'>) =>
       search.query(a.text, a.limit ?? 30, a.versionId),
     'displays.list': () => windows.listDisplays(),
@@ -268,7 +305,11 @@ export function createQueries({
       };
       const res = w ? await dialog.showSaveDialog(w, opts) : await dialog.showSaveDialog(opts);
       if (res.canceled || !res.filePath) return { done: false };
-      await writeFile(res.filePath, presetFileText(ProcessingPresetSchema.array().parse(presets)), 'utf8');
+      await writeFile(
+        res.filePath,
+        presetFileText(ProcessingPresetSchema.array().parse(presets)),
+        'utf8',
+      );
       return { done: true };
     },
     'presets.import': async () => {

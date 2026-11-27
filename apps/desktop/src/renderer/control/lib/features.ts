@@ -16,6 +16,7 @@ export const FEATURE_CATEGORIES: { id: FeatureCategory; readonly name: string }[
     'messages',
     'automation',
     'capture',
+    'assistant',
     'integrations',
   ] as const
 ).map((id) => ({
@@ -145,6 +146,18 @@ export const FEATURES: Feature[] = [
   f('playback-markers', 'automation', 'soon'),
   f('multitracks', 'integrations', 'soon'),
   f('stage-app', 'integrations', 'soon'),
+  f('ai-planner', 'assistant'),
+  f('ai-lyrics', 'assistant'),
+  f('scripture-listening', 'assistant'),
+  f('voice-commands', 'assistant'),
+  f('live-transcript', 'assistant'),
+  f('quoted-verses', 'assistant', 'soon'),
+  f('live-captions', 'assistant', 'soon'),
+  f('sermon-points', 'assistant', 'soon'),
+  f('sermon-notes', 'assistant', 'soon'),
+  f('lyric-follow', 'assistant', 'soon'),
+  f('song-suggestions', 'assistant', 'soon'),
+  f('operator-chat', 'assistant', 'soon'),
 ];
 
 const byId = new Map(FEATURES.map((x) => [x.id, x]));

@@ -40,6 +40,7 @@ const api: ControlApi = {
   onStreamPreview: (cb) => listen(Channels.evStreamPreview, cb),
   onStreamFrame: receiveGpuFrames(),
   streamWatch: (fps, ready) => ipcRenderer.send(Channels.streamWatch, { fps, ready }),
+  onSpeechModel: (cb) => listen(Channels.evSpeechModel, cb),
   platform: process.platform,
 };
 

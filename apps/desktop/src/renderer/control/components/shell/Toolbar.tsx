@@ -34,6 +34,7 @@ import { useNow } from '../../lib/hooks';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
 import { openDialog, useStore } from '../../lib/store';
 import { ToolbarButton } from './ToolbarButton';
+import { ListenMenu } from '../listen/ListenMenu';
 import { ScreensMenu } from './ScreensMenu';
 import { LiveButton } from './LiveButton';
 import { type Mode } from '../../types';
@@ -354,6 +355,7 @@ export function Toolbar() {
         pressed={mixerOpen}
         onClick={() => useStore.setState({ mixerOpen: !mixerOpen })}
       />
+      <ListenMenu />
       <LooksMenu />
       <LiveButton />
 

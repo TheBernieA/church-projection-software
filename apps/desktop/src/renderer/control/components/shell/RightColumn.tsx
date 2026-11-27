@@ -73,6 +73,7 @@ import { SceneView } from '../SceneView';
 import { LayerStrip, type StripLayer } from './LayerStrip';
 import { CameraSwitcher } from '../media/CameraSwitcher';
 import { ShowControls } from './ShowControls';
+import { ListenCard } from '../listen/ListenCard';
 import { Select } from '../Select';
 import { urlHost } from '../../lib/utils';
 
@@ -724,6 +725,7 @@ export function RightColumn() {
           program={p.media?.kind === 'video' ? p.media : null}
           preview={live.preview.media?.kind === 'video' ? live.preview.media : null}
         />
+        <ListenCard />
       </div>
       <ShowControls />
     </div>

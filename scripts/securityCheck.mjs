@@ -39,6 +39,9 @@ for (const file of sources) {
     fail(`${rel}: ipcRenderer exposed`);
   if (/fetch\(\s*['"`]https?:|https?\.request\(|axios/.test(src) && !rel.includes('/modules/'))
     fail(`${rel}: unexpected network call (§17.4)`);
+  // The online assistant is opt-in and lives in one place (ADR 0008).
+  if (/from '@anthropic-ai\/sdk/.test(src) && !rel.startsWith('apps/desktop/src/main/ai/'))
+    fail(`${rel}: the Anthropic SDK is only for main/ai (ADR 0008)`);
 }
 
 const hardening = readFileSync(join(root, 'apps/desktop/src/main/security/hardening.ts'), 'utf8');

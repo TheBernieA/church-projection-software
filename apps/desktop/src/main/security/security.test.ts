@@ -104,6 +104,10 @@ describe('CSP', () => {
     expect(PROD_CSP).toContain("script-src 'self' 'wasm-unsafe-eval';");
     expect(PROD_CSP).toContain("object-src 'none'");
   });
+
+  it('lets pages read only their own files and library media, never the network', () => {
+    expect(PROD_CSP).toContain("connect-src 'self' lampstand-media:;");
+  });
 });
 
 describe('media byte ranges (video seeking)', () => {

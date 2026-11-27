@@ -44,6 +44,7 @@ export type SettingsPageId =
   | 'general'
   | 'scripture'
   | 'songs'
+  | 'assistant'
   | 'presenting'
   | 'screens'
   | 'video'
@@ -90,6 +91,8 @@ export type DialogName =
   | 'services'
   | 'perf'
   | 'playback'
+  | 'planService'
+  | 'lyrics'
   | null;
 
 export interface Toast {
@@ -242,6 +245,7 @@ export type FeatureCategory =
   | 'messages'
   | 'automation'
   | 'capture'
+  | 'assistant'
   | 'integrations';
 
 export interface Feature {

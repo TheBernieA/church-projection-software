@@ -58,7 +58,12 @@ export function handleMediaProtocol(
     const url = new URL(req.url);
     const kind = url.hostname;
     const id = decodeURIComponent(url.pathname.replace(/^\/+/, ''));
-    if (!/^[A-Za-z0-9._-]{1,100}$/.test(id)) return new Response('Bad request', { status: 400 });
+    // Speech model files have a folder ("<model>/onnx/<file>"); everything else is one id.
+    const valid =
+      kind === 'speech'
+        ? /^[a-z0-9.-]{1,60}\/[A-Za-z0-9._/-]{1,160}$/.test(id) && !id.includes('..')
+        : /^[A-Za-z0-9._-]{1,100}$/.test(id);
+    if (!valid) return new Response('Bad request', { status: 400 });
     const found = await lookup(kind, id);
     if (!found) return new Response('Not found', { status: 404 });
     const file = await resolveInside(found.root, found.rel);

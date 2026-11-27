@@ -1,5 +1,5 @@
 import type { AppErrorShape } from '@lampstand/core';
-import type { QueryArgs, QueryName, QueryResults } from '@lampstand/ipc-contract';
+import type { ControlSource, QueryArgs, QueryName, QueryResults } from '@lampstand/ipc-contract';
 import '../../shared/outputApi.d';
 
 class ApiError extends Error {
@@ -24,7 +24,7 @@ export async function q<K extends QueryName>(
 export async function cmd<R = unknown>(
   type: string,
   payload: unknown = {},
-  source: 'ui' | 'shortcut' = 'ui',
+  source: ControlSource = 'ui',
 ): Promise<R> {
   const r = await api.command({ type, payload, source });
   if (!r.ok) throw new ApiError(r.error);

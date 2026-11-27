@@ -1,8 +1,9 @@
 # Lampstand
 
 Church projection and live-production software for macOS and Windows: scripture, lyrics, media and backgrounds on any
-number of screens, a stage display, and (coming next) speech-driven verse detection and streaming. Fully offline, with
-no accounts and no telemetry.
+number of screens, a stage display, streaming, and listening: scripture the preacher reads and voice commands ("next",
+"show John 3:16"), recognised on the computer itself. Works offline, with no accounts and no telemetry; the optional
+assistant (planning a service, structuring lyrics) uses Claude with the church's own key. See [docs/ai.md](docs/ai.md).
 
 `BUILD_SPEC.md` is the source of truth. This repository is at **Phase 0 (foundations) + Phase 1 (projection MVP)**; see
 [Status](#status).

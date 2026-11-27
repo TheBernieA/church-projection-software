@@ -1,5 +1,10 @@
 import { nowIso, type Song } from '@lampstand/core';
-import { decodeTextFile, parseSongFile, songFromImport } from '@lampstand/lyrics';
+import {
+  decodeTextFile,
+  parseSongFile,
+  songFromImport,
+  type ImportedSong,
+} from '@lampstand/lyrics';
 import { openAdhoc } from './actions';
 import { cmd, q } from './api';
 import { attempt, toast, useStore } from './store';
@@ -67,4 +72,23 @@ export async function importDroppedSongFiles(files: File[]): Promise<void> {
     else read.push({ name: f.name, text: decodeTextFile(new Uint8Array(await f.arrayBuffer())) });
   }
   await importTexts(read, skipped);
+}
+
+/**
+ * One song already read (e.g. lyrics structured by the assistant) into the library, opened
+ * ready to check. Resolves to whether it was saved.
+ */
+export async function saveImportedSong(imp: ImportedSong): Promise<boolean> {
+  const song = songFromImport(imp, nowIso());
+  const ok = await attempt(() => cmd<Song>('song.save', { entity: song }), 'errors.import');
+  if (ok === undefined) return false;
+  const { songs } = useStore.getState();
+  useStore.setState({
+    songs: songs.some((s) => s.id === song.id) ? songs : [...songs, song],
+    sidebarView: 'library',
+    libraryTab: 'songs',
+  });
+  await openAdhoc({ id: `adhoc-${song.id}`, kind: 'song', songId: song.id }, 'select');
+  toast(i18n.t('songImport.importedOne', { title: song.title }));
+  return true;
 }

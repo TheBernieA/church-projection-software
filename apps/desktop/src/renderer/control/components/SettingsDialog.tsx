@@ -22,6 +22,7 @@ import { VideoPage } from './settings/video';
 import { AudioPage } from './settings/audio';
 import { StreamingPage } from './settings/streaming';
 import { NdiPage } from './settings/ndi';
+import { AssistantPage } from './settings/assistant';
 import { SurfacesPage } from './settings/surfaces';
 import { PageFrameContext, Tag, type PageFrame } from './settings/parts';
 import {
@@ -247,6 +248,7 @@ export function SettingsDialog() {
           {page === 'general' && <GeneralPage s={s} update={update} />}
           {page === 'scripture' && <ScripturePage s={s} update={update} />}
           {page === 'songs' && <SongsPage s={s} update={update} />}
+          {page === 'assistant' && <AssistantPage s={s} update={update} />}
           {page === 'presenting' && <PresentingPage s={s} update={update} />}
           {page === 'screens' && <ScreensPage s={s} update={update} />}
           {page === 'video' && <VideoPage s={s} update={update} />}

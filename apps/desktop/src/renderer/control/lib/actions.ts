@@ -17,6 +17,7 @@ import {
 import { knownDuration } from './mediaDurations';
 import { slideTransitionFor } from './transitions';
 import { advanceOf, takesAdvance } from './advance';
+import type { ControlSource } from '@lampstand/ipc-contract';
 import { cmd } from './api';
 import i18n from '../i18n';
 import { buildItemSlides, countdownTarget } from './slides';
@@ -122,19 +123,19 @@ async function goLiveNextItem(itemId: string): Promise<void> {
  * playlist item before or after it (its last slide, or its first). The keys stop at the
  * item's end instead, so a song never runs into the next by accident.
  */
-export async function stepAcross(delta: 1 | -1): Promise<void> {
+export async function stepAcross(delta: 1 | -1, source: ControlSource = 'ui'): Promise<void> {
   const s = get();
   const cursor = s.liveCursor;
   const item = findItem(cursor?.itemId ?? null);
-  if (!cursor || !item) return step(delta);
+  if (!cursor || !item) return step(delta, source);
   const idx = cursor.index + delta;
-  if (idx >= 0 && idx < slidesFor(item).length) return goLiveSlide(item, idx);
+  if (idx >= 0 && idx < slidesFor(item).length) return goLiveSlide(item, idx, source);
   const other = neighbourItem(s.service?.items, item.id, delta);
   if (!other) return;
   const slides = await ensureItemReady(other);
   if (!slides.length) return;
   useStore.setState({ selectedItemId: other.id, adhoc: null });
-  await goLiveSlide(other, delta > 0 ? 0 : slides.length - 1);
+  await goLiveSlide(other, delta > 0 ? 0 : slides.length - 1, source);
 }
 
 /** Put a slide into Preview (green). Nothing changes on screen. */
@@ -172,7 +173,7 @@ async function previewSlide(item: ServiceItem, index: number): Promise<void> {
 export async function goLiveSlide(
   item: ServiceItem,
   index: number,
-  source: 'ui' | 'shortcut' = 'ui',
+  source: ControlSource = 'ui',
   /** `playNow`: a video plays at once even with "Wait for Play" on (a tile's play button). */
   opts: { playNow?: boolean } = {},
 ): Promise<void> {
@@ -246,12 +247,12 @@ export async function refreshLiveSlide(itemId: string): Promise<void> {
 }
 
 /** Space/Enter: Preview → Program ("Preview first"), or the next slide when clicks go live. */
-export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<void> {
+export async function goLive(source: ControlSource = 'shortcut'): Promise<void> {
   const s = get();
   if (s.settings?.clickGoesLive !== false) {
     // No Preview stage: Space walks forward through the live item, or starts the selected one.
     const selected = findItem(s.selectedItemId);
-    if (s.liveCursor && selected && s.liveCursor.itemId === selected.id) return step(1);
+    if (s.liveCursor && selected && s.liveCursor.itemId === selected.id) return step(1, source);
     if (selected) return goLiveSlide(selected, 0, source);
     return;
   }
@@ -262,7 +263,7 @@ export async function goLive(source: 'ui' | 'shortcut' = 'shortcut'): Promise<vo
   if (selected) return goLiveSlide(selected, 0, source);
 }
 
-export async function step(delta: 1 | -1): Promise<void> {
+export async function step(delta: 1 | -1, source: ControlSource = 'shortcut'): Promise<void> {
   const s = get();
   const cursor: Cursor | null = s.liveCursor ?? s.previewCursor;
   // The live item, or (gone from the playlist, or replaced by another pick) the selected one.
@@ -271,7 +272,7 @@ export async function step(delta: 1 | -1): Promise<void> {
   const slides = slidesFor(item);
   const idx = cursor && cursor.itemId === item.id ? cursor.index + delta : 0;
   if (idx < 0 || idx >= slides.length) return; // stop at item boundaries — never jump to the next song by accident
-  await goLiveSlide(item, idx, 'shortcut');
+  await goLiveSlide(item, idx, source);
 }
 
 /** Which slide was live when the slide layer was last cleared, so bringing it back re-marks it. */
@@ -291,9 +292,9 @@ function beforeClear(layers: readonly RestorableLayer[]): void {
   }
 }
 
-export const clearLayer = (layer: Layer): Promise<void> => {
+export const clearLayer = (layer: Layer, source: ControlSource = 'shortcut'): Promise<void> => {
   beforeClear(layersClearedBy(layer));
-  return safe(cmd('live.clearLayer', { layer }, 'shortcut'));
+  return safe(cmd('live.clearLayer', { layer }, source));
 };
 
 /** A custom clear group: clear exactly these layers, in one step. */
@@ -328,6 +329,29 @@ export const restoreLayer = (layer: RestorableLayer): Promise<void> => {
 
 export const toggleMask = (mask: 'black' | 'logo' | 'freeze'): Promise<void> =>
   safe(cmd('live.setMask', { mask }, 'shortcut'));
+
+/** Turn a mask on or off (not a toggle: "black" said twice stays black). */
+export const setMask = (
+  mask: 'black' | 'logo' | 'freeze',
+  value: boolean,
+  source: ControlSource = 'ui',
+): Promise<void> => safe(cmd('live.setMask', { mask, value }, source));
+
+/**
+ * The first slide of the playlist item after (or before) the live one, or the selected one
+ * when nothing is live ("next song").
+ */
+export async function stepItem(delta: 1 | -1, source: ControlSource = 'ui'): Promise<void> {
+  const s = get();
+  const from = s.liveCursor?.itemId ?? s.selectedItemId;
+  if (!from) return;
+  const other = neighbourItem(s.service?.items, from, delta);
+  if (!other) return;
+  const slides = await ensureItemReady(other);
+  if (!slides.length) return;
+  useStore.setState({ selectedItemId: other.id, adhoc: null });
+  await goLiveSlide(other, 0, source);
+}
 
 /** Put an overlay (message, prop) on screen, replacing any with the same id. */
 export function showOverlay(overlay: Overlay): Promise<void> {
@@ -413,7 +437,7 @@ export async function openAdhoc(
   item: ServiceItem,
   requested: 'select' | 'preview' | 'live' = 'preview',
   /** `playNow`: going live, a video plays at once (Settings' "Wait for Play" doesn't hold it). */
-  opts: { playNow?: boolean } = {},
+  opts: { playNow?: boolean; source?: ControlSource } = {},
 ): Promise<void> {
   useStore.setState({ adhoc: item, selectedItemId: item.id });
   if (requested === 'select') return;
@@ -421,7 +445,7 @@ export async function openAdhoc(
   const slides = await ensureItemReady(item);
   // Another pick came while this one loaded: that one wins.
   if (!slides.length || get().adhoc?.id !== item.id) return;
-  if (mode === 'live') await goLiveSlide(item, 0, 'ui', opts);
+  if (mode === 'live') await goLiveSlide(item, 0, opts.source ?? 'ui', opts);
   else await previewSlide(item, 0);
 }
 

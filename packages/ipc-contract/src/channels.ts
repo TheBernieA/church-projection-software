@@ -48,6 +48,15 @@ export const QUERY_NAMES = [
   'recording.chooseFolder',
   'recording.reveal',
   'ndi.status',
+  'assistant.status',
+  'assistant.setKey',
+  'assistant.forgetKey',
+  'assistant.plan',
+  'assistant.lyrics',
+  'speech.models',
+  'speech.download',
+  'speech.cancel',
+  'speech.remove',
 ] as const;
 export type QueryName = (typeof QUERY_NAMES)[number];
 
@@ -102,4 +111,6 @@ export const Channels = {
   evOutputInfo: 'ev:output-info',
   /** Application menu items (Edit › Undo / Redo) for the control window. */
   evMenu: 'ev:menu',
+  /** main → control: a speech model's download progress or state. */
+  evSpeechModel: 'ev:speech-model',
 } as const;

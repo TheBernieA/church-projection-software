@@ -46,6 +46,8 @@ import { installAppMenu } from './menu';
 import { showSplash } from '../windows/splash';
 import { createQueries } from '../ipc/queries';
 import { SecretStore } from '../secrets/secretStore';
+import { Assistant } from '../ai/assistant';
+import { SpeechModels } from '../modules/speechModels';
 import { whileLive } from '../diagnostics/whileLive';
 import { keyName, StreamController } from '../stream/streamController';
 import type { PictureSources } from '../stream/pictureWindow';
@@ -228,6 +230,15 @@ export class AppController {
       kjvCounts: () => bibles.verseCounts('kjv').catch(() => ({})),
     });
     onlineBibles.setSources(settings.get().onlineBibles);
+    // The online assistant (ADR 0008): only with the church's own key, kept with the secrets.
+    const assistant = new Assistant({ secrets: this.secrets, log: log.child('assistant') });
+    // Speech models for listening, downloaded only when the operator asks.
+    const speechModels = new SpeechModels({
+      dir: join(paths.userData, 'models'),
+      fetch: (url, init) => net.fetch(url, init),
+      log: log.child('speech'),
+      onChange: (status) => this.windows.sendToControl(Channels.evSpeechModel, status),
+    });
     this.s = {
       paths,
       log,
@@ -240,6 +251,8 @@ export class AppController {
       onlineBibles,
       hymnSongs,
       hymnals,
+      assistant,
+      speechModels,
     };
 
     this.registerCommands();
@@ -312,6 +325,7 @@ export class AppController {
     handleMediaProtocol(async (kind, id) => {
       const mediaDir = join(paths.library, 'media');
       if (kind === 'thumb') return { root: join(mediaDir, '.thumbs'), rel: `${id}.png` };
+      if (kind === 'speech') return this.s.speechModels.fileFor(id);
       if (kind !== 'media') return null;
       const item = await repos.media.get(id);
       return item ? { root: mediaDir, rel: item.fileName } : null;

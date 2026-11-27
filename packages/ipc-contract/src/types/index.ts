@@ -30,6 +30,7 @@ import type {
   VideoInputLayer,
   ScreenWords,
 } from '@lampstand/core';
+import type { LyricsDraft, PlanDraft } from '@lampstand/planner';
 import type { QueryName } from '../channels';
 import type { CommandEnvelope, MeterReport, QueryArgs } from '../schemas';
 
@@ -202,6 +203,29 @@ export interface QueryResults {
   'stream.keys': Record<string, boolean>;
   'recording.chooseFolder': { folder: string | null };
   'recording.reveal': { done: boolean };
+  'assistant.status': { hasKey: boolean };
+  'assistant.setKey': { saved: boolean };
+  'assistant.forgetKey': { forgotten: boolean };
+  'assistant.plan': PlanDraft;
+  'assistant.lyrics': LyricsDraft;
+  'speech.models': SpeechModelStatus[];
+  'speech.download': { started: boolean };
+  'speech.cancel': { cancelled: boolean };
+  'speech.remove': { removed: boolean };
+}
+
+/** A speech model on this computer (Settings › Assistant, the Listen panel). */
+export type SpeechModelState =
+  | { readonly kind: 'missing' }
+  | { readonly kind: 'downloading'; readonly received: number; readonly total: number }
+  | { readonly kind: 'ready' }
+  | { readonly kind: 'error'; readonly message: string };
+
+export interface SpeechModelStatus {
+  readonly id: string;
+  /** Download size. */
+  readonly bytes: number;
+  readonly state: SpeechModelState;
 }
 
 /** The OS's camera/microphone permission for the app ('granted' where the OS doesn't ask). */
@@ -270,6 +294,8 @@ export interface ControlApi {
   oscStatus(): Promise<OscStatus>;
   /** Send an OSC message to the desk (the address and port in Settings › Control surfaces). */
   oscSend(address: string, args: OscArg[]): void;
+  /** A speech model's download progress or state changed. */
+  onSpeechModel(cb: (s: SpeechModelStatus) => void): () => void;
   platform: string;
 }
 

@@ -145,6 +145,28 @@ export const LookSchema = z.object({
 });
 export type Look = z.infer<typeof LookSchema>;
 
+export const AssistantSettingsSchema = z.object({
+  /** Send the library's song titles with a plan, so songs can be picked from the library. */
+  sendSongTitles: z.boolean().default(true),
+});
+export type AssistantSettings = z.infer<typeof AssistantSettingsSchema>;
+
+export const SPEECH_MODEL_IDS = ['whisper-base.en', 'whisper-tiny.en'] as const;
+
+export const ListeningSettingsSchema = z.object({
+  /** Which speech model: base (more accurate) or tiny (lighter computers). */
+  model: z.enum(SPEECH_MODEL_IDS).default('whisper-base.en'),
+  /** The microphone or desk input to listen to ('' = the computer's default). */
+  inputDeviceId: z.string().max(300).default(''),
+  /** In Auto, a reference at least this sure goes straight on screen; below it, it's asked. */
+  autoThreshold: z.number().min(0.5).max(1).default(0.9),
+  /** "Next", "go back", "show John 3:16"… acted on while listening. */
+  voiceCommands: z.boolean().default(false),
+  /** A word commands must start with ("Lampstand, next"); empty for none. */
+  wakeWord: z.string().max(40).default(''),
+});
+export type ListeningSettings = z.infer<typeof ListeningSettingsSchema>;
+
 export const SettingsSchema = z
   .object({
     schemaVersion: z.literal(1).default(1),
@@ -385,6 +407,10 @@ export const SettingsSchema = z
       .default({ kind: 'logo' }),
     onboardingComplete: z.boolean().default(false),
     updateChecks: z.boolean().default(false),
+    /** The online assistant (Claude; ADR 0008). Its API key is a secret, never here. */
+    assistant: AssistantSettingsSchema.default(AssistantSettingsSchema.parse({})),
+    /** Listening: scripture heard from the pulpit and voice commands, on this computer. */
+    listening: ListeningSettingsSchema.default(ListeningSettingsSchema.parse({})),
   })
   .loose();
 export type Settings = z.infer<typeof SettingsSchema>;

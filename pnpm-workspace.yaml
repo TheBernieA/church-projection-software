@@ -6,6 +6,8 @@ allowBuilds:
   esbuild: true
   electron-winstaller: false
   koffi: false
+  # Its install script only checks the Node version.
+  protobufjs: false
   # Downloads the ffmpeg binary for this computer (packaged with the app for streaming).
   ffmpeg-static: true
 minimumReleaseAgeExclude:
@@ -15,3 +17,8 @@ minimumReleaseAgeExclude:
 supportedArchitectures:
   os: [current, win32]
   cpu: [current, x64]
+# transformers.js (speech, in the control window) runs its browser build only: its Node-only
+# dependencies (native ONNX runtime, image library) are never loaded, so they aren't installed.
+overrides:
+  onnxruntime-node: '-'
+  sharp: '-'

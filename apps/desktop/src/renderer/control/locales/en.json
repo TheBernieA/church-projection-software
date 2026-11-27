@@ -601,7 +601,7 @@
     "importedN": "Imported {{count}} file(s).",
     "backedUp": "Backup saved.",
     "privacy": "Privacy",
-    "privacyText": "Lampstand works fully offline and sends no telemetry. Audio for speech detection (coming soon) is processed on this computer only.",
+    "privacyText": "Lampstand works offline and sends no telemetry. Listening (scripture and voice commands) runs on this computer: audio and transcripts never leave it. The assistant (planning services, structuring lyrics) is online and only works with your own Anthropic key: it sends just what you type or paste. See Settings › Assistant.",
     "pages": {
       "general": "General",
       "scripture": "Scripture",
@@ -618,7 +618,8 @@
       "audio": "Audio",
       "streaming": "Streaming",
       "ndi": "NDI",
-      "surfaces": "Control surfaces"
+      "surfaces": "Control surfaces",
+      "assistant": "Assistant"
     },
     "pagesHelp": {
       "general": "How Lampstand looks on this computer.",
@@ -633,7 +634,8 @@
       "audio": "Where the room hears music and microphones, how fades sound, where you listen first, and a level check for every input.",
       "streaming": "Livestream the service to YouTube, Facebook or any RTMP service, and record it — straight from Lampstand.",
       "ndi": "Send Lampstand over the network to vMix, OBS, a streaming computer or any NDI receiver — the program, or just the words to key over cameras.",
-      "surfaces": "Run the show from a sound desk or controller over MIDI or OSC, and send cues back to the desk."
+      "surfaces": "Run the show from a sound desk or controller over MIDI or OSC, and send cues back to the desk.",
+      "assistant": "Plan services and structure lyrics with Claude (online, with your own key), and let Lampstand listen for scripture and voice commands (on this computer)."
     },
     "uiThemeHelp": "Dark is easiest on the eyes in a dim booth.",
     "textScaleHelp": "Make the words in Lampstand larger or smaller. Slides on screen are not affected.",
@@ -1732,6 +1734,54 @@
     "desk-link": {
       "name": "Sound desk link",
       "description": "Read a digital desk's channel EQ and dynamics over the network, and send channels or presets to it, with undo (X32/M32, X Air; others with a profile file)."
+    },
+    "ai-planner": {
+      "name": "Plan a service with AI",
+      "description": "Write the order of service in your own words (or paste the bulletin): the assistant lays out the playlist, finds the songs in your library and reads the references. You check it before anything is made."
+    },
+    "ai-lyrics": {
+      "name": "Lyrics into a song",
+      "description": "Paste raw lyrics and the assistant splits them into verses, choruses and bridges, word for word, ready to save as a song."
+    },
+    "scripture-listening": {
+      "name": "Scripture listening",
+      "description": "Hears the references the preacher reads (\"John chapter three verse sixteen\", \"verse seventeen\") and suggests them, asks you, or puts them up by itself. Runs on this computer."
+    },
+    "voice-commands": {
+      "name": "Voice commands",
+      "description": "\"Next\", \"go back\", \"next verse\", \"show Romans 8:28\", \"switch to KJV\", \"black screen\": hands-free control, with an optional wake word so preaching never triggers it."
+    },
+    "live-transcript": {
+      "name": "Live transcript",
+      "description": "What the microphone hears, as text beside the live output, with how long recognition took."
+    },
+    "quoted-verses": {
+      "name": "Verses read without a reference",
+      "description": "Recognise a verse from its words when the preacher quotes it without saying where it is."
+    },
+    "live-captions": {
+      "name": "Live captions",
+      "description": "The transcript as subtitles on the stream or on a screen of its own, for people who are hard of hearing."
+    },
+    "sermon-points": {
+      "name": "Sermon points",
+      "description": "Key points of the sermon as slides you can show while it is preached."
+    },
+    "sermon-notes": {
+      "name": "Sermon notes",
+      "description": "After the service: the verses cited, the main points and a summary, ready to share."
+    },
+    "lyric-follow": {
+      "name": "Lyric follow",
+      "description": "Move to the next lyric slide as the line being sung changes."
+    },
+    "song-suggestions": {
+      "name": "Song suggestions",
+      "description": "Songs from your library that fit the sermon theme or the readings."
+    },
+    "operator-chat": {
+      "name": "Ask Lampstand",
+      "description": "Type or say what you want (\"countdown on the side screens\") and it is done."
     }
   },
   "connections": {
@@ -3184,7 +3234,8 @@
     "messages": "Messages",
     "automation": "Automation & control",
     "capture": "Capture & streaming",
-    "integrations": "Remote & integrations"
+    "integrations": "Remote & integrations",
+    "assistant": "Assistant & listening"
   },
   "common": {
     "live": "LIVE",
@@ -3544,5 +3595,161 @@
     "applyHere": "Apply to this channel",
     "saveAsPreset": "Save as a preset",
     "profileFrom": "Profile: {{desk}}."
+  },
+  "listen": {
+    "button": "Listen",
+    "title": "Listening",
+    "start": "Start listening",
+    "stop": "Stop listening",
+    "settings": "Listening settings…",
+    "status": {
+      "off": "Not listening",
+      "starting": "Opening the microphone…",
+      "loading": "Loading the speech model…",
+      "listening": "Listening",
+      "error": "Listening stopped"
+    },
+    "mode": {
+      "label": "Scripture",
+      "off": "Off",
+      "suggest": "Suggest",
+      "approve": "Approve",
+      "auto": "Auto"
+    },
+    "modeHelp": {
+      "off": "Don’t look for scripture",
+      "suggest": "List what’s heard, quietly",
+      "approve": "Ask before anything goes up",
+      "auto": "Put it up when sure; ask otherwise"
+    },
+    "modeOffHint": "Scripture is off: only voice commands and the transcript.",
+    "voiceCommands": "Voice commands",
+    "voiceHelp": "“Next”, “go back”, “show John 3:16”…",
+    "voiceHelpWake": "Start with “{{word}}”: “{{word}}, next”",
+    "needsModel": "Download a speech model first (Settings › Assistant).",
+    "getModel": "Get it",
+    "retry": "Try again",
+    "inputLost": "The microphone was disconnected.",
+    "noMicAccess": "Lampstand isn’t allowed to use the microphone. Allow it in System Settings › Privacy & Security › Microphone.",
+    "failed": "Listening couldn’t start: {{reason}}",
+    "noVersion": "No installed Bible called “{{name}}”.",
+    "loadingModel": "Loading the speech model… {{pct}}%",
+    "show": "Show",
+    "preview": "Preview",
+    "dismiss": "Dismiss",
+    "notToday": "Not today",
+    "clear": "Clear",
+    "chapterOnly": "whole chapter",
+    "confidence": "How sure it is",
+    "transcript": "Transcript",
+    "nothingYet": "Nothing heard yet.",
+    "latency": "{{s}} s",
+    "commandTag": "cmd",
+    "state": {
+      "pending": "waiting",
+      "shown": "shown",
+      "dismissed": "dismissed",
+      "expired": "missed"
+    }
+  },
+  "assistant": {
+    "planning": "Assistant (online)",
+    "planningHelp": "Plans services and structures lyrics with Claude, using your church’s own Anthropic API key.",
+    "key": "Anthropic API key",
+    "keyHelp": "Create one at console.anthropic.com › API keys. It’s checked, then kept in this computer’s keychain: never in settings, never shown again.",
+    "keySaved": "Saved",
+    "saveKey": "Check and save",
+    "checking": "Checking…",
+    "replaceKey": "Replace…",
+    "forget": "Forget key",
+    "forgetConfirm": "Forget the Anthropic key? The assistant stops working until you add one again.",
+    "sendTitles": "Use my library’s song titles",
+    "sendTitlesHelp": "Plans can then pick songs from your library. Only titles are sent, never lyrics.",
+    "privacyTitle": "What the assistant sends",
+    "privacy": "Only what you type or paste into the planner or the lyrics box (and song titles, if allowed above) goes to Anthropic, over an encrypted connection, when you press the button. Nothing is sent in the background. Requests are billed to your key’s account.",
+    "keyNeededTitle": "The assistant needs a key",
+    "keyNeeded": "Planning and lyrics use Claude, online, with your church’s own Anthropic API key. Add one in Settings › Assistant; listening works without it.",
+    "openSettings": "Open Settings",
+    "listening": "Listening (on this computer)",
+    "listeningHelp": "Lampstand recognises speech itself: nothing is sent anywhere, and nothing is recorded.",
+    "model": "Speech model",
+    "modelHelp": "Downloaded once and checked. Base is more accurate; Tiny is lighter for older computers.",
+    "models": {
+      "whisper-base.en": {
+        "name": "English — Base",
+        "help": "Recommended"
+      },
+      "whisper-tiny.en": {
+        "name": "English — Tiny",
+        "help": "Faster, a little less accurate"
+      }
+    },
+    "modelReady": "Ready",
+    "download": "Download",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "input": "Listen to",
+    "inputHelp": "The pulpit microphone, or the desk’s feed of it. Best is the preacher’s voice alone, without music.",
+    "defaultInput": "This computer’s default input",
+    "threshold": "Auto shows a verse at",
+    "thresholdHelp": "In Auto, a reference at least this sure goes straight up; anything less is asked. A chapter alone is always asked.",
+    "voice": "Voice commands",
+    "voiceHelp": "Run the slides hands-free. Only a short phrase that is a command on its own counts, so preaching doesn’t move the slides.",
+    "voiceOnHelp": "Acted on while listening is on.",
+    "wakeWord": "Wake word",
+    "wakeWordHelp": "If the preacher’s microphone is the one listened to, set a word commands must start with (e.g. “Lampstand, next”).",
+    "wakeWordNone": "None",
+    "voiceExamples": "What you can say:",
+    "voiceEx": {
+      "next": "Next slide",
+      "previous": "Previous slide",
+      "items": "Next or previous item",
+      "verses": "Next or previous verse",
+      "show": "Show a passage",
+      "version": "Change version",
+      "screen": "The screen"
+    },
+    "listenPrivacyTitle": "Privacy",
+    "listenPrivacy": "Audio is turned into text in memory and thrown away. The transcript stays in this window and is gone when Lampstand closes. The microphone is only open while Listen is on (the toolbar’s Listen button is lit).",
+    "next": "Coming next",
+    "nextHelp": "What the assistant and listening will do next. Each builds on what is here today."
+  },
+  "planner": {
+    "menu": "Plan a service with AI…",
+    "title": "Plan a service",
+    "intro": "Write the order of service the way you would tell your team, or paste the bulletin. The assistant lays it out as a playlist; you check it before anything is made.",
+    "text": "Order of service",
+    "placeholder": "Sunday 10am, Advent 1\nCountdown 5 min\nWelcome — Pastor James\nWorship: Come Thou Long Expected Jesus, O Come O Come Emmanuel, one more upbeat song\nReading: Isaiah 9:2-7\nAnnouncements: carol service Sunday 6pm; youth Friday 7pm\nSermon: “Light in the darkness”, points: 1 God sees 2 God comes 3 God stays\nResponse song, closing prayer, benediction",
+    "date": "Service date",
+    "useLibrary": "Pick songs from my library",
+    "privacy": "Only what you wrote is sent to Anthropic.",
+    "privacyTitles": "What you wrote and your library’s song titles are sent to Anthropic (never lyrics).",
+    "plan": "Plan it",
+    "planning": "Planning…",
+    "failed": "The assistant couldn’t finish that. Try again.",
+    "back": "Edit",
+    "name": "Playlist name",
+    "review": "{{count}} items. Check them, then create the playlist.",
+    "reviewMissing": "{{count}} items. {{missing}} need you: they’re kept as labelled steps.",
+    "notInLibrary": "Not in your library: {{what}}",
+    "notUnderstood": "Couldn’t read “{{what}}”",
+    "questions": "Worth checking",
+    "create": "Create playlist",
+    "addTo": "Add to {{name}}",
+    "created": "Playlist “{{name}}” created.",
+    "added_one": "Added {{count}} item to {{name}}.",
+    "added_other": "Added {{count}} items to {{name}}."
+  },
+  "lyricsAi": {
+    "menu": "New song from lyrics…",
+    "title": "New song from lyrics",
+    "intro": "Paste the words as you have them. The assistant splits them into verses, choruses and bridges and works out the order. The words themselves are kept exactly.",
+    "text": "Lyrics",
+    "privacy": "The lyrics you paste are sent to Anthropic to structure them.",
+    "structure": "Structure it",
+    "working": "Working…",
+    "empty": "No lyrics found in that text.",
+    "order": "Sung order: {{order}}",
+    "save": "Add song"
   }
 }

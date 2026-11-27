@@ -9,6 +9,7 @@ import {
   Package,
   Plug,
   Radio,
+  Sparkles,
   ShieldCheck,
   SlidersHorizontal,
   SlidersVertical,
@@ -22,7 +23,7 @@ import { type SettingsPageId } from '../../types';
 
 /** The sidebar's sections, in order; each lists its pages. */
 export const SETTINGS_SECTIONS: { id: string; pages: SettingsPageId[] }[] = [
-  { id: 'workspace', pages: ['general', 'presenting', 'scripture', 'songs'] },
+  { id: 'workspace', pages: ['general', 'presenting', 'scripture', 'songs', 'assistant'] },
   { id: 'screens', pages: ['screens', 'video', 'ndi'] },
   { id: 'sound', pages: ['audio', 'surfaces', 'streaming'] },
   { id: 'system', pages: ['packages', 'library', 'connections', 'about'] },
@@ -34,6 +35,7 @@ export const PAGE_ICONS: Record<SettingsPageId, LucideIcon> = {
   presenting: MonitorPlay,
   scripture: BookOpen,
   songs: Music,
+  assistant: Sparkles,
   screens: SquareDashed,
   video: Video,
   ndi: Cast,
@@ -60,6 +62,11 @@ const PAGE_RESET: Partial<Record<SettingsPageId, (s: Settings, d: Settings) => P
     general: (_, d) => ({ uiTheme: d.uiTheme, textScale: d.textScale }),
     scripture: (_, d) => ({ defaultBibleVersion: d.defaultBibleVersion, scripture: d.scripture }),
     songs: (_, d) => ({ lyrics: d.lyrics }),
+    assistant: (s, d) => ({
+      assistant: d.assistant,
+      // The input chosen is kept (it's this computer's hardware, not a preference).
+      listening: { ...d.listening, inputDeviceId: s.listening.inputDeviceId },
+    }),
     presenting: (s, d) => ({
       logo: { ...d.logo, text: s.logo.text },
       offAir: d.offAir,
@@ -95,6 +102,11 @@ export const SEARCH_INDEX: SearchEntry[] = [
   { page: 'scripture', label: 'settings.maxChars', keywords: 'characters length' },
   { page: 'songs', label: 'settings.maxLines', keywords: 'lyrics lines split' },
   { page: 'songs', label: 'settings.ccli', keywords: 'licence license copyright' },
+  { page: 'assistant', label: 'assistant.key', keywords: 'ai claude anthropic api key planner' },
+  { page: 'assistant', label: 'assistant.model', keywords: 'speech whisper listen detection' },
+  { page: 'assistant', label: 'listen.voiceCommands', keywords: 'voice next previous speak' },
+  { page: 'assistant', label: 'assistant.wakeWord', keywords: 'voice hotword trigger' },
+  { page: 'assistant', label: 'assistant.input', keywords: 'microphone mic listen pulpit' },
   { page: 'presenting', label: 'settings.logo.title', keywords: 'church name brand' },
   { page: 'presenting', label: 'settings.logo.name', keywords: 'church' },
   { page: 'presenting', label: 'settings.logo.tagline' },
