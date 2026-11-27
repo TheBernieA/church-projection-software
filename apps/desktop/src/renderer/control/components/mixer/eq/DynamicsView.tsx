@@ -125,7 +125,16 @@ function TransferCurve({ c }: { c: MixerChannel }) {
 }
 
 /** Gain reduction, growing down from the top (to −20 dB), with its reading. */
-export function GrMeter({ id, kind = 'comp' }: { id: string; kind?: 'comp' | 'duck' }) {
+export function GrMeter({
+  id,
+  kind = 'comp',
+  height = 150,
+}: {
+  id: string;
+  kind?: 'comp' | 'duck';
+  /** The bar's height (px): shorter in the side column. */
+  height?: number;
+}) {
   const bar = useRef<HTMLSpanElement>(null);
   const text = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -140,7 +149,10 @@ export function GrMeter({ id, kind = 'comp' }: { id: string; kind?: 'comp' | 'du
   }, [id, kind]);
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className="relative h-[150px] w-2.5 overflow-hidden rounded-[2px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]">
+      <div
+        className="relative w-2.5 overflow-hidden rounded-[2px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]"
+        style={{ height }}
+      >
         <span ref={bar} className="absolute inset-x-0 top-0 bg-[#e8b04b]" />
       </div>
       {/* A fixed width: "0" to "−20.0" mustn't resize the column (it moved the whole card). */}

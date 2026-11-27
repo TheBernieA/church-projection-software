@@ -162,12 +162,16 @@ function ChannelPicker({ c, channels }: { c: MixerChannel; channels: MixerChanne
   );
 }
 
-/** The channel's level (after its fader) beside the window's content. */
+/**
+ * The channel's level (after its fader) beside the window's content, and under it the
+ * compressor's gain reduction while it's on: stacked, so turning the compressor on never
+ * widens the column (which squeezed the cards beside it).
+ */
 function SideMeters({ c }: { c: MixerChannel }) {
   const { t } = useTranslation();
   const read = useCallback(() => readMeter('room', c.id), [c.id]);
   return (
-    <div className="flex shrink-0 items-start gap-2.5 border-l border-[var(--hairline)] pl-3">
+    <div className="flex w-12 shrink-0 flex-col items-center gap-3 border-l border-[var(--hairline)] pl-3">
       <div className="flex flex-col items-center gap-1">
         <Meter
           read={read}
@@ -179,7 +183,7 @@ function SideMeters({ c }: { c: MixerChannel }) {
           {t('mixer.eqw.out')}
         </Typography>
       </div>
-      {c.comp.on && <GrMeter id={c.id} />}
+      {c.comp.on && <GrMeter id={c.id} height={80} />}
     </div>
   );
 }
