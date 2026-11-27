@@ -5,7 +5,6 @@ import {
   Circle,
   Clapperboard,
   Ellipsis,
-  Flame,
   Images,
   SlidersVertical,
   Keyboard,
@@ -275,12 +274,27 @@ export function Toolbar() {
 
   return (
     <header className="flex h-[60px] shrink-0 items-center gap-1 bg-[var(--toolbar)] px-2">
-      <div
-        aria-hidden
-        className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-gradient-to-br from-[#ffd28a] via-[#f0a73a] to-[#c27414] text-[#1c1306]"
-      >
-        <Flame size={18} strokeWidth={2.25} />
-      </div>
+      {/* Lampstand's mark (build/icon.svg): its flame, bowl, stem and foot on the app tile. */}
+      <svg aria-hidden viewBox="100 100 824 824" className="mr-1 h-8 w-8 shrink-0">
+        <rect x="100" y="100" width="824" height="824" rx="186" fill="#1A1E29" />
+        <rect
+          x="100.5"
+          y="100.5"
+          width="823"
+          height="823"
+          rx="185.5"
+          fill="none"
+          stroke="#FFFFFF"
+          strokeOpacity="0.1"
+        />
+        <path
+          d="M512 248 C 574 318 594 372 594 414 A 82 82 0 0 1 430 414 C 430 372 450 318 512 248 Z"
+          fill="#F0A73A"
+        />
+        <path d="M372 522 H 652 A 140 92 0 0 1 372 522 Z" fill="#F4F1EA" />
+        <rect x="494" y="600" width="36" height="146" fill="#F4F1EA" />
+        <rect x="412" y="738" width="200" height="40" rx="20" fill="#F4F1EA" />
+      </svg>
       {/* Undo and redo live in the Edit menu and on ⌘Z / ⌘⇧Z. */}
 
       <ToolbarButton
