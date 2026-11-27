@@ -498,7 +498,12 @@ export function TrackingControls() {
         label={t('camera.size')}
         value={sizeNow}
         onChange={setFollowSize}
-        options={SHOT_SIZES.map((s) => ({ value: s, label: t(`camera.sizes.${s}`) }))}
+        fill
+        options={SHOT_SIZES.map((s) => ({
+          value: s,
+          label: t(`camera.sizes.${s}`),
+          hint: t(`camera.sizeHints.${s}`),
+        }))}
       />
       <Typography size={11} tone="muted" leading="snug">
         {followingThis ? (

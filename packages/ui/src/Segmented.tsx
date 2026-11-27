@@ -4,12 +4,17 @@ import { Button } from './Button';
 
 export interface SegmentedProps<T extends string> {
   value: T;
-  /** `name`: what an icon-only option is called (its label is then left empty). */
-  options: { value: T; label: string; icon?: ReactNode; name?: string }[];
+  /**
+   * `name`: what an icon-only option is called (its label is then left empty). `hint`: what an
+   * option means, shown on hover.
+   */
+  options: { value: T; label: string; icon?: ReactNode; name?: string; hint?: string }[];
   onChange: (v: T) => void;
   label: string;
   /** Shown, but can't be changed just now. */
   disabled?: boolean;
+  /** Fill the width it's given, the options sharing it evenly (for narrow panels). */
+  fill?: boolean;
 }
 
 /** Accessible segmented control (radio group semantics). */
@@ -19,13 +24,14 @@ export function Segmented<T extends string>({
   onChange,
   label,
   disabled = false,
+  fill = false,
 }: SegmentedProps<T>) {
   return (
     <div
       role="radiogroup"
       aria-label={label}
       aria-disabled={disabled || undefined}
-      className={`inline-flex rounded-[var(--radius-control)] bg-[var(--surface-1)] p-0.5 shadow-[inset_0_0_0_1px_var(--hairline)] ${disabled ? 'opacity-60' : ''}`}
+      className={`${fill ? 'flex w-full' : 'inline-flex'} rounded-[var(--radius-control)] bg-[var(--surface-1)] p-0.5 shadow-[inset_0_0_0_1px_var(--hairline)] ${disabled ? 'opacity-60' : ''}`}
     >
       {options.map((o) => (
         <Button
@@ -35,9 +41,9 @@ export function Segmented<T extends string>({
           disabled={disabled}
           aria-checked={value === o.value}
           aria-label={o.name}
-          title={o.name}
+          title={o.hint ?? o.name}
           onClick={() => onChange(o.value)}
-          className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] px-3 transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
+          className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-[5px] ${fill ? 'min-w-0 flex-1 justify-center px-1.5' : 'px-3'} transition-[background-color,color,box-shadow] duration-[var(--dur-fast)] focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${typographyClass({ size: 12, weight: 'medium' })} ${
             value === o.value
               ? 'bg-[var(--surface-3)] text-[var(--text-1)] shadow-[0_1px_2px_rgba(0,0,0,0.3),0_0_0_1px_var(--hairline),var(--highlight-top)]'
               : 'text-[var(--text-2)] hover:text-[var(--text-1)]'

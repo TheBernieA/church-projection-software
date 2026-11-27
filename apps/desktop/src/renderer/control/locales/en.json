@@ -3314,6 +3314,11 @@
       "waist": "Waist",
       "full": "Full"
     },
+    "sizeHints": {
+      "close": "Close-up: head and shoulders, for speaking or singing straight to the camera",
+      "waist": "Waist up: the person and their hands, for preaching or leading at a lectern",
+      "full": "Full body, head to feet, with room to move: for someone who walks the stage"
+    },
     "status": {
       "starting": "Starting…",
       "following": "Following",
