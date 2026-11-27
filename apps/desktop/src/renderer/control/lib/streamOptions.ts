@@ -160,3 +160,21 @@ export function pickWordsTheme(
     ? { wordsTheme: picked.id, wordsAlign: themeAlignOf(picked) }
     : { wordsTheme: null };
 }
+
+/**
+ * Whether the stream's own lower third is on ("Lower third on the stream"): only while the stream
+ * shows its own picture, not a mirrored screen.
+ */
+export const streamLowerThirdOn = (pic: Picture): boolean =>
+  pic.mirror === 'own' && pic.words === 'lowerThird';
+
+/**
+ * The stream picture with its lower third on or off. Off, the main screen shows the full slide
+ * again and a camera shows no words.
+ */
+export function withStreamLowerThird(pic: Picture, on: boolean): Picture {
+  return {
+    ...pic,
+    words: on ? 'lowerThird' : pic.background === 'program' ? 'full' : 'none',
+  };
+}

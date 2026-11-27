@@ -3377,6 +3377,11 @@
     "blackHelp": "The audience screens to black (and back)",
     "lowerThirds": "Lower thirds",
     "lowerThirdsHelp": "The words along the bottom, over the camera, in the lower-third theme chosen in the Live column",
+    "lowerThirdsTo": {
+      "both": "The words along the bottom, over the camera, on the screens and the stream (follows Take live)",
+      "screens": "The words along the bottom, over the camera, on the screens only (follows Take live)",
+      "stream": "The words along the bottom, over the camera, on the stream only (follows Take live)"
+    },
     "noLowerThirds": "Add a lower-third theme first (Themes)",
     "shotOnAir": "This camera is on air: take another camera first, then move it",
     "shotHelp": "Click: put the camera on Preview, on this shot. Double-click: rename",

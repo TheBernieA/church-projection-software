@@ -5,14 +5,15 @@ import { saveSettings, setLowerThird, toggleMask } from '../../lib/actions';
 import { remembered } from '../../lib/prefs';
 import { LT_ALIGN_KEY, LT_THEME_KEY } from '../../lib/screenScenes';
 import { lowerThirdThemes } from '../../lib/slides';
+import { streamLowerThirdOn, withStreamLowerThird } from '../../lib/streamOptions';
 import { useStore } from '../../lib/store';
 import { displayCombo, effectiveShortcuts } from '../../lib/shortcuts';
-import { auto, cut } from '../../lib/switcher';
+import { auto, cut, useSwitchTarget } from '../../lib/switcher';
 import { Select } from '../Select';
 import { TakeTo, TRANSITION_KINDS, TransitionLength, useCanTake } from '../media/SwitcherBar';
 
-/** Lower thirds on or off, with the theme and position last chosen in the Live column. */
-function toggleLowerThirds(on: boolean): void {
+/** The screens' lower third on or off, with the theme and position last chosen in the Live column. */
+function toggleScreensLowerThird(on: boolean): void {
   const s = useStore.getState();
   if (!on) {
     void setLowerThird(null);
@@ -37,8 +38,31 @@ export function TakePanel() {
   const canTake = useCanTake();
   const settings = useStore((s) => s.settings?.switcher);
   const black = useStore((s) => !!s.live?.program.masks.black);
-  const lowerThird = useStore((s) => !!s.live?.lowerThird);
+  const to = useSwitchTarget((s) => s.to);
+  const stream = useStore((s) => s.settings?.stream);
+  const onScreens = useStore((s) => !!s.live?.lowerThird);
   const hasThemes = useStore((s) => lowerThirdThemes(s.themes).length > 0);
+  // The stream's lower third is its own switch (Live column); it can't while mirroring a screen.
+  const streamOwn = stream?.picture.mirror === 'own';
+  const onStream = stream ? streamLowerThirdOn(stream.picture) : false;
+  // Lower thirds go where Take live points, like the cameras: the screens, the stream, or both.
+  const toScreens = to !== 'stream';
+  const toStream = to !== 'screens' && streamOwn;
+  const lowerThird =
+    (!toScreens || onScreens) && (!toStream || onStream) && (toScreens || toStream);
+  const canLowerThird = (toScreens && hasThemes) || toStream;
+  const setLowerThirds = (on: boolean): void => {
+    if (toScreens && hasThemes) toggleScreensLowerThird(on);
+    if (toStream)
+      void saveSettings({
+        stream: { ...stream, picture: withStreamLowerThird(stream.picture, on) },
+      });
+  };
+  const lowerThirdTitle = !canLowerThird
+    ? to === 'stream'
+      ? t('console.lowerThirdMirror')
+      : t('cameraMode.noLowerThirds')
+    : t(`cameraMode.lowerThirdsTo.${to}`);
   useStore((s) => s.settings?.shortcuts);
   if (!settings) return null;
   const keys = effectiveShortcuts();
@@ -101,9 +125,9 @@ export function TakePanel() {
         <Button
           variant="bare"
           aria-pressed={lowerThird}
-          disabled={!hasThemes}
-          title={hasThemes ? t('cameraMode.lowerThirdsHelp') : t('cameraMode.noLowerThirds')}
-          onClick={() => toggleLowerThirds(!lowerThird)}
+          disabled={!canLowerThird}
+          title={lowerThirdTitle}
+          onClick={() => setLowerThirds(!lowerThird)}
           className={toggle(lowerThird, 'bg-[var(--accent)] text-[var(--accent-ink)]')}
         >
           <Typography size={12} weight="bold" tone="inherit" caps>

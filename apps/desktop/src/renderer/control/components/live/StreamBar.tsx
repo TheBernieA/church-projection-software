@@ -9,7 +9,7 @@ import { useHiddenAudioInputs, useInputDevices } from '../../lib/inputs';
 import { onMeters, readSides } from '../../lib/meters';
 import { mixerCmd, mixerLive } from '../../lib/mixer';
 import { useStore } from '../../lib/store';
-import { STREAM_SCENES } from '../../lib/streamOptions';
+import { STREAM_SCENES, streamLowerThirdOn, withStreamLowerThird } from '../../lib/streamOptions';
 import { Select } from '../Select';
 import {
   cameraPair,
@@ -126,7 +126,7 @@ export function StreamLowerThirdSwitch({ st }: { st: StreamSettings }) {
   const { t } = useTranslation();
   const pic = st.picture;
   const own = pic.mirror === 'own';
-  const on = own && pic.words === 'lowerThird';
+  const on = streamLowerThirdOn(pic);
   return (
     <div
       className={`flex items-center gap-2 rounded-[var(--radius-control)] px-2.5 py-2 ${
@@ -156,13 +156,7 @@ export function StreamLowerThirdSwitch({ st }: { st: StreamSettings }) {
         disabled={!own}
         onChange={(next) =>
           void saveSettings({
-            stream: {
-              ...st,
-              picture: {
-                ...pic,
-                words: next ? 'lowerThird' : pic.background === 'program' ? 'full' : 'none',
-              },
-            },
+            stream: { ...st, picture: withStreamLowerThird(pic, next) },
           })
         }
       />
