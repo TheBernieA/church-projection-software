@@ -143,7 +143,8 @@ export function GrMeter({ id, kind = 'comp' }: { id: string; kind?: 'comp' | 'du
       <div className="relative h-[150px] w-2.5 overflow-hidden rounded-[2px] bg-[var(--surface-0)] shadow-[inset_0_0_0_1px_var(--hairline)]">
         <span ref={bar} className="absolute inset-x-0 top-0 bg-[#e8b04b]" />
       </div>
-      <Typography ref={text} size={10} tabular tone="secondary" />
+      {/* A fixed width: "0" to "−20.0" mustn't resize the column (it moved the whole card). */}
+      <Typography ref={text} size={10} tabular tone="secondary" className="w-9 text-center" />
       <Typography size={10} weight="semibold" tone="muted" caps>
         GR
       </Typography>
