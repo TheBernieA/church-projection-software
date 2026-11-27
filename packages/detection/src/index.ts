@@ -3,6 +3,8 @@ export {
   normalizeUtterance,
   voiceCommandExamples,
   matchVersion,
+  stepTarget,
+  type StepTarget,
   type NamedVersion,
   type VoiceCommand,
   type VoiceCommandKind,

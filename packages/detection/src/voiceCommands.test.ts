@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchVersion, parseVoiceCommand } from './voiceCommands';
+import { matchVersion, parseVoiceCommand, stepTarget } from './voiceCommands';
 
 const kind = (t: string, wakeWord?: string) =>
   parseVoiceCommand(t, wakeWord !== undefined ? { wakeWord } : {})?.kind ?? null;
@@ -92,5 +92,21 @@ describe('matchVersion', () => {
   it('nothing that fits is nothing', () => {
     expect(matchVersion('message', versions)).toBeNull();
     expect(matchVersion('', versions)).toBeNull();
+  });
+});
+
+describe('stepTarget', () => {
+  const verse = { scripture: true, inPlaylist: false, index: 0, slides: 1 } as const;
+  it('a verse shown on its own runs on through the chapter', () => {
+    expect(stepTarget({ ...verse, delta: 1 })).toBe('verse');
+    expect(stepTarget({ ...verse, delta: -1 })).toBe('verse');
+  });
+  it('steps through a passage’s own slides first', () => {
+    expect(stepTarget({ ...verse, slides: 3, delta: 1 })).toBe('slide');
+    expect(stepTarget({ ...verse, slides: 3, index: 2, delta: 1 })).toBe('verse');
+  });
+  it('playlist items and songs step slides (and on to the next item)', () => {
+    expect(stepTarget({ ...verse, inPlaylist: true, delta: 1 })).toBe('slide');
+    expect(stepTarget({ ...verse, scripture: false, delta: 1 })).toBe('slide');
   });
 });

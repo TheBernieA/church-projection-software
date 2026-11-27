@@ -8,6 +8,7 @@ import {
   matchVersion,
   parseVoiceCommand,
   routeDetection,
+  stepTarget,
   type Candidate,
   type DetectionMode,
   type Transcriber,
@@ -24,6 +25,7 @@ import {
   restoreAll,
   saveSettings,
   setMask,
+  slidesFor,
   stepAcross,
   stepItem,
 } from '../actions';
@@ -406,6 +408,24 @@ async function stepVerse(delta: 1 | -1): Promise<void> {
   });
 }
 
+/** "Next" / "go back": the next slide, or on a verse shown on its own, the next verse. */
+async function stepSlideOrVerse(delta: 1 | -1): Promise<void> {
+  const st = useStore.getState();
+  const cursor = st.liveCursor;
+  const item = findItem(cursor?.itemId ?? null);
+  if (cursor && item) {
+    const target = stepTarget({
+      scripture: item.kind === 'scripture',
+      inPlaylist: !!st.service?.items.some((i) => i.id === item.id),
+      index: cursor.index,
+      slides: slidesFor(item).length,
+      delta,
+    });
+    if (target === 'verse') return stepVerse(delta);
+  }
+  return stepAcross(delta, 'voice');
+}
+
 /** Show the scripture on screen in another version, and use it from now on. */
 async function switchVersion(name: string): Promise<void> {
   const id = matchVersion(name, useStore.getState().versions);
@@ -421,9 +441,9 @@ async function switchVersion(name: string): Promise<void> {
 export async function runVoiceCommand(c: VoiceCommand): Promise<void> {
   switch (c.kind) {
     case 'next':
-      return stepAcross(1, 'voice');
+      return stepSlideOrVerse(1);
     case 'previous':
-      return stepAcross(-1, 'voice');
+      return stepSlideOrVerse(-1);
     case 'nextItem':
       return stepItem(1, 'voice');
     case 'previousItem':

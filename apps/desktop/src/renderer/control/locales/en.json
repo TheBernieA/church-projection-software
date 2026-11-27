@@ -1227,7 +1227,7 @@
         },
         "voice": {
           "q": "Run the slides with your voice",
-          "a": "1. Listen › tick Voice commands (or Settings › Assistant › Voice commands), and start listening.\n2. Say a short phrase on its own: “Next”, “Go back”, “Next song”, “Next verse”, “Previous verse”, “Show John 3:16”, “Switch to KJV”, “Clear the screen”, “Black screen”, “Show the logo”, “Bring it back”.\n3. It shows in the transcript with CMD in front when it was acted on.\nOnly a phrase that is the command and nothing else counts: “the next thing Paul says” moves nothing. Settings › Assistant lists everything you can say."
+          "a": "1. Listen › tick Voice commands (or Settings › Assistant › Voice commands), and start listening.\n2. Say a short phrase on its own: “Next”, “Go back”, “Next song”, “Next verse”, “Previous verse”, “Show John 3:16”, “Switch to KJV”, “Clear the screen”, “Black screen”, “Show the logo”, “Bring it back”.\n3. On a verse put up by voice, by listening or from the Bible, “Next” and “Go back” run on to the next or previous verse; on a playlist item they step its slides, then on to the next item, like the arrows under the live picture.\n4. It shows in the transcript with CMD in front when it was acted on.\nOnly a phrase that is the command and nothing else counts: “the next thing Paul says” moves nothing. Settings › Assistant lists everything you can say."
         },
         "wakeWord": {
           "q": "Stop the preacher’s microphone moving the slides",

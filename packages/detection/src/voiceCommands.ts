@@ -214,3 +214,24 @@ export function matchVersion(spoken: string, versions: readonly NamedVersion[]):
   }
   return best && !tie ? best.id : null;
 }
+
+/** Where "next" / "go back" goes from the slide on screen. */
+export type StepTarget = 'slide' | 'verse';
+
+/**
+ * "Next" on scripture that isn't in the playlist (a verse put up by voice, by listening or from
+ * the Bible) runs on through the chapter: past its last slide comes the next verse, before its
+ * first the verse before. Everything else steps slides as the monitor's arrows do (a playlist
+ * item's last slide leads to the next item).
+ */
+export function stepTarget(on: {
+  readonly scripture: boolean;
+  readonly inPlaylist: boolean;
+  readonly index: number;
+  readonly slides: number;
+  readonly delta: 1 | -1;
+}): StepTarget {
+  const next = on.index + on.delta;
+  const pastEnd = next < 0 || next >= on.slides;
+  return on.scripture && !on.inPlaylist && pastEnd ? 'verse' : 'slide';
+}
