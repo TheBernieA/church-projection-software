@@ -18,6 +18,7 @@ import {
   Play,
   Search,
   ShieldAlert,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button, Kbd, Typography } from '@lampstand/ui';
@@ -220,6 +221,20 @@ const DESK_HOWTO = [
   'feedback',
   'cues',
   'deskTrouble',
+];
+
+/** The assistant (online, with a key) and listening (on this computer, no key). */
+const ASSISTANT_HOWTO = [
+  'needsKey',
+  'getKey',
+  'plan',
+  'lyrics',
+  'listenSetup',
+  'listenModes',
+  'voice',
+  'wakeWord',
+  'listenTrouble',
+  'privacy',
 ];
 
 /** A list of recipes that open on a click. */
@@ -456,6 +471,23 @@ export function GuidePage({ goTo }: { goTo: (page: SettingsPageId) => void }) {
         }
       >
         <Recipes group="desk" ids={DESK_HOWTO} values={keyNames} />
+      </Group>
+
+      <Group
+        title={t('guide.assistant.title')}
+        footnote={t('guide.assistant.help')}
+        action={
+          <Button
+            size="xs"
+            variant="ghost"
+            icon={<Sparkles size={13} />}
+            onClick={() => goTo('assistant')}
+          >
+            {t('guide.open.assistant')}
+          </Button>
+        }
+      >
+        <Recipes group="assistant" ids={ASSISTANT_HOWTO} values={keyNames} />
       </Group>
 
       <Group

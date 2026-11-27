@@ -890,7 +890,8 @@
       "streaming": "Streaming settings",
       "ndi": "NDI",
       "surfaces": "Control surfaces",
-      "video": "Video"
+      "video": "Video",
+      "assistant": "Assistant settings"
     },
     "quickBar": "Find anything fast",
     "quickBarHelp": "Press {{key}} and type a verse, a hymn number or words from a song. Enter shows it (or previews it with Preview first on); Shift+Enter always shows it now.",
@@ -916,7 +917,7 @@
       "help": "The window reads left to right: what you have, what you show, what the room sees.",
       "toolbar": {
         "title": "Toolbar",
-        "body": "Search (or {{quick}}) finds songs, verses and hymns. Show, Edit, Reflow and Bible switch the workspace; Theme opens Themes, and Stage is under More. On the right: the media bin, the Audience and Stage screen lights (green means connected), Preview first, Settings and Status."
+        "body": "Search (or {{quick}}) finds songs, verses and hymns. Show, Edit, Reflow and Bible switch the workspace; Theme opens Themes, and Stage is under More. On the right: the media bin, Listen (scripture and voice commands), the Audience and Stage screen lights (green means connected), Preview first, Settings and Status."
       },
       "sidebar": {
         "title": "Library and playlists",
@@ -1193,6 +1194,52 @@
         "deskTrouble": {
           "q": "A control does nothing",
           "a": "1. Open Settings › Control surfaces and watch the Activity row while you move the control.\n2. Nothing shows, MIDI: check the cable, that the desk is listed under MIDI, and that the desk is set to send MIDI in its own setup.\n3. Nothing shows, OSC: check the port, that the desk points at the address shown, that both are on the same network, and that a firewall isn’t blocking it. For an X32 or M32, turn on “Ask the desk for its changes”.\n4. It shows but nothing happens: press Learn for that control again (the desk may send on another channel or number).\n5. A mute works backwards: change “The desk’s control is” under that control."
+        }
+      }
+    },
+    "assistant": {
+      "title": "Assistant and listening",
+      "help": "Listening (scripture, voice commands, transcript) runs on this computer and needs no key. Planning a service and structuring lyrics use Claude online, with your church’s own Anthropic key.",
+      "items": {
+        "needsKey": {
+          "q": "Do I need an API key?",
+          "a": "Only for the assistant: Plan a service with AI and New song from lyrics.\nListening needs no key: scripture detection, voice commands and the transcript work offline once the speech model is downloaded (Settings › Assistant › Speech model › Download, about 80 MB, once).\nWithout a key the two assistant dialogs say so and link to Settings › Assistant."
+        },
+        "getKey": {
+          "q": "Add an Anthropic API key",
+          "a": "1. Go to console.anthropic.com, sign in (or create an account for the church), add credit under Billing, then open API keys and click Create key.\n2. Copy the key (it starts with sk-ant-).\n3. In Lampstand open Settings › Assistant, paste it into Anthropic API key and click Check and save. Lampstand checks it with Anthropic before keeping it.\n4. It’s stored in this computer’s keychain, never in settings or backups, and never shown again. Replace… swaps it; Forget key removes it.\nRequests are billed to that account. A plan or a song costs a few cents."
+        },
+        "plan": {
+          "q": "Plan a service with AI",
+          "a": "1. Click + next to LIBRARY and choose Plan a service with AI.\n2. Write the order of service the way you’d tell your team, or paste the bulletin: songs, readings, announcements, sermon title and points, timings, who leads what.\n3. Pick the date. Leave “Pick songs from my library” on to let it choose library songs (only their titles are sent).\n4. Click Plan it (or ⌘↩). In a few seconds you get the list: ✓ songs found in your library and readings understood; ⚠ steps that need you (a song not in the library, a reference it couldn’t read). Those are kept as labelled steps with a note, so nothing is lost.\n5. Check the questions under the list, rename the playlist if you like, then Create playlist, or Add to the open playlist. Edit takes you back to change what you wrote.\nNothing is created until you click. Lyrics and Bible text are never written by the assistant: they come from your library and Bibles."
+        },
+        "lyrics": {
+          "q": "Turn pasted lyrics into a song",
+          "a": "1. Click + next to LIBRARY and choose New song from lyrics.\n2. Paste the words as you have them (from an email, a website, a chord sheet). Click Structure it.\n3. Check the parts (Verse 1, Chorus, Bridge…) and the sung order. The words are kept exactly; chords and copyright lines are left out.\n4. Click Add song. It opens like an imported song, ready to check, with its credits in the Song tab."
+        },
+        "listenSetup": {
+          "q": "Set up listening",
+          "a": "1. Settings › Assistant › Speech model: click Download beside English — Base (Tiny is lighter for older computers). It downloads once and is checked.\n2. Listen to: pick the pulpit microphone or the desk’s feed of it. The preacher’s voice alone works best; music and the congregation make it harder.\n3. In the toolbar, click Listen › Start listening. The button lights and gets a green dot; the Listening card appears beside the live output with a level bar and the transcript.\n4. Speak a sentence and watch it appear. The time beside Transcript is how long recognition took (usually 2–3 seconds).\nStop listening (Listen › Stop listening) closes the microphone at once."
+        },
+        "listenModes": {
+          "q": "Let it put up the verses the preacher reads",
+          "a": "Listen › Scripture chooses what happens when a reference is heard (“turn to John chapter three verse sixteen”, then “verse seventeen”):\n• Off: nothing (voice commands and the transcript still work).\n• Suggest: it’s listed quietly in the Listening card.\n• Approve: it waits in the card with Show (straight on screen), Preview, Not today (don’t suggest it again this service) and ✕.\n• Auto: a verse it’s sure of goes up by itself; anything less sure, or a whole chapter, waits for you. Settings › Assistant › “Auto shows a verse at” sets how sure.\nVerses read one after another become one range (John 3:16–17). A reference already suggested isn’t suggested again for a minute and a half. “Verse 5” means the chapter on screen or last heard. It shows in your default Bible version."
+        },
+        "voice": {
+          "q": "Run the slides with your voice",
+          "a": "1. Listen › tick Voice commands (or Settings › Assistant › Voice commands), and start listening.\n2. Say a short phrase on its own: “Next”, “Go back”, “Next song”, “Next verse”, “Previous verse”, “Show John 3:16”, “Switch to KJV”, “Clear the screen”, “Black screen”, “Show the logo”, “Bring it back”.\n3. It shows in the transcript with CMD in front when it was acted on.\nOnly a phrase that is the command and nothing else counts: “the next thing Paul says” moves nothing. Settings › Assistant lists everything you can say."
+        },
+        "wakeWord": {
+          "q": "Stop the preacher’s microphone moving the slides",
+          "a": "If the microphone you listen to is the preacher’s, set a Wake word in Settings › Assistant (for example “Lampstand”). Then only phrases that start with it are commands: “Lampstand, next”. Scripture detection isn’t affected.\nWith the operator’s own microphone, you can leave it empty."
+        },
+        "listenTrouble": {
+          "q": "Listening doesn’t hear anything",
+          "a": "• “Download a speech model first”: Settings › Assistant › Speech model › Download, then Start listening again.\n• “Isn’t allowed to use the microphone”: System Settings › Privacy & Security › Microphone, turn Lampstand on (Windows: Settings › Privacy › Microphone).\n• The level bar doesn’t move: check Listen to in Settings › Assistant is the right input, and that the desk sends to it.\n• It hears words but finds no verses: is Scripture on (Suggest, Approve or Auto)? Speech with loud music behind it is hard to recognise; a clean pulpit feed helps most.\n• Slow (more than 4–5 seconds): try English — Tiny, or close other heavy apps."
+        },
+        "privacy": {
+          "q": "What leaves the computer?",
+          "a": "Listening: nothing. Audio is turned into text in memory and thrown away; the transcript disappears when Lampstand closes; the microphone is only open while Listen is on.\nThe assistant: only what you type or paste into the planner or the lyrics box (and song titles, if allowed) goes to Anthropic, over an encrypted connection, when you click the button. It’s billed to your church’s key."
         }
       }
     }
