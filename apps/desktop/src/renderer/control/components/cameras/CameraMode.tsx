@@ -51,12 +51,6 @@ function CameraColumn() {
 function Monitors({ controlMode }: { controlMode: boolean }) {
   const { t } = useTranslation();
   const preview = useStore((s) => s.live?.switcher.preview ?? null);
-  const live = useStore((s) => {
-    const id = s.live?.switcher.preview?.deviceId;
-    return (
-      !!id && (s.live?.program.input?.deviceId === id || s.live?.streamCut?.input?.deviceId === id)
-    );
-  });
   const [area, size] = useSize();
   const height = Math.round(
     Math.max(80, Math.min(size.height - 8, ((size.width - 12) / 2) * (9 / 16))),
@@ -73,7 +67,7 @@ function Monitors({ controlMode }: { controlMode: boolean }) {
         name={preview?.label ?? null}
         empty={t('switcher.previewEmpty')}
         height={height}
-        clickToFollow={controlMode && !!preview && !live}
+        clickToFollow={controlMode && !!preview}
       />
       <ProgramMonitors height={height} side={false} label={t('cameraMode.live')} />
     </div>

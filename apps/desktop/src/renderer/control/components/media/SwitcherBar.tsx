@@ -344,15 +344,12 @@ export function SwitcherBar({
   const { t } = useTranslation();
   const settings = useStore((s) => s.settings?.switcher);
   const preview = useStore((s) => s.live?.switcher.preview ?? null);
-  const input = useStore((s) => s.live?.program.input ?? null);
-  const streamId = useStore((s) => s.live?.streamCut?.input?.deviceId ?? null);
   const canTake = useCanTake();
   // Subscribed, so the key hints follow a shortcut remapped in Settings.
   useStore((s) => s.settings?.shortcuts);
   if (!settings) return null;
   const keys = effectiveShortcuts();
   const previewScene: Scene = { ...EMPTY_SCENE, input: preview };
-  const live = preview && (preview.deviceId === input?.deviceId || preview.deviceId === streamId);
   const previewMonitor = (
     <BusMonitor
       scene={previewScene}
@@ -361,7 +358,7 @@ export function SwitcherBar({
       name={preview?.label ?? null}
       empty={t('switcher.previewEmpty')}
       height={monitorHeight}
-      clickToFollow={controlMode && !!preview && !live}
+      clickToFollow={controlMode && !!preview}
     />
   );
   if (monitorsOnly)

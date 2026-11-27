@@ -462,16 +462,22 @@ export function TrackingControls() {
   const sizeNow = followingThis ? follow.size : size;
   return (
     <div className="flex flex-col gap-2">
-      <Button
-        size="sm"
-        variant="secondary"
-        icon={<Focus size={13} />}
-        disabled={!deviceId || !isPtz}
+      {/* A disabled button shows no tooltip, so the reason sits on a wrapper that does. */}
+      <span
+        className="flex flex-col"
         title={isPtz ? t('cameraMode.focusHelp') : t('cameraMode.focusPtzOnly')}
-        onClick={() => deviceId && void ptz({ action: 'focus', deviceId, mode: 'once' })}
       >
-        {t('cameraMode.focus')}
-      </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Focus size={13} />}
+          disabled={!deviceId || !isPtz}
+          title={isPtz ? t('cameraMode.focusHelp') : t('cameraMode.focusPtzOnly')}
+          onClick={() => deviceId && void ptz({ action: 'focus', deviceId, mode: 'once' })}
+        >
+          {t('cameraMode.focus')}
+        </Button>
+      </span>
       {followingThis ? (
         <Button
           size="sm"
@@ -487,9 +493,11 @@ export function TrackingControls() {
           size="sm"
           variant="subtle"
           icon={<ScanEye size={13} />}
-          disabled={!deviceId || onAir}
+          // Allowed on air too: following glides (it eases in like an operator's move), and with
+          // one camera it's the only way to start it.
+          disabled={!deviceId}
           onClick={() => deviceId && void startFollow(deviceId)}
-          title={t('camera.followHelp')}
+          title={onAir ? t('camera.followHelpOnAir') : t('camera.followHelp')}
         >
           {t('cameraMode.tracking')}
         </Button>
